@@ -1,0 +1,119 @@
+name: Set up Godot .NET
+description: >-
+  Downloads and caches the Godot .NET (mono) editor for Windows pinned in tools/godot-version.txt, checks its SHA-512
+  against the official SHA512-SUMS.txt, and optionally installs the Windows x86_64 export templates.
+  Sets the GODOT environment variable to the console executable.
+
+inputs:
+  templates:
+    description: "Also install the Windows x86_64 export templates (needed to export a release): 'true' or 'false'."
+    required: false
+    default: "false"
+
+outputs:
+  godot:
+    description: Full path of the Godot .NET console executable.
+    value: ${{ steps.paths.outputs.godot }}
+  version:
+    description: Godot release from tools/godot-version.txt, e.g. 4.7.2-stable.
+    value: ${{ steps.ver.outputs.version }}
+
+runs:
+  using: composite
+  steps:
+    - name: Read the pinned Godot version
+      id: ver
+      shell: pwsh
+      run: |
+        $v = (Get-Content tools/godot-version.txt -TotalCount 1).Trim()
+        if ($v -notmatch '^\d+\.\d+(\.\d+)?-[A-Za-z0-9]+$') { throw "tools/godot-version.txt: '$v' doesn't look like 4.7.2-stable" }
+        "version=$v" >> $env:GITHUB_OUTPUT
+        # Export templates folder name, e.g. 4.7.2.stable.mono
+        "templates_dir=$($v -replace '-', '.').mono" >> $env:GITHUB_OUTPUT
+        Write-Host "Godot $v"
+
+    - name: Cache the Godot editor
+      id: cache-editor
+      uses: actions/cache@v4
+      with:
+        path: tools/godot
+        key: godot-editor-${{ steps.ver.outputs.version }}-mono-win64
+
+    - name: Download the Godot editor
+      if: steps.cache-editor.outputs.cache-hit != 'true'
+      shell: pwsh
+      env:
+        GODOT_VERSION: ${{ steps.ver.outputs.version }}
+      run: |
+        $ErrorActionPreference = 'Stop'
+        $base = "https://github.com/godotengine/godot-builds/releases/download/$env:GODOT_VERSION"
+        $name = "Godot_v${env:GODOT_VERSION}_mono_win64.zip"
+        $file = Join-Path $env:RUNNER_TEMP $name
+        curl.exe -fsSL --retry 3 -o $file "$base/$name"
+        if ($LASTEXITCODE -ne 0) { throw "Download failed: $base/$name" }
+        $sums = curl.exe -fsSL --retry 3 "$base/SHA512-SUMS.txt"
+        $want = $sums | ForEach-Object { if ($_ -match "^\s*([0-9a-f]{128})\s+\*?$([regex]::Escape($name))\s*$") { $Matches[1] } } | Select-Object -First 1
+        if (-not $want) { throw "$name is not listed in SHA512-SUMS.txt" }
+        $got = (Get-FileHash $file -Algorithm SHA512).Hash.ToLowerInvariant()
+        if ($got -ne $want) { throw "SHA-512 mismatch for ${name}: got $got, expected $want" }
+        Expand-Archive -Path $file -DestinationPath tools/godot -Force
+        Remove-Item $file
+
+    - name: Locate Godot
+      id: paths
+      shell: pwsh
+      env:
+        GODOT_VERSION: ${{ steps.ver.outputs.version }}
+      run: |
+        $exe = Join-Path $PWD "tools/godot/Godot_v${env:GODOT_VERSION}_mono_win64/Godot_v${env:GODOT_VERSION}_mono_win64_console.exe"
+        if (-not (Test-Path $exe)) { throw "Godot console executable not found at $exe" }
+        "godot=$exe" >> $env:GITHUB_OUTPUT
+        "GODOT=$exe" >> $env:GITHUB_ENV
+        & $exe --version
+
+    - name: Cache the export templates
+      id: cache-templates
+      if: inputs.templates == 'true'
+      uses: actions/cache@v4
+      with:
+        # = $env:APPDATA\Godot\export_templates\<version>.mono, where Godot looks for them
+        path: ~/AppData/Roaming/Godot/export_templates/${{ steps.ver.outputs.templates_dir }}
+        key: godot-templates-${{ steps.ver.outputs.version }}-mono-win64-x86_64
+
+    - name: Download the export templates (Windows x86_64 only)
+      if: inputs.templates == 'true' && steps.cache-templates.outputs.cache-hit != 'true'
+      shell: pwsh
+      env:
+        GODOT_VERSION: ${{ steps.ver.outputs.version }}
+        TEMPLATES_DIR: ${{ steps.ver.outputs.templates_dir }}
+      run: |
+        $ErrorActionPreference = 'Stop'
+        $base = "https://github.com/godotengine/godot-builds/releases/download/$env:GODOT_VERSION"
+        $name = "Godot_v${env:GODOT_VERSION}_mono_export_templates.tpz"
+        $file = Join-Path $env:RUNNER_TEMP $name
+        # The .tpz holds every platform (about 1.2 GB); only the Windows x86_64 files (about 200 MB) are kept and cached.
+        curl.exe -fsSL --retry 3 -o $file "$base/$name"
+        if ($LASTEXITCODE -ne 0) { throw "Download failed: $base/$name" }
+        $sums = curl.exe -fsSL --retry 3 "$base/SHA512-SUMS.txt"
+        $want = $sums | ForEach-Object { if ($_ -match "^\s*([0-9a-f]{128})\s+\*?$([regex]::Escape($name))\s*$") { $Matches[1] } } | Select-Object -First 1
+        if (-not $want) { throw "$name is not listed in SHA512-SUMS.txt" }
+        $got = (Get-FileHash $file -Algorithm SHA512).Hash.ToLowerInvariant()
+        if ($got -ne $want) { throw "SHA-512 mismatch for ${name}: got $got, expected $want" }
+        $dest = Join-Path $env:APPDATA "Godot/export_templates/$env:TEMPLATES_DIR"
+        New-Item -ItemType Directory -Force $dest | Out-Null
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        $zip = [System.IO.Compression.ZipFile]::OpenRead($file)
+        try {
+          # The .tpz is a zip with a templates/ folder.
+          $keep = @($zip.Entries | Where-Object { $_.FullName -eq 'templates/version.txt' -or $_.FullName -like 'templates/windows_*_x86_64*' })
+          foreach ($e in $keep) {
+            [System.IO.Compression.ZipFileExtensions]::ExtractToFile($e, (Join-Path $dest $e.Name), $true)
+            Write-Host "  $($e.Name)  $([math]::Round($e.Length / 1MB, 1)) MB"
+          }
+        } finally { $zip.Dispose() }
+        Remove-Item $file
+        foreach ($need in 'version.txt', 'windows_release_x86_64.exe', 'windows_debug_x86_64.exe') {
+          if (-not (Test-Path (Join-Path $dest $need))) { throw "Export templates incomplete: $need missing" }
+        }
+        $tv = (Get-Content (Join-Path $dest 'version.txt') -Raw).Trim()
+        if ($tv -ne $env:TEMPLATES_DIR) { throw "Export templates are for '$tv', expected '$env:TEMPLATES_DIR'" }

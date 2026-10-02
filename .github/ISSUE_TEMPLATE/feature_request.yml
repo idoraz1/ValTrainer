@@ -1,0 +1,54 @@
+name: Feature request
+description: Suggest a new drill, a coach improvement or anything else.
+labels: ["feature", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea! Please check the [open feature requests](../issues?q=is%3Aissue+is%3Aopen+label%3Afeature) first and give an existing one a 👍 instead of opening a duplicate.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Drill (new drill or a change to one)
+        - Aim coach
+        - Sens Finder
+        - Settings import (VALORANT)
+        - Graphics
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would it solve?
+      description: What do you want to practise or understand that ValTrainer doesn't help with yet?
+      placeholder: I lose most duels after jiggle-peeking, but no drill practises ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Your proposal
+      description: How would it work? For a drill, describe what happens, what you score on and how it changes with the tier.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or references
+      description: Other trainers, pro routines, videos or data that show the idea.
+
+  - type: checkboxes
+    id: rules
+    attributes:
+      label: Project rules
+      description: ValTrainer only reads VALORANT's config files and ships no Riot assets (see CONTRIBUTING.md).
+      options:
+        - label: This doesn't need Riot art, models, sounds or maps, and doesn't need to touch the VALORANT process, its memory or its input.
+          required: true

@@ -1,0 +1,265 @@
+# Contributing to ValTrainer
+
+Thanks for helping! Bug reports, drill ideas, tuning data and code are all welcome. This page covers the project rules,
+how to build and test, how changes flow from an issue to a release, and how versions work.
+
+- [Project rules](#project-rules)
+- [Prerequisites](#prerequisites)
+- [Build, run and export](#build-run-and-export)
+- [Dev flags](#dev-flags)
+- [Test tools](#test-tools)
+- [Project layout](#project-layout)
+- [Branches, commits and pull requests](#branches-commits-and-pull-requests)
+- [Versions (SemVer)](#versions-semver)
+- [The changelog rule](#the-changelog-rule)
+- [Release process](#release-process)
+- [Feature management](#feature-management)
+
+## Project rules
+
+These are hard rules. A pull request that breaks one can't be merged.
+
+1. **Never touch the game.** ValTrainer never reads or writes VALORANT's memory, never injects anything, never automates
+   or simulates input for the game and never interacts with the VALORANT process. The only thing it does with
+   VALORANT is **read its config files** (`%LOCALAPPDATA%\VALORANT\Saved\Config`), read-only.
+2. **No Riot assets.** Riot's fan policy doesn't allow its IP in games and apps: no VALORANT art, models, textures,
+   sounds, voice lines, maps, icons, logos or fonts, not even "just for testing". Use **CC0** or self-made assets only
+   and list every third-party asset in [`ValTrainerGodot/CREDITS.md`](ValTrainerGodot/CREDITS.md). Agent, map and
+   weapon *names* as plain text are fine.
+3. **Dev runs never write user data.** Anything started with `--dev` must not write settings, stats or telemetry to
+   the player's data folder (`%APPDATA%\ValTrainer`). Tests that need saving use `--dev --data-dir <temp folder>
+   --write-data`. `tools\selftest.ps1` fails if a dev run writes anything.
+4. **Nothing leaves the PC** except the optional once-a-day update check to `api.github.com` (which players can turn
+   off). No analytics, no telemetry uploads, no other network requests.
+5. **Stay compatible.** Settings and stats files from older versions must keep loading. If that's impossible, it's a
+   MAJOR version (see [Versions](#versions-semver)).
+
+## Prerequisites
+
+- **Windows 10 or 11, 64-bit.**
+- **Godot 4.7.2 .NET** ("Godot Engine - .NET", Windows 64-bit) from <https://godotengine.org/download/archive/4.7.2-stable/>.
+  The exact version CI uses is in [`tools/godot-version.txt`](tools/godot-version.txt). Either:
+  - unzip it into `tools\godot\` so that `tools\godot\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64_console.exe`
+    exists (that folder is git-ignored), or
+  - unzip it anywhere and set the `GODOT` environment variable to the `..._console.exe`.
+- **.NET 8 SDK** (or newer): <https://dotnet.microsoft.com/download/dotnet/8.0>.
+- For release builds only: the Godot 4.7.2 .NET **export templates** (Godot editor → Editor → Manage Export Templates →
+  Download and Install) and **Inno Setup 6** (<https://jrsoftware.org/isdl.php>, or unpacked into `tools\innosetup\`).
+
+## Build, run and export
+
+From the repository root in PowerShell:
+
+```powershell
+# once per shell, unless GODOT is already set
+$env:GODOT = "$PWD\tools\godot\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64_console.exe"
+
+dotnet build ValTrainerGodot\ValTrainer.csproj           # compile the C# code
+& $env:GODOT --headless --path ValTrainerGodot --import  # first time and after adding assets: import them
+& $env:GODOT --path ValTrainerGodot -- --dev             # run it (windowed, never saves anything)
+& $env:GODOT -e --path ValTrainerGodot                   # or open the editor
+```
+
+Godot creates a `.uid` file for every new C# script and an `.import` file for every new asset the first time it scans
+the project (the `--import` line above does that). **Commit those files too**; Godot 4 needs them.
+
+**Release build** (installer, portable zip and checksums in `dist\`):
+
+```powershell
+tools\build-release.ps1                 # add -SkipInstaller to build only the portable zip
+tools\build-release.ps1 -Godot <console exe> -Iscc <ISCC.exe> -OutDir dist
+```
+
+It works on a private copy of the project, so your working tree is never modified.
+
+**Upgrading Godot:** change `tools/godot-version.txt`, the `Godot.NET.Sdk/x.y.z` version in
+`ValTrainerGodot/ValTrainer.csproj` and `config/features` in `project.godot` together. CI fails if the first two disagree.
+
+## Dev flags
+
+Godot's own options go **before** `--`, ValTrainer's **after** it:
+`& $env:GODOT --path ValTrainerGodot -- --dev --mode flick --tier 2`. Most switches only work together with `--dev`, so
+players can never trigger them by accident.
+
+| Flag | What it does |
+|---|---|
+| `--dev` | Windowed 1600×900, no mouse capture, doesn't pause when the window loses focus, uncapped FPS with an FPS log. **Never writes settings, stats or telemetry.** |
+| `--mode <key>` | Starts a drill directly. Keys: `gridshot`, `flick`, `spider`, `tracking`, `strafebots`, `peek`, `operator`, `spray_vandal`, `spray_phantom`, `spray_transfer`, `counterstrafe`, `peekduel`, `siteclear`, `flashmap`, `reaction`, `sensfinder` (see `src/Modes/ModeRegistry.cs`). |
+| `--tier 0-4` | Difficulty tier (Rookie … Pro), not saved. |
+| `--map ascent\|bind\|haven\|split` | Map for the map and utility drills, not saved. |
+| `--quality 0-3` | Graphics preset (Low … Ultra) for this run. |
+| `--window WxH` | Dev window size, e.g. `1280x720` or `1720x720`, for layout tests. |
+| `--screen settings\|stats\|profile` | Opens that screen at start (`profile` is the coach). |
+| `--simaim <profile>` | A simulated player plays the drill: `good`, `overshoot`, `undershoot`, `nomicro`, `premature`, `slow`, `jitter`, `lowxhair`, `hesitate`, `curved`, `spraylate`, `runngun`. Tweak it with `key=value`, e.g. `good:pref=40` prefers 40 cm/360. |
+| `--duration N` | Shortens timed drills to N seconds. |
+| `--autofire` | Holds the trigger 2.6 s, releases 1.2 s, repeats (spray tests). |
+| `--pause-at N` | Opens the pause menu N seconds into the run. |
+| `--telemetry-out <dir>` | Saves the run's telemetry (`.vtt`) to that folder. |
+| `--data-dir <dir>` | Uses this folder instead of `%APPDATA%\ValTrainer`. Add `--write-data` to let the dev run save there. |
+| `--valorant-dir <dir>` | Reads VALORANT's settings from this `Saved\Config` folder instead of the real one. |
+| `--culture <name>` | Runs in that culture (e.g. `de-DE`) instead of the invariant one, to prove parsing doesn't depend on it. |
+| `--culture-test` | Locale self-test: settings, stats, telemetry and VALORANT ini parsing and number formatting. Prints `[culture-test] RESULT: PASS/FAIL`; the exit code is the number of failures. |
+| `--coach-analyze [dir]` | Prints the coach's analysis (metrics, problems, run review, skill profile, sens advice) of the `.vtt` files in `dir`, then quits. Add `--brief`, `--out <file>`, `--fake-sessions N`. Works with `--headless`. Without `dir` it reads your real telemetry (read-only). |
+| `--coach-selftest` | With `--coach-analyze`: synthetic cases for the rules and sens guardrails the simulated player can't reach. Prints `PASS`/`FAIL` lines. |
+| `--fakecoach [full\|partial\|empty]` | Coach screen with sample data. |
+| `--fakebuttons` | Shows every extra results-screen button (layout tests). |
+| `--sfquick`, `--sfseed N`, `--sfsens S`, `--sfcm C`, `--sftimescale X`, `--sfexit`, `--sfshot <dir>` | Sens Finder testing: short run, fixed seed, start sens or cm/360, game speed, quit at the end, screenshots. |
+| `--update-test <version>` | Pretends that version is the latest GitHub release (no network). |
+| `--whats-new [fromVersion]` | Shows the "What's new" panel as if you updated from that version. |
+| `--throw-test` | Throws test exceptions to check that they reach the log. |
+| `--vmtest …` | Viewmodel and effects test harness, see `src/Game/Weapon/VmTest.cs`. |
+| `--envperf`, `--envcam`, `--envscale`, `--envtweak`, `--skyyaw` | Environment and performance tuning, see `src/World/EnvDev.cs`. |
+
+Useful Godot options (before `--`): `--headless`, `--fixed-fps 120`, `--quit-after <frames>`,
+`--rendering-method gl_compatibility`, `--rendering-driver d3d12|opengl3|opengl3_angle`.
+
+## Test tools
+
+**`tools\selftest.ps1`** runs what CI runs: the coach self-test, the locale tests (invariant, `de-DE`, `tr-TR`), a 5-second
+headless run of every timed drill with the simulated player, a coach analysis of those runs, and a check that no dev run
+wrote any data. It takes about 30 seconds. Build first (`dotnet build`), then:
+
+```powershell
+tools\selftest.ps1                          # everything
+tools\selftest.ps1 -Modes flick,tracking    # fewer drills
+tools\selftest.ps1 -SkipSmoke               # only the coach and locale tests
+```
+
+The exit code is the number of failed checks; logs of failed checks are kept and their path is printed.
+
+**`tools\gshot.ps1`** starts a `--dev` run in a window and saves screenshots of **its own window only** at the given
+times (other windows on top are never captured), then stops only the processes it started. Screenshots go to
+`$env:GSHOT_OUT` (default `%TEMP%\gshot`).
+
+```powershell
+tools\gshot.ps1 -Mode spray_vandal -At 6,8 -Name spray -Extra "--tier 2 --autofire"
+tools\gshot.ps1 -Name coach -At 7 -Client -Extra "--fakecoach --screen profile --showcase"   # --showcase hides dev labels (README shots)
+tools\gshot.ps1 -Mode flick -At 33 -Name review -Client -Extra "--simaim overshoot --duration 28"   # -Client: full-size, no title bar
+```
+
+**Coach analysis** of recorded runs:
+
+```powershell
+# record a simulated run, then analyse it
+& $env:GODOT --path ValTrainerGodot -- --dev --mode flick --simaim overshoot --duration 30 --telemetry-out $env:TEMP\vt-runs
+& $env:GODOT --headless --path ValTrainerGodot -- --dev --coach-analyze $env:TEMP\vt-runs --brief
+```
+
+The method behind the coach is documented in [`ValTrainerGodot/docs/coach_spec.md`](ValTrainerGodot/docs/coach_spec.md).
+If you change a rule or a benchmark, update the spec in the same pull request.
+
+## Project layout
+
+```text
+.github/                 issue forms, PR template, CI and release workflows, setup-godot action
+docs/images/             README screenshots
+installer/               Inno Setup script for the Windows installer
+tools/
+  build-release.ps1      release build: installer, portable zip, SHA256SUMS.txt
+  version.ps1            print or bump the version; release notes from CHANGELOG.md
+  selftest.ps1           headless self-tests (same as CI)
+  gshot.ps1              screenshots of a --dev run
+  setup-github.ps1       one-time GitHub labels and milestone
+  godot-version.txt      the Godot version CI downloads
+  godot/, innosetup/     your local Godot editor and Inno Setup (git-ignored)
+ValTrainerGodot/         the Godot project
+  project.godot          engine settings; application/config/version is THE app version
+  Main.tscn              main scene; menus and worlds are built in code
+  src/Main.cs            app root: settings, VALORANT import, screen switching
+  src/Core/              settings, stats, data paths, difficulty tiers, weapons, version and update check, startup fixes
+  src/Valorant/          reading VALORANT's config files (sens, crosshair, keybinds, display)
+  src/Modes/             the drills (listed in ModeRegistry.cs) and the Sens Finder
+  src/Game/              game session, movement, weapons and viewmodel, bots, effects, telemetry recording
+  src/Maps/, src/World/  map spots for Site Clear and Flash Dodge; environments, materials, lighting
+  src/Analysis/          the aim coach: metrics, rank benchmarks, diagnoses, sens advice, simulated player
+  src/UI/                menu, settings, stats, coach screen, HUD, What's new, theme
+  src/Audio/             sound playback
+  assets/                CC0 models, textures, skies, sounds and shaders (CREDITS.md, assets/MANIFEST.md)
+  docs/coach_spec.md     how the aim coach works
+CHANGELOG.md             player-facing changes per version
+```
+
+## Branches, commits and pull requests
+
+- **`main` is always releasable.** Don't push half-finished work to it; CI must be green.
+- Work on a branch: `feature/<short-name>` for features and drills, `fix/<short-name>` for bug fixes
+  (e.g. `feature/jiggle-peek-drill`, `fix/crosshair-outline-scale`). Add the issue number if there is one:
+  `fix/123-crosshair-outline`.
+- Open a **pull request** into `main`. Fill in the template, link the issue ("Fixes #123") and add screenshots for
+  anything visual. Draft PRs are welcome for early feedback.
+- CI builds the project and runs `tools\selftest.ps1` on every PR. A second check makes sure `CHANGELOG.md` changed.
+- Keep PRs focused: one feature or fix per PR is easier to review and to describe in the changelog.
+- **Commit messages:** a short imperative summary ("Add jiggle-peek drill"). Conventional Commit prefixes are optional
+  but welcome: `feat:`, `fix:`, `perf:`, `refactor:`, `docs:`, `test:`, `ci:`, `build:`, `chore:`, and `release:` for
+  version commits.
+
+## Versions (SemVer)
+
+ValTrainer follows [Semantic Versioning](https://semver.org): `MAJOR.MINOR.PATCH`. The single source of truth is
+`application/config/version` in `ValTrainerGodot/project.godot`; the exe's file version, the installer, the in-game
+version and the update check all read it. Change it only with `tools\version.ps1`.
+
+| Bump | When | Examples |
+|---|---|---|
+| **MAJOR** (2.0.0) | Saved settings or stats from older versions stop loading or get reset, or a big overhaul of the app | new stats format without migration, a rewrite of the rank system |
+| **MINOR** (1.1.0) | New drills or features | a new drill or map, a new coach analysis, importing another VALORANT setting |
+| **PATCH** (1.0.1) | Fixes and tuning | bug fixes, bot timing or difficulty tuning, performance, wording |
+
+Prereleases (`1.1.0-beta.1`, `1.1.0-rc.1`) are published as GitHub prereleases. The in-app update check ignores them, so
+only people who download them by hand get them.
+
+## The changelog rule
+
+**Every pull request adds a line under `## [Unreleased]` in [`CHANGELOG.md`](CHANGELOG.md)**, in the right group:
+`### Added`, `### Changed`, `### Fixed`, `### Removed` (format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)).
+
+- Write for players, not developers: "Flash Dodge: Skye's flash now plays its sound when it's behind you", not
+  "Fix FlashOrb.cs audio bus".
+- These lines become the GitHub Release notes and the in-app "What's new" panel, word for word.
+- Changes players won't notice (CI, refactoring, docs) can skip it: label the PR `skip-changelog`.
+
+## Release process
+
+1. Make sure `main` is green and `## [Unreleased]` in `CHANGELOG.md` describes everything that's in it.
+2. Bump the version (choose `major`, `minor` or `patch` by the table above):
+
+   ```powershell
+   tools\version.ps1 -Bump minor         # or -Bump patch / -Bump major, or -Set 1.1.0-beta.1
+   ```
+
+   This updates `project.godot`, turns `## [Unreleased]` into `## [1.1.0] - <today>` with a new empty Unreleased
+   section above it, and updates the compare links at the bottom of the changelog.
+3. Review the diff and commit it: `git commit -am "release: v1.1.0"`.
+4. Tag and push:
+
+   ```powershell
+   git tag v1.1.0
+   git push origin main --tags
+   ```
+
+5. The **Release** workflow (`.github/workflows/release.yml`) checks that the tag matches the version, runs the
+   self-tests, builds `ValTrainer-1.1.0-Setup.exe`, `ValTrainer-1.1.0-Portable.zip` and `SHA256SUMS.txt`, and
+   publishes the GitHub Release "ValTrainer v1.1.0" with the changelog section as its notes (`tools\version.ps1 -Notes 1.1.0`).
+   Versions with a `-` become prereleases.
+6. Close the version's milestone and create the next one (`tools\setup-github.ps1` creates the next minor milestone).
+
+If the workflow fails, fix the problem on `main` and move the tag: `git tag -d v1.1.0`,
+`git push origin :refs/tags/v1.1.0`, then tag and push again. Re-running a failed release workflow is safe: it replaces
+the files of an existing release.
+
+## Feature management
+
+- **Issues** come in through two forms: **Bug report** (version, Windows, GPU and renderer, installer or portable,
+  steps, expected vs actual, log file) and **Feature request** (area, problem, proposal). Both get the `triage` label.
+- **Labels** (created by [`tools/setup-github.ps1`](tools/setup-github.ps1)): type `bug` / `feature`; area `drill`,
+  `coach`, `sens-finder`, `settings-import`, `graphics`, `compatibility`, `installer`, `documentation`; plus `breaking`
+  (needs a MAJOR version), `skip-changelog`, `good first issue`, `help wanted`, `question`, `duplicate`, `wontfix`.
+  Triage = add the type and area labels, then remove `triage`.
+- **Milestones:** one per upcoming version (`v1.1.0`, `v1.0.1` for urgent fixes). An issue gets a milestone when it's
+  planned for that release.
+- **Projects board** "ValTrainer" with four columns:
+  **Backlog** (triaged, not planned) → **Next** (planned for the next milestone) → **In progress** (someone is on it,
+  a branch or draft PR exists) → **Done** (merged). The script prints how to set the board up once.
+- **From idea to release notes:** issue → Backlog → Next + milestone → branch `feature/…` → PR that adds a line under
+  `## [Unreleased]` → merged, Done → `tools\version.ps1 -Bump` turns the Unreleased lines into the version's section →
+  the tag publishes them as the GitHub Release notes, and players see them in "What's new" after updating.

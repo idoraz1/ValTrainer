@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/weapons/Pistol_5.fbx" id="1_j15gd"]
+
+[node name="Pistol_Compact" type="Node3D" unique_id=735259723]
+metadata/source_model = "res://assets/weapons/Pistol_5.fbx"
+metadata/length_m = 0.19
+
+[node name="Model" type="Node3D" parent="." unique_id=1422080803 instance=ExtResource("1_j15gd")]
+transform = Transform3D(-4.5650146e-09, 0, 0.10443536, 0, 0.10443536, 0, -0.10443536, 0, -4.5650146e-09, 0, 0, 0)
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=167906233]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.4916071e-08, 0.057266206, -0.15169102)

@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/weapons/AssaultRifle_5.fbx" id="1_q7pth"]
+
+[node name="AssaultRifle_AK" type="Node3D" unique_id=1133641553]
+metadata/source_model = "res://assets/weapons/AssaultRifle_5.fbx"
+metadata/length_m = 0.92
+
+[node name="Model" type="Node3D" parent="." unique_id=1105939643 instance=ExtResource("1_q7pth")]
+transform = Transform3D(-7.4173774e-09, 0, 0.16968982, 0, 0.16968982, 0, -0.16968982, 0, -7.4173774e-09, 0, 0, 0)
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=1184556244]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.078948e-08, 0.1015473, -0.6485352)

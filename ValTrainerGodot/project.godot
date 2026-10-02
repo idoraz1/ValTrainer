@@ -1,0 +1,50 @@
+; Engine configuration file.
+; ValTrainer — Godot 4 (.NET) edition.
+
+config_version=5
+
+[application]
+
+config/name="ValTrainer"
+config/description="Aim, movement and utility trainer that copies your Valorant settings."
+config/version="1.0.0"
+run/main_scene="res://Main.tscn"
+config/features=PackedStringArray("4.7", "C#", "Forward Plus")
+config/icon="res://icon.png"
+run/max_fps=0
+boot_splash/show_image=false
+boot_splash/bg_color=Color(0.0588, 0.098, 0.137, 1)
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/vsync/vsync_mode=0
+window/energy_saving/keep_screen_on=true
+
+[dotnet]
+
+project/assembly_name="ValTrainer"
+
+[input_devices]
+
+buffering/agile_event_flushing=true
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+; Startup fallback chain for PCs without a working Vulkan driver (old iGPUs, VMs, remote desktop); all Godot
+; defaults, kept explicit: Vulkan -> Direct3D 12 -> OpenGL 3.3 (Compatibility) -> ANGLE (OpenGL ES on Direct3D 11).
+rendering_device/driver.windows="vulkan"
+rendering_device/fallback_to_vulkan=true
+rendering_device/fallback_to_d3d12=true
+rendering_device/fallback_to_opengl3=true
+gl_compatibility/driver.windows="opengl3"
+gl_compatibility/fallback_to_angle=true
+gl_compatibility/fallback_to_native=true
+anti_aliasing/quality/msaa_3d=2
+anti_aliasing/quality/screen_space_aa=0
+lights_and_shadows/directional_shadow/size=4096
+lights_and_shadows/directional_shadow/soft_shadow_filter_quality=3
+environment/defaults/default_clear_color=Color(0.58, 0.69, 0.8, 1)
+textures/default_filters/anisotropic_filtering_level=4

@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build and self-test (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      # Godot version: pinned in tools/godot-version.txt (the only place CI reads it from).
+      - name: Set up Godot
+        id: godot
+        uses: ./.github/actions/setup-godot
+
+      - name: Check version pins
+        shell: powershell
+        env:
+          GODOT_VERSION: ${{ steps.godot.outputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # tools/godot-version.txt and the Godot.NET.Sdk version in the .csproj must agree.
+          $csproj = Get-Content ValTrainerGodot/ValTrainer.csproj -Raw
+          if ($csproj -notmatch 'Sdk="Godot\.NET\.Sdk/([^"]+)"') { throw "ValTrainer.csproj has no Godot.NET.Sdk version" }
+          $sdk = $Matches[1]
+          if ($env:GODOT_VERSION -like '*-stable' -and $sdk -ne ($env:GODOT_VERSION -replace '-stable$', '')) {
+            throw "ValTrainer.csproj uses Godot.NET.Sdk/$sdk but tools/godot-version.txt pins $env:GODOT_VERSION"
+          }
+          # The app version (application/config/version in project.godot) is SemVer and has a CHANGELOG section.
+          $v = ((& .\tools\version.ps1 6>&1 | Out-String) -split "`r?`n" | Where-Object { $_.Trim() } | Select-Object -Last 1).Trim()
+          if ($v -notmatch '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') { throw "tools/version.ps1 printed '$v', not a SemVer version" }
+          $log = Get-Content CHANGELOG.md -Raw
+          if ($log -notmatch '(?m)^## \[Unreleased\]') { throw "CHANGELOG.md has no '## [Unreleased]' section" }
+          if ($log -notmatch "(?m)^## \[$([regex]::Escape($v))\]") { throw "CHANGELOG.md has no '## [$v]' section for the current version" }
+          Write-Host "ValTrainer $v, Godot $env:GODOT_VERSION, Godot.NET.Sdk $sdk"
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('ValTrainerGodot/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Build C#
+        run: dotnet build ValTrainerGodot/ValTrainer.csproj -nologo
+
+      # Imported textures, meshes and sounds (.godot/imported) only change when assets or their .import files do.
+      - name: Cache imported assets
+        uses: actions/cache@v4
+        with:
+          path: ValTrainerGodot/.godot/imported
+          key: godot-imported-${{ steps.godot.outputs.version }}-${{ hashFiles('ValTrainerGodot/assets/**', 'ValTrainerGodot/icon.png', 'ValTrainerGodot/icon.png.import') }}
+          restore-keys: godot-imported-${{ steps.godot.outputs.version }}-
+
+      - name: Import assets
+        run: '& $env:GODOT --headless --path ValTrainerGodot --import'
+
+      # Coach self-test, locale tests (invariant, de-DE, tr-TR) and a 5 s simulated-player run of every timed drill.
+      # All runs use --dev with a throw-away data folder: nothing is read from or written to a real profile.
+      - name: Self-tests
+        shell: powershell
+        run: .\tools\selftest.ps1 -LogDir selftest-logs
+
+      - name: Upload self-test logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selftest-logs
+          path: selftest-logs
+          if-no-files-found: ignore
+
+  changelog:
+    name: CHANGELOG updated
+    if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'skip-changelog')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require a CHANGELOG.md entry
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if git diff --name-only "$BASE_SHA"...HEAD | grep -qx 'CHANGELOG.md'; then
+            echo "CHANGELOG.md updated."
+          else
+            echo "::error file=CHANGELOG.md::Add a line under '## [Unreleased]' in CHANGELOG.md (or label the PR 'skip-changelog' for changes players won't notice)."
+            exit 1
+          fi

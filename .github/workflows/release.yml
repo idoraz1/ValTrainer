@@ -1,0 +1,159 @@
+name: Release
+
+# Push a tag like v1.2.0 (after tools\version.ps1 -Bump/-Set and a "release: v1.2.0" commit) to build the installer,
+# the portable zip and SHA256SUMS.txt and publish them as a GitHub Release. Versions with a '-' (1.2.0-beta.1) are
+# published as prereleases, which the in-app update check ignores.
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the tag matches the app version
+        id: ver
+        shell: powershell
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $v = ((& .\tools\version.ps1 6>&1 | Out-String) -split "`r?`n" | Where-Object { $_.Trim() } | Select-Object -Last 1).Trim()
+          if ($v -notmatch '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') { throw "tools/version.ps1 printed '$v', not a SemVer version" }
+          if ($env:TAG -cne "v$v") {
+            throw "Tag $env:TAG doesn't match the app version $v in project.godot. Run tools\version.ps1 -Set <x.y.z> (or -Bump), commit, then tag v<x.y.z>."
+          }
+          $pre = if ($v.Contains('-')) { 'true' } else { 'false' }
+          [IO.File]::AppendAllText($env:GITHUB_OUTPUT, "version=$v`nprerelease=$pre`n")
+          Write-Host "Releasing ValTrainer $v (prerelease: $pre)"
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Set up Godot and export templates
+        id: godot
+        uses: ./.github/actions/setup-godot
+        with:
+          templates: "true"
+
+      # windows-latest ships Inno Setup 6; install it with Chocolatey only if an image ever drops it.
+      - name: Find Inno Setup
+        id: inno
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          function Find-Iscc {
+            $roots = @(${env:ProgramFiles(x86)}, $env:ProgramFiles) | Where-Object { $_ }
+            foreach ($r in $roots) {
+              $hit = Get-ChildItem -Path $r -Filter 'Inno Setup*' -Directory -ErrorAction SilentlyContinue |
+                Sort-Object Name -Descending | ForEach-Object { Join-Path $_.FullName 'ISCC.exe' } | Where-Object { Test-Path $_ } | Select-Object -First 1
+              if ($hit) { return $hit }
+            }
+          }
+          $iscc = Find-Iscc
+          if (-not $iscc) {
+            choco install innosetup -y --no-progress
+            if ($LASTEXITCODE -ne 0) { throw "choco install innosetup failed" }
+            $iscc = Find-Iscc
+          }
+          if (-not $iscc) { throw "ISCC.exe not found" }
+          Write-Host "Inno Setup: $iscc"
+          [IO.File]::AppendAllText($env:GITHUB_OUTPUT, "iscc=$iscc`n")
+
+      - name: Build C#
+        run: dotnet build ValTrainerGodot/ValTrainer.csproj -nologo
+
+      - name: Cache imported assets
+        uses: actions/cache@v4
+        with:
+          path: ValTrainerGodot/.godot/imported
+          key: godot-imported-${{ steps.godot.outputs.version }}-${{ hashFiles('ValTrainerGodot/assets/**', 'ValTrainerGodot/icon.png', 'ValTrainerGodot/icon.png.import') }}
+          restore-keys: godot-imported-${{ steps.godot.outputs.version }}-
+
+      - name: Import assets
+        run: '& $env:GODOT --headless --path ValTrainerGodot --import'
+
+      - name: Self-tests
+        shell: powershell
+        run: .\tools\selftest.ps1 -LogDir selftest-logs
+
+      - name: Build the installer and the portable zip
+        shell: powershell
+        env:
+          ISCC: ${{ steps.inno.outputs.iscc }}
+        run: |
+          .\tools\build-release.ps1 -Godot $env:GODOT -Iscc $env:ISCC -OutDir dist
+          if ($LASTEXITCODE -ne 0) { throw "build-release.ps1 failed with exit code $LASTEXITCODE" }
+
+      - name: Check the release files
+        shell: powershell
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($f in "ValTrainer-$env:VERSION-Setup.exe", "ValTrainer-$env:VERSION-Portable.zip", "SHA256SUMS.txt") {
+            if (-not (Test-Path "dist\$f")) { throw "dist\$f is missing" }
+          }
+          Get-ChildItem dist -File | ForEach-Object { "{0,10:N1} MB  {1}" -f ($_.Length / 1MB), $_.Name }
+          Get-Content dist\SHA256SUMS.txt
+
+      - name: Write the release notes
+        shell: powershell
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+          REPO: ${{ github.repository }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $notes = ((& .\tools\version.ps1 -Notes $env:VERSION 6>&1) | Out-String).Trim()
+          if (-not $notes) { $notes = "See [CHANGELOG.md](https://github.com/$env:REPO/blob/v$env:VERSION/CHANGELOG.md)." }
+          $footer = @"
+
+          ---
+          **Download:** ``ValTrainer-$env:VERSION-Setup.exe`` (installer, recommended) or ``ValTrainer-$env:VERSION-Portable.zip`` (unzip and run, no install). Windows 10 (1607+) or 11, 64-bit.
+          ValTrainer isn't code-signed yet, so Windows SmartScreen may say "Windows protected your PC": click **More info** -> **Run anyway**. Check your download against ``SHA256SUMS.txt`` if you like.
+          "@
+          [IO.File]::WriteAllText("$env:RUNNER_TEMP\notes.md", $notes + "`n" + $footer,(New-Object Text.UTF8Encoding $false))
+          Get-Content "$env:RUNNER_TEMP\notes.md"
+
+      - name: Publish the GitHub Release
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          PRERELEASE: ${{ steps.ver.outputs.prerelease }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $files = @(Get-ChildItem dist -File | ForEach-Object { $_.FullName })
+          gh release view $env:TAG *> $null
+          if ($LASTEXITCODE -eq 0) {
+            # Re-run of this workflow: replace the files and notes of the existing release.
+            gh release upload $env:TAG @files --clobber
+            if ($LASTEXITCODE -ne 0) { throw "gh release upload failed" }
+            gh release edit $env:TAG --notes-file "$env:RUNNER_TEMP\notes.md"
+          } else {
+            $a = @("release", "create", $env:TAG, "--verify-tag", "--title", "ValTrainer $env:TAG", "--notes-file", "$env:RUNNER_TEMP\notes.md")
+            if ($env:PRERELEASE -eq 'true') { $a += "--prerelease" }
+            gh @a @files
+          }
+          if ($LASTEXITCODE -ne 0) { throw "gh release failed with exit code $LASTEXITCODE" }
+
+      - name: Upload self-test logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selftest-logs
+          path: selftest-logs
+          if-no-files-found: ignore

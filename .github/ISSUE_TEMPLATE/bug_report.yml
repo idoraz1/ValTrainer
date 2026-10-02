@@ -1,0 +1,110 @@
+name: Bug report
+description: Something in ValTrainer doesn't work, crashes or looks wrong.
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Please search the [existing issues](../issues?q=is%3Aissue) first.
+        Most of the details below are on **Settings → About** in ValTrainer. Its **COPY SYSTEM INFO** button copies
+        the version, renderer, GPU and folders; you can paste that into the "Log file" box below.
+
+  - type: input
+    id: version
+    attributes:
+      label: ValTrainer version
+      description: Settings → About, e.g. `1.0.0`.
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: build
+    attributes:
+      label: How did you install it?
+      options:
+        - Installer (ValTrainer-x.y.z-Setup.exe)
+        - Portable zip (ValTrainer-x.y.z-Portable.zip)
+        - Built from source
+    validations:
+      required: true
+
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      description: "Win + R → `winver` shows it."
+      placeholder: "Windows 11 24H2"
+    validations:
+      required: true
+
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU and renderer
+      description: Settings → About shows the graphics card and the renderer (for example Vulkan / Forward+ or OpenGL / Compatibility).
+      placeholder: "NVIDIA GeForce GTX 1050, Vulkan, Forward+"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where does it happen?
+      options:
+        - Starting the app / black screen
+        - Menu or settings
+        - A drill
+        - Aim coach / run review
+        - Sens Finder
+        - Importing my VALORANT settings
+        - Graphics / performance
+        - Installer, portable zip or update check
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What did you do, step by step? Include the drill, tier and map if it's in a drill.
+      placeholder: |
+        1. Start Vandal Spray on Veteran
+        2. Spray the full magazine
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead?
+      description: Screenshots or a short clip help a lot.
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Log file
+      description: |
+        Attach or paste `%APPDATA%\Godot\app_userdata\ValTrainer\logs\godot.log` (paste that path into the Explorer address bar).
+        It contains your Windows user name in file paths; edit it out if you like.
+      render: text
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched the existing issues and this isn't a duplicate.
+          required: true
+        - label: If the game didn't start or stayed black, I tried the "ValTrainer (safe graphics)" shortcut or `--rendering-method gl_compatibility` (see the README's Troubleshooting).
