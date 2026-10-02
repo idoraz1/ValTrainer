@@ -137,8 +137,12 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $files = @(Get-ChildItem dist -File | ForEach-Object { $_.FullName })
-          gh release view $env:TAG *> $null
-          if ($LASTEXITCODE -eq 0) {
+          # Windows PowerShell turns a native command's stderr into a terminating error under 'Stop' when it is
+          # redirected, so the gh calls below run under 'Continue' and are checked through $LASTEXITCODE instead.
+          $ErrorActionPreference = 'Continue'
+          $existing = @(gh release list --limit 200 --json tagName --jq '.[].tagName')
+          if ($LASTEXITCODE -ne 0) { throw "gh release list failed with exit code $LASTEXITCODE" }
+          if ($existing -contains $env:TAG) {
             # Re-run of this workflow: replace the files and notes of the existing release.
             gh release upload $env:TAG @files --clobber
             if ($LASTEXITCODE -ne 0) { throw "gh release upload failed" }
