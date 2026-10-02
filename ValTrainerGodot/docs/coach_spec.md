@@ -65,7 +65,7 @@ Comes from the `bot_seen` event:
 - A = total placement error in degrees.
 - B = crosshair pitch minus head pitch. Positive = too high, negative = too low.
 
-Pitch error ε_p = B. Horizontal pre-aim error ε_h = sqrt(A² − B²). Also record the % of events with A ≤ the head's angular radius.
+Pitch error ε_p = B (mean, signed; the rating uses the median \|B\|). Horizontal pre-aim error ε_h = sqrt(A² − B²) (not from Peek Practice or Flash Dodge). Also record the % of events with A ≤ the head's angular radius.
 
 ### A4. Movement
 
@@ -88,31 +88,40 @@ Use the `spray_residual` events: A = vertical, positive = above the target; B = 
 
 ## B. Rank benchmarks
 
-Typical (median) values per tier b₀…b₄:
+Values per tier b₀…b₄. Since v1.1.1 the tiers are anchored to the player population (see *Calibration notes*): b₀…b₄
+sit at the 5th / 41st / 81st / 98.6th / 99.9th percentile of ranked players, so the median player (Gold 2) is T ≈ 1.2.
 
 | Metric | Iron–Bronze | Silver–Gold | Plat–Dia | Asc–Imm | Radiant |
 |---|---|---|---|---|---|
-| Flick onset RT (ms) † | 330 | 295 | 265 | 240 | 220 |
-| Primary endpoint error \|e_end\|/A † | 22% | 16% | 12% | 9% | 7% |
+| Flick onset RT (ms, drill targets — partly anticipated) † | 265 | 225 | 195 | 172 | 155 |
+| Primary endpoint error \|e_end\|/A † | 24% | 15% | 10% | 7% | 5% |
 | First-shot hit % (head) † | 62 | 70 | 78 | 85 | 90 |
 | T_c (ms) † | 420 | 330 | 260 | 205 | 165 |
-| N_c † | 2.4 | 2.0 | 1.7 | 1.4 | 1.2 |
+| N_c — rules / sens advice band † | 2.4 | 2.0 | 1.7 | 1.4 | 1.2 |
+| N_c — Precision rating (measured scale) † | 1.8 | 1.15 | 0.8 | 0.55 | 0.4 |
 | Tracking on-target % (Veteran-tier target) † | 25 | 35 | 45 | 55 | 65 |
 | τ lag (ms) † | 230 | 190 | 160 | 135 | 115 |
-| Reacquire (ms) † | 480 | 400 | 330 | 270 | 220 |
+| Reacquire (ms, measured scale) † | 240 | 165 | 120 | 92 | 75 |
 | Jitter J † | 0.9 | 0.7 | 0.55 | 0.45 | 0.35 |
-| Reaction test (ms) | 300 | 265 | 230 | 200 | 175 |
-| Crosshair placement error E (°) | 9 | 6 | 3.5 | 1.8 | 0.8 |
-| Pitch error ε_p (°) † | −3.0 | −1.8 | −1.0 | −0.5 | −0.25 |
-| Spray \|V\| (°) † | 1.8 | 1.2 | 0.8 | 0.5 | 0.3 |
-| Spray H (°) † | 1.2 | 0.9 | 0.65 | 0.45 | 0.3 |
-| Compensation delay (ms) † | 450 | 330 | 250 | 190 | 150 |
-| Moving shots % † | 35 | 22 | 12 | 6 | 3 |
+| Reaction test (ms, in-engine) | 262 | 230 | 206 | 180 | 162 |
+| Crosshair placement error E (°) | 13.5 | 10.5 | 8.8 | 7.0 | 5.5 |
+| \|Vertical error\| \|ε_p\| (°, component capped at T 2.5) † | 3.0 | 1.6 | 0.9 | 0.5 | 0.3 |
+| Spray \|V\| (°, drill) † | 1.6 | 1.05 | 0.7 | 0.45 | 0.3 |
+| Spray H (°, drill) † | 1.1 | 0.8 | 0.55 | 0.4 | 0.28 |
+| Compensation delay (ms, component capped at T 2.0) † | 450 | 330 | 250 | 190 | 150 |
+| Moving shots % † | 28 | 10 | 4 | 2 | 1 |
 | Counter-strafe use % † | 10 | 30 | 55 | 75 | 90 |
-| Stop time (ms) † | 260 | 220 | 190 | 170 | 160 |
+| Stop time, key release → accurate (ms) † | 128 | 116 | 108 | 102 | 98 |
 | Flash turn-away (ms) † | 650 | 520 | 420 | 340 | 280 |
 
-Head Flicks time-to-hit uses `Difficulty.FlickBadges[tier played]`.
+Head Flicks time-to-hit uses `Difficulty.FlickBadges[tier played]`. In the profile, Spidershot / Gridshot speed tiers
+(from their badges) are lowered by 0.8 (`Bench.ScoreSpeedOffset`): for the same player those badges sit ≈ 0.8 tier
+above Head Flicks' at every difficulty.
+
+**Difficulty normalisation.** Tracking: T = (on% − 25)/10 + 2·(tier played − 2) (the same simulated player scores
+91 / 65 / 48 / 26% on Rookie / Regular / Veteran / Elite). Flash outcome: T(outcome) + (tier − 2), at most tier + 1.
+Flash Dodge sightings count for the vertical crosshair error only (you are told to turn away). Older stored runs are
+brought up to date when the profile is built (`RunAnalysis.Normalize`).
 
 ### Scoring
 
@@ -124,11 +133,11 @@ Head Flicks time-to-hit uses `Difficulty.FlickBadges[tier played]`.
 
 | Skill | Weights |
 |---|---|
-| Flicking | 0.5 time-to-hit (or MT_ref), 0.3 endpoint error, 0.2 onset RT |
+| Flicking | 0.55 time-to-hit (or MT_ref), 0.3 endpoint error, 0.15 onset RT |
 | Precision (micro-adjustment) | 0.4 first-shot hit, 0.4 T_c, 0.2 N_c |
 | Tracking | 0.6 on-target, 0.2 τ, 0.2 reacquire |
 | Reaction | Reaction test only |
-| CrosshairPlacement | 0.6 E, 0.4 ε_p |
+| CrosshairPlacement | 0.7 E, 0.3 \|ε_p\| (confidence halved when only ε_p is known) |
 | SprayControl | 0.4 V, 0.3 H, 0.3 delay |
 | Movement | 0.4 moving shots, 0.3 counter-strafe use, 0.3 stop time |
 | Utility | 0.6 turn-away, 0.4 grade |
@@ -148,7 +157,11 @@ Head Flicks time-to-hit uses `Difficulty.FlickBadges[tier played]`.
 
 **Confidence:** c = n/(n + n_min). Labels: Low < 0.5, Medium < 0.75, High otherwise.
 
-**Overall rank:** Overall = Σ w·c·T / Σ w·c. Require at least 4 skills with c ≥ 0.5. Weights:
+**Overall rank:** M = Σ w·c·T̃ / Σ w·c, where T̃ is each skill's tier clipped to ±0.75 around the (w·c-weighted)
+median skill, so one standout skill can't carry it. Evidence E = Σ w·c / Σ w. Overall = 1.2 + λ·(M − 1.2) with
+λ = 0.9·E/(E + 0.1): shrunk toward the median player (Gold 2) because aim mechanics only partly predict rank.
+Require at least 4 skills with c ≥ 0.5. The UI shows a symmetric band of ±(0.15 + 0.30·(1 − E)) tiers and labels the
+estimate "aim only". Weights:
 
 | Skill | Weight |
 |---|---|
@@ -162,6 +175,26 @@ Head Flicks time-to-hit uses `Difficulty.FlickBadges[tier played]`.
 | Reaction | 0.05 |
 
 **Rank names from T:** Iron < 0 ≤ Bronze < 0.5 ≤ Silver < 1 ≤ Gold < 1.5 ≤ Platinum < 2 ≤ Diamond < 2.5 ≤ Ascendant < 3 ≤ Immortal < 3.5 ≤ Radiant.
+
+### Calibration notes (v1.1.1)
+
+The first release rated a peak-Gold 2 player "Platinum 3 – Diamond" (T 2.09). Causes: metrics recorded on a different
+scale than the table assumed pinned at Radiant (onset, N_c, re-acquire, stop time, compensation delay, mean signed
+pitch error); Spidershot / Gridshot badges are more generous than Head Flicks'; tracking and flash outcomes were barely
+normalised for the (easier) tier played; Flash Dodge's turn-away sightings counted as crosshair placement; the overall
+was a plain weighted mean with a narrow ±0.06–0.31 band. The same data now gives Gold 2 (T 1.31, band Gold 1 – Plat 1).
+
+Anchors used:
+
+- Rank distribution (Sep 2026, esportstales.com): Iron 4.7%, Bronze 15.7%, Silver 20.7%, Gold 22.1%, Plat 17.6%,
+  Diamond 11.6%, Ascendant 6.3%, Immortal 1.4%, Radiant 0.05% → median ≈ Gold 2 (T 1.2).
+- Reaction: Human Benchmark median 273 ms incl. display/input latency (in-engine ≈ 30–45 ms less); lab studies put pro
+  FPS players only ≈ 50 ms ahead of novices (≈ 219 vs 270 ms) and high- vs low-skill gamers ≈ 25 ms apart (WPI).
+- Crosshair placement: Leetify (CS2) ≈ 10.2° average, 7.5° ≈ top 3%.
+- Headshot % by rank (tracker.gg, for context): Iron 12% … Gold 21% … Immortal 29%, Radiant 31% — mechanics separate
+  ranks gradually, not in steps.
+- Typical-mechanics archetypes (CoachCli self-test "calibration"): Iron → Bronze 1, Silver → Silver 2, Gold → Gold 2,
+  Diamond → Platinum 3, Immortal → Ascendant 2 (the shrinkage toward the median is deliberate).
 
 ## C. Diagnoses
 

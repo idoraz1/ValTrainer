@@ -76,7 +76,11 @@ public partial class ProfileScreen : ScreenBase
         right.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         body.AddChild(right);
 
-        left.AddChild(new DrawBox { CustomMinimumSize = new Vector2(0, 250 * k), OnDraw = d => DrawRank(d, p) });
+        left.AddChild(new DrawBox
+        {
+            CustomMinimumSize = new Vector2(0, 250 * k), OnDraw = d => DrawRank(d, p), MouseFilter = MouseFilterEnum.Pass,
+            TooltipText = "An aim-only estimate: ValTrainer rates your mechanics (aim, movement, flash dodging).\nYour in-game rank also depends on game sense, comms and utility.",
+        });
         left.AddChild(SkillsPanel(p));
         right.AddChild(ProblemsPanel(p));
         right.AddChild(SensPanel(p));
@@ -146,11 +150,12 @@ public partial class ProfileScreen : ScreenBase
 
         float x0 = 268 * k, right = r.Size.X - 32 * k, tw = right - x0;
         int cs = UiTheme.Fs(14, k), ms = UiTheme.Fs(12, k);
-        Gfx.Text(d, UiTheme.HudWide, "ESTIMATED RANK", x0, Gfx.Mid(46 * k, cs), cs, UiTheme.Dim);
+        const string caption = "ESTIMATED RANK · AIM ONLY";
+        Gfx.Text(d, UiTheme.HudWide, caption, x0, Gfx.Mid(46 * k, cs), cs, UiTheme.Dim);
         string runs = $"{p.RunsAnalyzed} RUN{(p.RunsAnalyzed == 1 ? "" : "S")} · {When(p.Updated)}";
         string meta = p.RunsAnalyzed > 0 ? "BASED ON " + runs : "NO COACHED RUNS YET";
         // Narrow (4:3 / 5:4) windows: shorten, or drop, the caption rather than overlap "ESTIMATED RANK".
-        float room = tw - Gfx.TextW(UiTheme.HudWide, "ESTIMATED RANK", cs) - 16 * k;
+        float room = tw - Gfx.TextW(UiTheme.HudWide, caption, cs) - 16 * k;
         if (Gfx.TextW(UiTheme.HudWide, meta, ms) > room && p.RunsAnalyzed > 0) meta = runs;
         if (Gfx.TextW(UiTheme.HudWide, meta, ms) <= room)
             Gfx.TextR(d, UiTheme.HudWide, meta, right, Gfx.Mid(46 * k, ms), ms, UiTheme.Faint);

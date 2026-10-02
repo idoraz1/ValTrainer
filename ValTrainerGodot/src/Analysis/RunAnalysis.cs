@@ -12,8 +12,8 @@ static class RunAnalysis
 {
     static readonly HashSet<string> StaticModes = new() { "flick", "spider", "gridshot" };
     static readonly HashSet<string> SpawnBotModes = new() { "strafebots", "counterstrafe" };
-    static readonly HashSet<string> SeenBotModes = new() { "peek", "peekduel", "siteclear" };
-    static readonly HashSet<string> MovementModes = new() { "counterstrafe", "peekduel", "siteclear", "flashmap" };
+    static readonly HashSet<string> SeenBotModes = new() { "peek", "peekduel", "siteclear", "deathmatch" };
+    static readonly HashSet<string> MovementModes = new() { "counterstrafe", "peekduel", "siteclear", "flashmap", "deathmatch" };
 
     public static Dictionary<string, float> Run(RunTelemetry t)
     {
@@ -25,6 +25,7 @@ static class RunAnalysis
             if (res != null && res.A > 0) { m["sensfinder.sens"] = res.A; m["sensfinder.conf"] = res.B; }
             return m;
         }
+        if (t.Mode == "xhairfinder") return m; // the crosshair changes mid-run: its trials are not comparable skill data
         if (t.Frames.Count < 10 || !FramesUsable(t)) { Reaction(t, m); Flash(t, m); return Clean(m); }
         var p = new Prep(t);
         m["run.secs"] = p.Ft[^1] - p.Ft[0];
@@ -563,8 +564,8 @@ static class RunAnalysis
         m["track.vdrift_deg"] = (float)(vy / fireT);
         m["track.r_deg"] = rMean;
         int tier = Math.Clamp(p.T.Tier, 0, 4);
-        // The spec's on-target benchmark is for a Veteran target; like the mode's own badge, 45% at tier k ≙ tier k.
-        m["track.ontarget_tier"] = Math.Clamp(Bench.TierOf(m["track.ontarget"], Bench.TrackOnPct) + (tier - 2), -0.5f, 4.5f);
+        // The spec's on-target benchmark is for a Veteran target: normalised for the tier played (see Bench.TrackTier).
+        m["track.ontarget_tier"] = Bench.TrackTier(m["track.ontarget"], tier);
 
         // 240 Hz series: target yaw (absolute), crosshair error, fire flag.
         var ty = new float[p.N];
@@ -704,8 +705,9 @@ static class RunAnalysis
         if (ev.Count == 0) return;
         var fr = p.T.Frames;
         // Peek Practice swings bots out of a random pillar: only head height can be pre-aimed there, so its sightings
-        // count for the vertical error but not for the total / horizontal pre-aim error.
-        bool horiz = p.T.Mode != "peek";
+        // count for the vertical error but not for the total / horizontal pre-aim error. Flash Dodge asks you to turn
+        // away from the flash, so the attacker is first seen far off to the side by design: vertical only as well.
+        bool horiz = !HorizExcluded(p.T.Mode);
         var a = new List<float>(); var b = new List<float>(); var h = new List<float>();
         int below = 0, onHead = 0;
         foreach (var e in ev)
@@ -720,6 +722,8 @@ static class RunAnalysis
         }
         m["xhair.n"] = ev.Count;
         m["xhair.pitch_deg"] = Dsp.Mean(b);
+        // Typical size of the vertical error (the signed mean lets too-high and too-low sightings cancel out).
+        m["xhair.pitch_abs_deg"] = Dsp.Median(b.Select(MathF.Abs));
         m["xhair.below"] = below;
         if (horiz)
         {
@@ -828,5 +832,30 @@ static class RunAnalysis
         m["flash.flashed_pct"] = 100f * f.Count(e => e.A >= 2) / f.Count;
         var turns = f.Where(e => e.B >= 0).Select(e => e.B).ToList();
         if (turns.Count > 0) { m["flash.turn_n"] = turns.Count; m["flash.turn_ms"] = Dsp.Mean(turns); }
+        m["flash.dodge_tier"] = Bench.DodgeTier(m["flash.dodge_pct"], t.Tier);
+    }
+
+    static bool HorizExcluded(string mode) => mode is "peek" or "flashmap";
+
+    /// <summary>
+    /// A stored run's metrics as the profile uses them (runs saved by older versions are brought up to date without
+    /// their telemetry): drops Flash Dodge's horizontal crosshair numbers, (re)computes the difficulty-normalised
+    /// tracking and flash-outcome tiers, and puts Spidershot / Gridshot speed on Head Flicks' scale
+    /// (<see cref="Bench.ScoreSpeedOffset"/>). Returns a copy when anything changes; the stored record is never modified.
+    /// </summary>
+    public static Dictionary<string, float> Normalize(string mode, int tier, Dictionary<string, float> m)
+    {
+        bool dropX = HorizExcluded(mode) && m.ContainsKey("xhair.nh");
+        bool dodge = m.ContainsKey("flash.dodge_pct");
+        bool track = m.ContainsKey("track.ontarget");
+        bool speed = mode is "spider" or "gridshot" && m.ContainsKey("speed.tier");
+        if (!dropX && !dodge && !track && !speed) return m;
+        var c = new Dictionary<string, float>(m);
+        if (dropX)
+            foreach (var k in new[] { "xhair.nh", "xhair.err_deg", "xhair.h_deg", "xhair.on_head", "xhair.on_head_pct" }) c.Remove(k);
+        if (dodge) c["flash.dodge_tier"] = Bench.DodgeTier(m["flash.dodge_pct"], tier);
+        if (track) c["track.ontarget_tier"] = Bench.TrackTier(m["track.ontarget"], tier);
+        if (speed) c["speed.tier"] = Math.Max(-0.5f, m["speed.tier"] - Bench.ScoreSpeedOffset);
+        return c;
     }
 }

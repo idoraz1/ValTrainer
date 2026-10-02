@@ -10,6 +10,9 @@ sealed class Assessment
     public float Provisional = float.NaN; // same formula over whatever is rated (used as a reference when Overall is −1)
     public float OverallConf;
     public float RefTier;                 // tier whose benchmark values are the "band" in the rules
+    public float RawMean = float.NaN;     // robust weighted mean of the skill tiers, before shrinking toward the population median
+    /// <summary>Dev trace (CoachCli --explain): every benchmark component and how the overall was formed.</summary>
+    public readonly List<string> Trace = new();
     public readonly List<Issue> Issues = new();
     public readonly List<(Skill Skill, float Score, string Text)> Strengths = new();
 
@@ -38,6 +41,14 @@ static class Assess
     /// </summary>
     const float MinStops = 5;
 
+    static float WeightedMedian(List<(float T, float W)> xs)
+    {
+        xs.Sort((x, y) => x.T.CompareTo(y.T));
+        float half = xs.Sum(x => x.W) / 2, cum = 0;
+        foreach (var (t, w) in xs) { cum += w; if (cum >= half) return t; }
+        return xs[^1].T;
+    }
+
     static float Comp(params (float T, float W)[] parts)
     {
         float s = 0, w = 0;
@@ -59,18 +70,24 @@ static class Assess
     {
         var a = new Assessment();
         Rate(m, a);
-        // Overall = Σ w·c·T / Σ w·c, needs ≥ 4 skills with c ≥ 0.5.
-        float sw = 0, s = 0, wAll = SkillWeight.Values.Sum(), wc = 0;
-        int confident = 0;
-        foreach (var r in a.Ratings.Values)
-        {
-            if (r.Tier < -0.9f || r.Confidence <= 0) continue;
-            float w = SkillWeight[r.Skill] * r.Confidence;
-            sw += w; s += w * r.Tier; wc += SkillWeight[r.Skill] * r.Confidence;
-            if (r.Confidence >= 0.5f) confident++;
-        }
-        a.Provisional = sw > 0 ? s / sw : float.NaN;
+        // Overall (spec B "Overall rank"): a robust weighted mean of the skill tiers (weights w·c; each skill clipped to
+        // ±OutlierClip around the weighted median so one standout skill can't carry the estimate), shrunk toward the
+        // median player by how much evidence there is and how well aim mechanics predict rank at all. Needs ≥ 4 skills
+        // with c ≥ 0.5.
+        var rated = a.Ratings.Values.Where(r => r.Tier > -0.9f && r.Confidence > 0).ToList();
+        float wAll = SkillWeight.Values.Sum();
+        float wc = rated.Sum(r => SkillWeight[r.Skill] * r.Confidence);
+        int confident = rated.Count(r => r.Confidence >= 0.5f);
         a.OverallConf = wc / wAll;
+        if (wc > 0)
+        {
+            float med = WeightedMedian(rated.Select(r => (r.Tier, SkillWeight[r.Skill] * r.Confidence)).ToList());
+            float s = 0;
+            foreach (var r in rated) s += SkillWeight[r.Skill] * r.Confidence * Math.Clamp(r.Tier, med - Bench.OutlierClip, med + Bench.OutlierClip);
+            a.RawMean = s / wc;
+            a.Provisional = Bench.Shrink(a.RawMean, a.OverallConf);
+            a.Trace.Add(F($"overall: weighted median {med:0.00}, robust mean {a.RawMean:0.00}, evidence {a.OverallConf:0.00} → λ {Bench.ShrinkFactor(a.OverallConf):0.00} → {a.Provisional:0.00} ({Bench.Rank(a.Provisional)}), prior {Bench.PriorTier:0.00}"));
+        }
         if (confident >= 4) a.Overall = a.Provisional;
         a.RefTier = runLevel ? Math.Clamp(tierPlayed, 0, 4)
             : a.Overall >= 0 ? a.Overall
@@ -92,34 +109,48 @@ static class Assess
             if (float.IsNaN(t) || n <= 0 || !(c > 0)) { a.Ratings[sk] = new SkillRating(sk, -1, 0, (int)MathF.Round(Math.Max(0, n)), Progress(sk, m)); return; }
             t = Math.Clamp(t, -0.5f, 4.5f); // −1 is reserved for "not enough data"
             a.Ratings[sk] = new SkillRating(sk, t, c, (int)MathF.Round(n), headline.Length == 0 ? Bench.Rank(t) : $"{Bench.Rank(t)} · {headline}");
+            a.Trace.Add(F($"{sk} = {t:0.00} (c {c:0.00}, n {n:0})"));
+        }
+        // One benchmark component: tier of value x on table b, optionally capped (metrics that only show "not bad").
+        float B(string label, float x, float[] b, float cap = 4.5f)
+        {
+            float t = Math.Min(Bench.TierOf(x, b), cap);
+            if (!float.IsNaN(t)) a.Trace.Add(F($"    {label} = {x:0.###} → {t:0.00}"));
+            return t;
+        }
+        float Given(string label, float t)
+        {
+            if (!float.IsNaN(t)) a.Trace.Add(F($"    {label} → {t:0.00}"));
+            return t;
         }
 
-        // Flicking: 0.5 time-to-hit (or MT_ref), 0.3 endpoint error, 0.2 onset RT.
+        // Flicking: 0.55 time-to-hit (or MT_ref), 0.3 endpoint error, 0.15 onset RT (drill targets appear on a rhythm, so
+        // onset partly measures anticipation).
         {
-            float speedT = V(m, "speed.tier");
+            float speedT = Given("speed tier (badges of the tier played)", V(m, "speed.tier"));
             string speed = "";
             if (!float.IsNaN(V(m, "flick.ttk_hit_ms"))) speed = F($"{V(m, "flick.ttk_hit_ms"):0} ms to hit");
             else if (!float.IsNaN(V(m, "speed.score_min"))) speed = F($"{V(m, "speed.score_min"):0} pts/min");
             if (float.IsNaN(speedT))
             {
-                speedT = Bench.TierOf(V(m, "flick.mt_ref_ms"), Bench.MtRefMs);
+                speedT = B("flick time MT_ref ms", V(m, "flick.mt_ref_ms"), Bench.MtRefMs);
                 if (!float.IsNaN(speedT)) speed = F($"{V(m, "flick.mt_ref_ms"):0} ms flick time");
             }
-            float endT = Bench.TierOf(V(m, "flick.end_err_pct"), Bench.EndErrPct);
-            float onT = Bench.TierOf(V(m, "flick.onset_ms"), Bench.OnsetMs);
+            float endT = B("endpoint error %", V(m, "flick.end_err_pct"), Bench.EndErrPct);
+            float onT = B("onset ms", V(m, "flick.onset_ms"), Bench.OnsetMs);
             var parts = new List<string>();
             if (speed.Length > 0) parts.Add(speed);
             if (!float.IsNaN(endT)) parts.Add(F($"lands within {V(m, "flick.end_err_pct"):0}%"));
             if (!float.IsNaN(onT)) parts.Add(F($"starts in {V(m, "flick.onset_ms"):0} ms"));
             float n = N(m, "flick.n5");
-            Put(Skill.Flicking, Comp((speedT, .5f), (endT, .3f), (onT, .2f)), Conf(n, 30), n, string.Join(", ", parts));
+            Put(Skill.Flicking, Comp((speedT, .55f), (endT, .3f), (onT, .15f)), Conf(n, 30), n, string.Join(", ", parts));
         }
         // Precision: 0.4 first-shot hit, 0.4 T_c, 0.2 N_c — head-sized targets only (the benchmarks are for heads).
         {
             float fsh = V(m, "head.fsh_pct"), n = N(m, "head.n_first");
             bool settle = HeadSettle(m);
             float tc = settle ? V(m, "head.tc_ms") : float.NaN, nc = settle ? V(m, "head.nc") : float.NaN;
-            float t = HeadData(m) ? Comp((Bench.TierOf(fsh, Bench.FirstShotHitPct), .4f), (Bench.TierOf(tc, Bench.TcMs), .4f), (Bench.TierOf(nc, Bench.Nc), .2f)) : float.NaN;
+            float t = HeadData(m) ? Comp((B("first-shot head hit %", fsh, Bench.FirstShotHitPct), .4f), (B("settle T_c ms", tc, Bench.TcMs), .4f), (B("corrections N_c", nc, Bench.NcRating), .2f)) : float.NaN;
             var parts = new List<string>();
             if (!float.IsNaN(fsh)) parts.Add(F($"{fsh:0}% first-shot head hits"));
             if (!float.IsNaN(tc)) parts.Add(F($"settles in {tc:0} ms"));
@@ -129,7 +160,7 @@ static class Assess
         // Tracking: 0.6 on-target, 0.2 τ, 0.2 re-acquire.
         {
             float secs = N(m, "track.secs"), rev = N(m, "track.reversals");
-            float t = Comp((V(m, "track.ontarget_tier"), .6f), (Bench.TierOf(V(m, "track.tau_ms"), Bench.TauMs), .2f), (Bench.TierOf(V(m, "track.reacq_ms"), Bench.ReacqMs), .2f));
+            float t = Comp((Given("on-target tier (tier played)", V(m, "track.ontarget_tier")), .6f), (B("lag τ ms", V(m, "track.tau_ms"), Bench.TauMs), .2f), (B("re-acquire ms", V(m, "track.reacq_ms"), Bench.ReacqMs), .2f));
             var parts = new List<string>();
             if (!float.IsNaN(V(m, "track.ontarget"))) parts.Add(F($"{V(m, "track.ontarget"):0}% on target"));
             if (!float.IsNaN(V(m, "track.tau_ms"))) parts.Add(F($"{V(m, "track.tau_ms"):0} ms lag"));
@@ -139,22 +170,24 @@ static class Assess
         // Reaction.
         {
             float n = N(m, "react.n"), ms = V(m, "react.ms");
-            Put(Skill.Reaction, Bench.TierOf(ms, Bench.ReactMs), Conf(n, 10), n, F($"{ms:0} ms median"));
+            Put(Skill.Reaction, B("reaction ms", ms, Bench.ReactMs), Conf(n, 10), n, F($"{ms:0} ms median"));
         }
-        // Crosshair placement: 0.6 E, 0.4 ε_p (too high is as bad as too low).
+        // Crosshair placement: 0.7 E, 0.3 |ε_p| (too high is as bad as too low). Head height on a flat drill map is
+        // necessary but not sufficient, so the vertical part is capped, and a rating from it alone counts half.
         {
             float n = N(m, "xhair.n"), e = V(m, "xhair.err_deg"), p = V(m, "xhair.pitch_deg");
-            float t = Comp((Bench.TierOf(e, Bench.XhairErrDeg), .6f), (Bench.TierOf(-MathF.Abs(p), Bench.PitchErrDeg), .4f));
+            float pAbs = !float.IsNaN(V(m, "xhair.pitch_abs_deg")) ? V(m, "xhair.pitch_abs_deg") : MathF.Abs(p);
+            float t = Comp((B("first-sight error E°", e, Bench.XhairErrDeg), .7f), (B("|vertical error|°", pAbs, Bench.PitchAbsDeg, Bench.PitchCap), .3f));
             string head = float.IsNaN(p) ? F($"{e:0.0}° off on first sight")
                 : float.IsNaN(e) ? $"{Signed(p)}° from head height on first sight"
                 : F($"{e:0.0}° off on first sight, {Signed(p)}° vertical");
-            Put(Skill.CrosshairPlacement, t, Conf(n, 15), n, head);
+            Put(Skill.CrosshairPlacement, t, float.IsNaN(e) ? 0.5f * Conf(n, 15) : Conf(n, 15), n, head);
         }
         // Spray: 0.4 |V|, 0.3 H, 0.3 compensation delay.
         {
             float n = N(m, "spray.n");
-            float t = Comp((Bench.TierOf(V(m, "spray.v_abs"), Bench.SprayV), .4f), (Bench.TierOf(V(m, "spray.h"), Bench.SprayH), .3f),
-                (Bench.TierOf(V(m, "spray.delay_ms"), Bench.CompDelayMs), .3f));
+            float t = Comp((B("spray |V|°", V(m, "spray.v_abs"), Bench.SprayV), .4f), (B("spray H°", V(m, "spray.h"), Bench.SprayH), .3f),
+                (B("pull delay ms", V(m, "spray.delay_ms"), Bench.CompDelayMs, Bench.CompDelayCap), .3f));
             var parts = new List<string>();
             if (!float.IsNaN(V(m, "spray.v_abs"))) parts.Add(F($"{V(m, "spray.v_abs"):0.0}° vertical"));
             if (!float.IsNaN(V(m, "spray.h"))) parts.Add(F($"{V(m, "spray.h"):0.0}° sideways"));
@@ -166,8 +199,8 @@ static class Assess
             float shots = N(m, "move.shots"), stops = N(m, "move.stops");
             float stop = V(m, "move.stop_ms");
             float t = stops < MinStops ? float.NaN
-                : Comp((Bench.TierOf(V(m, "move.moving_shot_pct"), Bench.MovingShotPct), .4f), (Bench.TierOf(V(m, "move.counter_pct"), Bench.CounterPct), .3f),
-                    (Bench.TierOf(stop + Bench.StopOffsetMs, Bench.StopMs), .3f));
+                : Comp((B("moving shots %", V(m, "move.moving_shot_pct"), Bench.MovingShotPct), .4f), (B("counter-strafed %", V(m, "move.counter_pct"), Bench.CounterPct), .3f),
+                    (B("stop ms (release → accurate)", stop, Bench.StopMs), .3f));
             var cs = new List<float>();
             if (shots > 0) cs.Add(Conf(shots, 30));
             if (stops > 0) cs.Add(Conf(stops, 20));
@@ -179,7 +212,10 @@ static class Assess
         // Utility (flash): 0.6 turn-away, 0.4 outcome.
         {
             float n = N(m, "flash.n");
-            float t = Comp((Bench.TierOf(V(m, "flash.turn_ms"), Bench.FlashTurnMs), .6f), (Bench.TierOf(V(m, "flash.dodge_pct"), Bench.FlashDodgePct), .4f));
+            // Outcome normalised for the tier played (low-tier attackers swing late and hold fire on a blinded player).
+            float dodgeT = !float.IsNaN(V(m, "flash.dodge_tier")) ? Given("flash outcome tier (tier played)", V(m, "flash.dodge_tier"))
+                : B("flash outcome %", V(m, "flash.dodge_pct"), Bench.FlashDodgePct);
+            float t = Comp((B("flash turn-away ms", V(m, "flash.turn_ms"), Bench.FlashTurnMs), .6f), (dodgeT, .4f));
             var parts = new List<string>();
             if (!float.IsNaN(V(m, "flash.turn_ms"))) parts.Add(F($"turns in {V(m, "flash.turn_ms"):0} ms"));
             if (!float.IsNaN(V(m, "flash.flashed_pct"))) parts.Add(F($"flashed {V(m, "flash.flashed_pct"):0}%"));

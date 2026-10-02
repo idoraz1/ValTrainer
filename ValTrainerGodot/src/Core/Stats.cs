@@ -19,6 +19,9 @@ public sealed class RunRecord
     public Dictionary<string, float>? Metrics;
     /// <summary>Saved telemetry file (frames/shots/events), if kept.</summary>
     public string? TelemetryFile;
+    /// <summary>Played as a step of a warm-up routine (only steps at the player's own sens are kept here).</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Warmup;
 }
 
 public sealed class StatsStore

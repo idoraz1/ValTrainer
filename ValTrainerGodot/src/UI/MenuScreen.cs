@@ -153,6 +153,9 @@ public partial class MenuScreen : ScreenBase
         right.Alignment = BoxContainer.AlignmentMode.Center;
         var nav = HBox(12 * k);
         nav.Alignment = BoxContainer.AlignmentMode.End;
+        var warm = Btn("WARM UP", VButton.Look.Primary, Main.I.ShowWarmup, 176, 48, 20);
+        warm.TooltipText = "Guided warm-up routine (8 / 15 / 25 min) with an optional sens shifter and a lock-in graph";
+        nav.AddChild(warm);
         var coach = Btn("COACH", VButton.Look.Secondary, Main.I.ShowProfile, 156, 48, 20);
         coach.TooltipText = "Aim coach: your estimated rank per skill, what you do wrong, how to fix it and a sens recommendation";
         nav.AddChild(coach);
@@ -368,14 +371,14 @@ public partial class MenuScreen : ScreenBase
         Row("Resolution", () => $"{v.ResX}×{v.ResY} · {Mode(app.WindowMode)} · #{app.Monitor + 1}");
         Row("FPS cap / VSync", () => $"{(app.FpsCap <= 0 ? "Unlimited" : app.FpsCap.ToString())} / {(app.VSync ? "On" : "Off")}");
         Row("Anti-aliasing", () => SettingsScreen.AaName(v.AntiAliasing));
-        Row("Crosshair profile", () => v.Crosshair.Name);
+        Row("Crosshair profile", () => Valorant.CrosshairCode.Effective.Name);
 
         // crosshair preview
         var xp = new VPanel { Title = "CROSSHAIR", K = k, Caption = "primary · real pixel size", SizeFlagsVertical = SizeFlags.ExpandFill };
         right.AddChild(xp);
         var box = new DrawBox { SizeFlagsVertical = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 150 * k), ClipContents = true, OnDraw = DrawRange };
         xp.AddChild(box);
-        var xh = new CrosshairView { Profile = v.Crosshair, LocalCenter = true };
+        var xh = new CrosshairView { Profile = Valorant.CrosshairCode.Effective, LocalCenter = true };
         box.AddChild(xh);
         xh.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
     }

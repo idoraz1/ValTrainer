@@ -19,7 +19,7 @@ param(
   [string]$Project = (Join-Path $PSScriptRoot "..\ValTrainerGodot"),
   # Drills for the smoke test (keys from src\Modes). Reaction Test and Sens Finder need real input and are left out.
   [string[]]$Modes = @("flick", "gridshot", "spider", "tracking", "strafebots", "peek", "operator", "spray_vandal",
-                       "spray_phantom", "spray_transfer", "counterstrafe", "peekduel", "siteclear", "flashmap"),
+                       "spray_phantom", "spray_transfer", "counterstrafe", "peekduel", "siteclear", "flashmap", "deathmatch"),
   # Extra cultures for the locale test (the invariant culture always runs).
   [string[]]$Cultures = @("de-DE", "tr-TR"),
   [switch]$SkipSmoke,

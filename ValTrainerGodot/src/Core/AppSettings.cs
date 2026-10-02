@@ -24,6 +24,8 @@ public sealed class AppSettings
     public bool Outlines = true;      // enemy outline + fresnel (Valorant: "Hide outlines and fresnel" off)
     public bool ViewModel = true;      // first-person gun
     public bool LeftHandedWeapon;      // weapon hand: false = right (default), true = left (VALORANT's own setting is not used)
+    public bool UseFinderCrosshair;    // crosshair: false = VALORANT's (imported), true = FinderCrosshairCode
+    public string? FinderCrosshairCode; // VALORANT profile code from the Crosshair Finder ("Use in ValTrainer"); VALORANT itself is never changed
 
     // ---- updates / version (see UpdateCheck, WhatsNew) ----
     public bool CheckUpdates = true;   // ask GitHub for a newer release at most once a day

@@ -20,6 +20,8 @@ public static class ModeRegistry
         () => new FlashDodgeMode(),
         () => new ReactionMode(),
         () => new SensFinderMode(),
+        () => new CrosshairFinderMode(),
+        () => new DeathmatchMode(),
     };
 
     public static Func<TrainingMode>? Find(string key) => All.FirstOrDefault(f => f().Key.Equals(key, StringComparison.OrdinalIgnoreCase));

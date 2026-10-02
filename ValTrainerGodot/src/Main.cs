@@ -107,7 +107,10 @@ public partial class Main : Node
             case "settings": Callable.From(ShowSettings).CallDeferred(); break;
             case "about": SettingsScreen.StartPage = SettingsScreen.Page.About; Callable.From(ShowSettings).CallDeferred(); break;
             case "stats": Callable.From(ShowStats).CallDeferred(); break;
+            case "warmup": Callable.From(ShowWarmup).CallDeferred(); break;
         }
+        // Dev-only: "--warmup quick|standard|pro|demo" starts a warm-up routine (demo = summary with made-up data).
+        if (Dev && make == null && CmdLine.After("--warmup") is { } wu) Callable.From(() => Warmup.WarmupRunner.StartDev(wu)).CallDeferred();
         Analysis.CoachWarmUp.Start(); // JIT the coach off the main thread before the first results screen
     }
 
@@ -148,6 +151,7 @@ public partial class Main : Node
 
     public void ShowMenu()
     {
+        Warmup.WarmupRunner.Abandon(); // leaving a warm-up mid-routine (pause → Back to menu)
         Input.MouseMode = Input.MouseModeEnum.Visible;
         SetScreen(new MenuScreen());
     }
@@ -155,6 +159,9 @@ public partial class Main : Node
     public void ShowSettings() => SetScreen(new SettingsScreen());
     public void ShowStats() => SetScreen(new StatsScreen());
     public void ShowProfile() => SetScreen(new ProfileScreen());
+    public void ShowWarmup() => SetScreen(new Warmup.WarmupScreen());
+    /// <summary>Shows any screen node (warm-up step cards, sessions prepared with routine hooks, the warm-up summary).</summary>
+    public void ShowScreen(Node n) => SetScreen(n);
 
     public void StartMode(Func<TrainingMode> make) => SetScreen(new GameSession(make));
 

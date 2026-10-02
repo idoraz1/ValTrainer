@@ -62,6 +62,23 @@ public static class CoachCli
 
         if (args.Contains("--coach-selftest")) SelfTest();
 
+        // --coach-stats <stats.json>: build the profile from a (copied) stats file instead, exactly as the game does
+        // (stored per-run metrics; telemetry paths are looked up next to it in "telemetry\"). Read-only.
+        int si = Array.IndexOf(args, "--coach-stats");
+        if (si >= 0 && si + 1 < args.Length && File.Exists(args[si + 1]))
+        {
+            var path = args[si + 1];
+            var opts = new System.Text.Json.JsonSerializerOptions { IncludeFields = true };
+            store = System.Text.Json.JsonSerializer.Deserialize<StatsStore>(File.ReadAllText(path), opts) ?? new StatsStore();
+            store.Runs.RemoveAll(r => r == null);
+            var tdir = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(path)) ?? ".", "telemetry");
+            foreach (var r in store.Runs)
+                if (!string.IsNullOrEmpty(r.TelemetryFile)) r.TelemetryFile = Path.Combine(tdir, Path.GetFileName(r.TelemetryFile));
+            var last = store.Runs.Where(r => r.Sens > 0).OrderBy(r => r.When).LastOrDefault();
+            if (last != null) sens = last.Sens;
+            P(F($"##### STATS {path}: {store.Runs.Count} runs, {store.Runs.Count(r => r.Metrics is { Count: > 0 })} with metrics"));
+        }
+
         if (store.Runs.Count > 0)
         {
             var sw = Stopwatch.StartNew();
@@ -71,6 +88,15 @@ public static class CoachCli
             P(F($"##### PROFILE from {prof.RunsAnalyzed} runs (built in {sw.ElapsedMilliseconds} ms): overall {(prof.OverallTier < 0 ? "unrated" : $"{prof.OverallTier:0.00} {Coach.RankName(prof.OverallTier)}")}, evidence {prof.OverallConfidence:0.00}"));
             foreach (var s in prof.Skills)
                 P(F($"  {Coach.SkillName(s.Skill),-30} tier {s.Tier,5:0.00} conf {s.Confidence:0.00} n={s.Samples,-5} {s.Headline}"));
+            if (args.Contains("--explain"))
+            {
+                // How the numbers were reached: every benchmark component and the overall's robust mean + shrinkage.
+                var agg0 = Agg.Aggregate(store.Runs.Where(r => r.Metrics is { Count: > 0 } && r.Mode != "sensfinder")
+                    .Select(r => (r.When, RunAnalysis.Normalize(r.Mode, r.Tier, r.Metrics!))), DateTime.Now);
+                var a0 = Assess.Run(agg0, false, 1);
+                foreach (var line in a0.Trace) P("  · " + line);
+                P("  agg: " + KeyMetrics(agg0));
+            }
             P("  problems:");
             foreach (var d in prof.Problems) PrintDiag(d);
             P("  strengths:");
@@ -182,6 +208,38 @@ public static class CoachCli
         SensCase("no data @95 cm", new List<SensAdvisor.RunInfo>(), 0.172f, "higher");
         SensCase("no data @50 cm", new List<SensAdvisor.RunInfo>(), 0.327f, "keep");
         SensCase("changed sens 2 sessions ago", S(0.25f, 3, Over, 20).Concat(S(0.327f, 2, Over, 6)).ToList(), 0.327f, "keep");
+
+        // Rank calibration: rank-typical mechanics (docs/coach_spec.md "Calibration notes") must map to ordered,
+        // realistic overall estimates — the median player near Gold 2, nobody pushed up by one standout skill.
+        Dictionary<string, float> Arch(float speed, float endErr, float onset, float fsh, float tc, float nc, float trackT, float tau, float reacq,
+            float react, float xErr, float pitch, float sv, float sh, float delay, float moving, float counter, float stop, float turn, float dodgeT) => new()
+        {
+            ["flick.n"] = 120, ["flick.n5"] = 120, ["speed.n"] = 120, ["speed.tier"] = speed, ["flick.end_err_pct"] = endErr, ["flick.onset_ms"] = onset,
+            ["head.n_first"] = 80, ["head.n_hit"] = 60, ["head.fsh_pct"] = fsh, ["head.tc_ms"] = tc, ["head.nc"] = nc,
+            ["track.secs"] = 180, ["track.reversals"] = 40, ["track.ontarget_tier"] = trackT, ["track.tau_ms"] = tau, ["track.reacq_ms"] = reacq,
+            ["react.n"] = 20, ["react.ms"] = react,
+            ["xhair.n"] = 60, ["xhair.nh"] = 60, ["xhair.err_deg"] = xErr, ["xhair.pitch_abs_deg"] = pitch, ["xhair.pitch_deg"] = -pitch,
+            ["spray.n"] = 16, ["spray.v_abs"] = sv, ["spray.v"] = sv, ["spray.h"] = sh, ["spray.delay_ms"] = delay,
+            ["move.shots"] = 80, ["move.stops"] = 60, ["move.moving_shot_pct"] = moving, ["move.counter_pct"] = counter, ["move.stop_ms"] = stop,
+            ["flash.n"] = 16, ["flash.turn_n"] = 16, ["flash.turn_ms"] = turn, ["flash.dodge_tier"] = dodgeT,
+        };
+        var arch = new (string Name, float Lo, float Hi, Dictionary<string, float> M)[]
+        {
+            ("Iron", -0.5f, 0.35f, Arch(-0.3f, 23, 268, 58, 440, 1.8f, -0.3f, 235, 235, 262, 13.5f, 2.6f, 1.6f, 1.1f, 450, 27, 10, 127, 680, -0.3f)),
+            ("Silver", 0.45f, 1.0f, Arch(0.75f, 17, 235, 67, 360, 1.3f, 0.7f, 200, 185, 238, 11.2f, 1.8f, 1.15f, 0.85f, 350, 13, 24, 118, 560, 0.7f)),
+            ("Gold", 1.0f, 1.5f, Arch(1.25f, 13, 215, 72, 320, 1.0f, 1.25f, 185, 150, 226, 10.0f, 1.3f, 0.9f, 0.7f, 300, 8, 37, 113, 500, 1.25f)),
+            ("Diamond", 1.85f, 2.45f, Arch(2.25f, 9.5f, 192, 79, 255, 0.75f, 2.2f, 155, 118, 207, 8.6f, 0.85f, 0.66f, 0.53f, 245, 3.8f, 58, 107, 415, 2.2f)),
+            ("Immortal", 2.6f, 3.2f, Arch(3.2f, 6.8f, 171, 85, 205, 0.55f, 3.2f, 134, 92, 182, 7.0f, 0.5f, 0.45f, 0.4f, 190, 2, 76, 102, 338, 3.2f)),
+        };
+        float prev = float.NegativeInfinity;
+        foreach (var (name, lo, hi, mm) in arch)
+        {
+            var a = Assess.Run(mm, false, 1);
+            float t = a.Overall;
+            bool ok = t >= lo && t <= hi && t > prev;
+            prev = t;
+            P(F($"  {(ok ? "PASS" : "FAIL")} calibration: typical {name} mechanics → overall {t:0.00} {Coach.RankName(t)} (raw mean {a.RawMean:0.00}, evidence {a.OverallConf:0.00}), expected {lo:0.00}–{hi:0.00}"));
+        }
         _ = CultureInfo.InvariantCulture;
     }
 }

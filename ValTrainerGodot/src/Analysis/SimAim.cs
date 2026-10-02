@@ -53,7 +53,8 @@ public sealed class SimAim
         public int Seed = 1234;
     }
 
-    public SimAim(string profile)
+    /// <param name="modeKey">The drill actually being played (warm-up routines change it per step); null = the --mode argument.</param>
+    public SimAim(string profile, string? modeKey = null)
     {
         Profile = profile;
         p = new Prm();
@@ -113,16 +114,16 @@ public sealed class SimAim
         rng = new Random(p.Seed);
         var args = OS.GetCmdlineUserArgs().Concat(OS.GetCmdlineArgs()).ToArray();
         int mi = Array.IndexOf(args, "--mode");
-        mode = mi >= 0 && mi + 1 < args.Length ? args[mi + 1].ToLowerInvariant() : "";
+        mode = modeKey?.ToLowerInvariant() ?? (mi >= 0 && mi + 1 < args.Length ? args[mi + 1].ToLowerInvariant() : "");
         trackMode = mode == "tracking";
         sprayMode = mode is "spray_vandal" or "spray_phantom";
         transferMode = mode == "spray_transfer";
         gridMode = mode == "gridshot";
-        botMode = mode is "strafebots" or "peek" or "counterstrafe" or "peekduel" or "siteclear" or "flashmap" or "operator";
+        botMode = mode is "strafebots" or "peek" or "counterstrafe" or "peekduel" or "siteclear" or "flashmap" or "operator" or "deathmatch";
         staticTargets = mode is "flick" or "spider" or "gridshot" or "spray_vandal" or "spray_phantom" or "";
         weapon = mode == "spray_phantom" ? Weapons.Phantom : Weapons.Vandal;
         sfMode = mode == "sensfinder";
-        if (sfMode) staticTargets = true;
+        if (sfMode || mode == "xhairfinder") staticTargets = true;
     }
 
     // ---------------- state ----------------

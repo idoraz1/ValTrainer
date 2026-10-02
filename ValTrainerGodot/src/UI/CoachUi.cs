@@ -57,8 +57,11 @@ public static class CoachRank
 
     public static string Title(float t) => Rated(t) ? Name(t) : "NOT RATED";
 
-    /// <summary>Uncertainty half-width in tier units (wider for low confidence).</summary>
-    public static float Spread(float conf) => 0.06f + 0.25f * (1f - Mathf.Clamp(conf, 0, 1));
+    /// <summary>
+    /// Uncertainty half-width in tier units, symmetric around the estimate: ±0.15 (about one division either way) even
+    /// with full evidence, because aim mechanics only partly predict rank; wider for low confidence.
+    /// </summary>
+    public static float Spread(float conf) => 0.15f + 0.30f * (1f - Mathf.Clamp(conf, 0, 1));
 
     /// <summary>"GOLD 2 – PLATINUM 1" (or one name when the band is narrow).</summary>
     public static (string Lo, string? Hi) Range(float t, float conf)

@@ -98,7 +98,8 @@ public partial class GameSession : Node3D, IGame
         cam?.QueueFree();
 
         Mode = factory();
-        TrialSens = null;
+        TrialSens = SessionSens; // null unless a routine (warm-up sens shifter) set one
+        TrialCrosshair = null;
         Mover = new Mover();
         Player.Reset();
         Now = 0;
@@ -142,7 +143,7 @@ public partial class GameSession : Node3D, IGame
         GetViewport().Disable3D = Mode.Is2D;
         Telemetry = new RunTelemetry
         {
-            Mode = Mode.Key, Tier = Tier, Sens = Main.I.Sens, Dpi = Main.I.Settings.Dpi,
+            Mode = Mode.Key, Tier = Tier, Sens = SessionSens ?? Main.I.Sens, Dpi = Main.I.Settings.Dpi,
             Weapon = Mode.Weapon.ToString(), Map = Mode.Map?.Key ?? "range", When = DateTime.Now,
             ZoomSensMult = Mode.Weapon == WeaponKind.Operator ? Main.I.Valorant.ZoomedSensMult : Main.I.Valorant.AdsSensMult,
         };
@@ -269,6 +270,7 @@ public partial class GameSession : Node3D, IGame
         crosshair.Showing = State == St.Results || Mode.Is2D ? CrosshairView.Mode.Hidden
             : Gun?.Scoped == true && weaponDef!.Kind == WeaponKind.Operator ? CrosshairView.Mode.Sniper
             : Gun?.Scoped == true ? CrosshairView.Mode.Ads : CrosshairView.Mode.Primary;
+        crosshair.Profile = TrialCrosshair ?? ValTrainer.Valorant.CrosshairCode.Effective;
         crosshair.MoveError = Mode.Movement ? Mover.MoveError : 0f;
         crosshair.FiringErrorPx = Gun != null && weaponDef != null ? DegToPx(Mathf.Max(0, Gun.SpreadNow - weaponDef.FirstShotHip)) : 0;
         if (viewmodel != null)
@@ -284,8 +286,8 @@ public partial class GameSession : Node3D, IGame
     static readonly bool DevAutoFire = OS.GetCmdlineUserArgs().Concat(OS.GetCmdlineArgs()).Contains("--autofire");
     static readonly string? SimProfile = ArgAfter("--simaim");
     /// <summary>Dev-only "--duration N" shortens timed runs for automated tests.</summary>
-    float RunDuration => Main.I.Dev && float.TryParse(ArgAfter("--duration"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var d) ? d : Mode.Duration;
-    ValTrainer.Analysis.SimAim? Sim => Main.I.Dev && SimProfile != null ? sim ??= new ValTrainer.Analysis.SimAim(SimProfile) : null;
+    float RunDuration => DurationOverride ?? (Main.I.Dev && float.TryParse(ArgAfter("--duration"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var d) ? d : Mode.Duration);
+    ValTrainer.Analysis.SimAim? Sim => Main.I.Dev && SimProfile != null ? sim ??= new ValTrainer.Analysis.SimAim(SimProfile, Mode.Key) : null;
     ValTrainer.Analysis.SimAim? sim;
 
     /// <summary>Dev-only "--pause-at N": opens the pause menu N seconds into the run (layout screenshots).</summary>
@@ -314,7 +316,7 @@ public partial class GameSession : Node3D, IGame
         }
         Mode.TickBanner(dt);
 
-        if (Mode.Movement) MovePlayer(dt);
+        if (Mode.Movement && !Player.Dead) MovePlayer(dt); // dead = waiting to respawn (no moving or shooting)
 
         // Weapon
         if (Gun != null && !Mode.Is2D)
@@ -330,7 +332,7 @@ public partial class GameSession : Node3D, IGame
         if (Gun != null && !Mode.Is2D)
         {
             bool wasScoped = Gun.Scoped;
-            var shots = Gun.Tick(Now, dt, View, Mover, Rng, fireHeld, firePressedEdge, Mode.InfiniteAmmo, Mode.InfiniteReserve, Mode.Movement);
+            var shots = Gun.Tick(Now, dt, View, Mover, Rng, fireHeld && !Player.Dead, firePressedEdge && !Player.Dead, Mode.InfiniteAmmo, Mode.InfiniteReserve, Mode.Movement);
             foreach (var (dir, accurate) in shots) Bullet(dir, accurate);
             if (shots.Count > 0)
             {
@@ -461,7 +463,8 @@ public partial class GameSession : Node3D, IGame
         Input.MouseMode = Input.MouseModeEnum.Visible;
         var app = Main.I;
         PrevBest = app.Stats.Best(Mode.Key, Tier);
-        Record = Mode.MakeRecord(app.Sens);
+        Record = Mode.MakeRecord(SessionSens ?? app.Sens);
+        Record.Warmup = OnFinished != null;
         // Aim coach: metrics for this run + a review of what went wrong and how to fix it.
         Telemetry.Duration = Now;
         try
@@ -484,10 +487,23 @@ public partial class GameSession : Node3D, IGame
             catch { }
         }
         else if (TelemetryOut != null) { try { Telemetry.Save(TelemetryOut, keep: 500); } catch { } }
-        if (!app.SavesData) return; // automated/dev runs never touch the user's stats
-        app.Stats.Runs.Add(Record);
-        app.Stats.Save();
+        if (app.SavesData && KeepInStats) // automated/dev runs never touch the user's stats
+        {
+            app.Stats.Runs.Add(Record);
+            app.Stats.Save();
+        }
+        if (OnFinished is { } done) { OnFinished = null; done(this); } // routine: next step instead of the results screen
     }
+
+    // ---- routine hooks (warm-up); set before the session enters the tree ----
+    /// <summary>Run length in seconds instead of the mode's own (also set by the dev --duration switch).</summary>
+    public float? DurationOverride { get; set; }
+    /// <summary>Sensitivity applied at every (re)start of this session (warm-up sens shifter); null = the player's sens.</summary>
+    public float? SessionSens { get; set; }
+    /// <summary>False keeps the run out of stats.json (e.g. played at a shifted sens). Telemetry is still written.</summary>
+    public bool KeepInStats { get; set; } = true;
+    /// <summary>Routine mode: called once when the run ends (after it is recorded) instead of leaving the results screen up.</summary>
+    public Action<GameSession>? OnFinished { get; set; }
 
     // ---------------- IGame ----------------
 
@@ -525,7 +541,7 @@ public partial class GameSession : Node3D, IGame
 
     public void DamagePlayer(float dmg, Vector3 from)
     {
-        if (Player.Dead) return;
+        if (Player.Dead || Now < Player.ProtectedUntil) return;
         Player.Damage(dmg, from, Now);
         Sfx.I.Play("damage", 0.8f);
         if (Player.Dead)
@@ -562,6 +578,7 @@ public partial class GameSession : Node3D, IGame
     public bool FirePressed => firePressedEdge && State == St.Running;
     public float? TrialSens { get; set; }
     public float CurrentSens => TrialSens ?? Main.I.Sens;
+    public ValTrainer.Valorant.CrosshairSettings? TrialCrosshair { get; set; }
     /// <summary>Distance to the first wall along the bullet currently being processed.</summary>
     public float BulletWallDist { get; private set; } = float.PositiveInfinity;
     public string MapKey => Main.I.MapKey;

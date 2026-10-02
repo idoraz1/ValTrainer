@@ -65,7 +65,7 @@ public static class Coach
     public static RunReview ReviewRun(RunTelemetry t, Dictionary<string, float> metrics, int tier)
     {
         var review = new RunReview { Metrics = metrics };
-        if (t.Mode == SensFinderKey) return review; // the sens finder shows its own result
+        if (t.Mode is SensFinderKey or CrosshairFinderKey) return review; // these drills show their own result
         if (metrics.Count == 0) { review.Summary = RunSummary.NoData(t.Mode); return review; }
         var a = Assess.Run(metrics, runLevel: true, tierPlayed: tier);
         review.Issues = a.Issues.Take(3).Select(i => i.D).ToList();
@@ -92,13 +92,14 @@ public static class Coach
                     finder = new SensAdvisor.FinderResult(r.When, fs, (int)r.Metrics.GetValueOrDefault("sensfinder.conf"));
                 continue;
             }
+            if (r.Mode == CrosshairFinderKey) continue; // crosshair changes mid-run: no skill data
             var m = r.Metrics;
             if ((m == null || m.Count == 0) && !string.IsNullOrEmpty(r.TelemetryFile) && analysed < 10 && File.Exists(r.TelemetryFile))
             {
                 m = FromFile(r.TelemetryFile!); // bounded: ≈10–40 ms per file, cached
                 analysed++;
             }
-            if (m != null && m.Count > 0) runs.Add(new SensAdvisor.RunInfo(r.When, r.Sens, m));
+            if (m != null && m.Count > 0) runs.Add(new SensAdvisor.RunInfo(r.When, r.Sens, RunAnalysis.Normalize(r.Mode, r.Tier, m)));
         }
         var agg = Agg.Aggregate(runs.Select(r => (r.When, r.M)), DateTime.Now);
         int tierGuess = (int)MathF.Round((float)all.Take(20).Where(r => r.Tier >= 0).Select(r => r.Tier).DefaultIfEmpty(1).Average());
@@ -117,7 +118,7 @@ public static class Coach
         return p;
     }
 
-    const string SensFinderKey = "sensfinder";
+    const string SensFinderKey = "sensfinder", CrosshairFinderKey = "xhairfinder";
 
     /// <summary>Rank name for a continuous tier (Iron &lt; 0 ≤ Bronze &lt; 0.5 ≤ Silver … 3.5 ≤ Radiant; −1 = "Unrated").</summary>
     public static string RankName(float tier) => Bench.Rank(tier);

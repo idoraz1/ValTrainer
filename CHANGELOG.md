@@ -8,6 +8,20 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-02
+
+### Added
+
+- **Deathmatch**: a VALORANT-style free-for-all against 3–6 bots (by map size) at your tier on Ascent, Bind, Haven or Split. First to 30 kills or the most kills in 5 minutes. Bots roam the map, hunt you, hold angles and fight each other. You respawn after 1.5 s with brief spawn protection, every kill reloads your gun, and the fallen drop health packs.
+- **Warm up**: a guided warm-up routine (WARM UP on the menu). Quick (≈8 min), Standard (≈15 min) and Pro (≈25 min) run drills at your tier from easy to hard: smooth tracking and big targets first, then flicks and target switching, then strafing bots, movement and peeks, then a deathmatch. A card between drills shows what's next and the sens; you can start it early, skip it or finish the warm-up there.
+- **Sens shifter** (part of the warm-up): the first drills start a little above your sens (+10, +20 or +35%) or below it, then step back to your sens. The rest of the warm-up is always at your real sens. You can turn it off, and the screen notes that there's little evidence for it either way.
+- **Warm-up summary with a lock-in graph**: shows each drill as a % of your usual level (your 7-day average), with your sens over the warm-up drawn on top. It also gives start → end comparisons (for example flick time-to-kill and tracking on-target %), tells you whether you're warmed up, and compares this warm-up with your last ones. Warm-ups are saved to `warmups.json`. Drills played at a shifted sens stay out of your stats so they don't skew the coach's sens advice.
+- **Crosshair Finder** (Coach): finds the crosshair you see and shoot best with, in about 6 minutes. Part 1 ranks crosshair colours and outlines by contrast against the maps and your enemy highlight colour, then times how fast you spot each one. Part 2 starts with a quick shape pick: shoot 2–4 of nine shapes to try (dot, small cross, framed dot, dynamic cross, closed plus, plus + dot, circle, circle + dot, hollow square. VALORANT can't draw a real circle or box, so like the community versions they're built from short, thick lines). Four recommended ones are already picked, so you can just shoot START. Your picks then play a bracket in short rounds of flicks, far-head micro-adjusts and a kill. Your aim decides, your "which felt better?" pick breaks ties, and the winner then faces your current crosshair. You get the result as a VALORANT crosshair code to copy into VALORANT (Settings → Crosshair → Import Profile Code); ValTrainer never changes VALORANT. "Use in ValTrainer" switches ValTrainer's crosshair to the result, and Settings → Crosshair switches back to VALORANT's.
+
+### Fixed
+
+- **More realistic rank estimates**: the coach rated many players about a rank too high (for example "Platinum 3 – Diamond" for a Gold player). The estimate is now based on real VALORANT rank and reaction-time data. It allows for drills played at easier tiers, a single strong skill can no longer carry it, and it leans toward the average player unless your runs clearly show otherwise. The range around it is wider and honest about the uncertainty, and the profile now labels it "aim only": your in-game rank also depends on game sense, comms and utility.
+
 ## [1.1.0] - 2026-10-02
 
 ### Added
@@ -69,6 +83,7 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/idoraz1/ValTrainer/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/idoraz1/ValTrainer/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/idoraz1/ValTrainer/releases/tag/v1.0.0

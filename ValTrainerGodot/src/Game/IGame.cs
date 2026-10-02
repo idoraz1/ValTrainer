@@ -14,8 +14,10 @@ public sealed class PlayerState
     public bool Dead => Hp <= 0;
     public float LastHitAt = -99f;
     public Vector3 LastHitFrom;
+    /// <summary>Spawn protection (Deathmatch): damage is ignored while the session clock is below this.</summary>
+    public float ProtectedUntil = -1f;
 
-    public void Reset() { Hp = 100; Shield = 50; LastHitAt = -99f; }
+    public void Reset() { Hp = 100; Shield = 50; LastHitAt = -99f; ProtectedUntil = -1f; }
 
     /// <summary>Heavy shields absorb damage first (simplified like the Range bots).</summary>
     public void Damage(float dmg, Vector3 from, float now)
@@ -65,6 +67,8 @@ public interface IGame
     float? TrialSens { get; set; }
     /// <summary>The sensitivity currently applied to mouse look.</summary>
     float CurrentSens { get; }
+    /// <summary>Crosshair override for this session (crosshair finder trials); null = the player's crosshair.</summary>
+    ValTrainer.Valorant.CrosshairSettings? TrialCrosshair { get; set; }
     /// <summary>Record a gameplay event for the aim coach (see <see cref="TelemetryEvent"/> for kinds).</summary>
     void Event(string kind, float a = 0, float b = 0);
     /// <summary>Mouse 1 currently held (tracking drills).</summary>

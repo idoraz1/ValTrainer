@@ -192,6 +192,14 @@ public partial class SettingsScreen : ScreenBase
             swatch: () => App.EnemyColor));
         v.AddChild(Segmented("Enemy outlines + fresnel", new[] { "OFF", "ON" }, () => St.Outlines ? 1 : 0, i => St.Outlines = i == 1,
             note: () => "Valorant: \"Hide outlines and fresnel\" off = ON"));
+
+        // Crosshair: VALORANT's imported profile, or the Crosshair Finder's result (ValTrainer only; VALORANT is never changed).
+        v.AddChild(Spacer(0, 6 * k));
+        v.AddChild(new SectionLabel { Text = "CROSSHAIR", K = k });
+        v.AddChild(Segmented("Crosshair", new[] { "VALORANT", "FINDER" }, () => St.UseFinderCrosshair && CrosshairCode.Finder != null ? 1 : 0,
+            i => St.UseFinderCrosshair = i == 1 && CrosshairCode.Finder != null,
+            note: () => CrosshairCode.Finder == null ? "Run the Crosshair Finder (Coach) to get a second option"
+                : St.UseFinderCrosshair ? "Crosshair Finder result · ValTrainer only" : "Your imported VALORANT crosshair"));
     }
 
     static ValorantAccount CurrentAccount() => App.Accounts.FirstOrDefault(x => x.Id == App.Valorant.AccountId) ?? App.Accounts[0];

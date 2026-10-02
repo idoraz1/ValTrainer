@@ -9,7 +9,7 @@ static class RunSummary
     /// <summary>Modes whose telemetry the coach analyses (everything else gets the "doesn't feed the coach" note).</summary>
     static readonly HashSet<string> CoachModes = new()
     {
-        "flick", "spider", "gridshot", "tracking", "strafebots", "peek", "counterstrafe", "peekduel", "siteclear", "flashmap",
+        "flick", "spider", "gridshot", "tracking", "strafebots", "peek", "counterstrafe", "peekduel", "siteclear", "flashmap", "deathmatch",
         "reaction", "spray_vandal", "spray_phantom",
     };
 
@@ -26,7 +26,7 @@ static class RunSummary
             "strafebots" => "take on a few bots",
             "peek" => "let a few bots peek you",
             "counterstrafe" => "stop and shoot a few times",
-            "peekduel" or "siteclear" => "get a few duels in",
+            "peekduel" or "siteclear" or "deathmatch" => "get a few duels in",
             "flashmap" => "face a few flashes",
             "reaction" => "finish the trials",
             _ => "fire at least 10 bullets per spray a few times", // spray_vandal / spray_phantom
