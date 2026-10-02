@@ -84,7 +84,8 @@ public partial class Main : Node
         }
         if (Dev && args.Contains("--throw-test")) throwTest = 61; // dev: prove callback/task exceptions reach the log
         WhatsNew.Prepare(Settings);  // "What's new" panel after an update (dev: --whats-new [fromVersion])
-        UpdateCheck.StartupCheck();  // background, at most once a day (dev: --update-test <version>)
+        Updater.Init();              // how this copy updates itself; finishes / gives up on an update started last run
+        UpdateCheck.StartupCheck();  // background, at startup and every 6 h (dev: --update-test <version>, --update-source <url>)
         int ti = Array.IndexOf(args, "--tier");
         if (ti >= 0 && ti + 1 < args.Length && int.TryParse(args[ti + 1], out var tv)) TierOverride = Math.Clamp(tv, 0, 4);
         int mi = Array.IndexOf(args, "--map");
@@ -99,8 +100,13 @@ public partial class Main : Node
         ApplyFps();
         int i = Array.IndexOf(args, "--mode");
         var make = i >= 0 && i + 1 < args.Length ? ModeRegistry.Find(args[i + 1]) : null;
+        // A downloaded update is installed now, before the menu (never mid-drill): "Updating ValTrainer…", then the
+        // installer / portable swap starts the new version and this one quits.
+        bool updating = make == null && Updater.ShouldApplyAtStartup();
         if (make != null) StartMode(make);
+        else if (updating) SetScreen(new UpdatingScreen());
         else ShowMenu();
+        if (updating) return;
         // Dev-only: "--screen settings|about|stats" opens that screen directly (MenuScreen handles "profile").
         switch (Dev ? CmdLine.After("--screen")?.ToLowerInvariant() : null)
         {
@@ -211,6 +217,7 @@ public partial class Main : Node
     public override void _Process(double delta)
     {
         UpdateCheck.Poll(); // picks up the background update check's answer (cheap when idle)
+        Updater.Poll();     // background update download / install (cheap when idle)
         // Dev runs log FPS so automated checks can read performance from stdout.
         if (!Dev) return;
         if (throwTest > 0)

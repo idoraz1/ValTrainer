@@ -8,6 +8,12 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-02
+
+### Added
+
+- **Automatic updates**: ValTrainer now updates itself, like Discord or Steam. When a new version is out, it downloads in the background (the menu shows "Downloading update 42%") and is checked against the release's published SHA-256 hash. Then the menu says "ValTrainer x.y.z is ready — RESTART TO UPDATE". Click it, or keep playing and the update installs the next time you start ValTrainer, before the menu. It takes a few seconds, ValTrainer restarts by itself, and your settings and stats are kept. This works for the installer version and the portable version; the portable version replaces its own `ValTrainer.exe`. ValTrainer now checks for updates at startup and every 6 hours instead of once a day. Settings → About adds "Download updates automatically" (on by default), the update status and a restart button. Skipped versions are never downloaded. If an update is damaged or doesn't install, ValTrainer deletes it and links to the release page instead. If you installed for all users, Windows asks for permission when you click RESTART TO UPDATE. Updating from a version before this one still needs the new installer once, run by hand.
+
 ## [1.2.0] - 2026-10-02
 
 ### Added
@@ -83,7 +89,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/idoraz1/ValTrainer/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/idoraz1/ValTrainer/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/idoraz1/ValTrainer/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/idoraz1/ValTrainer/releases/tag/v1.0.0

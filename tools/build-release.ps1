@@ -317,7 +317,12 @@ Files it creates:
   %APPDATA%\ValTrainer                              settings, stats and recordings
   %APPDATA%\Godot\app_userdata\ValTrainer           logs (logs\godot.log) and shader cache
   %LOCALAPPDATA%\data_ValTrainer_windows_x86_64     .NET runtime, unpacked on first launch
-To remove ValTrainer completely, delete this folder and those three.
+  %LOCALAPPDATA%\ValTrainer\updates                 automatic updates while they download (removed after updating)
+To remove ValTrainer completely, delete this folder and those four.
+
+Updates: ValTrainer checks GitHub for a newer version, downloads it in the background and replaces ValTrainer.exe
+in this folder when you restart it (the old exe is kept as ValTrainer.exe.old until the next start). Turn it off in
+Settings > About.
 
 Black screen or crash at startup? Start it with the OpenGL renderer:
   ValTrainer.exe --rendering-method gl_compatibility

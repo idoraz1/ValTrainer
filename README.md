@@ -55,8 +55,22 @@ Click **More info → Run anyway**. To check that your download is the official 
 Get-FileHash .\ValTrainer-1.0.0-Setup.exe -Algorithm SHA256
 ```
 
-**Updates:** once a day ValTrainer asks GitHub whether a newer version is out and shows it on the menu. It never
-downloads or installs anything by itself. You can turn the check off in Settings.
+**Updates:** ValTrainer updates itself, like Discord or Steam. At startup and every 6 hours it asks GitHub whether a
+newer version is out. If there is one, it downloads it in the background (the menu shows "Downloading update 42%") and
+checks it against the release's `SHA256SUMS.txt`. Then the menu says **"ValTrainer x.y.z is ready — RESTART TO UPDATE"**.
+Click it, or just keep playing: the update installs the next time you start ValTrainer, before the menu, and the app
+restarts by itself a few seconds later. Your settings and stats are kept.
+
+- **Installer version:** the new `Setup.exe` runs silently and upgrades in place. If you installed for all users, Windows
+  asks for permission when you click RESTART TO UPDATE (nothing installs on its own at launch).
+- **Portable version:** the new `ValTrainer.exe` replaces the old one in its folder (the old one stays as
+  `ValTrainer.exe.old` until the next start). In a read-only folder you get a download link instead.
+- Settings → About has **Check for updates**, **Download updates automatically**, the update status and **Check now**.
+  With either one off, or for a version you skipped, nothing is downloaded and the menu only links to the release page.
+- If a download is damaged or an update doesn't install twice, ValTrainer deletes it and shows the release page
+  instead. Your installed version keeps working either way.
+- An update is a full download (about 130 MB); downloads resume after a restart or a dropped connection. Copies
+  installed by a Setup older than the one that added automatic updates need one update by hand first.
 
 ## System requirements
 
@@ -180,8 +194,10 @@ The ratings need data: play Head Flicks, Strafe Tracking, Peek Practice, Counter
 - **Nothing is uploaded.** No account, no analytics, no telemetry leaves your PC.
 - Your settings, stats and run recordings stay in `%APPDATA%\ValTrainer` on your PC. Delete that folder to reset
   everything.
-- The **only** network request is the optional once-a-day update check to `api.github.com`, which asks for the latest
-  release of this project. Turn it off in Settings and ValTrainer never goes online.
+- The **only** network traffic is the optional update check to `api.github.com` (at startup and every 6 hours), which
+  asks for the latest release of this project, and downloading that release's files from GitHub. Turn it off in
+  Settings and ValTrainer never goes online. Downloaded updates wait in `%LOCALAPPDATA%\ValTrainer\updates` and are
+  deleted after they're installed.
 
 ## Troubleshooting
 

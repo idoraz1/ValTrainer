@@ -408,16 +408,23 @@ public partial class SettingsScreen : ScreenBase
         v.AddChild(new SectionLabel { Text = "UPDATES", K = k });
         v.AddChild(Segmented("Check for updates", new[] { "OFF", "ON" }, () => St.CheckUpdates ? 1 : 0,
             i => { St.CheckUpdates = i == 1; UpdateCheck.EnabledChanged(); },
-            note: () => AppInfo.HasRepo ? "Once a day, asks GitHub whether a newer release is out" : "Not available: this build has no GitHub page set"));
+            note: () => AppInfo.HasRepo ? "At startup and every 6 hours, asks GitHub whether a newer release is out" : "Not available: this build has no GitHub page set"));
+        var auto = Segmented("Download updates automatically", new[] { "OFF", "ON" }, () => St.AutoDownloadUpdates ? 1 : 0,
+            i => { St.AutoDownloadUpdates = i == 1; Updater.SettingsChanged(); }, note: AutoUpdateNote);
+        auto.Enabled = () => St.CheckUpdates && Updater.Status != Updater.State.Off;
+        v.AddChild(auto);
         var upd = HBox(12 * k);
         upd.CustomMinimumSize = new Vector2(0, 52 * k);
         var check = Btn("CHECK NOW", VButton.Look.Secondary, UpdateCheck.CheckNow, 160, 40, 17);
         check.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         upd.AddChild(Spacer(4 * k, 0));
         upd.AddChild(check);
-        var get = Btn("DOWNLOAD", VButton.Look.Primary, () => AppInfo.OpenGitHub(UpdateCheck.LatestUrl ?? AppInfo.LatestReleaseUrl), 170, 40, 17);
+        var get = Btn("DOWNLOAD", VButton.Look.Primary, () =>
+        {
+            if (Updater.ReadyVersion != null) Updater.RestartToUpdate();
+            else AppInfo.OpenGitHub(UpdateCheck.LatestUrl ?? AppInfo.LatestReleaseUrl);
+        }, 210, 40, 17);
         get.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-        get.TooltipText = "Opens the release page in your browser";
         upd.AddChild(get);
         var status = new DrawBox { SizeFlagsHorizontal = SizeFlags.ExpandFill };
         status.OnDraw = d =>
@@ -432,8 +439,12 @@ public partial class SettingsScreen : ScreenBase
         {
             check.Disabled = !UpdateCheck.CanCheck || UpdateCheck.Status == UpdateCheck.State.Checking;
             check.TooltipText = UpdateCheck.CanCheck ? "Ask GitHub now" : UpdateCheck.Message ?? "";
-            get.Visible = UpdateCheck.NewerAvailable && AppInfo.HasRepo;
-            get.Label = $"GET {UpdateCheck.Latest}";
+            bool ready = Updater.ReadyVersion != null;
+            get.Visible = ready || (UpdateCheck.NewerAvailable && AppInfo.HasRepo && Updater.Status != Updater.State.Applying);
+            get.Label = ready ? "RESTART TO UPDATE" : $"GET {UpdateCheck.Latest}";
+            get.TooltipText = ready ? "Installs the update and restarts ValTrainer" + (Updater.NeedsElevation ? " (Windows asks for permission)" : "")
+                : "Opens the release page in your browser";
+            auto.Refresh();
             get.QueueRedraw();
             check.QueueRedraw();
             status.QueueRedraw();
@@ -476,7 +487,32 @@ public partial class SettingsScreen : ScreenBase
         BuildLicenses(cols);
     }
 
-    (string, Color) UpdateStatus() => UpdateCheck.Status switch
+    /// <summary>Settings → About note under "Download updates automatically": how this copy updates (or why it can't).</summary>
+    static string AutoUpdateNote()
+    {
+        if (Updater.Status == Updater.State.Off) return "Not available: " + (Updater.Message ?? "this copy can't update itself");
+        return Updater.Kind switch
+        {
+            InstallKind.Portable => "Downloads new versions in the background; ValTrainer.exe is replaced when you restart",
+            InstallKind.InstalledAdmin => "Downloads new versions in the background; RESTART TO UPDATE installs them (Windows asks for permission)",
+            _ => "Downloads new versions in the background; they install when you restart ValTrainer",
+        };
+    }
+
+    (string, Color) UpdateStatus()
+    {
+        if (UpdateCheck.Status != UpdateCheck.State.Checking && Updater.StatusLine is { } line && UpdateCheck.Offered != null)
+            return (line, Updater.Status switch
+            {
+                Updater.State.Ready => UiTheme.Good,
+                Updater.State.Failed => UiTheme.Warn,
+                Updater.State.Idle => UiTheme.Warn,
+                _ => UiTheme.Dim,
+            });
+        return CheckStatus();
+    }
+
+    (string, Color) CheckStatus() => UpdateCheck.Status switch
     {
         UpdateCheck.State.Checking => ("Checking GitHub…", UiTheme.Dim),
         UpdateCheck.State.Available => ($"ValTrainer {UpdateCheck.Latest} is available", UiTheme.Good),

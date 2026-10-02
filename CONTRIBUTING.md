@@ -29,8 +29,9 @@ These are hard rules. A pull request that breaks one can't be merged.
 3. **Dev runs never write user data.** Anything started with `--dev` must not write settings, stats or telemetry to
    the player's data folder (`%APPDATA%\ValTrainer`). Tests that need saving use `--dev --data-dir <temp folder>
    --write-data`. `tools\selftest.ps1` fails if a dev run writes anything.
-4. **Nothing leaves the PC** except the optional once-a-day update check to `api.github.com` (which players can turn
-   off). No analytics, no telemetry uploads, no other network requests.
+4. **Nothing leaves the PC** except the optional update check to `api.github.com` and the download of a newer
+   release from this project's GitHub Releases (players can turn both off). No analytics, no telemetry uploads, no
+   other network requests.
 5. **Stay compatible.** Settings and stats files from older versions must keep loading. If that's impossible, it's a
    MAJOR version (see [Versions](#versions-semver)).
 
@@ -104,7 +105,11 @@ players can never trigger them by accident.
 | `--fakecoach [full\|partial\|empty]` | Coach screen with sample data. |
 | `--fakebuttons` | Shows every extra results-screen button (layout tests). |
 | `--sfquick`, `--sfseed N`, `--sfsens S`, `--sfcm C`, `--sftimescale X`, `--sfexit`, `--sfshot <dir>` | Sens Finder testing: short run, fixed seed, start sens or cm/360, game speed, quit at the end, screenshots. |
-| `--update-test <version>` | Pretends that version is the latest GitHub release (no network). |
+| `--update-test <version>` | Pretends that version is the latest GitHub release (no network, nothing to download). |
+| `--update-source <url>` | Asks this URL instead of GitHub's API for the latest release (a local fake release, see [Automatic updates](#automatic-updates)). |
+| `--update-allow-dev` | Lets the updater download and install in a dev run. Needs `--data-dir` (downloads go to `<data-dir>\updates`). |
+| `--update-throttle <KB/s>` | Slows the update download (progress and interrupted-download tests). |
+| `--update-apply-after <s>` | Clicks RESTART TO UPDATE by itself that many seconds after the update is ready. |
 | `--whats-new [fromVersion]` | Shows the "What's new" panel as if you updated from that version. |
 | `--throw-test` | Throws test exceptions to check that they reach the log. |
 | `--vmtest …` | Viewmodel and effects test harness, see `src/Game/Weapon/VmTest.cs`. |
@@ -166,7 +171,7 @@ ValTrainerGodot/         the Godot project
   project.godot          engine settings; application/config/version is THE app version
   Main.tscn              main scene; menus and worlds are built in code
   src/Main.cs            app root: settings, VALORANT import, screen switching
-  src/Core/              settings, stats, data paths, difficulty tiers, weapons, version and update check, startup fixes
+  src/Core/              settings, stats, data paths, difficulty tiers, weapons, version, update check and updater, startup fixes
   src/Valorant/          reading VALORANT's config files (sens, crosshair, keybinds, display)
   src/Modes/             the drills (listed in ModeRegistry.cs) and the Sens Finder
   src/Game/              game session, movement, weapons and viewmodel, bots, effects, telemetry recording
@@ -243,9 +248,57 @@ only people who download them by hand get them.
    Versions with a `-` become prereleases.
 6. Close the version's milestone and create the next one (`tools\setup-github.ps1` creates the next minor milestone).
 
+Players get the release automatically (see [Automatic updates](#automatic-updates)): within 6 hours, running copies
+download it and install it on their next restart. So **never replace the files of a published release with different
+builds**. The updater checks every download against that release's `SHA256SUMS.txt`, and players who already
+downloaded the old file would get a hash mismatch. Publish a new patch version instead. The asset names
+(`ValTrainer-<version>-Setup.exe`, `ValTrainer-<version>-Portable.zip`, `SHA256SUMS.txt`) are part of the updater
+contract: don't rename them.
+
 If the workflow fails, fix the problem on `main` and move the tag: `git tag -d v1.1.0`,
 `git push origin :refs/tags/v1.1.0`, then tag and push again. Re-running a failed release workflow is safe: it replaces
 the files of an existing release.
+
+## Automatic updates
+
+How the updater works (`src/Core/UpdateCheck.cs`, `src/Core/Updater*.cs`, `installer/ValTrainer.iss`):
+
+- **Check:** `GET api.github.com/repos/<repo>/releases/latest` at startup when the last answer is more than 6 hours
+  old, and every 6 hours while the app runs. Prereleases and drafts are ignored.
+- **Download:** a newer release that the player didn't skip is downloaded in the background on a low-priority thread
+  into `%LOCALAPPDATA%\ValTrainer\updates`. Installed copies get `Setup.exe` and portable copies get `Portable.zip`.
+  Only `https://github.com/<repo>/releases/download/…` links are accepted. Downloads resume with HTTP Range after a
+  restart or a dropped connection, and back off (1, 5, 15, 30, 60 min) when offline. The file must match the release's
+  `SHA256SUMS.txt` (and its size); otherwise it's deleted. After 2 bad downloads of a version the updater gives up on
+  it, and the banner just opens the release page. `update.json` in that folder tracks the state.
+- **Install:** RESTART TO UPDATE, or the next launch before the menu ("Updating ValTrainer…"), checks the file's
+  SHA-256 again, then:
+  - **Installed copies:** runs `Setup.exe /SILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS /SP- /CURRENTUSER
+    /RELAUNCH /RELAUNCHARGS=<args> /LOG=<updates>\install-<version>.log` and quits. `/RELAUNCH` is a custom switch in
+    `ValTrainer.iss` that starts the app again after a silent install, with the same arguments. All-users installs
+    use `/ALLUSERS`, which shows a UAC prompt, so they only update when the player clicks RESTART TO UPDATE.
+  - **Portable copies:** rename `ValTrainer.exe` to `ValTrainer.exe.old` (Windows allows that for a running exe),
+    move the verified new exe into place, and start it once the old process has exited. The next start deletes
+    `.old`.
+- **Never a loop:** each install attempt is counted in `update.json`. A launch that is still on the old version
+  after 2 attempts gives up on that version and falls back to the release page. An attempt less than 3 minutes old
+  is never repeated at launch (the installer may still be running).
+- **Which copy is this?** Setup writes `install.ini` (AppId and `Mode=user|admin`) next to `ValTrainer.exe`. The app
+  trusts it only when Windows' uninstall entry for that AppId points at its own folder. An exported exe with the game
+  packed inside (no `.pck` next to it) is the portable build. Anything else, including the Godot editor and installs
+  by an older Setup without `install.ini`, only gets the banner.
+
+**Testing the updater end to end** (never against your real install: build the test installers from a private copy
+of the repo with a different `AppId` and `AppName` in `installer\ValTrainer.iss`):
+
+1. Build two releases from private copies (`tools\version.ps1 -Set 1.2.1` / `-Set 1.2.2`, then `tools\build-release.ps1`).
+2. Serve the newer release's files with a local fake API on 127.0.0.1. It returns a releases/latest-style JSON whose
+   `assets[].browser_download_url` point at the same server, and serves the files with Range support.
+3. Install the older one silently into a temp folder (`/VERYSILENT /SUPPRESSMSGBOXES /CURRENTUSER /DIR=<temp>
+   /MERGETASKS="!desktopicon"`), then run it with `-- --dev --data-dir <temp> --write-data --update-allow-dev
+   --update-source http://127.0.0.1:<port>/latest.json`. Add `--update-throttle 3000` to watch the progress and
+   `--update-apply-after 3` to click RESTART TO UPDATE automatically. Set `APPDATA` and `LOCALAPPDATA` to temp folders
+   for the run, so Godot's logs and the portable build's .NET files stay out of your real profile.
 
 ## Feature management
 

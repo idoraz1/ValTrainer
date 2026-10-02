@@ -28,10 +28,12 @@ public sealed class AppSettings
     public string? FinderCrosshairCode; // VALORANT profile code from the Crosshair Finder ("Use in ValTrainer"); VALORANT itself is never changed
 
     // ---- updates / version (see UpdateCheck, WhatsNew) ----
-    public bool CheckUpdates = true;   // ask GitHub for a newer release at most once a day
+    public bool CheckUpdates = true;   // ask GitHub for a newer release (at startup and every 6 h, see UpdateCheck)
+    public bool AutoDownloadUpdates = true; // download a newer release in the background and install it on restart (see Updater)
     public long LastUpdateCheck;       // unix seconds (UTC) of the last check that got an answer from GitHub
     public string? LatestVersion;      // newest release that check found ("1.2.0"), null = none / never checked
     public string? LatestUrl;          // its release page
+    public UpdateAssets? LatestAssets; // its downloads (installer, portable zip, SHA256SUMS.txt)
     public string? SkippedVersion;     // "Skip this version" on the menu's update banner
     public string? LastSeenVersion;    // version whose "What's new" was shown (or that was installed fresh)
 

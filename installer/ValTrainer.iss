@@ -5,6 +5,15 @@
 ; Optional: /DGitHubRepo=owner/repo (publisher / support / update links; omitted while it is the OWNER placeholder),
 ;           /DSIGN with /Ssigntool=... (signs Setup.exe and the uninstaller).
 ; Per-user install by default (no admin prompt); "Install for all users" is offered in a dialog / with /ALLUSERS.
+;
+; Automatic updates (ValTrainerGodot\src\Core\Updater*.cs): the app downloads the next release's Setup.exe, checks its
+; SHA-256 against the release's SHA256SUMS.txt and runs
+;   Setup.exe /SILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS /SP- /CURRENTUSER|/ALLUSERS /RELAUNCH
+;             [/RELAUNCHARGS=arg1|arg2|...] /LOG=<file>
+; /RELAUNCH (silent installs only) starts ValTrainer again when Setup is done, with the '|'-separated arguments of
+; /RELAUNCHARGS. install.ini next to ValTrainer.exe tells the app it was installed by this Setup (AppId and per-user or
+; all-users mode); the app also checks that Windows' uninstall entry for that AppId points at its own folder.
+; Interactive installs behave exactly as before.
 
 #ifndef AppVersion
   #define AppVersion "0.0.0-dev"
@@ -84,6 +93,8 @@ OutputBaseFilename=ValTrainer-{#AppVersion}-Setup
 
 ; Close a running ValTrainer (Restart Manager) before replacing its files.
 CloseApplications=yes
+; One Setup at a time (e.g. an update started by the app and one started by hand).
+SetupMutex=ValTrainerSetup{#AppGuid}
 CloseApplicationsFilter=*.exe,*.dll,*.pck
 RestartApplications=no
 SetupLogging=yes
@@ -106,6 +117,14 @@ Type: filesandordirs; Name: "{app}\data_ValTrainer_windows_x86_64"
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
+[INI]
+; Marker for the in-app updater (see the header); removed by the uninstaller.
+Filename: "{app}\install.ini"; Section: "ValTrainer"; Key: "AppId"; String: "{#AppGuid}"; Flags: uninsdeletesection
+Filename: "{app}\install.ini"; Section: "ValTrainer"; Key: "Mode"; String: "{code:InstallModeName}"; Flags: uninsdeletesection
+
+[UninstallDelete]
+Type: files; Name: "{app}\install.ini"
+
 [Icons]
 Name: "{group}\ValTrainer"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app}"; Comment: "Aim trainer with your own VALORANT settings"
 Name: "{group}\ValTrainer (safe graphics)"; Filename: "{app}\{#AppExe}"; Parameters: "--rendering-method gl_compatibility"; WorkingDir: "{app}"; Comment: "Starts ValTrainer with the OpenGL Compatibility renderer, for graphics drivers that crash or show a black screen"
@@ -113,6 +132,8 @@ Name: "{autodesktop}\ValTrainer"; Filename: "{app}\{#AppExe}"; WorkingDir: "{app
 
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,ValTrainer}"; Flags: nowait postinstall skipifsilent
+; In-app update (silent + /RELAUNCH): start the new version again, as the user (never elevated).
+Filename: "{app}\{#AppExe}"; Parameters: "{code:RelaunchParams}"; WorkingDir: "{app}"; Flags: nowait runasoriginaluser; Check: ShouldRelaunch
 
 [Code]
 { ---------- Semantic Versioning precedence (1.2.0 > 1.2.0-rc.1 > 1.2.0-beta.2 > 1.1.9) ---------- }
@@ -235,6 +256,57 @@ begin
       mbConfirmation, MB_YESNO or MB_DEFBUTTON2, IDYES) = IDYES;
 end;
 
+{ ---------- in-app updates ---------- }
+
+function InstallModeName(Param: String): String;
+begin
+  if IsAdminInstallMode then Result := 'admin' else Result := 'user';
+end;
+
+{ True for a silent install started with /RELAUNCH (the app's updater): start ValTrainer again at the end. }
+function ShouldRelaunch(): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  if not WizardSilent then Exit;
+  for I := 1 to ParamCount do
+    if CompareText(ParamStr(I), '/RELAUNCH') = 0 then
+    begin
+      Result := True;
+      Exit;
+    end;
+end;
+
+{ /RELAUNCHARGS=a|b|c -> a b c (each quoted when it contains a space): the arguments the app was started with. }
+function RelaunchParams(Param: String): String;
+var
+  S, A: String;
+  P: Integer;
+begin
+  Result := '';
+  S := ExpandConstant('{param:RELAUNCHARGS|}');
+  while S <> '' do
+  begin
+    P := Pos('|', S);
+    if P = 0 then
+    begin
+      A := S;
+      S := '';
+    end
+    else
+    begin
+      A := Copy(S, 1, P - 1);
+      S := Copy(S, P + 1, MaxInt);
+    end;
+    if A <> '' then
+    begin
+      if Result <> '' then Result := Result + ' ';
+      Result := Result + AddQuotes(A);
+    end;
+  end;
+end;
+
 { ---------- uninstall: optionally remove the user's data ---------- }
 
 var
@@ -258,6 +330,12 @@ begin
         '      runtime unpacked by the portable version' + #13#10#13#10 +
         'Choose No to keep them (for example to reinstall later).',
         mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES;
+  end;
+  if CurUninstallStep = usPostUninstall then
+  begin
+    { Updates the app downloaded (not user data): always removed. }
+    DelTree(ExpandConstant('{localappdata}\ValTrainer\updates'), True, True, True);
+    RemoveDir(ExpandConstant('{localappdata}\ValTrainer'));
   end;
   if (CurUninstallStep = usPostUninstall) and DeleteUserData then
   begin

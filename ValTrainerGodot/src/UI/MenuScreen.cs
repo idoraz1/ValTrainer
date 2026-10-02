@@ -47,10 +47,11 @@ public partial class MenuScreen : ScreenBase
                 d.DrawRect(new Rect2(0, y - 1 * k, 64 * k, 2 * k), UiTheme.Accent);
             },
         });
-        // "ValTrainer X is available" strip (filled when the background update check answers)
+        // "ValTrainer X is available / downloading / ready" strip (filled when the background update check answers)
         bannerSlot = VBox(0);
         col.AddChild(bannerSlot);
         bannerRev = -1;
+        banner = null;
         RefreshBanner();
 
         // version, bottom-right corner (in the margin under the crosshair panel)
@@ -93,14 +94,23 @@ public partial class MenuScreen : ScreenBase
 
     // ---------------- update banner ----------------
 
+    UpdateBanner? banner;
+
+    /// <summary>The strip under the header: "X is available" (DOWNLOAD opens the release page) → "Downloading update
+    /// 42%" → "X is ready — RESTART TO UPDATE · WHAT'S NEW · LATER" (see <see cref="Updater"/>). Progress only redraws
+    /// the text; the buttons are rebuilt when the stage changes.</summary>
     void RefreshBanner()
     {
         if (bannerSlot == null || bannerRev == UpdateCheck.Revision) return;
         bannerRev = UpdateCheck.Revision;
+        string? ver = UpdateCheck.BannerVersion;
+        var stage = ver == null ? UpdateBanner.Stage.Available : BannerStage(ver);
+        if (banner != null && IsInstanceValid(banner) && ver == banner.Version && stage == banner.Kind) { banner.QueueRedraw(); return; }
         foreach (var c in bannerSlot.GetChildren()) c.QueueFree();
-        if (UpdateCheck.BannerVersion is not { } ver) return;
+        banner = null;
+        if (ver == null) return;
         float k = K;
-        var banner = new UpdateBanner { K = k, Version = ver, CustomMinimumSize = new Vector2(0, 46 * k) };
+        banner = new UpdateBanner { K = k, Version = ver, Kind = stage, CustomMinimumSize = new Vector2(0, 46 * k) };
         var row = HBox(10 * k);
         row.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         row.OffsetLeft = 236 * k; // text is drawn by the banner itself
@@ -108,22 +118,66 @@ public partial class MenuScreen : ScreenBase
         row.Alignment = BoxContainer.AlignmentMode.End;
         banner.AddChild(row);
         string? url = UpdateCheck.LatestUrl ?? (AppInfo.HasRepo ? AppInfo.LatestReleaseUrl : null);
-        var dl = Btn("DOWNLOAD", VButton.Look.Primary, () => AppInfo.OpenGitHub(url), 150, 32, 16);
-        dl.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-        dl.Disabled = url == null || !AppInfo.HasRepo;
-        dl.TooltipText = dl.Disabled ? "No download page is set for this build" : "Opens the release page in your browser";
-        row.AddChild(dl);
-        var skip = Btn("SKIP THIS VERSION", VButton.Look.Ghost, () => UpdateCheck.SkipVersion(ver), 170, 32, 15);
-        skip.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-        skip.TooltipText = $"Don't remind me about {ver} again";
-        row.AddChild(skip);
-        var close = Btn("×", VButton.Look.Ghost, () => { UpdateCheck.BannerDismissed = true; RefreshBanner(); }, 36, 32, 24);
-        close.TitleFont = UiTheme.Body;
-        close.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-        close.TooltipText = "Hide until next launch";
-        row.AddChild(close);
+        bool hasPage = url != null && AppInfo.HasRepo;
+        void Add(VButton b)
+        {
+            b.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            row.AddChild(b);
+        }
+        VButton WhatsNew()
+        {
+            var b = Btn("WHAT'S NEW", VButton.Look.Ghost, () => AppInfo.OpenGitHub(url), 140, 32, 15);
+            b.Disabled = !hasPage;
+            b.TooltipText = "Opens the release notes in your browser";
+            return b;
+        }
+        switch (stage)
+        {
+            case UpdateBanner.Stage.Ready:
+            {
+                var go = Btn("RESTART TO UPDATE", VButton.Look.Primary, Updater.RestartToUpdate, 210, 32, 16);
+                go.TooltipText = Updater.NeedsElevation
+                    ? "Installs the update and restarts ValTrainer. ValTrainer is installed for all users, so Windows asks for permission"
+                    : "Installs the update and restarts ValTrainer (takes a few seconds; settings and stats are kept)";
+                Add(go);
+                Add(WhatsNew());
+                var later = Btn("LATER", VButton.Look.Ghost, () => { UpdateCheck.BannerDismissed = true; bannerRev = -1; RefreshBanner(); }, 100, 32, 15);
+                later.TooltipText = Updater.NeedsElevation ? "Hide until next launch" : "Installs the next time you start ValTrainer";
+                Add(later);
+                break;
+            }
+            case UpdateBanner.Stage.Applying:
+                break;
+            default:
+            {
+                if (stage == UpdateBanner.Stage.Downloading) Add(WhatsNew());
+                else
+                {
+                    var dl = Btn("DOWNLOAD", VButton.Look.Primary, () => AppInfo.OpenGitHub(url), 150, 32, 16);
+                    dl.Disabled = !hasPage;
+                    dl.TooltipText = dl.Disabled ? "No download page is set for this build" : "Opens the release page in your browser";
+                    Add(dl);
+                }
+                var skip = Btn("SKIP THIS VERSION", VButton.Look.Ghost, () => UpdateCheck.SkipVersion(ver), 170, 32, 15);
+                skip.TooltipText = $"Don't remind me about {ver} again (and don't download it)";
+                Add(skip);
+                var close = Btn("×", VButton.Look.Ghost, () => { UpdateCheck.BannerDismissed = true; bannerRev = -1; RefreshBanner(); }, 36, 32, 24);
+                close.TitleFont = UiTheme.Body;
+                close.TooltipText = "Hide until next launch";
+                Add(close);
+                break;
+            }
+        }
         bannerSlot.AddChild(banner);
         bannerSlot.AddChild(Spacer(0, 8 * k));
+    }
+
+    static UpdateBanner.Stage BannerStage(string ver)
+    {
+        if (Updater.Status == Updater.State.Applying && Updater.Target == ver) return UpdateBanner.Stage.Applying;
+        if (Updater.ReadyVersion == ver) return UpdateBanner.Stage.Ready;
+        if (Updater.Status == Updater.State.Downloading && Updater.Target == ver) return UpdateBanner.Stage.Downloading;
+        return UpdateBanner.Stage.Available;
     }
 
     // ---------------- header ----------------
@@ -565,12 +619,15 @@ public partial class ModeCard : BaseButton
     }
 }
 
-/// <summary>Slim strip under the menu header: "VALTRAINER 1.2.0 IS AVAILABLE · you have 1.1.0" plus DOWNLOAD /
-/// SKIP THIS VERSION / × buttons (children laid out by <see cref="MenuScreen"/>).</summary>
+/// <summary>Slim strip under the menu header: "VALTRAINER 1.2.0 IS AVAILABLE · you have 1.1.0" / "Downloading update 42%" /
+/// "VALTRAINER 1.2.0 IS READY · restart to update" plus its buttons (children laid out by <see cref="MenuScreen"/>).</summary>
 public partial class UpdateBanner : Control
 {
+    public enum Stage { Available, Downloading, Ready, Applying }
+
     public float K = 1f;
     public string Version = "";
+    public Stage Kind;
 
     public UpdateBanner() => MouseFilter = MouseFilterEnum.Pass;
 
@@ -578,13 +635,34 @@ public partial class UpdateBanner : Control
     {
         float k = K, cy = Size.Y / 2;
         var r = new Rect2(Vector2.Zero, Size);
-        Gfx.Plate(this, r, 10 * k, new Color(UiTheme.Accent, 0.1f), new Color(UiTheme.Accent, 0.45f));
-        DrawRect(new Rect2(0, 0, 4 * k, r.Size.Y - 6 * k), UiTheme.Accent);
-        Gfx.Diamond(this, new Vector2(24 * k, cy), 6 * k, 6 * k, UiTheme.Accent);
+        bool ready = Kind is Stage.Ready or Stage.Applying;
+        Color acc = ready ? UiTheme.Good : UiTheme.Accent;
+        Gfx.Plate(this, r, 10 * k, new Color(acc, 0.1f), new Color(acc, 0.45f));
+        if (Kind == Stage.Downloading)
+        {
+            // thin progress bar along the bottom edge
+            float p = Updater.Progress;
+            DrawRect(new Rect2(4 * k, r.Size.Y - 3 * k, (r.Size.X - 8 * k) * p, 2 * k), new Color(acc, 0.8f));
+        }
+        DrawRect(new Rect2(0, 0, 4 * k, r.Size.Y - 6 * k), acc);
+        Gfx.Diamond(this, new Vector2(24 * k, cy), 6 * k, 6 * k, acc);
         int fs = UiTheme.Fs(15, k), ss = UiTheme.Fs(14, k);
-        string head = $"VALTRAINER {Version.ToUpperInvariant()} IS AVAILABLE";
+        string v = Version.ToUpperInvariant();
+        string head = Kind switch
+        {
+            Stage.Ready => $"VALTRAINER {v} IS READY",
+            Stage.Applying => $"INSTALLING VALTRAINER {v}…",
+            _ => $"VALTRAINER {v} IS AVAILABLE",
+        };
+        string sub = Kind switch
+        {
+            Stage.Downloading => $"Downloading update {Updater.Progress * 100:0}%",
+            Stage.Ready => "restart to update · you have " + AppInfo.Version + (Updater.NeedsElevation ? " · Windows will ask for permission" : ""),
+            Stage.Applying => "ValTrainer restarts by itself",
+            _ => $"you have {AppInfo.Version}",
+        };
         Gfx.Text(this, UiTheme.HudWide, head, 42 * k, Gfx.Mid(cy, fs), fs, UiTheme.Text);
         float x = 42 * k + Gfx.TextW(UiTheme.HudWide, head, fs) + 14 * k;
-        Gfx.Text(this, UiTheme.Body, $"you have {AppInfo.Version}", x, Gfx.Mid(cy, ss), ss, UiTheme.Dim);
+        Gfx.Text(this, UiTheme.Body, sub, x, Gfx.Mid(cy, ss), ss, Kind == Stage.Ready ? UiTheme.Good : UiTheme.Dim);
     }
 }
