@@ -24,14 +24,9 @@ mono_crash.*.json
 
 # ---- Release / export output ----
 dist/
-release/
-release-godot/
 *.exe
 *.zip
 *.tpz
-
-# ---- Legacy raylib version (kept locally, not part of this repository) ----
-/ValTrainer/
 
 # ---- Local tools (CI downloads its own copies) ----
 /tools/godot/

@@ -134,7 +134,7 @@ public partial class GameSession : Node3D, IGame
         Gun = weaponDef != null ? new WeaponController(weaponDef) : null;
         if (weaponDef != null && !Mode.Is2D && Main.I.Settings.ViewModel)
         {
-            viewmodel = Viewmodel.Create(weaponDef.Kind, Main.I.Valorant.LeftHanded);
+            viewmodel = Viewmodel.Create(weaponDef.Kind, Main.I.Settings.LeftHandedWeapon);
             cam.AddChild(viewmodel);
             Gun!.Fired += () => viewmodel?.OnFire();
         }

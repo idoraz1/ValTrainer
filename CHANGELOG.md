@@ -8,6 +8,20 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-02
+
+### Added
+
+- **Weapon hand setting**: Settings → Gameplay → Weapon hand switches the first-person gun between right and left hand. Right is the default; ValTrainer no longer follows VALORANT's left-handed option on its own (the setting shows which hand VALORANT uses).
+
+### Changed
+
+- **Map drills now use true-scale blockouts of the real map areas** (Ascent A Main → A Site, Bind Hookah → B Site, Haven C Long → C Site, Split A Main → A Site), traced from the official map layouts and callout positions, with real cover, heights, defender spots and flash lineups.
+
+### Fixed
+
+- Flash Dodge can now use defender spots on raised sites (for example Ascent A, which is about 1 m above A Main); only heaven-height spots are left out.
+
 ## [1.0.0] - 2026-10-02
 
 The first public release of ValTrainer, a free aim, movement and utility trainer that plays with your own VALORANT settings.
@@ -55,5 +69,6 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/idoraz1/ValTrainer/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/idoraz1/ValTrainer/releases/tag/v1.0.0

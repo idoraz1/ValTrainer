@@ -268,6 +268,10 @@ public partial class SettingsScreen : ScreenBase
             note: () => $"Bots react in ~{Difficulty.Get(St.Tier).Bot.ReactMs:0} ms"));
         v.AddChild(Segmented("Viewmodel (first-person gun)", new[] { "OFF", "ON" }, () => St.ViewModel ? 1 : 0, i => St.ViewModel = i == 1,
             note: () => "Applies on next drill"));
+        v.AddChild(Segmented("Weapon hand", new[] { "RIGHT", "LEFT" }, () => St.LeftHandedWeapon ? 1 : 0, i => St.LeftHandedWeapon = i == 1,
+            note: () => Main.I.Valorant.Found
+                ? $"Applies on next drill · VALORANT uses {(Main.I.Valorant.LeftHanded ? "left" : "right")}"
+                : "Applies on next drill"));
 
         v.AddChild(Spacer(0, 6 * k));
         v.AddChild(new SectionLabel { Text = "AUDIO", K = k });

@@ -183,7 +183,9 @@ public sealed class FlashDodgeMode : MapMode
     void NewRound()
     {
         var spots = MapSpot.Enemies
-            .Where(e => e.Feet.Y < 0.5f && MapSpot.LineOfSight(e.Feet + new Vector3(0, PlayerView.EyeHeight, 0), MapSpot.Choke + new Vector3(0, 1.5f, 0)))
+            // Site-level spots only (no heaven): height is measured from the choke's floor, so raised sites
+            // (Ascent A is ~1 m above Main) still qualify.
+            .Where(e => e.Feet.Y - MapSpot.Choke.Y < 1.5f && MapSpot.LineOfSight(e.Feet + new Vector3(0, PlayerView.EyeHeight, 0), MapSpot.Choke + new Vector3(0, 1.5f, 0)))
             .Where(e => e.Feet.DistanceTo(MapSpot.Choke) is > 6f and < 26f)
             .ToArray();
         var spot = spots.Length > 0 ? spots[Rng.Next(spots.Length)] : MapSpot.Enemies[0];

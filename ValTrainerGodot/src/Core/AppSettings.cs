@@ -23,6 +23,7 @@ public sealed class AppSettings
     public float Volume = 0.5f;
     public bool Outlines = true;      // enemy outline + fresnel (Valorant: "Hide outlines and fresnel" off)
     public bool ViewModel = true;      // first-person gun
+    public bool LeftHandedWeapon;      // weapon hand: false = right (default), true = left (VALORANT's own setting is not used)
 
     // ---- updates / version (see UpdateCheck, WhatsNew) ----
     public bool CheckUpdates = true;   // ask GitHub for a newer release at most once a day
