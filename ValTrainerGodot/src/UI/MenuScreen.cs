@@ -522,11 +522,25 @@ public partial class MenuScreen : ScreenBase
         // crosshair preview
         var xp = new VPanel { Title = "CROSSHAIR", K = k, Caption = "primary · real pixel size", SizeFlagsVertical = SizeFlags.ExpandFill };
         right.AddChild(xp);
+        var col = new VBoxContainer { SizeFlagsVertical = SizeFlags.ExpandFill };
+        col.AddThemeConstantOverride("separation", (int)(8 * k));
+        xp.AddChild(col);
         var box = new DrawBox { SizeFlagsVertical = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 150 * k), ClipContents = true, OnDraw = DrawRange };
-        xp.AddChild(box);
+        col.AddChild(box);
         var xh = new CrosshairView { Profile = Valorant.CrosshairCode.Effective, LocalCenter = true };
         box.AddChild(xh);
         xh.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        VButton? copy = null;
+        copy = Btn("COPY CROSSHAIR CODE", VButton.Look.Secondary, () =>
+        {
+            DisplayServer.ClipboardSet(Valorant.CrosshairCode.EffectiveCode);
+            copy!.Label = "COPIED ✓";
+            copy.QueueRedraw();
+            GetTree().CreateTimer(2.0).Timeout += () => { if (IsInstanceValid(copy)) { copy.Label = "COPY CROSSHAIR CODE"; copy.QueueRedraw(); } };
+        }, 0, 38, 15);
+        copy.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        copy.TooltipText = "The VALORANT code of this crosshair: paste it in VALORANT → Settings → Crosshair → Import Profile Code";
+        col.AddChild(copy);
     }
 
     /// <summary>Range-like backdrop for the crosshair preview: wall, floor and a dummy whose head sits under the crosshair.</summary>

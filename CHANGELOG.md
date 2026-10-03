@@ -8,6 +8,12 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-10-04
+
+### Added
+
+- **Copy your crosshair code any time:** a COPY CROSSHAIR CODE button under the crosshair preview on the menu, and in Settings → Crosshair the code of the crosshair ValTrainer uses now plus your last Crosshair Finder result, each with a COPY button. Paste it in VALORANT → Settings → Crosshair → Import Profile Code.
+
 ## [1.4.1] - 2026-10-03
 
 ### Changed
@@ -133,7 +139,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.4.2...HEAD
+[1.4.2]: https://github.com/idoraz1/ValTrainer/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/idoraz1/ValTrainer/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/idoraz1/ValTrainer/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/idoraz1/ValTrainer/compare/v1.2.0...v1.3.0

@@ -200,6 +200,42 @@ public partial class SettingsScreen : ScreenBase
             i => St.UseFinderCrosshair = i == 1 && CrosshairCode.Finder != null,
             note: () => CrosshairCode.Finder == null ? "Run the Crosshair Finder (Coach) to get a second option"
                 : St.UseFinderCrosshair ? "Crosshair Finder result · ValTrainer only" : "Your imported VALORANT crosshair"));
+        v.AddChild(CodeRow("Code of the crosshair ValTrainer uses now", () => CrosshairCode.EffectiveCode));
+        if (!string.IsNullOrWhiteSpace(St.LastFinderCrosshairCode))
+            v.AddChild(CodeRow("Last Crosshair Finder result", () => St.LastFinderCrosshairCode ?? ""));
+    }
+
+    /// <summary>A VALORANT crosshair code with a COPY button (paste it in VALORANT → Settings → Crosshair → Import Profile Code).</summary>
+    Control CodeRow(string label, Func<string> code)
+    {
+        float k = K;
+        var row = HBox(12 * k);
+        row.CustomMinimumSize = new Vector2(0, 50 * k);
+        var txt = new DrawBox
+        {
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            OnDraw = d =>
+            {
+                float cy = d.Size.Y / 2;
+                int ls = UiTheme.Fs(14, k);
+                Gfx.TextFit(d, UiTheme.Body, label, 10 * k, Gfx.Mid(cy - 9 * k, ls), ls, UiTheme.Dim, d.Size.X - 10 * k);
+                Gfx.TextFit(d, UiTheme.Body, code(), 10 * k, Gfx.Mid(cy + 10 * k, ls), ls, UiTheme.Text, d.Size.X - 10 * k);
+            },
+        };
+        refreshers.Add(txt.QueueRedraw);
+        row.AddChild(txt);
+        VButton? copy = null;
+        copy = Btn("COPY", VButton.Look.Secondary, () =>
+        {
+            DisplayServer.ClipboardSet(code());
+            copy!.Label = "COPIED ✓";
+            copy.QueueRedraw();
+            GetTree().CreateTimer(2.0).Timeout += () => { if (IsInstanceValid(copy)) { copy.Label = "COPY"; copy.QueueRedraw(); } };
+        }, 110, 36, 16);
+        copy.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        copy.TooltipText = "Copy, then paste it in VALORANT: Settings → Crosshair → Import Profile Code";
+        row.AddChild(copy);
+        return row;
     }
 
     static ValorantAccount CurrentAccount() => App.Accounts.FirstOrDefault(x => x.Id == App.Valorant.AccountId) ?? App.Accounts[0];

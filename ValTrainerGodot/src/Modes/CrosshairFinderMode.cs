@@ -848,6 +848,8 @@ public sealed partial class CrosshairFinderMode : TrainingMode
         result = entrants.Count > 0 ? entrants[idx] : XfShapes.Current(cur);
         keepCurrent = result.IsCurrent || XfShapes.SameLook(result.Xhair, cur);
         code = result.Code;
+        Main.I.Settings.LastFinderCrosshairCode = code; // copyable later from Settings → Crosshair
+        Main.I.Settings.Save();                          // no-op in --dev (AppSettings.ReadOnly)
         Event("xhair_result", idx, CrosshairCode.PresetIndex(result.Xhair.Primary.Color));
         GD.Print($"[xf] RESULT t={Now:0.0}s {result.Name}{(keepCurrent ? " (keep yours)" : "")} colour={CrosshairCode.ColorName(result.Xhair.Primary.Color)} outline={result.Xhair.Primary.HasOutline} code={code} aborted={aborted}");
         phase = Ph.Summary;

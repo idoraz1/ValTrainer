@@ -26,6 +26,7 @@ public sealed class AppSettings
     public bool LeftHandedWeapon;      // weapon hand: false = right (default), true = left (VALORANT's own setting is not used)
     public bool UseFinderCrosshair;    // crosshair: false = VALORANT's (imported), true = FinderCrosshairCode
     public string? FinderCrosshairCode; // VALORANT profile code from the Crosshair Finder ("Use in ValTrainer"); VALORANT itself is never changed
+    public string? LastFinderCrosshairCode; // the latest Crosshair Finder result, kept so it can be copied any time (Settings → Crosshair)
 
     // ---- updates / version (see UpdateCheck, WhatsNew, UpdatesPrompt) ----
     public bool? UpdatesConsent;       // the "Check GitHub for new versions?" answer: null = not asked yet, true = ENABLE UPDATES, false = NOT NOW (or turned off)

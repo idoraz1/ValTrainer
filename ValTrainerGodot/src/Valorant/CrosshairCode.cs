@@ -333,6 +333,17 @@ public static class CrosshairCode
         }
     }
 
+    /// <summary>VALORANT profile code of the crosshair ValTrainer uses now (copy buttons in Settings and on the menu).</summary>
+    public static string EffectiveCode
+    {
+        get
+        {
+            var s = Main.I.Settings;
+            if (s.UseFinderCrosshair && Finder != null && !string.IsNullOrWhiteSpace(s.FinderCrosshairCode)) return s.FinderCrosshairCode!;
+            try { return Encode(Main.I.Valorant.Crosshair); } catch { return "0"; } // "0" = VALORANT's default crosshair
+        }
+    }
+
     /// <summary>The crosshair drills use: the finder's result when Settings → Crosshair is FINDER, else VALORANT's.</summary>
     public static CrosshairSettings Effective =>
         Main.I.Settings.UseFinderCrosshair && Finder is { } f ? f : Main.I.Valorant.Crosshair;
