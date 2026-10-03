@@ -10,6 +10,8 @@ what holds you back and how to fix it.
 
 Windows 10/11 · free and open source · fan-made, not affiliated with Riot Games
 
+**Website:** [idoraz1.github.io/ValTrainer](https://idoraz1.github.io/ValTrainer/): features, clips, download and FAQ.
+
 | | |
 |---|---|
 | ![Main menu with difficulty tiers, drills and the imported VALORANT settings](docs/images/menu.png) | ![Vandal Spray drill with the spray chart](docs/images/drill-spray.png) |

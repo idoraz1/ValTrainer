@@ -31,6 +31,7 @@ dist/
 # ---- Local tools (CI downloads its own copies) ----
 /tools/godot/
 /tools/innosetup/
+/tools/ffmpeg/
 
 # ---- Run data, logs, test output ----
 *.vtt

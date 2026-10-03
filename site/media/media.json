@@ -1,0 +1,375 @@
+{
+  "generated": "2026-10-03",
+  "notes": "Recorded with Godot Movie Maker (60 fps, 1920x1080 render) from ValTrainer v1.4.0 dev auto-play tools; videos are muted, seamless loops.",
+  "videos": [
+    {
+      "id": "hero",
+      "caption": "Montage: a Deathmatch headshot on Ascent, Omen smokes blocking Heaven on Split, a Phoenix flash blinding two defenders on Breeze, and a Vandal spray with the live spray chart.",
+      "poster": {
+        "file": "hero.jpg",
+        "width": 1600,
+        "height": 900,
+        "bytes": 148704
+      },
+      "sources": [
+        {
+          "file": "hero.webm",
+          "width": 1600,
+          "height": 900,
+          "bytes": 3074282,
+          "duration": 8.0
+        },
+        {
+          "file": "hero.mp4",
+          "width": 1600,
+          "height": 900,
+          "bytes": 2267615,
+          "duration": 8.0
+        }
+      ]
+    },
+    {
+      "id": "clip-deathmatch",
+      "caption": "Deathmatch on Ascent: the player holds an alley and wins two fights with headshots against free-for-all bots.",
+      "poster": {
+        "file": "clip-deathmatch.jpg",
+        "width": 1280,
+        "height": 720,
+        "bytes": 105622
+      },
+      "sources": [
+        {
+          "file": "clip-deathmatch.webm",
+          "width": 1280,
+          "height": 720,
+          "bytes": 1281744,
+          "duration": 7.0
+        },
+        {
+          "file": "clip-deathmatch.mp4",
+          "width": 1280,
+          "height": 720,
+          "bytes": 905214,
+          "duration": 7.0
+        }
+      ]
+    },
+    {
+      "id": "clip-smokes",
+      "caption": "Smoke Execute (Omen, Split A): the execute plan on the tactical map, then a Dark Cover smoke blinds Heaven while the player walks onto site and gets a kill.",
+      "poster": {
+        "file": "clip-smokes.jpg",
+        "width": 1280,
+        "height": 720,
+        "bytes": 83478
+      },
+      "sources": [
+        {
+          "file": "clip-smokes.webm",
+          "width": 1280,
+          "height": 720,
+          "bytes": 1708928,
+          "duration": 7.4
+        },
+        {
+          "file": "clip-smokes.mp4",
+          "width": 1280,
+          "height": 720,
+          "bytes": 1108401,
+          "duration": 7.4
+        }
+      ]
+    },
+    {
+      "id": "clip-flash",
+      "caption": "Flash & Peek (Phoenix, Breeze A): a Curveball pops around the corner, 2 FLASHED, and the player swings and kills a blinded defender.",
+      "poster": {
+        "file": "clip-flash.jpg",
+        "width": 1280,
+        "height": 720,
+        "bytes": 105029
+      },
+      "sources": [
+        {
+          "file": "clip-flash.webm",
+          "width": 1280,
+          "height": 720,
+          "bytes": 1762792,
+          "duration": 5.6
+        },
+        {
+          "file": "clip-flash.mp4",
+          "width": 1280,
+          "height": 720,
+          "bytes": 1290054,
+          "duration": 5.6
+        }
+      ]
+    },
+    {
+      "id": "clip-spray",
+      "caption": "Vandal Spray: full-auto sprays on a 15 m target with the live spray chart drawing where each bullet lands, every shot on the body.",
+      "poster": {
+        "file": "clip-spray.jpg",
+        "width": 1280,
+        "height": 720,
+        "bytes": 97825
+      },
+      "sources": [
+        {
+          "file": "clip-spray.webm",
+          "width": 1280,
+          "height": 720,
+          "bytes": 1146455,
+          "duration": 6.0
+        },
+        {
+          "file": "clip-spray.mp4",
+          "width": 1280,
+          "height": 720,
+          "bytes": 828775,
+          "duration": 6.0
+        }
+      ]
+    },
+    {
+      "id": "clip-movement",
+      "caption": "Jump Peek: jump-spotting an Operator for a clean peek, then swinging when he misses and getting the kill.",
+      "poster": {
+        "file": "clip-movement.jpg",
+        "width": 1280,
+        "height": 720,
+        "bytes": 90797
+      },
+      "sources": [
+        {
+          "file": "clip-movement.webm",
+          "width": 1280,
+          "height": 720,
+          "bytes": 1536937,
+          "duration": 6.6
+        },
+        {
+          "file": "clip-movement.mp4",
+          "width": 1280,
+          "height": 720,
+          "bytes": 1076065,
+          "duration": 6.6
+        }
+      ]
+    },
+    {
+      "id": "clip-flicks",
+      "caption": "Gridshot: fast hits on a 3x3 target board at 100% accuracy.",
+      "poster": {
+        "file": "clip-flicks.jpg",
+        "width": 1280,
+        "height": 720,
+        "bytes": 82124
+      },
+      "sources": [
+        {
+          "file": "clip-flicks.webm",
+          "width": 1280,
+          "height": 720,
+          "bytes": 1102140,
+          "duration": 6.0
+        },
+        {
+          "file": "clip-flicks.mp4",
+          "width": 1280,
+          "height": 720,
+          "bytes": 928786,
+          "duration": 6.0
+        }
+      ]
+    },
+    {
+      "id": "clip-agents",
+      "caption": "Agents screen: browsing Jett, Omen, Sova and Killjoy, each with abilities, signature drills and an agent warm-up.",
+      "poster": {
+        "file": "clip-agents.jpg",
+        "width": 1280,
+        "height": 720,
+        "bytes": 151794
+      },
+      "sources": [
+        {
+          "file": "clip-agents.webm",
+          "width": 1280,
+          "height": 720,
+          "bytes": 435622,
+          "duration": 6.4
+        },
+        {
+          "file": "clip-agents.mp4",
+          "width": 1280,
+          "height": 720,
+          "bytes": 275444,
+          "duration": 6.4
+        }
+      ]
+    },
+    {
+      "id": "clip-warmup",
+      "caption": "Warm-up summary: the lock-in graph comparing each drill to your usual level with the sens shifter, plus the drill table.",
+      "poster": {
+        "file": "clip-warmup.jpg",
+        "width": 1280,
+        "height": 720,
+        "bytes": 94354
+      },
+      "sources": [
+        {
+          "file": "clip-warmup.webm",
+          "width": 1280,
+          "height": 720,
+          "bytes": 825822,
+          "duration": 6.0
+        },
+        {
+          "file": "clip-warmup.mp4",
+          "width": 1280,
+          "height": 720,
+          "bytes": 669726,
+          "duration": 6.0
+        }
+      ]
+    }
+  ],
+  "stills": [
+    {
+      "id": "shot-menu",
+      "caption": "Main menu: difficulty tiers, every drill by category, and the settings imported from VALORANT (sample config).",
+      "files": [
+        {
+          "file": "shot-menu.webp",
+          "width": 1600,
+          "height": 900,
+          "bytes": 98768
+        },
+        {
+          "file": "shot-menu.jpg",
+          "width": 1600,
+          "height": 900,
+          "bytes": 213480
+        }
+      ]
+    },
+    {
+      "id": "shot-coach",
+      "caption": "Aim Coach (sample data): estimated rank, skill breakdown radar, what to fix first, and a sensitivity recommendation.",
+      "files": [
+        {
+          "file": "shot-coach.webp",
+          "width": 1600,
+          "height": 900,
+          "bytes": 89384
+        },
+        {
+          "file": "shot-coach.jpg",
+          "width": 1600,
+          "height": 900,
+          "bytes": 197418
+        }
+      ]
+    },
+    {
+      "id": "shot-agents",
+      "caption": "Agents screen with Omen selected: abilities, signature drills (Smoke Execute, Flash & Peek), role drills and the agent warm-up.",
+      "files": [
+        {
+          "file": "shot-agents.webp",
+          "width": 1600,
+          "height": 900,
+          "bytes": 95434
+        },
+        {
+          "file": "shot-agents.jpg",
+          "width": 1600,
+          "height": 900,
+          "bytes": 212489
+        }
+      ]
+    },
+    {
+      "id": "shot-crosshair",
+      "caption": "Crosshair Finder result: Green Circle won the head-to-head, with per-map previews and a VALORANT crosshair code.",
+      "files": [
+        {
+          "file": "shot-crosshair.webp",
+          "width": 1600,
+          "height": 900,
+          "bytes": 38526
+        },
+        {
+          "file": "shot-crosshair.jpg",
+          "width": 1600,
+          "height": 900,
+          "bytes": 108879
+        }
+      ]
+    },
+    {
+      "id": "shot-maps",
+      "caption": "First-person view of Breeze A site during Flash & Peek.",
+      "files": [
+        {
+          "file": "shot-maps.webp",
+          "width": 1600,
+          "height": 900,
+          "bytes": 62520
+        },
+        {
+          "file": "shot-maps.jpg",
+          "width": 1600,
+          "height": 900,
+          "bytes": 144143
+        }
+      ]
+    },
+    {
+      "id": "shot-results",
+      "caption": "Results screen after Head Flicks with the coach review: the top issue (over-flicking) and how to fix it.",
+      "files": [
+        {
+          "file": "shot-results.webp",
+          "width": 1600,
+          "height": 900,
+          "bytes": 41556
+        },
+        {
+          "file": "shot-results.jpg",
+          "width": 1600,
+          "height": 900,
+          "bytes": 104900
+        }
+      ]
+    },
+    {
+      "id": "shot-sensfinder",
+      "caption": "Sens Finder result: blind A/B steps, the recommended VALORANT sensitivity (0.326, was 0.350), eDPI, cm/360 and confidence.",
+      "files": [
+        {
+          "file": "shot-sensfinder.webp",
+          "width": 1600,
+          "height": 900,
+          "bytes": 46884
+        },
+        {
+          "file": "shot-sensfinder.jpg",
+          "width": 1600,
+          "height": 900,
+          "bytes": 123267
+        }
+      ]
+    }
+  ],
+  "og": {
+    "caption": "Social preview: a Deathmatch headshot on Ascent (no HUD bars; room on the right for text).",
+    "file": "og-image.jpg",
+    "width": 1200,
+    "height": 630,
+    "bytes": 80148
+  }
+}

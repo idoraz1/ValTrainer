@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://idoraz1.github.io/ValTrainer/sitemap.xml
