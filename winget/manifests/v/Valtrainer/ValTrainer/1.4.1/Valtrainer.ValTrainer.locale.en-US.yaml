@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.12.0.schema.json
 
 PackageIdentifier: Valtrainer.ValTrainer
-PackageVersion: 1.4.0
+PackageVersion: 1.4.1
 PackageLocale: en-US
 Publisher: ValTrainer contributors
 PublisherUrl: https://valtrainer.github.io/
@@ -30,7 +30,7 @@ Tags:
 - valorant
 - godot
 - open-source
-ReleaseNotesUrl: https://github.com/idoraz1/ValTrainer/releases/tag/v1.4.0
+ReleaseNotesUrl: https://github.com/idoraz1/ValTrainer/releases/tag/v1.4.1
 Documentations:
 - DocumentLabel: Changelog
   DocumentUrl: https://github.com/idoraz1/ValTrainer/blob/main/CHANGELOG.md

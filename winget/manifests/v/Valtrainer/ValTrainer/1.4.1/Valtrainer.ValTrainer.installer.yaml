@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.12.0.schema.json
 
 PackageIdentifier: Valtrainer.ValTrainer
-PackageVersion: 1.4.0
+PackageVersion: 1.4.1
 InstallerLocale: en-US
 MinimumOSVersion: 10.0.14393.0
 InstallerType: inno
@@ -19,14 +19,14 @@ AppsAndFeaturesEntries:
 Installers:
 - Architecture: x64
   Scope: user
-  InstallerUrl: https://github.com/idoraz1/ValTrainer/releases/download/v1.4.0/ValTrainer-1.4.0-Setup.exe
-  InstallerSha256: F3B8C5658D7FDD109958B243A209C95B6AC35C4A4B459EE8E6230D7BA3AD585D
+  InstallerUrl: https://github.com/idoraz1/ValTrainer/releases/download/v1.4.1/ValTrainer-1.4.1-Setup.exe
+  InstallerSha256: 97BD7B5819CE3CB516C8C17ACD594CEB162886C23140C4852EFD81048EB4C43D
   InstallerSwitches:
     Custom: /CURRENTUSER
 - Architecture: x64
   Scope: machine
-  InstallerUrl: https://github.com/idoraz1/ValTrainer/releases/download/v1.4.0/ValTrainer-1.4.0-Setup.exe
-  InstallerSha256: F3B8C5658D7FDD109958B243A209C95B6AC35C4A4B459EE8E6230D7BA3AD585D
+  InstallerUrl: https://github.com/idoraz1/ValTrainer/releases/download/v1.4.1/ValTrainer-1.4.1-Setup.exe
+  InstallerSha256: 97BD7B5819CE3CB516C8C17ACD594CEB162886C23140C4852EFD81048EB4C43D
   InstallerSwitches:
     Custom: /ALLUSERS
   ElevationRequirement: elevatesSelf
