@@ -63,7 +63,8 @@ jobs:
           sha256sum --check --strict SHA256SUMS.txt
           mkdir -p ../installer ../portable
           mv "ValTrainer-$VERSION-Setup.exe" ../installer/
-          unzip -q "ValTrainer-$VERSION-Portable.zip" -d ../portable
+          # The zip is made on Windows (backslash paths): unzip converts them but exits with 1 ("warning"), which is fine.
+          unzip -q "ValTrainer-$VERSION-Portable.zip" -d ../portable || [ $? -eq 1 ]
           ls -la ../installer ../portable/*
 
       - name: Install butler
