@@ -169,7 +169,7 @@ If you change a rule or a benchmark, update the spec in the same pull request.
 .github/                 issue forms, PR template, CI and release workflows, setup-godot action
 docs/images/             README screenshots
 installer/               Inno Setup script for the Windows installer
-site/                    the website on GitHub Pages (see Website)
+site-redirect/           forwards the old website address to valtrainer.github.io (see Website)
 tools/
   build-release.ps1      release build: installer, portable zip, SHA256SUMS.txt
   version.ps1            print or bump the version; release notes from CHANGELOG.md
@@ -313,18 +313,18 @@ of the repo with a different `AppId` and `AppName` in `installer\ValTrainer.iss`
 
 ## Website
 
-The website at <https://idoraz1.github.io/ValTrainer/> is the static site in `site/`: plain HTML, CSS and JavaScript,
-no build step, no frameworks, no trackers or cookies.
+The website <https://valtrainer.github.io/> lives in its own repository,
+[Valtrainer/valtrainer.github.io](https://github.com/Valtrainer/valtrainer.github.io): a static site (plain HTML, CSS and
+JavaScript, no build step, no frameworks, no trackers or cookies) that GitHub Pages publishes on every push to its
+`main` branch.
 
-- **Preview locally:** `py -m http.server -d site 8000`, then open <http://127.0.0.1:8000/>. (`404.html` uses
-  `/ValTrainer/` paths, so it only looks right once deployed.)
-- **Download links:** the buttons point at `releases/latest` and, when JavaScript runs, at the latest release's
-  `Setup.exe`, `Portable.zip` and `SHA256SUMS.txt` (asked from `api.github.com`, cached per browser session). A new
+- **Preview locally:** clone it, run `py -m http.server 8000` in it and open <http://127.0.0.1:8000/>.
+- **Download links** ask `api.github.com` for this repository's latest release (cached per browser session), so a new
   release needs no website change.
-- **Clips and screenshots** live in `site/media/`. If one is missing, the page shows its poster or a fallback image
-  from `site/img/` instead.
-- **Deploys:** `.github/workflows/pages.yml` publishes `site/` to GitHub Pages on every push to `main` that changes
-  `site/**` (or by hand: Actions → Website → Run workflow). Website-only changes skip the CI build.
+- **Clips and screenshots** live in its `media/` folder; they're rendered by the game with Godot's Movie Maker mode
+  (`--write-movie`) and encoded with ffmpeg.
+- **Old address:** `site-redirect/` in this repository is published at <https://idoraz1.github.io/ValTrainer/> by
+  `.github/workflows/pages.yml` and forwards every path to the new site.
 
 ## Feature management
 

@@ -1,11 +1,12 @@
 name: Website
 
-# Publishes the static site in site/ to GitHub Pages: https://idoraz1.github.io/ValTrainer/
+# The website moved to https://valtrainer.github.io/ (repo Valtrainer/valtrainer.github.io). This publishes
+# site-redirect/ at the old address https://idoraz1.github.io/ValTrainer/ so old links keep working.
 on:
   push:
     branches: [main]
     paths:
-      - "site/**"
+      - "site-redirect/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -21,7 +22,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Deploy site/ to GitHub Pages
+    name: Deploy the redirect to GitHub Pages
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -33,10 +34,10 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload site/
+      - name: Upload site-redirect/
         uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: site-redirect
 
       - name: Deploy
         id: deployment

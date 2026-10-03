@@ -5,12 +5,12 @@ on:
     branches: [main]
     # Website-only changes are deployed by pages.yml and don't need a game build.
     paths-ignore:
-      - "site/**"
+      - "site-redirect/**"
       - ".github/workflows/pages.yml"
   pull_request:
     branches: [main]
     paths-ignore:
-      - "site/**"
+      - "site-redirect/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
