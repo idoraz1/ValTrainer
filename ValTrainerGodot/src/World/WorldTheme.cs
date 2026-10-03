@@ -70,7 +70,7 @@ public static class Themes
     static Color C(int r, int g, int b) => Color.Color8((byte)r, (byte)g, (byte)b);
     static Color Scale(Color c, float k) => new(c.R * k, c.G * k, c.B * k);
 
-    public static Theme For(MapSpot m) => m.Key switch
+    public static Theme For(MapSpot m) => m.Look != null ? m.Look(m.Palette) : m.Key switch
     {
         "bind" => Bind(m.Palette),
         "haven" => Haven(m.Palette),

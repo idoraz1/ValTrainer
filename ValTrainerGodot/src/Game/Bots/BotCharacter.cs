@@ -33,6 +33,8 @@ public partial class BotCharacter : Node3D
     public float SpawnTime;
     /// <summary>World velocity (m/s) — set by the mode each frame; drives run/strafe animation and footsteps.</summary>
     public Vector3 Velocity;
+    /// <summary>Mute the built-in running footsteps (a mode plays its own, e.g. the defense drills' <c>FootstepFx</c>).</summary>
+    public bool QuietSteps;
     /// <summary>Facing in the game's yaw convention (degrees; 0 = -Z, + = right).</summary>
     public float FacingYaw { get => facing; set { facing = value; Rotation = new Vector3(0, Mathf.DegToRad(-value) + Mathf.Pi, 0); } }
     public bool Crouched;
@@ -47,6 +49,9 @@ public partial class BotCharacter : Node3D
     public Vector3 MuzzlePosition => muzzle != null && muzzle.IsInsideTree() ? muzzle.GlobalPosition : Head;
     /// <summary>Which of the 4 character looks this bot uses (see <see cref="BotAssets.Variants"/>).</summary>
     public int Variant => variant;
+    /// <summary>The meshes that carry the enemy highlight overlay (instance uniforms hl_flash / hl_fade). Recon reveals
+    /// (<see cref="Fx.RevealFx"/>) chain a through-walls pass in front of that overlay.</summary>
+    public IReadOnlyList<GeometryInstance3D> HighlightMeshes => highlighted;
 
     // Hitbox radii (m).
     const float TorsoR = 0.17f, UpperArmR = 0.065f, LowerArmR = 0.055f, ThighR = 0.095f, ShinR = 0.075f, FootR = 0.06f;
@@ -585,7 +590,7 @@ public partial class BotCharacter : Node3D
 
     void Footsteps(float dt, float speed)
     {
-        if (deathT >= 0 || Crouched || speed <= RunStepSpeed || stepPlayer == null) { stepT = 0.06f; return; }
+        if (deathT >= 0 || Crouched || QuietSteps || speed <= RunStepSpeed || stepPlayer == null) { stepT = 0.06f; return; }
         stepT -= dt;
         if (stepT > 0) return;
         stepT += StepInterval;

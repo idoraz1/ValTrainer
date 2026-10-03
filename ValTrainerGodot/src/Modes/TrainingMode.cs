@@ -107,6 +107,9 @@ public abstract class TrainingMode
     public virtual IEnumerable<(string Label, Action Act)> ResultButtons() => Array.Empty<(string, Action)>();
     /// <summary>False for drills whose score/badge mean nothing (Sens Finder): the results screen hides them.</summary>
     public virtual bool ShowScore => true;
+    /// <summary>Dev-only hint for the simulated player (--simaim): "static" (still targets), "bot" (agents that move),
+    /// "track" (hold on a moving target) or "spray". Empty = guessed from the mode key.</summary>
+    public virtual string SimKind => "";
 
     /// <summary>Which rank tier this result matches (-1 = below Rookie).</summary>
     public virtual int Badge() => -1;

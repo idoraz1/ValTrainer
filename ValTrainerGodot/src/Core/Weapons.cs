@@ -1,6 +1,8 @@
 namespace ValTrainer.Core;
 
-public enum WeaponKind { None, Vandal, Phantom, Sheriff, Operator }
+/// <summary>Guns. Headhunter and TourDeForce are Chamber's ability guns (they reuse the Sheriff / Operator viewmodels and
+/// behaviour, see <see cref="WeaponDef.Family"/>).</summary>
+public enum WeaponKind { None, Vandal, Phantom, Sheriff, Operator, Headhunter, TourDeForce }
 
 /// <summary>
 /// Weapon stats from the official wiki / valorant-api / patch notes (to 13.06). The per-bullet recoil and
@@ -18,6 +20,13 @@ public sealed record WeaponDef(
     float RunSpeed, float[] DamageHead, float[] DamageBody, float[] DamageLegs, float[] DamageRangeEnd)
 {
     public float Interval => 1f / Rps;
+
+    /// <summary>The base gun this one plays like (viewmodel, sounds, scope rules): Headhunter → Sheriff, Tour De Force → Operator.</summary>
+    public WeaponKind Family => Weapons.FamilyOf(Kind);
+    /// <summary>Sniper scope: the scope overlay, zoomed sensitivity, toggle-able scope, hip error = <see cref="FirstShotHip"/>.</summary>
+    public bool Sniper => Family == WeaponKind.Operator;
+    /// <summary>Bolt action (Operator only): the scope drops after every shot and the bolt cycles.</summary>
+    public bool Bolt => Kind == WeaponKind.Operator;
 
     /// <summary>Damage for a hit zone at a distance (meters).</summary>
     public float Damage(int zone, float dist)
@@ -80,9 +89,46 @@ public static class Weapons
         RunErr: 10f, WalkErr: 6f, CrouchWalkErr: 3f, AirErr: 15f, RunSpeed: 5.13f,
         DamageHead: new[] { 255f }, DamageBody: new[] { 150f }, DamageLegs: new[] { 120f }, DamageRangeEnd: new[] { 999f });
 
+    /// <summary>
+    /// Chamber's Headhunter (official wiki, game-file values; patch 13.0x): semi-auto heavy pistol, 4 rps, 8 rounds and no
+    /// reserve, 0.3 s equip, no damage falloff (159 head / 55 body / 46 legs), first shot 0.25° (ADS ×1.5: 0°), max spread
+    /// 3° (ADS 2.75°) with the spread growing after the 2nd spammed bullet (patch 5.12), movement error crouch 0.1° / walk
+    /// 1.2° / run 3° / air 7°. Recoil climb, recovery and the per-bullet spread curve are estimates (Sheriff-like).
+    /// </summary>
+    public static readonly WeaponDef Headhunter = new(
+        WeaponKind.Headhunter, "Headhunter", Auto: false, Rps: 4f, AdsRpsMul: 1f, Mag: 8, Reserve: 0, Reload: 2.25f, Equip: 0.3f,
+        FirstShotHip: 0.25f, FirstShotAds: 0f, MaxSpread: 3f,
+        RecoveryTime: 0.4f, TapEfficiency: 3, ProtectedBullets: 2, YawSwitchTime: 0.6f, Zoom: 1.5f,
+        Pitch: new[] { 0f, 0.9f, 1.8f, 2.5f, 3.0f, 3.3f, 3.5f, 3.6f }, Yaw: new[] { 0f, 0.15f, 0.3f, 0.45f, 0.55f, 0.6f, 0.65f, 0.7f },
+        Spread: new[] { 0.25f, 0.25f, 1.4f, 2.4f, 3f, 3f, 3f, 3f }, HeatCap: 7,
+        RunErr: 3f, WalkErr: 1.2f, CrouchWalkErr: 0.1f, AirErr: 7f, RunSpeed: 5.4f,
+        DamageHead: new[] { 159f }, DamageBody: new[] { 55f }, DamageLegs: new[] { 46f }, DamageRangeEnd: new[] { 999f });
+
+    /// <summary>
+    /// Chamber's Tour De Force (official wiki; fire rate per patch 8.03): semi-auto sniper, 0.9 rps scoped or not, 5 rounds
+    /// and no reserve, 0.667 s re-equip, 150 body (one-shots 150 HP) ×1.7 head / ×0.85 legs, hip error 5° (crouched 4.5°),
+    /// scoped 0°, scope 2.5× (first level), movement error crouch 7.5° / walk 10° / run 15° / air 15°. Not bolt action:
+    /// the scope stays up between shots (assumption).
+    /// </summary>
+    public static readonly WeaponDef TourDeForce = new(
+        WeaponKind.TourDeForce, "Tour De Force", Auto: false, Rps: 0.9f, AdsRpsMul: 1f, Mag: 5, Reserve: 0, Reload: 3.7f, Equip: 0.667f,
+        FirstShotHip: 5f, FirstShotAds: 0f, MaxSpread: 5f,
+        RecoveryTime: 1.1f, TapEfficiency: 1, ProtectedBullets: 1, YawSwitchTime: 0.6f, Zoom: 2.5f,
+        Pitch: new[] { 0f }, Yaw: new[] { 0f }, Spread: new[] { 5f }, HeatCap: 1,
+        RunErr: 15f, WalkErr: 10f, CrouchWalkErr: 7.5f, AirErr: 15f, RunSpeed: 5.13f,
+        DamageHead: new[] { 255f }, DamageBody: new[] { 150f }, DamageLegs: new[] { 127.5f }, DamageRangeEnd: new[] { 999f });
+
     public static WeaponDef? Get(WeaponKind k) => k switch
     {
         WeaponKind.Vandal => Vandal, WeaponKind.Phantom => Phantom, WeaponKind.Sheriff => Sheriff,
-        WeaponKind.Operator => Operator, _ => null,
+        WeaponKind.Operator => Operator, WeaponKind.Headhunter => Headhunter, WeaponKind.TourDeForce => TourDeForce, _ => null,
+    };
+
+    /// <summary>The base gun a kind plays like (see <see cref="WeaponDef.Family"/>).</summary>
+    public static WeaponKind FamilyOf(WeaponKind k) => k switch
+    {
+        WeaponKind.Headhunter => WeaponKind.Sheriff,
+        WeaponKind.TourDeForce => WeaponKind.Operator,
+        _ => k,
     };
 }

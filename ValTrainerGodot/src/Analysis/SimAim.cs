@@ -54,7 +54,7 @@ public sealed class SimAim
     }
 
     /// <param name="modeKey">The drill actually being played (warm-up routines change it per step); null = the --mode argument.</param>
-    public SimAim(string profile, string? modeKey = null)
+    public SimAim(string profile, string? modeKey = null, string? simKind = null)
     {
         Profile = profile;
         p = new Prm();
@@ -124,6 +124,13 @@ public sealed class SimAim
         weapon = mode == "spray_phantom" ? Weapons.Phantom : Weapons.Vandal;
         sfMode = mode == "sensfinder";
         if (sfMode || mode == "xhairfinder") staticTargets = true;
+        switch (simKind)
+        {
+            case "static": staticTargets = true; botMode = trackMode = false; break;
+            case "bot": botMode = true; staticTargets = trackMode = false; break;
+            case "track": trackMode = true; staticTargets = botMode = false; break;
+            case "spray": sprayMode = true; staticTargets = true; botMode = trackMode = false; break;
+        }
     }
 
     // ---------------- state ----------------

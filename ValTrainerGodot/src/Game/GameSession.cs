@@ -44,7 +44,7 @@ public partial class GameSession : Node3D, IGame
     Camera3D cam = null!;
     Node3D envRoot = null!;
     public float Countdown { get; private set; }
-    float feetY, fallSpeed;
+    float feetY; // player body feet height; jumping / falling state lives in Mover (MovementBody.cs)
     bool firePressedEdge, fireHeld, adsHeld, wasReloading;
     public RunRecord? Record { get; private set; }
     /// <summary>Aim-coach review of the run that just finished (results screen).</summary>
@@ -101,8 +101,10 @@ public partial class GameSession : Node3D, IGame
         TrialSens = SessionSens; // null unless a routine (warm-up sens shifter) set one
         TrialCrosshair = null;
         Mover = new Mover();
+        WireMover(); // movement events / dev scripts for the new run (MovementSession.cs)
         Player.Reset();
         Now = 0;
+        smokes.Clear();
         Record = null;
         Review = null;
         frameDx = frameDy = 0;
@@ -112,6 +114,7 @@ public partial class GameSession : Node3D, IGame
         wasReloading = false;
         BannerTime = 0;
         AdsBlend = 0;
+        abilityInHand = false; // agent drills: the gun is in hand (AbilitySession.cs)
         View.Zoom = 1;
         View.RecoilPitch = View.RecoilYaw = 0;
 
@@ -145,7 +148,7 @@ public partial class GameSession : Node3D, IGame
         {
             Mode = Mode.Key, Tier = Tier, Sens = SessionSens ?? Main.I.Sens, Dpi = Main.I.Settings.Dpi,
             Weapon = Mode.Weapon.ToString(), Map = Mode.Map?.Key ?? "range", When = DateTime.Now,
-            ZoomSensMult = Mode.Weapon == WeaponKind.Operator ? Main.I.Valorant.ZoomedSensMult : Main.I.Valorant.AdsSensMult,
+            ZoomSensMult = Weapons.FamilyOf(Mode.Weapon) == WeaponKind.Operator ? Main.I.Valorant.ZoomedSensMult : Main.I.Valorant.AdsSensMult,
         };
         Mode.Begin(this);
         Respawn(Mode.StartFeet, Mode.StartYaw);
@@ -177,7 +180,7 @@ public partial class GameSession : Node3D, IGame
         if (e is InputEventMouseMotion m && State is St.Countdown or St.Running && Input.MouseMode == Input.MouseModeEnum.Captured)
         {
             // Raw counts (Godot uses Windows raw input while captured). ScreenRelative ignores stretch scaling.
-            float mult = weaponDef?.Kind == WeaponKind.Operator ? Main.I.Valorant.ZoomedSensMult : Main.I.Valorant.AdsSensMult;
+            float mult = weaponDef?.Sniper == true ? Main.I.Valorant.ZoomedSensMult : Main.I.Valorant.AdsSensMult;
             View.Look(m.ScreenRelative, CurrentSens, mult);
             frameDx += m.ScreenRelative.X;
             frameDy += m.ScreenRelative.Y;
@@ -191,6 +194,7 @@ public partial class GameSession : Node3D, IGame
                 fireHeld = mb.Pressed;
             }
             if (mb.ButtonIndex == MouseButton.Right) OnAdsButton(mb.Pressed);
+            if (mb.Pressed && State == St.Running && Main.I.Valorant.JumpsOn(mb.ButtonIndex)) Mover.QueueJump(); // wheel / mouse-button jump binds
         }
         else if (e is InputEventKey { Pressed: true, Echo: false } k)
         {
@@ -208,7 +212,7 @@ public partial class GameSession : Node3D, IGame
     void OnAdsButton(bool pressed)
     {
         if (Gun == null || weaponDef!.Zoom <= 1f) return;
-        bool hold = weaponDef.Kind != WeaponKind.Operator || Main.I.Valorant.HoldToScope;
+        bool hold = !weaponDef.Sniper || Main.I.Valorant.HoldToScope;
         if (!pressed) { if (hold) adsHeld = false; return; }   // releases always count, even while paused
         if (State == St.Running) adsHeld = hold || !adsHeld;
     }
@@ -268,14 +272,14 @@ public partial class GameSession : Node3D, IGame
 
         UpdateCamera();
         crosshair.Showing = State == St.Results || Mode.Is2D ? CrosshairView.Mode.Hidden
-            : Gun?.Scoped == true && weaponDef!.Kind == WeaponKind.Operator ? CrosshairView.Mode.Sniper
+            : Gun?.Scoped == true && weaponDef!.Sniper ? CrosshairView.Mode.Sniper
             : Gun?.Scoped == true ? CrosshairView.Mode.Ads : CrosshairView.Mode.Primary;
         crosshair.Profile = TrialCrosshair ?? ValTrainer.Valorant.CrosshairCode.Effective;
         crosshair.MoveError = Mode.Movement ? Mover.MoveError : 0f;
         crosshair.FiringErrorPx = Gun != null && weaponDef != null ? DegToPx(Mathf.Max(0, Gun.SpreadNow - weaponDef.FirstShotHip)) : 0;
         if (viewmodel != null)
         {
-            viewmodel.Visible = !(Gun?.Scoped == true && weaponDef!.Kind == WeaponKind.Operator) && State != St.Results;
+            viewmodel.Visible = !(Gun?.Scoped == true && weaponDef!.Sniper) && State != St.Results && !abilityInHand;
             viewmodel.SetAds(AdsBlend);
             viewmodel.SetReload(Gun != null && Gun.Reloading ? 1f - Gun.ReloadLeft / weaponDef!.Reload : -1f);
             viewmodel.SetMotion(Mover.Speed, Mover.Crouching);
@@ -287,7 +291,7 @@ public partial class GameSession : Node3D, IGame
     static readonly string? SimProfile = ArgAfter("--simaim");
     /// <summary>Dev-only "--duration N" shortens timed runs for automated tests.</summary>
     float RunDuration => DurationOverride ?? (Main.I.Dev && float.TryParse(ArgAfter("--duration"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var d) ? d : Mode.Duration);
-    ValTrainer.Analysis.SimAim? Sim => Main.I.Dev && SimProfile != null ? sim ??= new ValTrainer.Analysis.SimAim(SimProfile, Mode.Key) : null;
+    ValTrainer.Analysis.SimAim? Sim => Main.I.Dev && SimProfile != null ? sim ??= new ValTrainer.Analysis.SimAim(SimProfile, Mode.Key, Mode.SimKind) : null;
     ValTrainer.Analysis.SimAim? sim;
 
     /// <summary>Dev-only "--pause-at N": opens the pause menu N seconds into the run (layout screenshots).</summary>
@@ -302,7 +306,7 @@ public partial class GameSession : Node3D, IGame
         {
             // Dev-only simulated player (validation of the aim coach / sens finder without a human).
             var (counts, held, pressed) = Sim.Next(dt, Now, View, Mode.Focus, CurrentSens);
-            float mult = weaponDef?.Kind == WeaponKind.Operator ? Main.I.Valorant.ZoomedSensMult : Main.I.Valorant.AdsSensMult;
+            float mult = weaponDef?.Sniper == true ? Main.I.Valorant.ZoomedSensMult : Main.I.Valorant.AdsSensMult;
             View.Look(counts, CurrentSens, mult);
             frameDx += counts.X; frameDy += counts.Y;
             if (pressed && !fireHeld) firePressedEdge = true;
@@ -321,7 +325,7 @@ public partial class GameSession : Node3D, IGame
         // Weapon
         if (Gun != null && !Mode.Is2D)
         {
-            Gun.Scoped = adsHeld && !Gun.Reloading && weaponDef!.Zoom > 1f && (weaponDef.Kind != WeaponKind.Operator || Gun.EquipLeft <= 0);
+            Gun.Scoped = adsHeld && !abilityInHand && !Gun.Reloading && weaponDef!.Zoom > 1f && (!weaponDef.Sniper || Gun.EquipLeft <= 0);
             Mover.Ads = Gun.Scoped;
             AdsBlend = Mathf.MoveToward(AdsBlend, Gun.Scoped ? 1f : 0f, dt / 0.12f);
             View.Zoom = Gun.Scoped ? weaponDef!.Zoom : 1f;
@@ -332,17 +336,18 @@ public partial class GameSession : Node3D, IGame
         if (Gun != null && !Mode.Is2D)
         {
             bool wasScoped = Gun.Scoped;
-            var shots = Gun.Tick(Now, dt, View, Mover, Rng, fireHeld && !Player.Dead, firePressedEdge && !Player.Dead, Mode.InfiniteAmmo, Mode.InfiniteReserve, Mode.Movement);
+            bool gunInHand = !Player.Dead && !abilityInHand; // an ability in hand owns mouse 1 (AbilitySession.cs)
+            var shots = Gun.Tick(Now, dt, View, Mover, Rng, fireHeld && gunInHand, firePressedEdge && gunInHand, Mode.InfiniteAmmo, Mode.InfiniteReserve, Mode.Movement);
             foreach (var (dir, accurate) in shots) Bullet(dir, accurate);
             if (shots.Count > 0)
             {
-                string snd = weaponDef!.Kind switch { WeaponKind.Operator => "operator", WeaponKind.Phantom => "phantom", WeaponKind.Sheriff => "sheriff", _ => "vandal" };
+                string snd = weaponDef!.Family switch { WeaponKind.Operator => "operator", WeaponKind.Phantom => "phantom", WeaponKind.Sheriff => "sheriff", _ => "vandal" };
                 Sfx.I.Play(snd, 0.55f, 1f + ((float)Rng.NextDouble() - 0.5f) * 0.05f);
                 if (weaponDef.Kind == WeaponKind.Operator) GetTree().CreateTimer(0.45).Timeout += () => Sfx.I.Play("bolt", 0.7f);
             }
             if (Gun.Reloading && !wasReloading) Sfx.I.Play(weaponDef!.Kind == WeaponKind.Sheriff ? "reload_pistol" : "reload_rifle", 0.6f, weaponDef.Kind == WeaponKind.Operator ? 0.75f : 1f);
             wasReloading = Gun.Reloading;
-            if (wasScoped && !Gun.Scoped && weaponDef!.Kind == WeaponKind.Operator) adsHeld = false;
+            if (wasScoped && !Gun.Scoped && weaponDef!.Sniper) adsHeld = false;
         }
         else if (Mode.Is2D && firePressedEdge)
         {
@@ -380,6 +385,7 @@ public partial class GameSession : Node3D, IGame
         if (Mover.Crouching) flags |= (byte)FrameFlags.Crouch;
         if (Blind.FullyBlind) flags |= (byte)FrameFlags.Blind;
         if (!Player.Dead) flags |= (byte)FrameFlags.Alive;
+        if (!Mover.Grounded) flags |= (byte)FrameFlags.Airborne;
         f.Flags = flags;
         Telemetry.Frames.Add(f);
 
@@ -431,12 +437,10 @@ public partial class GameSession : Node3D, IGame
 
     void MovePlayer(float dt)
     {
-        var delta = Mover.Update(dt, View.Yaw, Main.I.Valorant);
+        // Keys → velocity (ground / air control), jump, crouch-jump, wall sliding, gravity, ceiling, landing (MovementBody.cs).
         var feet = new Vector3(View.Eye.X, feetY, View.Eye.Z);
-        Collision.MoveAndSlide(ref feet, ref Mover.Vel, delta, solid);
-        float ground = Collision.Ground(feet, solid);
-        if (ground >= feetY - 0.001f) { feetY = ground; fallSpeed = 0; }
-        else { fallSpeed += Collision.Gravity * dt; feetY = Mathf.Max(ground, feetY - fallSpeed * dt); }
+        Mover.Step(dt, View.Yaw, Main.I.Valorant, ref feet, solid);
+        feetY = feet.Y;
         View.Eye = new Vector3(feet.X, feetY + Mover.EyeHeight, feet.Z);
     }
 
@@ -542,6 +546,7 @@ public partial class GameSession : Node3D, IGame
     public void DamagePlayer(float dmg, Vector3 from)
     {
         if (Player.Dead || Now < Player.ProtectedUntil) return;
+        if (Player.Absorb?.Invoke(dmg, from) == true) return; // agent drills: a shield / dodge took this hit
         Player.Damage(dmg, from, Now);
         Sfx.I.Play("damage", 0.8f);
         if (Player.Dead)
@@ -561,19 +566,25 @@ public partial class GameSession : Node3D, IGame
 
     public void Respawn(Vector3 feet, float yaw)
     {
+        Mover.ResetMotion();
+        Mover.ResetBody();         // standing, no crouch-jump tuck
+        Mover.Place(ref feet, solid); // onto the floor under the spawn (or falling from rest if there's none)
         feetY = feet.Y;
-        fallSpeed = 0;
-        View.Eye = feet + new Vector3(0, PlayerView.EyeHeight, 0);
+        View.Eye = feet + new Vector3(0, Mover.EyeHeight, 0);
         View.Yaw = yaw;
         View.Pitch = 0;
         View.RecoilPitch = View.RecoilYaw = 0;
         Gun?.ResetRecoil();
-        Mover.ResetMotion();
         Player.Reset();
         UpdateCamera();
     }
 
-    public bool LineOfSight(Vector3 a, Vector3 b) => !Collision.Blocked(a, b, solid);
+    public bool LineOfSight(Vector3 a, Vector3 b) => (smokes.Count == 0 || !SmokeVolume.Blocks(smokes, a, b, Now)) && !Collision.Blocked(a, b, solid);
+    // Controller smokes / walls: vision blockers for LineOfSight (bullets ignore them). Restart() clears them.
+    readonly List<SmokeVolume> smokes = new();
+    public IReadOnlyList<SmokeVolume> Smokes => smokes;
+    public void AddSmoke(SmokeVolume smoke) => smokes.Add(smoke);
+    public void ClearSmokes() => smokes.Clear();
     public bool TriggerHeld => fireHeld && State == St.Running;
     public bool FirePressed => firePressedEdge && State == St.Running;
     public float? TrialSens { get; set; }

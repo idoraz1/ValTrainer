@@ -149,5 +149,17 @@ public static partial class MapSpots
             F("Deep pop toward Tree / A Switch", V(1.74f, 1.7f, -1.46f), V(-2.72f, 2.6f, 5.51f)),
             F("Pop right toward Boxes / Pillar", V(1.46f, 1.7f, -0.77f), V(-2.72f, 2.6f, -4.53f)),
         },
+        // Standard A Main execute: Heaven (balcony over Hell) and Tree (the A door), then Generator for a third smoke.
+        Smokes = new[]
+        {
+            new SmokeSpot("Heaven", V(-25.2f, 4.05f, -2.4f)),
+            new SmokeSpot("Tree", V(-4.9f, 0, 12.5f)),
+            new SmokeSpot("Generator", V(-15.6f, 1, 3.4f)),
+        },
+        // Spike: open site between Tetris and Generator, safe behind Generator, back site by Pillar.
+        PlantSpots = new[] { V(-16.5f, 1, 1.0f), V(-15.6f, 1, 8.6f), V(-19.8f, 1, -8.6f) },
+        // Retakes come from the defender side through Garden / the foot of the Heaven stairs and through A Link → Tree
+        // (Heaven itself only drops onto the site, which the bots can't path).
+        RetakeEntries = new[] { V(-38.5f, 0, 29.5f), V(-25f, 0, 29f), V(-5f, 0, 26.5f) },
     };
 }

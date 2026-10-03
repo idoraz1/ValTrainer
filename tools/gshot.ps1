@@ -68,6 +68,10 @@ function Get-TreeIds([int]$root) {
   # Only Godot / ValTrainer executables (conhost etc. exit on their own).
   return @($ids | Where-Object { $byId.ContainsKey($_) -and $byId[$_].Name -match '^(Godot|ValTrainer)' })
 }
+# One Godot at a time on this PC: gshot, godot-run.ps1 and selftest.ps1 share this slot (several agents starting Godot
+# at once froze the PC). An abandoned slot (holder crashed) is simply taken over.
+$slot = New-Object System.Threading.Mutex($false, "Global\ValTrainerGodotSlot")
+try { [void]$slot.WaitOne() } catch [System.Threading.AbandonedMutexException] { }
 $p = Start-Process $file -ArgumentList $argsList -PassThru -RedirectStandardOutput "$sp\$Name.out.log" -RedirectStandardError "$sp\$Name.err.log"
 $script:rootStart = $p.StartTime
 $prev = 0; $i = 0
@@ -100,5 +104,7 @@ foreach ($t in $At) {
 $ids = Get-TreeIds $p.Id
 foreach ($id in $ids) { Stop-Process -Id $id -Force -ErrorAction SilentlyContinue }
 Start-Sleep -Milliseconds 500
+try { $slot.ReleaseMutex() } catch { }
+$slot.Dispose()
 Get-Content "$sp\$Name.err.log" -ErrorAction SilentlyContinue | Where-Object { $_ -match "ERROR|Exception" } | Select-Object -First 15
 Get-Content "$sp\$Name.out.log" -ErrorAction SilentlyContinue | Where-Object { $_ -match "ERROR|Exception" } | Select-Object -First 15

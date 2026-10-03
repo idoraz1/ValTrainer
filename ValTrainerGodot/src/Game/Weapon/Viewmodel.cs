@@ -19,6 +19,8 @@ public partial class Viewmodel : Node3D
     public const uint VisualLayer = 1u << 19;
 
     WeaponKind kind;
+    /// <summary>The gun actually held: Chamber's guns use their family's model (<see cref="WeaponDef.Family"/>) in gold.</summary>
+    WeaponKind actual;
     bool left;
     VmPose pose = null!;
     readonly VmMaterials mats = new();
@@ -52,7 +54,7 @@ public partial class Viewmodel : Node3D
         VmTest.Init();
         if (VmTest.Kind is { } k) kind = k;
         if (VmTest.ForceLeft is { } l) leftHanded = l;
-        var v = new Viewmodel { kind = kind, left = leftHanded, Name = "Viewmodel" };
+        var v = new Viewmodel { kind = Weapons.FamilyOf(kind), actual = kind, left = leftHanded, Name = "Viewmodel" };
         v.Build();
         return v;
     }
@@ -67,7 +69,7 @@ public partial class Viewmodel : Node3D
         float w = pose.KickFreq * 2.1f;
         kPosV += new Vector3(R(-0.12f, 0.12f), R(0.15f, 0.35f), 1f) * pose.KickBack * w * s;
         kRotV += new Vector3(pose.KickPitch * R(0.85f, 1.1f), pose.KickPitch * R(-0.25f, 0.25f), pose.KickPitch * R(-0.4f, 0.4f)) * w * Mathf.Lerp(1f, 0.25f, adsK);
-        if (kind == WeaponKind.Operator) boltT = 0f;
+        if (actual == WeaponKind.Operator) boltT = 0f;
         else if (pose.Shells) EjectShell();
     }
 
@@ -123,6 +125,7 @@ public partial class Viewmodel : Node3D
         pose = VmPose.For(kind);
         lastFov = Main.I?.Settings?.ViewmodelFov ?? 70f;
         mats.SetFov(lastFov);
+        mats.Gold = actual != kind; // Chamber's custom guns: gold finish on the family model
 
         pivot = new Node3D { Name = "Pivot" };
         AddChild(pivot);
@@ -238,7 +241,9 @@ public partial class Viewmodel : Node3D
         crouchK = Mathf.Lerp(crouchK, crouch ? 1f : 0f, 1f - Mathf.Exp(-10f * dt));
         float hip = 1f - adsK;
 
-        var pos = pose.HipPos.Lerp(pose.AdsPos, adsK);
+        // Headhunter is the only aimed pistol: sit its sights a little lower so the slide doesn't hide a head-height target.
+        var adsPos = actual == WeaponKind.Headhunter ? pose.AdsPos + new Vector3(0f, -0.032f, 0.02f) : pose.AdsPos;
+        var pos = pose.HipPos.Lerp(adsPos, adsK);
         var rot = pose.HipRot.Lerp(pose.AdsRot, adsK);
 
         // Crouch: a little lower and canted in.
@@ -357,7 +362,7 @@ public partial class Viewmodel : Node3D
         supportHand.Transform = supportRest.InterpolateWith(hand, reloadW);
 
         // Operator: cycle the bolt at the end of the reload.
-        if (kind == WeaponKind.Operator && p > 0.8f && !reloadBolted) { reloadBolted = true; boltT = 0.15f; }
+        if (actual == WeaponKind.Operator && p > 0.8f && !reloadBolted) { reloadBolted = true; boltT = 0.15f; }
         return (rPos * reloadW, rRot * reloadW);
     }
 

@@ -102,14 +102,15 @@ change VALORANT either: you set the new sensitivity yourself in VALORANT's setti
 
 | Category | Drills |
 |---|---|
-| Aim | Gridshot, Head Flicks, Spidershot, Strafe Tracking |
-| VALORANT | Strafe Bots, Peek Practice, Operator |
+| Aim | Gridshot, Head Flicks, Spidershot, Strafe Tracking, Microshot (tiny corrections), Target Switch (three strafing agents), Pop-up Reflex (heads that vanish in a split second) |
+| VALORANT | Strafe Bots, Peek Practice, Operator, Long-range Taps (30–50 m Vandal taps with a recoil-reset ring) |
 | Recoil | **Vandal Spray / Phantom Spray**: spray a standing agent and keep it on the body. A spray chart after every spray shows your bullets against the target and the raw pattern, with coaching ("pull down more", "counter the drift right"). Distance and the required spray length scale with the tier. **Spray Transfer**: kill every agent in one continuous spray. |
-| Movement | Counter-Strafe, Peek Duels (the bot shoots back) |
-| Map | Site Clear: Ascent A Main, Bind Hookah, Haven C Long, Split A Main |
-| Utility | Flash Dodge: Phoenix, Breach, KAY/O, Skye, Yoru, Vyse, Gekko, using VALORANT's on-screen blind rule and per-agent timings and sounds |
-| Coach | Sens Finder (see below) |
-| Other | Reaction Test |
+| Movement | Counter-Strafe, Peek Duels (the bot shoots back), Jump Peek (spot an Operator mid-jump), Jiggle Peek (bait the Op, punish during his bolt) |
+| Map | Site Clear, Deathmatch, Post-Plant (hold while defenders retake and defuse), Retake (clear and defuse before the spike blows), Site Anchor (hold a site alone against an execute) on Ascent, Bind, Breeze, Haven, Icebox and Split |
+| Utility | Flash Dodge (Phoenix, Breach, KAY/O, Skye, Yoru, Vyse, Gekko, using VALORANT's on-screen blind rule and per-agent timings and sounds), Sound Lock (pre-aim from footsteps) |
+| Agents | The **Agents** screen covers all 29 agents: signature drills with the agent's own abilities (Flash & Peek, Recon & Clear, Smoke Execute, Mobility Entry, Site Anchor setups, Chamber Guns), drills for their role, and an agent warm-up |
+| Coach | Sens Finder, Crosshair Finder (see below) |
+| Other | Reaction Test, Warm Up routines |
 
 ## Difficulty tiers (calibrated to ranks)
 

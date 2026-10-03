@@ -36,6 +36,32 @@ public sealed class BotBrain
     public bool SeesPlayer => hadLos;
     public float FirstSeenAt = -1f;
 
+    // ---- utility effects on this bot (initiator drills); times on the session clock (g.Now) ----
+    /// <summary>Fully blind until this time: can't spot, aim or shoot, and loses whatever it was engaging.</summary>
+    public float BlindUntil = -1f;
+    /// <summary>Seeing again but still dazed until this time (flash fade-out / partial flash): slower reaction, worse aim.</summary>
+    public float DazedUntil = -1f;
+    /// <summary>Nearsighted until this time (Leer, Paranoia): sees the player only within <see cref="NearsightRange"/> metres.</summary>
+    public float NearsightUntil = -1f;
+    public float NearsightRange = 6f;
+    public bool IsBlind(float now) => now < BlindUntil;
+    public bool IsDazed(float now) => now < DazedUntil;
+    public bool IsNearsighted(float now) => now < NearsightUntil;
+
+    /// <summary>A flash hit this bot: fully blind for <paramref name="fullSeconds"/>, then dazed for <paramref name="dazedSeconds"/> more.</summary>
+    public void Flash(float now, float fullSeconds, float dazedSeconds)
+    {
+        BlindUntil = Mathf.Max(BlindUntil, now + fullSeconds);
+        DazedUntil = Mathf.Max(DazedUntil, now + fullSeconds + dazedSeconds);
+    }
+
+    /// <summary>Nearsighted for <paramref name="seconds"/>: it only sees within <paramref name="range"/> metres.</summary>
+    public void Nearsight(float now, float seconds, float range)
+    {
+        NearsightUntil = Mathf.Max(NearsightUntil, now + seconds);
+        NearsightRange = range;
+    }
+
     public BotBrain(BotCharacter body, BotSkill skill, Random rng)
     {
         Body = body;
@@ -67,6 +93,7 @@ public sealed class BotBrain
         var toPlayer = (g.View.Eye - eye).Normalized();
         headVisible = false;
         if (Mathf.RadToDeg(Mathf.Acos(Mathf.Clamp(HeldDir.Dot(toPlayer), -1, 1))) > HalfFovDeg) return false;
+        if (g.Now < NearsightUntil && eye.DistanceTo(g.View.Eye) > NearsightRange) return false; // nearsighted: only close range
         headVisible = g.LineOfSight(eye, g.View.Eye);
         if (headVisible) return true;
         foreach (var p in Exposure(g.View).Skip(1).Take(ShoulderSight ? 3 : 1)) // chest, then shoulders
@@ -79,6 +106,13 @@ public sealed class BotBrain
         if (!Enabled || Body.Dead || g.Player.Dead)
         {
             if (hadLos) { hadLos = false; fireAt = null; shot = 0; Body.AimTarget = null; }
+            return;
+        }
+        if (g.Now < BlindUntil)
+        {
+            // Flashed: loses whatever it was engaging and re-acquires from scratch afterwards (no "alert" pre-aim).
+            if (hadLos) { hadLos = false; fireAt = null; shot = 0; Body.AimTarget = null; }
+            alertUntil = -99f;
             return;
         }
         bool los = CanSee(g);
@@ -113,12 +147,14 @@ public sealed class BotBrain
         if (FirstSeenAt < 0) FirstSeenAt = now;
         bool alert = now < alertUntil;
         float react = Mathf.Max(120f, Gauss(Skill.ReactMs, Skill.ReactSd)) * (alert ? 0.6f : 1f) / 1000f;
+        if (now < DazedUntil) react *= 1.8f; // still seeing spots after a flash
 
         var toHead = (g.View.Eye - Body.Head);
         float dist = Mathf.Max(1f, toHead.Length());
         float placement = Mathf.RadToDeg(Mathf.Acos(Mathf.Clamp(HeldDir.Dot(toHead.Normalized()), -1, 1)));
         float err = alert || PreAimed ? 0.5f * Mathf.Abs(Gauss(0, Skill.XhairErrDeg))
                                       : Mathf.Sqrt(placement * placement + Mathf.Pow(Gauss(0, Skill.XhairErrDeg), 2));
+        if (now < DazedUntil) err = 2f * err + 1.5f; // dazed: worse crosshair placement
         float w = Mathf.RadToDeg(2f * Mathf.Atan(0.14f / dist)); // angular size of a head
         float settle = err <= w / 2 ? 0 : Skill.MsPerBit * Mathf.Log(err / w + 1f) / Mathf.Log(2f) / 1000f;
 
@@ -133,6 +169,7 @@ public sealed class BotBrain
         int s = shot % Skill.Burst; // accuracy recovers between bursts
         float p = Mathf.Max(Skill.PHit1 * 0.35f, Skill.PHit1 * Mathf.Pow(Skill.Decay, s));
         if (!headVisible) p *= 0.5f; // only a shoulder/chest is exposed
+        if (g.Now < DazedUntil) p *= 0.6f; // dazed after a flash
         if (moving)
         {
             if (!Skill.RunAndGun) { fireAt += 0.05f; return; } // good players stop before shooting

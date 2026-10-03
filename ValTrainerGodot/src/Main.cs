@@ -114,6 +114,7 @@ public partial class Main : Node
             case "about": SettingsScreen.StartPage = SettingsScreen.Page.About; Callable.From(ShowSettings).CallDeferred(); break;
             case "stats": Callable.From(ShowStats).CallDeferred(); break;
             case "warmup": Callable.From(ShowWarmup).CallDeferred(); break;
+            case "agents": Callable.From(ShowAgents).CallDeferred(); break; // + --agent jett, --agent-go routine|<drill> (AgentsScreen)
         }
         // Dev-only: "--warmup quick|standard|pro|demo" starts a warm-up routine (demo = summary with made-up data).
         if (Dev && make == null && CmdLine.After("--warmup") is { } wu) Callable.From(() => Warmup.WarmupRunner.StartDev(wu)).CallDeferred();
@@ -155,12 +156,19 @@ public partial class Main : Node
     public int Tier => TierOverride ?? Settings.Tier;
     public string MapKey => MapOverride ?? Settings.MapKey;
 
+    /// <summary>Set when a drill or warm-up is started from the Agents screen: the next <see cref="ShowMenu"/> (results →
+    /// MENU, pause → Back to menu, warm-up summary) returns to the Agents screen instead of the main menu.</summary>
+    public bool ReturnToAgents;
+
     public void ShowMenu()
     {
         Warmup.WarmupRunner.Abandon(); // leaving a warm-up mid-routine (pause → Back to menu)
         Input.MouseMode = Input.MouseModeEnum.Visible;
+        if (ReturnToAgents) { ReturnToAgents = false; SetScreen(new AgentsScreen()); return; }
         SetScreen(new MenuScreen());
     }
+
+    public void ShowAgents() => SetScreen(new AgentsScreen());
 
     public void ShowSettings() => SetScreen(new SettingsScreen());
     public void ShowStats() => SetScreen(new StatsScreen());

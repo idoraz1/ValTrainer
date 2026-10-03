@@ -93,10 +93,37 @@ public partial class StatsScreen : ScreenBase
         if (table == null) return;
         foreach (var c in table.GetChildren()) { table.RemoveChild(c); c.QueueFree(); }
         int i = 0;
-        foreach (var m in modes)
+        foreach (var (m, label) in Rows())
         {
             var runs = Main.I.Stats.For(m.Key).Where(r => selTier < 0 ? r.Tier < 0 : r.Tier == selTier).ToList();
-            table.AddChild(new StatsRow(m, runs) { K = K, Legacy = selTier < 0, Stripe = i++ % 2 == 0, CustomMinimumSize = new Vector2(0, 58 * K) });
+            table.AddChild(new StatsRow(m, runs) { Label = label, K = K, Legacy = selTier < 0, Stripe = i++ % 2 == 0, CustomMinimumSize = new Vector2(0, 58 * K) });
+        }
+    }
+
+    /// <summary>
+    /// One row per drill. Drills with per-agent variants (<see cref="ModeRegistry.WithArg"/>: "flashpeek:skye", "anchor:killjoy",
+    /// "chamber:tdf") get a row per variant ever played ("FLASH &amp; PEEK · SKYE"); one with a plain version (Site Anchor) keeps
+    /// its own row too, and one without any runs yet shows a single row.
+    /// </summary>
+    IEnumerable<(TrainingMode Mode, string? Label)> Rows()
+    {
+        var played = Main.I.Stats.Runs.Select(r => r.Mode ?? "").Where(k => k.Length > 0).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var m in modes)
+        {
+            int c = m.Key.IndexOf(':');
+            string b = c > 0 ? m.Key[..c] : m.Key;
+            if (!ModeRegistry.WithArg.ContainsKey(b)) { yield return (m, null); continue; }
+            var variants = played.Where(k => k.Length > b.Length + 1 && k.StartsWith(b + ":", StringComparison.OrdinalIgnoreCase))
+                .Select(k => (Key: k, Arg: Agents.AgentRoster.ArgName(k[(b.Length + 1)..]))).OrderBy(v => v.Arg, StringComparer.OrdinalIgnoreCase).ToList();
+            bool plain = c < 0;
+            if (plain || variants.Count == 0) yield return (m, null);
+            foreach (var (key, arg) in variants)
+            {
+                TrainingMode v;
+                try { v = ModeRegistry.Find(key)?.Invoke() ?? m; } catch { v = m; }
+                if (v.Key != key) continue; // the drill no longer knows this argument
+                yield return (v, $"{v.Name} · {arg}");
+            }
         }
     }
 
@@ -152,6 +179,8 @@ public partial class StatsRow : Control
     public bool Stripe;
     /// <summary>Old Easy/Normal/Hard runs were never rated.</summary>
     public bool Legacy;
+    /// <summary>Row title instead of the drill name (per-agent variants: "Flash &amp; Peek · Skye").</summary>
+    public string? Label;
     float hover;
 
     public StatsRow(TrainingMode m, List<RunRecord> list)
@@ -187,7 +216,7 @@ public partial class StatsRow : Control
         float ColW(int c) => (c + 1 < StatsScreen.Cols.Length ? StatsScreen.Cols[c + 1] : 1f) * w - StatsScreen.Cols[c] * w - 10 * k;
 
         int ns = UiTheme.Fs(22, k), cs = UiTheme.Fs(11, k), vs = UiTheme.Fs(22, k);
-        Gfx.TextFit(this, UiTheme.Display, mode.Name.ToUpperInvariant(), X(0), Gfx.Mid(cy - 8 * k, ns), ns, UiTheme.Text, ColW(0));
+        Gfx.TextFit(this, UiTheme.Display, (Label ?? mode.Name).ToUpperInvariant(), X(0), Gfx.Mid(cy - 8 * k, ns), ns, UiTheme.Text, ColW(0));
         Gfx.Text(this, UiTheme.HudWide, mode.Category.ToUpperInvariant(), X(0), Gfx.Mid(cy + 13 * k, cs), cs, ModeCard.CategoryColor(mode.Category));
 
         if (runs == 0)

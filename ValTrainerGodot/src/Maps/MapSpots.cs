@@ -18,7 +18,10 @@ public static partial class MapSpots
 
     // Lazy: the map fields live in other partial files (MapSpots.<Map>.cs), whose initialisation order is unspecified.
     static MapSpot[]? all;
-    public static MapSpot[] All => all ??= new[] { Ascent, Bind, Haven, Split };
+    public static MapSpot[] All => all ??= new[]
+    {
+        Ascent, Bind, Breeze, Haven, Icebox, Split,
+    };
 
     public static MapSpot ByKey(string? key) => All.FirstOrDefault(m => m.Key == key) ?? Ascent;
 }

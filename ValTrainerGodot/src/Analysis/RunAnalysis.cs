@@ -10,10 +10,21 @@ namespace ValTrainer.Analysis;
 /// </summary>
 static class RunAnalysis
 {
-    static readonly HashSet<string> StaticModes = new() { "flick", "spider", "gridshot" };
+    static readonly HashSet<string> StaticModes = new() { "flick", "spider", "gridshot", "microshot", "popup" };
     static readonly HashSet<string> SpawnBotModes = new() { "strafebots", "counterstrafe" };
-    static readonly HashSet<string> SeenBotModes = new() { "peek", "peekduel", "siteclear", "deathmatch" };
-    static readonly HashSet<string> MovementModes = new() { "counterstrafe", "peekduel", "siteclear", "flashmap", "deathmatch" };
+    static readonly HashSet<string> SeenBotModes = new()
+    {
+        "peek", "peekduel", "siteclear", "deathmatch", "longtaps", "jumppeek", "jigglepeek",
+        "flashpeek", "recon", "smokeexec", "mobility", "chamber", "postplant", "retake", "anchor", "sound",
+    };
+    static readonly HashSet<string> MovementModes = new()
+    {
+        "counterstrafe", "peekduel", "siteclear", "flashmap", "deathmatch", "jumppeek", "jigglepeek",
+        "flashpeek", "recon", "smokeexec", "mobility", "postplant", "retake", "anchor",
+    };
+
+    /// <summary>Mode key without its argument: "flashpeek:skye" → "flashpeek" (lists above hold base keys).</summary>
+    public static string Base(string mode) { int c = mode.IndexOf(':'); return c > 0 ? mode[..c] : mode; }
 
     public static Dictionary<string, float> Run(RunTelemetry t)
     {
@@ -231,7 +242,7 @@ static class RunAnalysis
         var t = p.T;
         var list = new List<Trial>();
         var fr = t.Frames;
-        if (StaticModes.Contains(t.Mode))
+        if (StaticModes.Contains(Base(t.Mode)))
         {
             // Absolute direction of each static target, from the first frame that focused it.
             var abs = new Dictionary<int, (float Yaw, float Pitch, float R)>();
@@ -282,10 +293,10 @@ static class RunAnalysis
                 }
             }
         }
-        else if (SpawnBotModes.Contains(t.Mode) || SeenBotModes.Contains(t.Mode))
+        else if (SpawnBotModes.Contains(Base(t.Mode)) || SeenBotModes.Contains(Base(t.Mode)))
         {
             // First engagement with each bot: from spawn (strafe/counter-strafe) or first sight (peek modes).
-            bool seen = SeenBotModes.Contains(t.Mode);
+            bool seen = SeenBotModes.Contains(Base(t.Mode));
             var kills = t.Events.Where(e => e.Kind == "kill").Select(e => e.T).ToList();
             foreach (var e in t.Events)
             {
@@ -748,7 +759,7 @@ static class RunAnalysis
             m["move.counter"] = stops.Count(s => s.B >= 0.5f);
             m["move.stop_ms"] = Dsp.Mean(stops.Select(s => s.A));
         }
-        if (!MovementModes.Contains(t.Mode) || t.Shots.Count == 0) return;
+        if (!MovementModes.Contains(Base(t.Mode)) || t.Shots.Count == 0) return;
         var shots = t.Shots;
         var moving = shots.Where(s => s.Speed > 1.35f).ToList();
         int early = shots.Count(s => stops.Any(st => s.T >= st.T - st.A / 1000f - 1e-4f && s.T < st.T - st.A / 1000f + 0.104f));
@@ -835,7 +846,7 @@ static class RunAnalysis
         m["flash.dodge_tier"] = Bench.DodgeTier(m["flash.dodge_pct"], t.Tier);
     }
 
-    static bool HorizExcluded(string mode) => mode is "peek" or "flashmap";
+    static bool HorizExcluded(string mode) => Base(mode) is "peek" or "flashmap" or "longtaps";
 
     /// <summary>
     /// A stored run's metrics as the profile uses them (runs saved by older versions are brought up to date without

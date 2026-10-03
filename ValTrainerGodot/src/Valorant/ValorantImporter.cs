@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using Key = Godot.Key;
+using MouseButton = Godot.MouseButton;
 using ValTrainer.Core;
 
 namespace ValTrainer.Valorant;
@@ -48,6 +49,59 @@ public sealed class ValorantProfile
     public Key KeyLeft = Key.A, KeyRight = Key.D;
     public Key KeyWalk = Key.Shift;
     public Key KeyCrouch = Key.Ctrl;
+
+    // Jump: two bind slots like VALORANT (primary / secondary). A slot holds a key or a mouse bind (wheel notch, thumb
+    // button); Key.None / MouseButton.None = not that kind. Default: Space, no secondary.
+    public Key KeyJump = Key.Space, KeyJump2 = Key.None;
+    public MouseButton MouseJump = MouseButton.None, MouseJump2 = MouseButton.None;
+
+    /// <summary>True if this mouse button / wheel notch is bound to Jump.</summary>
+    public bool JumpsOn(MouseButton b) => b != MouseButton.None && (b == MouseJump || b == MouseJump2);
+
+    internal void SetJumpSlot(int slot, Key key, MouseButton mouse)
+    {
+        if (slot == 0) { KeyJump = key; MouseJump = mouse; }
+        else { KeyJump2 = key; MouseJump2 = mouse; }
+    }
+
+    /// <summary>The jump binds for display, e.g. "Space + Wheel down".</summary>
+    public string JumpBindText
+    {
+        get
+        {
+            var parts = new List<string>(2);
+            void Add(Key k, MouseButton b)
+            {
+                if (b != MouseButton.None) parts.Add(b switch
+                {
+                    MouseButton.WheelUp => "Wheel up", MouseButton.WheelDown => "Wheel down", MouseButton.Middle => "Mouse 3",
+                    MouseButton.Xbutton1 => "Mouse 4", MouseButton.Xbutton2 => "Mouse 5", _ => b.ToString(),
+                });
+                else if (k != Key.None) parts.Add(k.ToString());
+            }
+            Add(KeyJump, MouseJump);
+            Add(KeyJump2, MouseJump2);
+            return parts.Count == 0 ? "unbound" : string.Join(" + ", parts);
+        }
+    }
+
+    // Agent abilities (agent drills), by slot: 0 = C (grenade slot), 1 = Q (ability 1), 2 = E (ability 2 / signature),
+    // 3 = X (ultimate). A slot holds a key or a mouse button (Key.None / MouseButton.None = not that kind).
+    public readonly Key[] AbilityKeys = { Key.C, Key.Q, Key.E, Key.X };
+    public readonly MouseButton[] AbilityMouse = { MouseButton.None, MouseButton.None, MouseButton.None, MouseButton.None };
+
+    /// <summary>An ability slot's bind for display: "Q", "Mouse 4" …</summary>
+    public string AbilityBindText(int slot)
+    {
+        if (slot < 0 || slot > 3) return "?";
+        var b = AbilityMouse[slot];
+        if (b != MouseButton.None) return b switch
+        {
+            MouseButton.Middle => "Mouse 3", MouseButton.Xbutton1 => "Mouse 4", MouseButton.Xbutton2 => "Mouse 5", _ => b.ToString(),
+        };
+        var k = AbilityKeys[slot];
+        return k == Key.None ? "unbound" : Godot.OS.GetKeycodeString(k);
+    }
 
     // Visual
     public CrosshairSettings Crosshair = new();
@@ -222,6 +276,8 @@ public static class ValorantImporter
                 var name = m.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
                 var keyName = m.TryGetProperty("key", out var k) ? k.GetString() ?? "" : "";
                 var who = m.TryGetProperty("characterName", out var c) ? c.GetString() : "None";
+                if (who == "None" && name.Equals("Jump", StringComparison.OrdinalIgnoreCase)) { ApplyJumpBind(p, m, keyName); continue; }
+                if (who == "None" && AbilitySlotOf(name) is int abilitySlot) { ApplyAbilityBind(p, m, abilitySlot, keyName); continue; }
                 if (who != "None" || UeKey(keyName) is not { } key) continue;
 
                 if (name.Contains("Forward", StringComparison.OrdinalIgnoreCase)) p.KeyForward = key;
@@ -234,6 +290,71 @@ public static class ValorantImporter
         }
         catch { /* keep defaults */ }
     }
+
+    /// <summary>
+    /// Jump has two bind slots ("bindIndex" 0 = primary, 1 = secondary). Each is a key, a mouse wheel notch / button, or
+    /// "None" (unbound). The file only lists rebound slots: the others keep their defaults (Space / nothing).
+    /// </summary>
+    static void ApplyJumpBind(ValorantProfile p, JsonElement m, string keyName)
+    {
+        int slot = m.TryGetProperty("bindIndex", out var bi) && bi.ValueKind == JsonValueKind.Number && bi.TryGetInt32(out int b) ? b : 0;
+        if (slot is < 0 or > 1) return;
+        var mouse = UeMouse(keyName);
+        var key = mouse == null ? UeKey(keyName) : null;
+        bool unbound = keyName.Length == 0 || keyName.Equals("None", StringComparison.OrdinalIgnoreCase);
+        if (mouse == null && key == null && !unbound) return; // a key we can't map: keep the default
+        p.SetJumpSlot(slot, key ?? Key.None, mouse ?? MouseButton.None);
+    }
+
+    /// <summary>
+    /// VALORANT's ability actions → slot (0 C grenade, 1 Q ability 1, 2 E ability 2, 3 X ultimate). The action names in
+    /// BackupKeybinds.json aren't documented, so this matches tolerantly: "…Grenade…", "…Ultimate…", "…Ability…1/One",
+    /// "…Ability…2/Two". Anything else (pings, chat …) is ignored.
+    /// </summary>
+    static int? AbilitySlotOf(string name)
+    {
+        const StringComparison I = StringComparison.OrdinalIgnoreCase;
+        if (name.Contains("Ping", I) || name.Contains("Chat", I) || name.Contains("Radio", I) || name.Contains("Comm", I)) return null;
+        if (name.Contains("Ultimate", I)) return 3;
+        if (name.Contains("Grenade", I)) return 0;
+        if (!name.Contains("Ability", I)) return null;
+        if (name.EndsWith('1') || name.Contains("One", I)) return 1;
+        if (name.EndsWith('2') || name.Contains("Two", I)) return 2;
+        return null;
+    }
+
+    /// <summary>Primary bind (bindIndex 0) of an ability slot: a key or a mouse button; unmappable keys keep the default.</summary>
+    static void ApplyAbilityBind(ValorantProfile p, JsonElement m, int slot, string keyName)
+    {
+        int bind = m.TryGetProperty("bindIndex", out var bi) && bi.ValueKind == JsonValueKind.Number && bi.TryGetInt32(out int b) ? b : 0;
+        if (bind != 0 || slot is < 0 or > 3) return;
+        var mouse = UeMouse(keyName);
+        if (mouse is MouseButton.WheelUp or MouseButton.WheelDown) return; // wheel notches can't be held: keep the default
+        var key = mouse == null ? UeKey(keyName) ?? UeExtraKey(keyName) : null;
+        if (mouse == null && key == null) return;
+        p.AbilityKeys[slot] = key ?? Key.None;
+        p.AbilityMouse[slot] = mouse ?? MouseButton.None;
+    }
+
+    /// <summary>Unreal names of keys people bind abilities to that <see cref="UeKey"/> doesn't cover (digits, Tab …).</summary>
+    static Key? UeExtraKey(string ue) => ue switch
+    {
+        "One" => Key.Key1, "Two" => Key.Key2, "Three" => Key.Key3, "Four" => Key.Key4, "Five" => Key.Key5,
+        "Six" => Key.Key6, "Seven" => Key.Key7, "Eight" => Key.Key8, "Nine" => Key.Key9, "Zero" => Key.Key0,
+        "Tab" => Key.Tab, "Tilde" => Key.Quoteleft, "RightAlt" => Key.Alt,
+        _ => null,
+    };
+
+    /// <summary>Unreal mouse key names → Godot mouse buttons (wheel notches and the extra buttons people bind jump to).</summary>
+    static MouseButton? UeMouse(string ue) => ue switch
+    {
+        "MouseScrollUp" => MouseButton.WheelUp,
+        "MouseScrollDown" => MouseButton.WheelDown,
+        "MiddleMouseButton" => MouseButton.Middle,
+        "ThumbMouseButton" => MouseButton.Xbutton1,
+        "ThumbMouseButton2" => MouseButton.Xbutton2,
+        _ => null,
+    };
 
     /// <summary>Unreal key names → Godot keys (only what's plausible for movement).</summary>
     static Key? UeKey(string ue)

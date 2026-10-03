@@ -16,6 +16,8 @@ public sealed class VmMaterials
     public static Shader Shader => shader ??= GD.Load<Shader>(ShaderPath);
     public static Shader FlashShader => flashShader ??= GD.Load<Shader>(FlashShaderPath);
 
+    /// <summary>Gold finish (Chamber's Headhunter / Tour De Force on the Sheriff / Operator model).</summary>
+    public bool Gold;
     readonly List<ShaderMaterial> lit = new();
     readonly List<ShaderMaterial> all = new();
     float focal = 1.428f, flash;
@@ -49,6 +51,21 @@ public sealed class VmMaterials
     public ShaderMaterial ForGunSurface(string name, Color src)
     {
         string k = name.ToLowerInvariant();
+        if (Gold)
+        {
+            // Chamber's custom guns: polished gold metal parts, warm dark-bronze polymer (own tint, no imported art).
+            var gold = new Color(0.83f, 0.62f, 0.25f);
+            var bronze = new Color(0.16f, 0.12f, 0.08f);
+            switch (k)
+            {
+                case "main": case "mainlight": case "metal": case "lightmetal": case "grey":
+                    return Make(gold.Lerp(src, 0.15f), 0.95f, 0.26f, 0.6f, 0.35f, 0.25f);
+                case "darkmetal": case "maindark":
+                    return Make(gold.Darkened(0.45f), 0.9f, 0.32f, 0.55f, 0.45f, 0.22f);
+                case "black": case "green":
+                    return Make(bronze, 0.2f, 0.4f, 0.5f, 0.55f, 0.2f);
+            }
+        }
         return k switch
         {
             "glass" => Make(new Color(0.02f, 0.05f, 0.11f), 0.1f, 0.05f, 1.0f, 0f, 0.6f),

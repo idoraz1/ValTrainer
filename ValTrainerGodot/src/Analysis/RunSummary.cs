@@ -10,17 +10,21 @@ static class RunSummary
     static readonly HashSet<string> CoachModes = new()
     {
         "flick", "spider", "gridshot", "tracking", "strafebots", "peek", "counterstrafe", "peekduel", "siteclear", "flashmap", "deathmatch",
-        "reaction", "spray_vandal", "spray_phantom",
+        "reaction", "spray_vandal", "spray_phantom", "microshot", "popup", "longtaps", "jumppeek", "jigglepeek",
+        "flashpeek", "recon", "smokeexec", "mobility", "chamber", "postplant", "retake", "anchor", "sound",
     };
 
     /// <summary>Summary for a run without enough data for any finding: what this mode needs, or that it doesn't feed the coach.</summary>
     public static string NoData(string mode)
     {
+        mode = RunAnalysis.Base(mode);
         if (!CoachModes.Contains(mode))
             return "This drill doesn't feed the aim coach yet — your score and accuracy above are the measure. Head Flicks, Spidershot, Gridshot, Strafe Tracking, the bot drills and the spray drills all get a detailed review.";
         string need = mode switch
         {
-            "flick" => "hit at least 5 targets",
+            "flick" or "microshot" or "popup" => "hit at least 5 targets",
+            "longtaps" or "jumppeek" or "jigglepeek" or "chamber" or "sound" => "let a few enemies show up and shoot them",
+            "flashpeek" or "recon" or "smokeexec" or "mobility" or "postplant" or "retake" or "anchor" => "play a few rounds and take some duels",
             "spider" or "gridshot" => "play at least 15 seconds and hit a few targets",
             "tracking" => "hold fire on the target for at least a few seconds",
             "strafebots" => "take on a few bots",

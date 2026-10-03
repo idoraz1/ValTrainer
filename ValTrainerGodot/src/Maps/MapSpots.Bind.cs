@@ -107,5 +107,16 @@ public static partial class MapSpots
             F("High pop out of the window", V(0, 3.1f, 1.5f), V(-2, 6, -7)),
             F("Deep pop over Elevator", V(1, 3.1f, 1.5f), V(-3, 5.2f, -10)),
         },
+        // Standard Hookah execute: Elbow (where it opens onto site) and Hall (the doorway to defender spawn), then Garden.
+        Smokes = new[]
+        {
+            new SmokeSpot("Elbow", V(-21.6f, 0, -6.6f)),
+            new SmokeSpot("Hall", V(3.8f, 0, -21.6f)),
+            new SmokeSpot("Garden", V(-12.2f, 0, 6.8f)),
+        },
+        // Spike: default by the low box in front of Elevator, behind Elevator (Hall side), open under the Hookah window.
+        PlantSpots = new[] { V(-4.5f, 0, -8.6f), V(-6.5f, 0, -17.3f), V(-1f, 0, -6f) },
+        // Retakes: the B Hall door from defender spawn, upper Elbow, and the top of B Long (via Garden).
+        RetakeEntries = new[] { V(11.8f, 0, -25.6f), V(-26f, 0, -17f), V(-26.5f, 0, 12f) },
     };
 }

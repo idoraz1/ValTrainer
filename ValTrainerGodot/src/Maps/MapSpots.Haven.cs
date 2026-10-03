@@ -111,5 +111,16 @@ public static partial class MapSpots
             F("Deep site lob", V(-0.59f, 1.6f, 4.17f), V(1.76f, 4.6f, -8.85f)),
             F("Left corner pop", V(-1.37f, 1.6f, 3.65f), V(-4.49f, 3.2f, -2.21f)),
         },
+        // Standard C Long execute: C Link (the defender-spawn side) and Garage (the Connector mouth), then Logs.
+        Smokes = new[]
+        {
+            new SmokeSpot("C Link", V(12.4f, 0, -27.4f)),
+            new SmokeSpot("Garage", V(15.6f, 0, -5.2f)),
+            new SmokeSpot("Logs", V(13.2f, 0, -19.6f)),
+        },
+        // Spike: default behind the big C box, in front of the box, back site by Plat.
+        PlantSpots = new[] { V(5.5f, 0, -17.4f), V(4.5f, 0, -12.6f), V(-3f, 0, -21.5f) },
+        // Retakes: C Link from the B / defender-spawn side, Garage from Mid, and the C Window corridor.
+        RetakeEntries = new[] { V(31f, 0, -19.5f), V(29f, 0, 2.5f), V(32.5f, 0.4f, -12.3f) },
     };
 }

@@ -8,6 +8,37 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-03
+
+### Added
+
+- **Agents screen** (AGENTS on the menu): all 29 agents grouped by role. Each agent page shows the agent's abilities and which drill trains each one, signature drills played with that agent's own utility, drills for its role, and a 10-minute agent warm-up (sens shifter included).
+- **Agent drills**:
+  - **Flash & Peek**: throw your own flash (Phoenix, Skye, Yoru, KAY/O, Breach, Gekko) or nearsight (Reyna's Leer, Omen's Paranoia), then swing and kill the blinded defenders. Each ability works like the real one, and you can still flash yourself.
+  - **Recon & Clear**: Sova's Recon Bolt (charge and bounces) or Fade's Haunt reveals defenders through walls before you clear the site.
+  - **Smoke Execute** for Brimstone, Omen, Astra, Clove, Viper, Harbor and Miks: plan on a top-down tactical map, place smokes with the agent's own mechanic, then take the site while smoked defenders can't see you. Scored on the sightlines you cut and how close you got to the standard smokes, with a top-down replay of every round.
+  - **Mobility Entry** for Jett (Tailwind, Updraft, and an Op + dash variant), Neon (sprint and slide), Raze (satchel boost), Reyna (Dismiss, Devour), Yoru (Gatecrash), Waylay (Lightspeed, Refract) and Iso (Double Tap shield).
+  - **Chamber Guns**: Headhunter one-taps and Tour De Force holds.
+  - **Site Anchor**: hold a site alone while 2–4 attackers execute (entry flashes, swings, spike plant), plain or with a sentinel setup you place like in VALORANT: Killjoy, Cypher, Deadlock, Vyse, Sage, Veto or Chamber.
+- **Jumping**: jump and crouch-jump onto ledges, air strafing, airborne and landing inaccuracy, and fall damage. Your jump keybind (including mouse wheel) is imported from VALORANT. Your ability keybinds are imported too.
+- **New drills**:
+  - **Microshot**: tiny, close heads for small corrections.
+  - **Target Switch**: three strafing agents; switch fast and watch your overflicks.
+  - **Pop-up Reflex**: heads that vanish in a split second.
+  - **Long-range Taps**: 30–50 m Vandal taps, with a ring that shows when the recoil has reset.
+  - **Jump Peek**: spot an Operator mid-jump, then punish his miss.
+  - **Jiggle Peek**: bait the Op with your shoulder, then swing during his bolt.
+  - **Post-Plant**: hold an on-site, off-angle or crossfire spot while defenders retake and go for the defuse.
+  - **Retake**: come in as the last defender, clear the attackers and defuse (key 4, 7 s with the half-defuse checkpoint) before the spike blows.
+  - **Sound Lock**: hear positional footsteps (running audible, walking silent, muffled through walls) and pre-aim the corner they'll peek from.
+- **New maps**: **Icebox** (B Main → B Site: Yellow, Top Site and the Bridge, Snowman, Kitchen, Tube, Hut) and **Breeze** (A Lobby → A Main → A Site: the pyramids and pool, Yellow, A Bridge, Mid Doors), traced at true scale from the official layouts, for every map drill and Deathmatch.
+- Every map now has plant spots, retake routes and the standard controller smokes.
+
+### Changed
+
+- The menu now fits every drill on one screen. It has a compact map selector, and the Career screen lists agent drills per agent.
+- The aim coach now also reviews the new drills.
+
 ## [1.3.0] - 2026-10-02
 
 ### Added
@@ -89,7 +120,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/idoraz1/ValTrainer/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/idoraz1/ValTrainer/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/idoraz1/ValTrainer/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/idoraz1/ValTrainer/compare/v1.0.0...v1.1.0

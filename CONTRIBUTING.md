@@ -111,6 +111,10 @@ players can never trigger them by accident.
 | `--update-throttle <KB/s>` | Slows the update download (progress and interrupted-download tests). |
 | `--update-apply-after <s>` | Clicks RESTART TO UPDATE by itself that many seconds after the update is ready. |
 | `--whats-new [fromVersion]` | Shows the "What's new" panel as if you updated from that version. |
+| `--mode <key>:<agent>` | Agent drills take the agent after a colon: `flashpeek:skye`, `recon:fade`, `smokeexec:viper`, `mobility:neon`, `chamber:tdf`, `anchor:cypher`. |
+| `--autothrow`, `--autosmoke`, `--autoability`, `--autosetup`, `--autotac`, `--tacghost` | Auto-play the agent and tactical drills so they can run unattended with `--simaim` (initiator throws, controller smokes, duelist abilities, sentinel setups, post-plant/retake). `--tacghost`: bots can't see you. |
+| `--movescript "<keys>"` / `--movescript auto`, `--movelog`, `--movecheck`, `--jumpaudit all\|<map>\|<mode>` | Movement testing: scripted key presses, landing log, 27 physics checks, and an audit of spots a jump can reach that it shouldn't. |
+| `--screen agents`, `--agent <key>`, `--agent-search <text>`, `--agent-role <role>`, `--agent-go routine\|<drill>`, `--map-picker` | Agents screen and map picker. |
 | `--throw-test` | Throws test exceptions to check that they reach the log. |
 | `--vmtest …` | Viewmodel and effects test harness, see `src/Game/Weapon/VmTest.cs`. |
 | `--envperf`, `--envcam`, `--envscale`, `--envtweak`, `--skyyaw` | Environment and performance tuning, see `src/World/EnvDev.cs`. |
@@ -131,6 +135,11 @@ tools\selftest.ps1 -SkipSmoke               # only the coach and locale tests
 ```
 
 The exit code is the number of failed checks; logs of failed checks are kept and their path is printed.
+
+**One Godot at a time.** `tools\godot-run.ps1`, `gshot.ps1` and `selftest.ps1` share a machine-wide lock
+(`Global\ValTrainerGodotSlot`), so only one Godot process runs at once even when several tools or agents test in
+parallel. Running many Godot instances at the same time can freeze a PC. Start headless runs, imports and exports
+through `tools\godot-run.ps1 -Seconds <limit> -GodotArgs "--path","<project>","--headless",…`.
 
 **`tools\gshot.ps1`** starts a `--dev` run in a window and saves screenshots of **its own window only** at the given
 times (other windows on top are never captured), then stops only the processes it started. Screenshots go to

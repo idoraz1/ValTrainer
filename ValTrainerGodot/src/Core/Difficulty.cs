@@ -142,6 +142,48 @@ public static class Difficulty
     public static readonly float[] CounterStrafeTtk = { 1400, 1150, 950, 800, 680 };
     public static readonly float[] ReactionMs = { 9999, 265, 230, 200, 175 };
 
+    // ---- v1.4 aim drills (tier parameters in Modes/AimPlusModes.cs → AimPlusTiers). Rows = tier played, columns =
+    // badge Rookie … Pro: the median a player of that rank reaches at that tier, from a per-rank reaction + Fitts model
+    // (flick onset 265 → 155 ms, primary endpoint error 24 → 5%, coach_spec.md) cross-checked against Aim Lab /
+    // KovaaK's numbers and Peek Practice's PeekTtk. 999 = not reachable at that tier.
+
+    /// <summary>Microshot median ms-to-hit (lower is better; needs ≥ 70% accuracy).</summary>
+    public static readonly float[][] MicroshotBadges =
+    {
+        new[] { 665f, 540, 460, 400, 355 },
+        new[] { 730f, 565, 480, 415, 365 },
+        new[] { 800f, 615, 510, 435, 385 },
+        new[] { 870f, 680, 530, 450, 395 },
+        new[] { 950f, 750, 590, 485, 420 },
+    };
+    /// <summary>Target Switch kills per minute (higher is better; needs ≥ 30% accuracy).</summary>
+    public static readonly float[][] SwitchBadges =
+    {
+        new[] { 37.5f, 54, 75, 105, 145 },
+        new[] { 33.5f, 48, 67, 94, 130 },
+        new[] { 30f, 43, 60, 84, 116 },
+        new[] { 26.5f, 38, 54, 75, 103 },
+        new[] { 24f, 34, 48, 67, 92 },
+    };
+    /// <summary>Pop-up Reflex % of pop-ups hit (higher is better; needs ≥ 50% accuracy). One badge above the tier played at most.</summary>
+    public static readonly float[][] PopupBadges =
+    {
+        new[] { 60f, 90, 999, 999, 999 },
+        new[] { 22f, 68, 90, 999, 999 },
+        new[] { 8f, 32, 66, 90, 999 },
+        new[] { 3f, 14, 37, 68, 90 },
+        new[] { 2f, 8, 23, 47, 70 },
+    };
+    /// <summary>Long-range Taps median ms from first sight to the kill (lower is better; needs ≥ 60% kills and tap discipline).</summary>
+    public static readonly float[][] LongTapsBadges =
+    {
+        new[] { 1910f, 1440, 1110, 850, 700 },
+        new[] { 2150f, 1610, 1260, 980, 790 },
+        new[] { 2380f, 1780, 1390, 1090, 890 },
+        new[] { 2680f, 1970, 1530, 1220, 980 },
+        new[] { 2810f, 2130, 1630, 1290, 1060 },
+    };
+
     /// <summary>Kill-time drills: clear the tier with ≥80% kills under its TTK; beat next tier's TTK with ≥90% to go up one.</summary>
     public static int BadgeTtk(int played, float killRate, float medianTtk, float[] ttk)
     {

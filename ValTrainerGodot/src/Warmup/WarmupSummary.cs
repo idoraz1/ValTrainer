@@ -50,7 +50,7 @@ public partial class WarmupSummary : ScreenBase
             (Demo ? " · DEMO DATA" : ""));
         title.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         head.AddChild(title);
-        var again = Btn("WARM UP AGAIN", VButton.Look.Secondary, Main.I.ShowWarmup, 220, 52, 20);
+        var again = Btn("WARM UP AGAIN", VButton.Look.Secondary, Agents.AgentRoutines.Again(rec.Preset) ?? (Action)Main.I.ShowWarmup, 220, 52, 20);
         again.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         head.AddChild(again);
         var menu = Btn("MENU", VButton.Look.Primary, Main.I.ShowMenu, 170, 52, 22);

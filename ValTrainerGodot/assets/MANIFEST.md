@@ -42,6 +42,8 @@ Import settings: VRAM compressed (BC/S3TC → `.s3tc.ctex`), mipmaps on, normal 
 | `wood_floor_worn` | Wood Floor Worn | 2.0 m | wooden floors |
 | `rusty_metal_sheet` | Rusty Metal Sheet | 2.0 m | metal doors/containers |
 | `metal_plate_02` | Metal Plate 02 | 2.0 m | metal floor plates, trims |
+| `snow_02` | Snow 02 | 2.0 m | Icebox snow (diffuse made neutral grey, mean 0.5, so the palette tint works without SurfaceLib stats; AO lifted; re-encoded, 3.8 MB) |
+| `container_side` | Container Side | 1.94 m | Icebox corrugated containers (diffuse made neutral grey, mean 0.5; re-encoded, 1.8 MB) |
 
 All 14 requested sets existed on Poly Haven, so no substitutes were needed.
 
@@ -217,7 +219,7 @@ For a nicer look, override the surfaces in code with roughness ~0.4–0.6 and me
 | `audio/weapons/rifle_reload_airsoft.wav`, `gun_reload_airsoft.wav` | magazine reloads (airsoft recordings), ~1.6 s | OpenGameArt "Gun reload sounds" by SpringySpringo |
 | `audio/weapons/pistol_reload.wav` | handgun mag drop, insert and slide rack, 1.6 s | OpenGameArt "Handgun Reload Sound Effect" by zer0_sol |
 | `audio/impacts/impact*.ogg` (105 files) | bullet-impact / surface hits: Metal, Plate, Wood, Glass, Soft, Punch, Mining, Bell, Tin, Generic. `impactBell_heavy_*` and `impactMetal_light_*` work well as hit/headshot markers. | Kenney Impact Sounds |
-| `audio/footsteps/footstep_{carpet,concrete,grass,snow,wood}_000..004.ogg` | footsteps | Kenney Impact Sounds |
+| `audio/footsteps/footstep_{carpet,concrete,grass,snow,wood}_000..004.ogg` | footsteps (bots: concrete; the Sound Lock / Site Anchor enemy footsteps pick concrete / wood / grass / snow by the surface under the foot) | Kenney Impact Sounds |
 | `audio/ui/*.ogg` (100 files: click, select, confirmation, error, toggle, tick, …) | menu / UI sounds | Kenney Interface Sounds |
 
 - **Gunshot WAVs** are 48 kHz / 16-bit stereo, 1.40 s each. Each is one shot that starts ~4 ms in, with a 0.25 s fade-out at the end, peak-normalized to -1 dBFS.

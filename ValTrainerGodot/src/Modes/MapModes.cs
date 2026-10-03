@@ -50,7 +50,7 @@ public sealed class SiteClearMode : MapMode
 
     public override string Key => "siteclear";
     public override string Name => "Site Clear";
-    public override string Description => "Attack through a real choke (Ascent, Bind, Haven, Split). Defenders hold real angles and duel you.";
+    public override string Description => "Attack through a real choke on any of the six maps. Defenders hold real angles and duel you.";
 
     readonly List<(BotCharacter Body, BotBrain Brain)> defenders = new();
     float roundStart, between;

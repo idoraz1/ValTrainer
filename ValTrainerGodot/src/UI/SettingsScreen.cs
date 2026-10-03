@@ -321,7 +321,7 @@ public partial class SettingsScreen : ScreenBase
         Info("Sensitivity", () => vp().SensFromFile ? vp().Sensitivity.ToString("0.####", Inv) : $"{vp().Sensitivity.ToString(Inv)} (default)");
         Info("Scoped / ADS multiplier", () => $"{vp().ZoomedSensMult.ToString("0.###", Inv)} / {vp().AdsSensMult.ToString("0.###", Inv)}");
         Info("Sniper scope input", () => vp().HoldToScope ? "Hold" : "Toggle");
-        Info("Keys (move / walk / crouch)", () => $"{vp().KeyForward}{vp().KeyLeft}{vp().KeyBack}{vp().KeyRight} / {vp().KeyWalk} / {vp().KeyCrouch}");
+        Info("Keys (move / walk / crouch / jump)", () => $"{vp().KeyForward}{vp().KeyLeft}{vp().KeyBack}{vp().KeyRight} / {vp().KeyWalk} / {vp().KeyCrouch} / {vp().JumpBindText}");
         Info("Resolution", () => $"{vp().ResX} × {vp().ResY}{(vp().Letterbox ? " (letterbox)" : "")}");
         Info("Display mode / monitor", () => $"{WindowModes[Math.Clamp(vp().WindowMode, 0, 2)]} / #{vp().MonitorIndex + 1}");
         Info("VSync / FPS limit", () => $"{(vp().VSync ? "On" : "Off")} / {(vp().FrameRateLimit <= 0 ? "Unlimited" : vp().FrameRateLimit.ToString("0", Inv))}");

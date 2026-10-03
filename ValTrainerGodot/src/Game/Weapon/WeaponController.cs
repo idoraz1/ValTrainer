@@ -90,7 +90,7 @@ public sealed class WeaponController
             if (heat <= 0f) sprayShots = 0;
         }
 
-        float interval = Def.Interval / (Scoped && Def.Kind != WeaponKind.Operator ? Def.AdsRpsMul : 1f);
+        float interval = Def.Interval / (Scoped && !Def.Sniper ? Def.AdsRpsMul : 1f);
         bool wantShot = Def.Auto ? triggerHeld : triggerPressed;
         if (wantShot && !Reloading && EquipLeft <= 0)
         {
@@ -128,7 +128,7 @@ public sealed class WeaponController
     float CurrentError(Mover mover, bool movementMode)
     {
         float err;
-        if (Def.Kind == WeaponKind.Operator) err = Scoped ? 0f : Def.FirstShotHip;
+        if (Def.Sniper) err = Scoped ? 0f : Def.FirstShotHip;
         else
         {
             err = WeaponDef.Lerp(Def.Spread, heat);
@@ -159,7 +159,7 @@ public sealed class WeaponController
         yawHeat = Mathf.Min(yawHeat + (spray ? 1f : 0.5f * add), Def.Yaw.Length - 1);
         if (sprayShots > Def.ProtectedBullets && rng.NextDouble() < 0.10) side = -side;
 
-        if (Def.Kind == WeaponKind.Operator) Scoped = false; // bolt action: unscope after the shot
+        if (Def.Bolt) Scoped = false; // bolt action: unscope after the shot
         Fired?.Invoke();
         return (dir, !moving);
     }

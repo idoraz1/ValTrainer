@@ -30,6 +30,8 @@ The character `.gltf` files in `assets/characters/` are derivative merges of the
 | Wood Floor Worn | Dimitrios Savva |
 | Rusty Metal Sheet | Amal Kumar |
 | Metal Plate 02 | Rob Tuytel |
+| Snow 02 (Icebox) | Rob Tuytel |
+| Container Side (Icebox) | Dimitrios Savva |
 | Kloofendal 48d Partly Cloudy (Pure Sky) HDRI | Greg Zaal, Jarod Guest |
 | Qwantani Late Afternoon (Pure Sky) HDRI | Greg Zaal, Jarod Guest |
 | Overcast Soil (Pure Sky) HDRI | Sergej Majboroda, Jarod Guest |
@@ -40,6 +42,7 @@ The character `.gltf` files in `assets/characters/` are derivative merges of the
 - **Handgun Reload Sound Effect** by zer0_sol: <https://opengameart.org/content/handgun-reload-sound-effect>
 - **Impact Sounds** (impacts and footsteps) by Kenney: <https://kenney.nl/assets/impact-sounds>
 - **Interface Sounds** by Kenney: <https://kenney.nl/assets/interface-sounds>
+- The sentinel-setup cues of Site Anchor (alarm, turret, wire, sensor, barriers, vines…) are synthesized in code (`src/Game/Fx/SentinelSfx.cs`); no samples.
 
 ## Engine
 Built with the Godot Engine (MIT license): <https://godotengine.org/license>

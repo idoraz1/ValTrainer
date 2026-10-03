@@ -19,7 +19,9 @@ param(
   [string]$Project = (Join-Path $PSScriptRoot "..\ValTrainerGodot"),
   # Drills for the smoke test (keys from src\Modes). Reaction Test and Sens Finder need real input and are left out.
   [string[]]$Modes = @("flick", "gridshot", "spider", "tracking", "strafebots", "peek", "operator", "spray_vandal",
-                       "spray_phantom", "spray_transfer", "counterstrafe", "peekduel", "siteclear", "flashmap", "deathmatch"),
+                       "spray_phantom", "spray_transfer", "counterstrafe", "peekduel", "siteclear", "flashmap", "deathmatch",
+                       "microshot", "switch", "popup", "longtaps", "jumppeek", "jigglepeek", "postplant", "retake",
+                       "anchor", "sound", "flashpeek:phoenix", "recon:sova", "smokeexec:omen", "mobility:jett", "chamber:headhunter"),
   # Extra cultures for the locale test (the invariant culture always runs).
   [string[]]$Cultures = @("de-DE", "tr-TR"),
   [switch]$SkipSmoke,
@@ -60,6 +62,14 @@ function Format-Arg([string]$a) {
 
 # Runs Godot, waits (killing only its own process tree on timeout) and returns the exit code and combined output.
 function Invoke-Godot([string]$Label, [string[]]$GodotArgs) {
+  # One Godot at a time on this PC (shared with gshot.ps1 / godot-run.ps1: several Godot instances at once froze the PC).
+  $slot = New-Object System.Threading.Mutex($false, "Global\ValTrainerGodotSlot")
+  try { [void]$slot.WaitOne() } catch [System.Threading.AbandonedMutexException] { }
+  try { return Invoke-GodotUnlocked $Label $GodotArgs }
+  finally { try { $slot.ReleaseMutex() } catch { }; $slot.Dispose() }
+}
+
+function Invoke-GodotUnlocked([string]$Label, [string[]]$GodotArgs) {
   $psi = New-Object System.Diagnostics.ProcessStartInfo
   $psi.FileName = $Godot
   $psi.Arguments = ($GodotArgs | ForEach-Object { Format-Arg $_ }) -join " "
@@ -76,7 +86,7 @@ function Invoke-Godot([string]$Label, [string[]]$GodotArgs) {
   if ($timedOut) { & taskkill.exe /PID $p.Id /T /F 2>&1 | Out-Null; $p.WaitForExit() }
   $p.WaitForExit()
   $text = $out.Result + $err.Result
-  $log = Join-Path $LogDir "$Label.log"
+  $log = Join-Path $LogDir (($Label -replace '[:\/*?"<>|]', '-') + ".log")   # agent drill keys contain ':'
   [System.IO.File]::WriteAllText($log, "> $($psi.FileName) $($psi.Arguments)`r`n`r`n$text", (New-Object System.Text.UTF8Encoding $false))
   return [pscustomobject]@{ Code = $(if ($timedOut) { -1 } else { $p.ExitCode }); Text = $text; Log = $log; TimedOut = $timedOut }
 }
@@ -125,7 +135,8 @@ if (-not $SkipSmoke) {
     # 3 s countdown + 5 s run = 8 s = 960 fixed frames; quit after 1500 frames (12.5 s of game time).
     $r = Invoke-Godot "smoke-$m" (@("--headless", "--fixed-fps", "120", "--quit-after", "1500", "--path", $Project, "--") + $sandbox +
                                   @("--mode", $m, "--simaim", "good", "--duration", "5", "--telemetry-out", $tel))
-    $vtt = @(Get-ChildItem $tel -Filter "*_$m.vtt" -ErrorAction SilentlyContinue)
+    $safe = $m -replace '[:\/*?"<>|]', '-'   # telemetry file names replace ':' (agent drills) with '-'
+    $vtt = @(Get-ChildItem $tel -Filter "*_$safe.vtt" -ErrorAction SilentlyContinue)
     $ex = Get-Exceptions $r.Text
     $why = if ($r.TimedOut) { "timed out after $TimeoutSec s" } elseif ($r.Code -ne 0) { "exit code $($r.Code)" } `
            elseif ($ex.Count -gt 0) { "exception: $($ex[0].Trim())" } elseif ($vtt.Count -eq 0) { "no telemetry written (the run didn't finish)" } else { "" }

@@ -78,7 +78,9 @@ public static class WarmupPresets
     };
 
     public static WarmupPreset Get(string? key) =>
-        All.FirstOrDefault(p => p.Key.Equals(key ?? "", StringComparison.OrdinalIgnoreCase)) ?? All[0];
+        All.FirstOrDefault(p => p.Key.Equals(key ?? "", StringComparison.OrdinalIgnoreCase))
+        ?? Agents.AgentRoutines.Find(key) // agent warm-ups ("agent:jett") from the Agents screen
+        ?? All[0];
 
     /// <summary>Start offsets the shifter offers (%); the default is the middle one.</summary>
     public static readonly int[] ShiftOptions = { 10, 20, 35 };
@@ -116,7 +118,7 @@ public static class WarmupDrills
         "spray_vandal" => "SPRAY",
         "deathmatch" => "DM",
         "reaction" => "REACT",
-        _ => Name(key).ToUpperInvariant(),
+        _ => Agents.AgentRoutines.ShortLabel(key) ?? Name(key).ToUpperInvariant(),
     };
 
     /// <summary>A factory for the drill. A mode with a "duration…" constructor parameter (deathmatch) is built with the

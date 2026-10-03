@@ -181,5 +181,16 @@ public static partial class MapSpots
             F("Heaven / Rafters flash", V(-0.38f, 2.9f, 5.63f), V(-2.5f, 5.8f, -6.26f)),
             F("Back site flash", V(1.63f, 2.9f, 7.51f), V(15.15f, 3.8f, -0.38f)),
         },
+        // Standard A Main execute: Heaven, Screens (it also covers the Elbow peek), then Rafters.
+        Smokes = new[]
+        {
+            new SmokeSpot("Heaven", V(-10.1f, 4f, -10.6f)),
+            new SmokeSpot("Screens", V(1.8f, 1.4f, -24.6f)),
+            new SmokeSpot("Rafters", V(-6.2f, 4f, -6.4f)),
+        },
+        // Spike: default by the box south of the holo map, open site, back site.
+        PlantSpots = new[] { V(15.4f, 0, -9.7f), V(9.8f, 0, -6.5f), V(19.6f, 0, 1.5f) },
+        // Retakes: deep Screens, Screens from the west, and A Back from defender spawn.
+        RetakeEntries = new[] { V(1.5f, 1.4f, -30.5f), V(-14f, 1.4f, -24.5f), V(9.5f, 0, -21.5f) },
     };
 }

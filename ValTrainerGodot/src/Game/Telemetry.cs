@@ -22,7 +22,7 @@ public struct FrameSample
 }
 
 [Flags]
-public enum FrameFlags : byte { None = 0, Firing = 1, Ads = 2, Accurate = 4, Crouch = 8, Blind = 16, Alive = 32 }
+public enum FrameFlags : byte { None = 0, Firing = 1, Ads = 2, Accurate = 4, Crouch = 8, Blind = 16, Alive = 32, Airborne = 64 }
 
 /// <summary>One bullet. Err* = bullet direction minus target centre (deg), Zone -1 = miss.</summary>
 public struct ShotSample
@@ -43,7 +43,9 @@ public struct ShotSample
 /// kill (ms time-to-kill, 1 = headshot) · bot_seen (placement error deg, pitch error deg: + = crosshair too high) ·
 /// stop (ms, 1 = counter-strafe) · died · flash (grade 0 dodged/1 partial/2 flashed, turn-away ms or -1) ·
 /// spray_end (bullets, % on target) · spray_residual (vertical deg, horizontal deg; + = above / right of target) ·
-/// reaction (ms) · early_click · round_won · round_lost
+/// reaction (ms) · early_click · round_won · round_lost ·
+/// jump (horizontal speed m/s at take-off) · land (air time ms, fall height m from the highest point) · fall_damage (hp) ·
+/// spot (Jump Peek: distance m, 1 = mid-jump)
 /// </summary>
 public sealed record TelemetryEvent(float T, string Kind, float A = 0, float B = 0);
 
@@ -73,7 +75,10 @@ public sealed class RunTelemetry
     const int Magic = 0x31545456; // "VTT1"
 
     /// <summary>Where <see cref="Save"/> writes this run in <paramref name="dir"/>.</summary>
-    public string FileIn(string dir) => Path.Combine(dir, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{When:yyyyMMdd_HHmmss}_{Mode}.vtt"));
+    /// <summary>Mode keys can carry an argument ("flashpeek:skye"); ':' and other invalid file-name characters become '-'.</summary>
+    static string SafeName(string mode) => string.Concat(mode.Select(c => Path.GetInvalidFileNameChars().Contains(c) ? '-' : c));
+
+    public string FileIn(string dir) => Path.Combine(dir, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{When:yyyyMMdd_HHmmss}_{SafeName(Mode)}.vtt"));
 
     public string Save(string? dir = null, int keep = 80)
     {
