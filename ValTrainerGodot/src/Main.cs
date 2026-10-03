@@ -84,8 +84,9 @@ public partial class Main : Node
         }
         if (Dev && args.Contains("--throw-test")) throwTest = 61; // dev: prove callback/task exceptions reach the log
         WhatsNew.Prepare(Settings);  // "What's new" panel after an update (dev: --whats-new [fromVersion])
+        UpdatesPrompt.Prepare(Settings); // opt-in "Check GitHub for new versions?" (dev: --updates-prompt, --updates-consent yes|no)
         Updater.Init();              // how this copy updates itself; finishes / gives up on an update started last run
-        UpdateCheck.StartupCheck();  // background, at startup and every 6 h (dev: --update-test <version>, --update-source <url>)
+        UpdateCheck.StartupCheck();  // only once the player opted in: at startup and every 6 h (dev: --update-test <version>, --update-source <url>)
         int ti = Array.IndexOf(args, "--tier");
         if (ti >= 0 && ti + 1 < args.Length && int.TryParse(args[ti + 1], out var tv)) TierOverride = Math.Clamp(tv, 0, 4);
         int mi = Array.IndexOf(args, "--map");

@@ -13,6 +13,7 @@ how to build and test, how changes flow from an issue to a release, and how vers
 - [Versions (SemVer)](#versions-semver)
 - [The changelog rule](#the-changelog-rule)
 - [Release process](#release-process)
+- [Code signing](#code-signing)
 - [Website](#website)
 - [Feature management](#feature-management)
 
@@ -72,7 +73,10 @@ tools\build-release.ps1                 # add -SkipInstaller to build only the p
 tools\build-release.ps1 -Godot <console exe> -Iscc <ISCC.exe> -OutDir dist
 ```
 
-It works on a private copy of the project, so your working tree is never modified.
+It works on a private copy of the project, so your working tree is never modified. It runs in three stages, which
+`-Stage app`, `-Stage package` and `-Stage checksums` run one at a time (the release workflow signs the files in
+between, see [Code signing](#code-signing)). Godot only runs while the script holds the machine-wide Godot slot, so it
+waits for other Godot runs (`gshot.ps1`, `selftest.ps1`, `godot-run.ps1`) to finish.
 
 **Upgrading Godot:** change `tools/godot-version.txt`, the `Godot.NET.Sdk/x.y.z` version in
 `ValTrainerGodot/ValTrainer.csproj` and `config/features` in `project.godot` together. CI fails if the first two disagree.
@@ -111,6 +115,7 @@ players can never trigger them by accident.
 | `--update-allow-dev` | Lets the updater download and install in a dev run. Needs `--data-dir` (downloads go to `<data-dir>\updates`). |
 | `--update-throttle <KB/s>` | Slows the update download (progress and interrupted-download tests). |
 | `--update-apply-after <s>` | Clicks RESTART TO UPDATE by itself that many seconds after the update is ready. |
+| `--updates-prompt`, `--updates-consent yes\|no`, `--updates-answer yes\|no`, `--update-check-now <s>` | Update opt-in testing: force the "Check GitHub for new versions?" prompt, answer it up front, click a button after 2 s, or press CHECK NOW after that many seconds. |
 | `--whats-new [fromVersion]` | Shows the "What's new" panel as if you updated from that version. |
 | `--mode <key>:<agent>` | Agent drills take the agent after a colon: `flashpeek:skye`, `recon:fade`, `smokeexec:viper`, `mobility:neon`, `chamber:tdf`, `anchor:cypher`. |
 | `--autothrow`, `--autosmoke`, `--autoability`, `--autosetup`, `--autotac`, `--tacghost` | Auto-play the agent and tactical drills so they can run unattended with `--simaim` (initiator throws, controller smokes, duelist abilities, sentinel setups, post-plant/retake). `--tacghost`: bots can't see you. |
@@ -169,6 +174,7 @@ If you change a rule or a benchmark, update the spec in the same pull request.
 .github/                 issue forms, PR template, CI and release workflows, setup-godot action
 docs/images/             README screenshots
 installer/               Inno Setup script for the Windows installer
+signpath/                SignPath artifact configurations for code signing (see Code signing)
 site-redirect/           forwards the old website address to valtrainer.github.io (see Website)
 tools/
   build-release.ps1      release build: installer, portable zip, SHA256SUMS.txt
@@ -257,9 +263,13 @@ only people who download them by hand get them.
    self-tests, builds `ValTrainer-1.1.0-Setup.exe`, `ValTrainer-1.1.0-Portable.zip` and `SHA256SUMS.txt`, and
    publishes the GitHub Release "ValTrainer v1.1.0" with the changelog section as its notes (`tools\version.ps1 -Notes 1.1.0`).
    Versions with a `-` become prereleases.
-6. Close the version's milestone and create the next one (`tools\setup-github.ps1` creates the next minor milestone).
+   Once code signing is set up, the workflow stops twice to wait for you: **approve both signing requests in SignPath**
+   (the exes, then the installer; see [Code signing](#code-signing)). Nothing is published until both are signed.
+6. Update the winget package once the release is published: `wingetcreate update Valtrainer.ValTrainer --version X.Y.Z
+   --urls "<Setup.exe URL>|x64|user" "<Setup.exe URL>|x64|machine" --token <token> --submit` (see `winget/README.md`).
+7. Close the version's milestone and create the next one (`tools\setup-github.ps1` creates the next minor milestone).
 
-Players get the release automatically (see [Automatic updates](#automatic-updates)): within 6 hours, running copies
+Players who allowed updates get the release automatically (see [Automatic updates](#automatic-updates)): within 6 hours, running copies
 download it and install it on their next restart. So **never replace the files of a published release with different
 builds**. The updater checks every download against that release's `SHA256SUMS.txt`, and players who already
 downloaded the old file would get a hash mismatch. Publish a new patch version instead. The asset names
@@ -270,10 +280,94 @@ If the workflow fails, fix the problem on `main` and move the tag: `git tag -d v
 `git push origin :refs/tags/v1.1.0`, then tag and push again. Re-running a failed release workflow is safe: it replaces
 the files of an existing release.
 
+## Code signing
+
+Releases are signed through [SignPath Foundation](https://signpath.org/), which offers free code signing to open-source
+projects: free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by SignPath Foundation.
+Signing is switched on by two repository settings. Until both are set, the **Release** workflow builds unsigned releases
+in one go, exactly as before.
+
+**How it works** (`.github/workflows/release.yml`, artifact configurations in [`signpath/`](signpath/)):
+
+1. `tools\build-release.ps1 -Stage app` exports both builds into `dist\app\`: `portable\ValTrainer.exe` (the single-file
+   game) and `installer\` (`ValTrainer.exe`, `ValTrainer.pck`, the .NET folder). It checks that both exes say product
+   name `ValTrainer` and product version `x.y.z.0` (from `project.godot`).
+2. Both `ValTrainer.exe` files are uploaded as the workflow artifact `unsigned-app`, and
+   `signpath/github-action-submit-signing-request` submits it to SignPath with the artifact configuration `app`
+   ([`signpath/app.xml`](signpath/app.xml)). SignPath checks where it came from (this repository, a GitHub-hosted
+   runner, the workflow run that built it) and the product name and version, then **waits for a manual approval**.
+   The signed exes replace the ones in `dist\app\`.
+3. `-Stage package` builds `Portable.zip` and `Setup.exe` from the signed exes.
+4. `Setup.exe` is uploaded as `unsigned-setup` and signed with the artifact configuration `installer`
+   ([`signpath/installer.xml`](signpath/installer.xml)): the **second approval**. SignPath can't open Inno Setup
+   installers, which is why the exes are signed first and the installer is built from them.
+5. `-Stage checksums` writes `SHA256SUMS.txt` over the signed files, and the release is published. If a signature
+   is missing or invalid (also the exe inside the zip), the workflow fails before publishing anything.
+
+Not signed: the uninstaller that Inno Setup generates, `ValTrainer.pck` and the Godot and .NET libraries in the
+installer's .NET folder (upstream files, which SignPath Foundation doesn't sign for other projects). The asset names
+don't change, so the in-app updater works the same for signed releases.
+
+**One-time setup** (after SignPath Foundation accepted the project):
+
+1. In SignPath (enable MFA for your account): in the project `ValTrainer` (repository URL
+   `https://github.com/idoraz1/ValTrainer`), link the trusted build system **GitHub.com** and install the SignPath
+   GitHub App on the repository. Create the artifact configurations `app` and `installer` and paste the contents of
+   `signpath/app.xml` and `signpath/installer.xml`. In the signing policy `release-signing`, turn on origin
+   verification, add yourself as approver and the CI user (below) as submitter. Releases are built from tags
+   (`refs/tags/v1.2.0`), not from a branch: if the policy has a branch restriction, make sure it accepts them.
+2. Create an API token for a CI user (Users > Add CI user, then add it as a submitter to the signing policy) and
+   note your organization id (Settings).
+3. In GitHub (repository Settings > Secrets and variables > Actions, or with the GitHub CLI):
+
+   ```powershell
+   gh variable set SIGNPATH_ORGANIZATION_ID --body "<organization id>"
+   gh secret set SIGNPATH_API_TOKEN          # paste the token when asked
+   # Only if your SignPath names differ from these defaults:
+   gh variable set SIGNPATH_PROJECT_SLUG --body "ValTrainer"
+   gh variable set SIGNPATH_POLICY_SLUG --body "release-signing"
+   gh variable set SIGNPATH_APP_CONFIG --body "app"
+   gh variable set SIGNPATH_INSTALLER_CONFIG --body "installer"
+   ```
+
+   `gh variable delete SIGNPATH_ORGANIZATION_ID` switches signing off again.
+
+**Every release:** after you push the tag, the workflow waits at "Sign the exes" and later at "Sign the installer".
+Open the signing request in SignPath (Signing requests, or the link in the job log), check that it comes from the
+tag you just pushed, and approve it. Each step waits up to an hour. A denied or expired request fails the workflow
+before anything is published: fix what's wrong and re-run it (that submits new signing requests).
+
+**Local builds** are unsigned: `tools\build-release.ps1` (or the three stages one after the other) works as always.
+To sign a local build with your own certificate, set `SIGNTOOL_CERT_THUMBPRINT` (and optionally `SIGNTOOL_PATH`,
+`SIGNTOOL_TIMESTAMP_URL`): the app stage then signs both exes and the package stage signs `Setup.exe` and the
+uninstaller with `signtool`. To try the staged build by hand:
+
+```powershell
+tools\build-release.ps1 -Stage app         # dist\app\portable\ValTrainer.exe, dist\app\installer\...
+# (sign dist\app\portable\ValTrainer.exe and dist\app\installer\ValTrainer.exe here)
+tools\build-release.ps1 -Stage package     # dist\ValTrainer-<version>-Portable.zip and -Setup.exe from dist\app
+# (sign dist\ValTrainer-<version>-Setup.exe here)
+tools\build-release.ps1 -Stage checksums   # dist\SHA256SUMS.txt
+```
+
+`dist\app\` is only used between stages; delete it when you're done. `-AppDir <folder>` uses another app folder.
+
 ## Automatic updates
 
-How the updater works (`src/Core/UpdateCheck.cs`, `src/Core/Updater*.cs`, `installer/ValTrainer.iss`):
+How the updater works (`src/Core/UpdateCheck.cs`, `src/Core/Updater*.cs`, `src/UI/UpdatesPrompt.cs`,
+`installer/ValTrainer.iss`):
 
+- **Opt-in (from 1.4.1):** the program makes no network request until the player agrees (SignPath Foundation's
+  privacy rule: "This program will not transfer any information to other networked systems unless specifically
+  requested by the user"). On a fresh install, and once for settings from before 1.4.1, the menu asks "Check GitHub
+  for new versions?" (after "What's new" when both are due). ENABLE UPDATES sets `UpdatesConsent` and
+  `CheckUpdates` to true in `settings.json`; NOT NOW (or Esc) sets both to false. Old settings that already had
+  "Check for updates" off count as a no. Settings → About "Check for updates" changes the same answer, and CHECK NOW
+  there is the player's own request: it checks once even while automatic checks are off (nothing is downloaded in
+  the background then). Every request is logged as `Update check: asking <url> (…)`.
+  Dev: the prompt shows only in runs that behave like a normal launch (`--data-dir <temp> --write-data`) or with
+  `--updates-prompt`. `--updates-consent yes|no` answers it up front, `--updates-answer yes|no` clicks a button after
+  2 s, and `--update-check-now <s>` does CHECK NOW after s seconds. `--update-test` needs no answer (no network).
 - **Check:** `GET api.github.com/repos/<repo>/releases/latest` at startup when the last answer is more than 6 hours
   old, and every 6 hours while the app runs. Prereleases and drafts are ignored.
 - **Download:** a newer release that the player didn't skip is downloaded in the background on a low-priority thread
@@ -307,7 +401,7 @@ of the repo with a different `AppId` and `AppName` in `installer\ValTrainer.iss`
    `assets[].browser_download_url` point at the same server, and serves the files with Range support.
 3. Install the older one silently into a temp folder (`/VERYSILENT /SUPPRESSMSGBOXES /CURRENTUSER /DIR=<temp>
    /MERGETASKS="!desktopicon"`), then run it with `-- --dev --data-dir <temp> --write-data --update-allow-dev
-   --update-source http://127.0.0.1:<port>/latest.json`. Add `--update-throttle 3000` to watch the progress and
+   --update-source http://127.0.0.1:<port>/latest.json --updates-consent yes` (or click ENABLE UPDATES). Add `--update-throttle 3000` to watch the progress and
    `--update-apply-after 3` to click RESTART TO UPDATE automatically. Set `APPDATA` and `LOCALAPPDATA` to temp folders
    for the run, so Godot's logs and the portable build's .NET files stay out of your real profile.
 

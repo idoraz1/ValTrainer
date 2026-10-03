@@ -406,12 +406,21 @@ public partial class SettingsScreen : ScreenBase
 
         v.AddChild(Spacer(0, 6 * k));
         v.AddChild(new SectionLabel { Text = "UPDATES", K = k });
-        v.AddChild(Segmented("Check for updates", new[] { "OFF", "ON" }, () => St.CheckUpdates ? 1 : 0,
-            i => { St.CheckUpdates = i == 1; UpdateCheck.EnabledChanged(); },
-            note: () => AppInfo.HasRepo ? "At startup and every 6 hours, asks GitHub whether a newer release is out" : "Not available: this build has no GitHub page set"));
+        // Opt-in (see UpdatesPrompt): ON here is the same yes as ENABLE UPDATES on the first-launch prompt.
+        v.AddChild(Segmented("Check for updates", new[] { "OFF", "ON" }, () => St.AutoUpdates ? 1 : 0,
+            i =>
+            {
+                St.CheckUpdates = i == 1;
+                St.UpdatesConsent = i == 1;
+                UpdatesPrompt.Pending = false;
+                UpdateCheck.EnabledChanged();
+            },
+            note: () => !AppInfo.HasRepo ? "Not available: this build has no GitHub page set"
+                : St.AutoUpdates ? "At startup and every 6 hours, asks GitHub whether a newer release is out (nothing about you is sent)"
+                : "Off: ValTrainer makes no network requests. ON asks GitHub at startup and every 6 hours; CHECK NOW asks once"));
         var auto = Segmented("Download updates automatically", new[] { "OFF", "ON" }, () => St.AutoDownloadUpdates ? 1 : 0,
             i => { St.AutoDownloadUpdates = i == 1; Updater.SettingsChanged(); }, note: AutoUpdateNote);
-        auto.Enabled = () => St.CheckUpdates && Updater.Status != Updater.State.Off;
+        auto.Enabled = () => St.AutoUpdates && Updater.Status != Updater.State.Off;
         v.AddChild(auto);
         var upd = HBox(12 * k);
         upd.CustomMinimumSize = new Vector2(0, 52 * k);
@@ -438,7 +447,7 @@ public partial class SettingsScreen : ScreenBase
         refreshers.Add(() =>
         {
             check.Disabled = !UpdateCheck.CanCheck || UpdateCheck.Status == UpdateCheck.State.Checking;
-            check.TooltipText = UpdateCheck.CanCheck ? "Ask GitHub now" : UpdateCheck.Message ?? "";
+            check.TooltipText = UpdateCheck.CanCheck ? "Ask GitHub once now whether a newer release is out" : UpdateCheck.Message ?? "";
             bool ready = Updater.ReadyVersion != null;
             get.Visible = ready || (UpdateCheck.NewerAvailable && AppInfo.HasRepo && Updater.Status != Updater.State.Applying);
             get.Label = ready ? "RESTART TO UPDATE" : $"GET {UpdateCheck.Latest}";

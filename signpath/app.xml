@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SignPath artifact configuration "app" (slug: app) for the project ValTrainer.
+  Paste it into SignPath: Project ValTrainer > Artifact configurations > app > Edit.
+
+  The artifact is the GitHub workflow artifact "unsigned-app" uploaded by .github/workflows/release.yml: a zip with
+    portable/ValTrainer.exe    "Windows Desktop" export (self-contained, the game is in its "pck" PE section)
+    installer/ValTrainer.exe   "Windows Installer" export (ValTrainer.pck and the .NET folder stay next to it)
+  Both are signed with Authenticode, but only if their version resource says product name "ValTrainer" and the
+  product version the workflow passes as the "version" parameter (x.y.z.0, from project.godot).
+-->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <parameters>
+    <parameter name="version" required="true" />
+  </parameters>
+  <zip-file>
+    <pe-file path="portable/ValTrainer.exe" product-name="ValTrainer" product-version="${version}">
+      <authenticode-sign />
+    </pe-file>
+    <pe-file path="installer/ValTrainer.exe" product-name="ValTrainer" product-version="${version}">
+      <authenticode-sign />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>

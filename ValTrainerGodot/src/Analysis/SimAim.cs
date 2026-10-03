@@ -365,7 +365,14 @@ public sealed class SimAim
         else if (transferMode) { firing = held; }
 
         // ---- degrees → integer mouse counts (+y = down) ----
+        if (!float.IsFinite(dx) || !float.IsFinite(dy) || !(k > 0))
+        {
+            // never hand the game a non-finite mouse move: drop this frame's motion and the noise state
+            dx = dy = 0; tremX = tremY = jitX = jitY = 0; cur = null;
+            if (!(k > 0)) return (Vector2.Zero, held, press);
+        }
         cntX += dx / k; cntY += -dy / k;
+        if (!float.IsFinite(cntX) || !float.IsFinite(cntY)) cntX = cntY = 0;
         float ox = MathF.Truncate(cntX), oy = MathF.Truncate(cntY);
         cntX -= ox; cntY -= oy;
         return (new Vector2(ox, oy), held, press);
@@ -387,10 +394,15 @@ public sealed class SimAim
 
     static float MinJerk(float t) => t * t * t * (10 - 15 * t + 6 * t * t);
 
+    /// <summary>Ornstein-Uhlenbeck noise (stationary SD sigma, correlation time tau), exact discretization: stable for
+    /// any frame time. (The explicit Euler step x += −x/tau·dt diverged once dt &gt; 2·tau = 40 ms, e.g. a dev
+    /// --sftimescale 2 run below 50 FPS: the view went to NaN, "non-finite Vector3" / "det == 0" errors.)</summary>
     void Ou(ref float x, float sigma, float tau, float dt)
     {
-        if (sigma <= 0) { x = 0; return; }
-        x += -x / tau * dt + sigma * MathF.Sqrt(2 * dt / tau) * Gauss(0, 1);
+        if (sigma <= 0 || !float.IsFinite(x)) { x = 0; if (sigma <= 0) return; }
+        if (dt <= 0) return;
+        float decay = MathF.Exp(-dt / tau);
+        x = x * decay + sigma * MathF.Sqrt(Math.Max(0f, 1f - decay * decay)) * Gauss(0, 1);
     }
 
     /// <summary>Recoil climb rate (deg/s) of the weapon's vertical pattern at time t into the spray.</summary>

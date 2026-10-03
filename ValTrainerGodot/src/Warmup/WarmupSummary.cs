@@ -47,7 +47,7 @@ public partial class WarmupSummary : ScreenBase
         string shift = rec.Shift == "off" ? "sens shifter off" : $"sens shifter {(rec.Shift == "low" ? "−" : "+")}{rec.ShiftPct}% → your sens";
         var title = Heading(rec.Completed ? "WARM-UP COMPLETE" : "WARM-UP SUMMARY",
             $"{preset.Name.ToUpperInvariant()} · {Difficulty.Get(rec.Tier).Name.ToUpperInvariant()} TIER · {WarmupPlan.Clock(rec.PlaySeconds)} PLAYED · {shift.ToUpperInvariant()}" +
-            (Demo ? " · DEMO DATA" : ""));
+            (Demo && !Core.CmdLine.Showcase ? " · DEMO DATA" : ""));
         title.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         head.AddChild(title);
         var again = Btn("WARM UP AGAIN", VButton.Look.Secondary, Agents.AgentRoutines.Again(rec.Preset) ?? (Action)Main.I.ShowWarmup, 220, 52, 20);

@@ -54,7 +54,8 @@ AppUpdatesURL=https://github.com/{#GitHubRepo}/releases
 AppComments=Free, fan-made VALORANT-style aim trainer. Not affiliated with Riot Games.
 VersionInfoVersion={#AppFileVersion}
 VersionInfoProductVersion={#AppFileVersion}
-VersionInfoProductTextVersion={#AppVersion}
+; Product version x.y.z.0 like ValTrainer.exe (SignPath Foundation: one product version for all signed files).
+VersionInfoProductTextVersion={#AppFileVersion}
 VersionInfoTextVersion={#AppVersion}
 VersionInfoCompany=ValTrainer contributors
 VersionInfoDescription=ValTrainer Setup

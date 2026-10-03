@@ -13,7 +13,8 @@ namespace ValTrainer.Core;
 /// <para>Safety: nothing runs that doesn't match the SHA-256 published with the same release; a bad download is deleted
 /// (at most 2 per version); an install that doesn't take is retried once, then the banner falls back to opening the
 /// release page — never a loop, and the installed copy stays as it was. Skipped versions are never downloaded; "Check
-/// for updates" off or "Download updates automatically" off means nothing is downloaded. Copies that can't update
+/// for updates" off (or never turned on, see <see cref="AppSettings.AutoUpdates"/>) or "Download updates automatically"
+/// off means nothing is downloaded. Copies that can't update
 /// themselves (unknown install, read-only portable folder, all-users install for the automatic next-launch apply)
 /// fall back to the banner / RESTART with a UAC note.</para>
 /// <para>Dev: off in --dev runs unless <c>--update-allow-dev</c> together with <c>--data-dir</c> (the updates folder is
@@ -67,7 +68,7 @@ public static partial class Updater
     static AppSettings S => Main.I.Settings;
 
     /// <summary>Whether downloads may start (settings + build + dev rules); <see cref="Message"/> says why not.</summary>
-    static bool Enabled => Status != State.Off && S.CheckUpdates && S.AutoDownloadUpdates;
+    static bool Enabled => Status != State.Off && S.AutoUpdates && S.AutoDownloadUpdates;
 
     /// <summary>The version whose update is downloaded and verified (RESTART TO UPDATE), else null.</summary>
     public static string? ReadyVersion => Status == State.Ready && UpdateCheck.Offered == st.Version ? st.Version : null;
@@ -131,7 +132,7 @@ public static partial class Updater
     public static bool ShouldApplyAtStartup()
     {
         if (Status != State.Ready || recentAttempt || Kind is not (InstallKind.InstalledUser or InstallKind.Portable)) return false;
-        if (!S.CheckUpdates || !S.AutoDownloadUpdates || st.Version == S.SkippedVersion) return false;
+        if (!S.AutoUpdates || !S.AutoDownloadUpdates || st.Version == S.SkippedVersion) return false;
         if (DisplayServer.GetName() == "headless") return false;
         return SemVer.Compare(st.Version, AppInfo.Version) > 0;
     }
@@ -175,7 +176,7 @@ public static partial class Updater
     public static void SettingsChanged()
     {
         if (Status is State.Off or State.Applying) return;
-        if (!S.CheckUpdates || !S.AutoDownloadUpdates || (st.Version != null && st.Version == S.SkippedVersion))
+        if (!S.AutoUpdates || !S.AutoDownloadUpdates || (st.Version != null && st.Version == S.SkippedVersion))
         {
             if (job != null)
             {

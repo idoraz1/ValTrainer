@@ -11,6 +11,10 @@ namespace ValTrainer.Core;
 /// hour), on a worker thread with a 5 s timeout. Offline, rate-limited (HTTP 403/429), no releases yet (404) or any
 /// other failure just means "no banner" (and another try in an hour): nothing blocks or throws on the main thread.
 /// The answer includes the release's downloads, which <see cref="Updater"/> fetches in the background.
+/// <para>Opt-in: no request at all until the player says yes to the first-launch "Check GitHub for new versions?"
+/// prompt (<see cref="AppSettings.UpdatesConsent"/>, see <c>UpdatesPrompt</c>) or turns checks on in Settings → About.
+/// CHECK NOW in Settings is the player's own request and checks once even while automatic checks are off. Every
+/// request is logged ("Update check: asking …").</para>
 /// <para>Skipped while <see cref="AppInfo.GitHubRepo"/> is the placeholder, when the player turned it off in Settings
 /// and in --dev runs, unless <c>--dev --update-test &lt;version&gt;</c> fakes a release (no network) or
 /// <c>--dev --update-source &lt;url&gt;</c> asks a local fake release server instead of GitHub (updater tests).</para>
@@ -42,6 +46,10 @@ public static class UpdateCheck
     /// <summary>Dev: --update-source URL that replaces GitHub's API (a local fake release).</summary>
     public static string? Source { get; private set; }
     static DateTime nextCheckUtc = DateTime.MaxValue;
+    /// <summary>The player clicked CHECK NOW this session: its answer is offered (banner / About) even with automatic
+    /// checks off (nothing is downloaded in the background then; DOWNLOAD opens the release page).</summary>
+    static bool manualCheck;
+    static double devCheckNowAt = -1;
 
     readonly record struct Result(bool Ok, string? Version, string? Url, UpdateAssets? Assets, string? Error);
 
@@ -52,7 +60,7 @@ public static class UpdateCheck
 
     /// <summary>The newer version that wasn't skipped (checks on), whether or not the banner was dismissed.</summary>
     public static string? Offered =>
-        NewerAvailable && (St.CheckUpdates || fake != null) && Latest != St.SkippedVersion ? Latest : null;
+        NewerAvailable && (St.AutoUpdates || manualCheck || fake != null) && Latest != St.SkippedVersion ? Latest : null;
 
     /// <summary>The version the menu banner should offer, or null (nothing newer, skipped, dismissed or checks off).</summary>
     public static string? BannerVersion => BannerDismissed ? null : Offered;
@@ -76,6 +84,10 @@ public static class UpdateCheck
         fake = SemVer.Normalize(CmdLine.DevAfter("--update-test"));
         var src = CmdLine.DevAfter("--update-source");
         Source = src != null && Uri.TryCreate(src, UriKind.Absolute, out var u) && u.Scheme is "http" or "https" ? src : null;
+        // dev: "--update-check-now <s>" does what Settings → CHECK NOW does, after s seconds (automated tests)
+        if (double.TryParse(CmdLine.DevAfter("--update-check-now"), System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var cn) && devCheckNowAt < 0)
+            devCheckNowAt = Godot.Time.GetTicksMsec() / 1000.0 + Math.Max(0, cn);
         if (fake == null)
         {
             // what the last check found (the banner keeps showing until the player updates or skips it)
@@ -83,7 +95,8 @@ public static class UpdateCheck
             LatestUrl = St.LatestUrl;
             LatestAssets = St.LatestAssets;
         }
-        if (!St.CheckUpdates) { Set(State.Off, "Turned off"); return; }
+        // --update-test fakes GitHub's answer without any network request, so it doesn't need the player's yes
+        if (fake == null ? !St.AutoUpdates : !St.CheckUpdates) { Set(State.Off, OffReason); return; }
         if (Blocked() is { } why) { Set(State.Off, why); return; }
         long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         bool due = fake != null || Source != null || St.LastUpdateCheck <= 0 || now - St.LastUpdateCheck >= (long)Interval.TotalSeconds
@@ -97,21 +110,34 @@ public static class UpdateCheck
         }
     }
 
-    /// <summary>Settings → "Check now": ignores the 6-hour limit (still never in --dev or for the placeholder repo).</summary>
+    static string OffReason => St.UpdatesConsent == null ? "Off until you turn it on" : "Turned off";
+
+    /// <summary>Settings → "Check now": the player's own request, so it runs even while automatic checks are off (or
+    /// were never turned on); ignores the 6-hour limit (still never in --dev or for the placeholder repo).</summary>
     public static void CheckNow()
     {
         if (Blocked() is { } why) { Set(State.Off, why); return; }
         BannerDismissed = false;
-        Begin();
+        manualCheck = true;
+        Begin(byPlayer: true);
     }
 
-    /// <summary>Settings toggle changed.</summary>
+    /// <summary>Settings toggle changed, or the first-launch prompt was answered.</summary>
     public static void EnabledChanged()
     {
         Updater.SettingsChanged();
-        if (!St.CheckUpdates) { Set(State.Off, "Turned off"); return; }
+        if (fake == null && !St.AutoUpdates)
+        {
+            nextCheckUtc = DateTime.MaxValue;
+            // what a CHECK NOW found this session stays on screen; otherwise "off"
+            if (manualCheck && Status is State.Checking or State.Available or State.UpToDate or State.Failed) Revision++;
+            else Set(State.Off, OffReason);
+            return;
+        }
+        if (!St.CheckUpdates) { Set(State.Off, OffReason); return; }
         if (Blocked() is { } why) { Set(State.Off, why); return; }
         if (Status is State.Off or State.Idle) StartupCheck();
+        else if (pending == null && nextCheckUtc == DateTime.MaxValue) nextCheckUtc = DateTime.UtcNow + Interval; // just checked by hand
     }
 
     public static void SkipVersion(string v)
@@ -125,7 +151,7 @@ public static class UpdateCheck
     /// <summary>Lets the <see cref="Updater"/> tell the screens that its state changed.</summary>
     internal static void Bump() => Revision++;
 
-    static void Begin()
+    static void Begin(bool byPlayer = false)
     {
         if (pending != null) return;
         nextCheckUtc = DateTime.MaxValue;
@@ -138,15 +164,22 @@ public static class UpdateCheck
         }
         string ver = AppInfo.Version, api = Source ?? AppInfo.LatestReleaseApi, repo = AppInfo.GitHubRepo;
         bool local = Source != null;
+        Log.Info($"Update check: asking {api} ({(byPlayer ? "CHECK NOW" : "automatic check, updates turned on")})");
         pending = Task.Run(() => Fetch(ver, api, repo, local));
     }
 
     /// <summary>Main thread, every frame: applies a finished check (saves the result) and starts the 6-hourly re-check.</summary>
     public static void Poll()
     {
+        if (devCheckNowAt >= 0 && Godot.Time.GetTicksMsec() / 1000.0 >= devCheckNowAt)
+        {
+            devCheckNowAt = -1;
+            Log.Info("Update check: --update-check-now: CHECK NOW");
+            CheckNow();
+        }
         if (pending == null)
         {
-            if (DateTime.UtcNow >= nextCheckUtc && St.CheckUpdates && Blocked() == null && fake == null) Begin();
+            if (DateTime.UtcNow >= nextCheckUtc && St.AutoUpdates && Blocked() == null && fake == null) Begin();
             return;
         }
         if (pending is not { IsCompleted: true } t) return;
@@ -155,7 +188,7 @@ public static class UpdateCheck
         if (!r.Ok)
         {
             Log.Info($"Update check failed: {r.Error}");
-            if (fake == null) nextCheckUtc = DateTime.UtcNow + RetryAfterFailure;
+            if (fake == null && St.AutoUpdates) nextCheckUtc = DateTime.UtcNow + RetryAfterFailure;
             Set(State.Failed, r.Error);
             Updater.OnCheckResult(); // a download that was already known can still go on
             return;
@@ -165,7 +198,7 @@ public static class UpdateCheck
         LatestAssets = r.Assets;
         if (fake == null)
         {
-            nextCheckUtc = DateTime.UtcNow + Interval;
+            if (St.AutoUpdates) nextCheckUtc = DateTime.UtcNow + Interval; // a CHECK NOW with automatic checks off doesn't schedule more
             St.LastUpdateCheck = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             St.LatestVersion = r.Version;
             St.LatestUrl = r.Url;

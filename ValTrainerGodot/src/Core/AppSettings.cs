@@ -27,8 +27,9 @@ public sealed class AppSettings
     public bool UseFinderCrosshair;    // crosshair: false = VALORANT's (imported), true = FinderCrosshairCode
     public string? FinderCrosshairCode; // VALORANT profile code from the Crosshair Finder ("Use in ValTrainer"); VALORANT itself is never changed
 
-    // ---- updates / version (see UpdateCheck, WhatsNew) ----
-    public bool CheckUpdates = true;   // ask GitHub for a newer release (at startup and every 6 h, see UpdateCheck)
+    // ---- updates / version (see UpdateCheck, WhatsNew, UpdatesPrompt) ----
+    public bool? UpdatesConsent;       // the "Check GitHub for new versions?" answer: null = not asked yet, true = ENABLE UPDATES, false = NOT NOW (or turned off)
+    public bool CheckUpdates = true;   // ask GitHub for a newer release (at startup and every 6 h, see UpdateCheck); only counts once UpdatesConsent is true
     public bool AutoDownloadUpdates = true; // download a newer release in the background and install it on restart (see Updater)
     public long LastUpdateCheck;       // unix seconds (UTC) of the last check that got an answer from GitHub
     public string? LatestVersion;      // newest release that check found ("1.2.0"), null = none / never checked
@@ -44,6 +45,11 @@ public sealed class AppSettings
     [JsonIgnore] public bool IsNew;
     /// <summary>Why the graphics quality was picked automatically on this first run (null = the user's saved choice).</summary>
     [JsonIgnore] public string? AutoQualityReason;
+
+    /// <summary>Automatic update checks and background downloads may use the network: only after the player said yes
+    /// (first-launch prompt, or "Check for updates" turned on in Settings → About). Until then nothing is sent anywhere
+    /// unless the player clicks CHECK NOW.</summary>
+    [JsonIgnore] public bool AutoUpdates => UpdatesConsent == true && CheckUpdates;
 
     /// <summary>settings.json exists but couldn't be opened (locked, no permission, OneDrive placeholder offline):
     /// run with defaults but never overwrite the user's file this session.</summary>

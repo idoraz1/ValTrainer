@@ -8,6 +8,19 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-10-03
+
+### Changed
+
+- **Updates are now opt-in.** On first start (and once after updating), ValTrainer asks "Check GitHub for new versions?". Until you choose ENABLE UPDATES it makes no network requests at all. CHECK NOW in Settings → About still checks once when you click it. If you had already turned update checks off, you aren't asked again.
+- Releases are ready for free code signing through SignPath Foundation (see the [code signing policy](https://valtrainer.github.io/code-signing-policy.html)). The exe and installer now carry the full product version (x.y.z.0).
+- ValTrainer has been submitted to winget, Windows' package manager. Once Microsoft approves it: `winget install Valtrainer.ValTrainer`.
+
+### Fixed
+
+- The warm-up summary no longer shows "DEMO DATA" in showcase screenshots.
+- The simulated test player could produce invalid mouse movement at low frame rates, breaking sped-up Sens Finder test runs.
+
 ## [1.4.0] - 2026-10-03
 
 ### Added
@@ -120,7 +133,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/idoraz1/ValTrainer/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/idoraz1/ValTrainer/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/idoraz1/ValTrainer/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/idoraz1/ValTrainer/compare/v1.1.0...v1.2.0

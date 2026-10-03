@@ -77,8 +77,11 @@ public partial class MenuScreen : ScreenBase
             },
         });
 
+        // first-launch panels, one at a time: "What's new" first, then the updates opt-in
         if (WhatsNew.Pending is { } notes)
             AddChild(new WhatsNewPanel(notes, k, CloseWhatsNew));
+        else if (UpdatesPrompt.Pending)
+            AddChild(new UpdatesPromptPanel(k, AnswerUpdatesPrompt));
 
         var body = HBox(34 * k);
         body.SizeFlagsVertical = SizeFlags.ExpandFill;
@@ -105,6 +108,15 @@ public partial class MenuScreen : ScreenBase
         WhatsNew.Pending = null;
         foreach (var c in GetChildren()) if (c is WhatsNewPanel p) p.QueueFree();
         UiTheme.ClickSound();
+        if (UpdatesPrompt.Pending && !GetChildren().Any(c => c is UpdatesPromptPanel))
+            AddChild(new UpdatesPromptPanel(K, AnswerUpdatesPrompt));
+    }
+
+    void AnswerUpdatesPrompt(bool yes)
+    {
+        foreach (var c in GetChildren()) if (c is UpdatesPromptPanel p) p.QueueFree();
+        UiTheme.ClickSound();
+        UpdatesPrompt.Answer(yes);
     }
 
     // ---------------- update banner ----------------

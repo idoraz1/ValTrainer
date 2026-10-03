@@ -3,12 +3,19 @@ name: Release
 # Push a tag like v1.2.0 (after tools\version.ps1 -Bump/-Set and a "release: v1.2.0" commit) to build the installer,
 # the portable zip and SHA256SUMS.txt and publish them as a GitHub Release. Versions with a '-' (1.2.0-beta.1) are
 # published as prereleases, which the in-app update check ignores.
+#
+# Code signing (CONTRIBUTING.md, "Code signing"): when the repository variable SIGNPATH_ORGANIZATION_ID and the secret
+# SIGNPATH_API_TOKEN are set, SignPath signs both ValTrainer.exe files before they're packed into the zip and the
+# installer, then Setup.exe. Each signing request waits for a manual approval in SignPath. Without them the release
+# is built unsigned in one go, exactly as before.
 on:
   push:
     tags: ["v*.*.*"]
 
 permissions:
   contents: write
+  # SignPath downloads the unsigned files from this run's artifacts with the workflow token.
+  actions: read
 
 concurrency:
   group: release-${{ github.ref }}
@@ -18,7 +25,10 @@ jobs:
   release:
     name: Build and publish
     runs-on: windows-latest
-    timeout-minutes: 90
+    # A signed release waits for two manual approvals in SignPath (up to an hour each, see the signing steps).
+    timeout-minutes: 240
+    env:
+      SIGNPATH_ENABLED: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' && secrets.SIGNPATH_API_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -35,7 +45,9 @@ jobs:
             throw "Tag $env:TAG doesn't match the app version $v in project.godot. Run tools\version.ps1 -Set <x.y.z> (or -Bump), commit, then tag v<x.y.z>."
           }
           $pre = if ($v.Contains('-')) { 'true' } else { 'false' }
-          [IO.File]::AppendAllText($env:GITHUB_OUTPUT, "version=$v`nprerelease=$pre`n")
+          # x.y.z.0: the product version of both ValTrainer.exe files and Setup.exe (SignPath checks it).
+          $fileVersion = (($v -split '[-+]')[0]) + '.0'
+          [IO.File]::AppendAllText($env:GITHUB_OUTPUT, "version=$v`nprerelease=$pre`nfile_version=$fileVersion`n")
           Write-Host "Releasing ValTrainer $v (prerelease: $pre)"
 
       - name: Set up .NET 8
@@ -90,13 +102,125 @@ jobs:
         shell: powershell
         run: .\tools\selftest.ps1 -LogDir selftest-logs
 
+      # ---- Unsigned release (SignPath not configured): one-shot build, as before.
       - name: Build the installer and the portable zip
+        if: env.SIGNPATH_ENABLED != 'true'
         shell: powershell
         env:
           ISCC: ${{ steps.inno.outputs.iscc }}
         run: |
           .\tools\build-release.ps1 -Godot $env:GODOT -Iscc $env:ISCC -OutDir dist
           if ($LASTEXITCODE -ne 0) { throw "build-release.ps1 failed with exit code $LASTEXITCODE" }
+
+      # ---- Signed release: app -> SignPath (both exes) -> zip + installer -> SignPath (Setup.exe) -> checksums.
+      - name: Build the app (both ValTrainer.exe files)
+        if: env.SIGNPATH_ENABLED == 'true'
+        shell: powershell
+        run: |
+          .\tools\build-release.ps1 -Stage app -Godot $env:GODOT -OutDir dist
+          if ($LASTEXITCODE -ne 0) { throw "build-release.ps1 -Stage app failed with exit code $LASTEXITCODE" }
+
+      # The artifact holds portable/ValTrainer.exe and installer/ValTrainer.exe (relative to dist/app, their common
+      # folder): the layout signpath/app.xml expects.
+      - name: Upload the unsigned exes for SignPath
+        id: upload-app
+        if: env.SIGNPATH_ENABLED == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-app
+          path: |
+            dist/app/portable/ValTrainer.exe
+            dist/app/installer/ValTrainer.exe
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Sign the exes (approve the request in SignPath)
+        if: env.SIGNPATH_ENABLED == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'ValTrainer' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG || 'release-signing' }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_APP_CONFIG || 'app' }}
+          github-artifact-id: ${{ steps.upload-app.outputs.artifact-id }}
+          wait-for-completion: true
+          # Waits for the manual approval in SignPath (the default is 10 minutes).
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: ${{ runner.temp }}/signed-app
+          # signpath/app.xml only signs files with product name ValTrainer and this product version.
+          parameters: |
+            version: ${{ toJSON(steps.ver.outputs.file_version) }}
+
+      - name: Use the signed exes
+        if: env.SIGNPATH_ENABLED == 'true'
+        shell: powershell
+        env:
+          SIGNED: ${{ runner.temp }}/signed-app
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($rel in 'portable\ValTrainer.exe', 'installer\ValTrainer.exe') {
+            $src = Join-Path $env:SIGNED $rel
+            if (-not (Test-Path $src)) { throw "SignPath returned no $rel" }
+            $sig = Get-AuthenticodeSignature $src
+            if ($sig.Status -ne 'Valid') { throw "$rel from SignPath: signature status $($sig.Status)" }
+            Write-Host "$rel signed by $($sig.SignerCertificate.Subject)"
+            Copy-Item $src (Join-Path 'dist\app' $rel) -Force
+          }
+
+      - name: Build the installer and the portable zip from the signed exes
+        if: env.SIGNPATH_ENABLED == 'true'
+        shell: powershell
+        env:
+          ISCC: ${{ steps.inno.outputs.iscc }}
+        run: |
+          .\tools\build-release.ps1 -Stage package -Iscc $env:ISCC -OutDir dist
+          if ($LASTEXITCODE -ne 0) { throw "build-release.ps1 -Stage package failed with exit code $LASTEXITCODE" }
+
+      - name: Upload the unsigned installer for SignPath
+        id: upload-setup
+        if: env.SIGNPATH_ENABLED == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-setup
+          path: dist/ValTrainer-${{ steps.ver.outputs.version }}-Setup.exe
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Sign the installer (approve the request in SignPath)
+        if: env.SIGNPATH_ENABLED == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'ValTrainer' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG || 'release-signing' }}
+          artifact-configuration-slug: ${{ vars.SIGNPATH_INSTALLER_CONFIG || 'installer' }}
+          github-artifact-id: ${{ steps.upload-setup.outputs.artifact-id }}
+          wait-for-completion: true
+          # Waits for the manual approval in SignPath (the default is 10 minutes).
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: ${{ runner.temp }}/signed-setup
+          parameters: |
+            version: ${{ toJSON(steps.ver.outputs.file_version) }}
+
+      - name: Use the signed installer and write SHA256SUMS.txt
+        if: env.SIGNPATH_ENABLED == 'true'
+        shell: powershell
+        env:
+          SIGNED: ${{ runner.temp }}/signed-setup
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $name = "ValTrainer-$env:VERSION-Setup.exe"
+          $src = Join-Path $env:SIGNED $name
+          if (-not (Test-Path $src)) { throw "SignPath returned no $name" }
+          $sig = Get-AuthenticodeSignature $src
+          if ($sig.Status -ne 'Valid') { throw "$name from SignPath: signature status $($sig.Status)" }
+          Write-Host "$name signed by $($sig.SignerCertificate.Subject)"
+          Copy-Item $src (Join-Path 'dist' $name) -Force
+          .\tools\build-release.ps1 -Stage checksums -OutDir dist
+          if ($LASTEXITCODE -ne 0) { throw "build-release.ps1 -Stage checksums failed with exit code $LASTEXITCODE" }
 
       - name: Check the release files
         shell: powershell
@@ -107,8 +231,24 @@ jobs:
           foreach ($f in "ValTrainer-$env:VERSION-Setup.exe", "ValTrainer-$env:VERSION-Portable.zip", "SHA256SUMS.txt") {
             if (-not (Test-Path "dist\$f")) { throw "dist\$f is missing" }
           }
+          # Only the files directly in dist\ are published (not the dist\app folder of a signed build).
           Get-ChildItem dist -File | ForEach-Object { "{0,10:N1} MB  {1}" -f ($_.Length / 1MB), $_.Name }
           Get-Content dist\SHA256SUMS.txt
+          if ($env:SIGNPATH_ENABLED -eq 'true') {
+            # The exe inside the portable zip must be the signed one too.
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            $zip = [IO.Compression.ZipFile]::OpenRead((Resolve-Path "dist\ValTrainer-$env:VERSION-Portable.zip").Path)
+            try {
+              # Windows PowerShell's ZipFile writes '\' separators.
+              $e = $zip.Entries | Where-Object { ($_.FullName -replace '\\', '/') -eq "ValTrainer-$env:VERSION/ValTrainer.exe" }
+              if (-not $e) { throw "ValTrainer.exe is missing from the portable zip" }
+              $tmp = Join-Path $env:RUNNER_TEMP 'zip-check.exe'
+              [IO.Compression.ZipFileExtensions]::ExtractToFile($e, $tmp, $true)
+            } finally { $zip.Dispose() }
+            $sig = Get-AuthenticodeSignature $tmp
+            if ($sig.Status -ne 'Valid') { throw "ValTrainer.exe in the portable zip: signature status $($sig.Status)" }
+            Write-Host "Portable zip: ValTrainer.exe signed by $($sig.SignerCertificate.Subject)"
+          }
 
       - name: Write the release notes
         shell: powershell
@@ -125,6 +265,14 @@ jobs:
           **Download:** ``ValTrainer-$env:VERSION-Setup.exe`` (installer, recommended) or ``ValTrainer-$env:VERSION-Portable.zip`` (unzip and run, no install). Windows 10 (1607+) or 11, 64-bit.
           ValTrainer isn't code-signed yet, so Windows SmartScreen may say "Windows protected your PC": click **More info** -> **Run anyway**. Check your download against ``SHA256SUMS.txt`` if you like.
           "@
+          if ($env:SIGNPATH_ENABLED -eq 'true') {
+            $footer = @"
+
+          ---
+          **Download:** ``ValTrainer-$env:VERSION-Setup.exe`` (installer, recommended) or ``ValTrainer-$env:VERSION-Portable.zip`` (unzip and run, no install). Windows 10 (1607+) or 11, 64-bit.
+          The installer and ValTrainer.exe are code-signed. Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/). Check your download against ``SHA256SUMS.txt`` if you like.
+          "@
+          }
           [IO.File]::WriteAllText("$env:RUNNER_TEMP\notes.md", $notes + "`n" + $footer,(New-Object Text.UTF8Encoding $false))
           Get-Content "$env:RUNNER_TEMP\notes.md"
 

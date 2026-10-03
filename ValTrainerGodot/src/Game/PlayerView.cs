@@ -22,6 +22,7 @@ public sealed class PlayerView
     public void Look(Vector2 counts, float sens, float zoomMult)
     {
         float k = DegPerCount * sens * (Zoom > 1f ? zoomMult / Zoom : 1f);
+        if (!float.IsFinite(counts.X * k) || !float.IsFinite(counts.Y * k)) return; // a NaN view would stick for good
         Yaw += counts.X * k;
         Pitch = Mathf.Clamp(Pitch - counts.Y * k, -89f, 89f);
         if (Yaw > 180f) Yaw -= 360f;

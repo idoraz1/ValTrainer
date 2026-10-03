@@ -8,27 +8,45 @@
     ValTrainer-<version>-Portable.zip   single-file ValTrainer.exe + LICENSE.txt + THIRD-PARTY-NOTICES.txt + README.txt
     SHA256SUMS.txt                      "<sha256>  <file>" lines (sha256sum -c compatible)
 
-  Steps:
-    1. Version from ValTrainerGodot\project.godot (tools\version.ps1).
-    2. Copies the Godot project to a private work folder - the tracked tree is never modified - adds the repo's
-       CHANGELOG.md (the in-game "What's new" reads res://CHANGELOG.md) and stamps the Windows file version.
-    3. Imports assets, builds the C# project, exports the "Windows Installer" preset (folder: exe + pck + .NET
-       data folder) and the "Windows Desktop" preset (one self-contained exe).
-    4. THIRD-PARTY-NOTICES.txt: ValTrainer (GPL-3.0), Godot and its third-party components (printed by the exported
-       game itself, so they match the shipped engine), the .NET runtime's license and notices, CC0 asset credits.
-    5. Optional code signing, the portable zip, the installer (Inno Setup 6), SHA256SUMS.txt.
+  Stages (-Stage). Without -Stage the script runs all three in one go, as it always did:
+    app        1. Version from ValTrainerGodot\project.godot (tools\version.ps1).
+               2. Copies the Godot project to a private work folder - the tracked tree is never modified - adds the
+                  repo's CHANGELOG.md (the in-game "What's new" reads res://CHANGELOG.md) and stamps the Windows
+                  file/product version (x.y.z.0) into the copy's export presets (product name: ValTrainer).
+               3. Imports assets, builds the C# project, exports the "Windows Installer" preset (folder: exe + pck +
+                  .NET data folder) and the "Windows Desktop" preset (one self-contained exe).
+               4. THIRD-PARTY-NOTICES.txt: ValTrainer (GPL-3.0), Godot and its third-party components (printed by the
+                  exported game itself, so they match the shipped engine), the .NET runtime's license and notices,
+                  CC0 asset credits.
+               5. Optional local code signing of both ValTrainer.exe files (signtool, see below).
+               Writes the app folder (-AppDir, default <OutDir>\app; in the one-shot build a temp folder):
+                 portable\   ValTrainer.exe (self-contained), LICENSE.txt, THIRD-PARTY-NOTICES.txt
+                 installer\  ValTrainer.exe, ValTrainer.pck, data_ValTrainer_windows_x86_64\, LICENSE.txt,
+                             THIRD-PARTY-NOTICES.txt
+    package    The portable zip and the installer (Inno Setup 6) from the app folder (-AppDir), which may have been
+               signed in between (the release workflow signs both ValTrainer.exe files with SignPath). Checks that
+               both exes carry this version.
+    checksums  SHA256SUMS.txt over the final Setup.exe and Portable.zip in -OutDir (run it after Setup.exe is signed).
 
   Works locally and on CI (GitHub windows-latest): pass -Godot / -Iscc or set $env:GODOT. Needs the .NET 8 SDK and
-  the Godot 4.7.2 .NET export templates. Never commits anything; exits non-zero on any failure.
+  the Godot 4.7.2 .NET export templates (app stage) and Inno Setup 6 (package stage). Never commits anything; exits
+  non-zero on any failure. Godot runs only while this script holds the machine-wide Godot slot (the named mutex
+  "Global\ValTrainerGodotSlot", shared with tools\godot-run.ps1, gshot.ps1 and selftest.ps1): one Godot at a time.
 
-  Code signing (optional): set SIGNTOOL_CERT_THUMBPRINT (SHA-1 thumbprint of a code-signing certificate in the
-  Windows certificate store) and optionally SIGNTOOL_PATH (signtool.exe) and SIGNTOOL_TIMESTAMP_URL. Then both
-  ValTrainer.exe files, Setup.exe and the uninstaller are signed. Without it, signing is skipped.
+  Local code signing (optional): set SIGNTOOL_CERT_THUMBPRINT (SHA-1 thumbprint of a code-signing certificate in the
+  Windows certificate store) and optionally SIGNTOOL_PATH (signtool.exe) and SIGNTOOL_TIMESTAMP_URL. Then the app stage
+  signs both ValTrainer.exe files and the package stage signs Setup.exe and the uninstaller. Without it, signing is
+  skipped. (Release builds are signed by SignPath in .github\workflows\release.yml instead; see CONTRIBUTING.md.)
 
+.PARAMETER Stage
+  all (default), app, package or checksums. See the description.
 .PARAMETER Godot
   Godot 4.7.2 .NET console exe. Default: $env:GODOT, else tools\godot\Godot_v4.7.2-stable_mono_win64\..._console.exe.
 .PARAMETER OutDir
   Output folder (relative paths are relative to the repo root). Default: dist.
+.PARAMETER AppDir
+  App folder written by the app stage and read by the package stage (relative paths are relative to the repo root).
+  Default: <OutDir>\app for -Stage app / package; a folder inside the work folder for the one-shot build.
 .PARAMETER Iscc
   Inno Setup 6 compiler. Default: tools\innosetup\ISCC.exe, then Program Files, then PATH.
 .PARAMETER SkipInstaller
@@ -42,11 +60,19 @@
   powershell -ExecutionPolicy Bypass -File tools\build-release.ps1
 .EXAMPLE
   pwsh tools\build-release.ps1 -Godot C:\godot\Godot_v4.7.2-stable_mono_win64_console.exe -Iscc "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+.EXAMPLE
+  tools\build-release.ps1 -Stage app          # dist\app\portable + dist\app\installer
+  # ... sign dist\app\portable\ValTrainer.exe and dist\app\installer\ValTrainer.exe ...
+  tools\build-release.ps1 -Stage package      # dist\ValTrainer-<version>-Portable.zip + -Setup.exe from dist\app
+  # ... sign dist\ValTrainer-<version>-Setup.exe ...
+  tools\build-release.ps1 -Stage checksums    # dist\SHA256SUMS.txt
 #>
 [CmdletBinding()]
 param(
+  [ValidateSet('all', 'app', 'package', 'checksums')][string]$Stage = 'all',
   [string]$Godot = "",
   [string]$OutDir = "dist",
+  [string]$AppDir = "",
   [string]$Iscc = "",
   [switch]$SkipInstaller,
   [string]$WorkDir = "",
@@ -60,6 +86,9 @@ $ProgressPreference = 'SilentlyContinue'
 $Repo = Split-Path -Parent $PSScriptRoot
 $Proj = Join-Path $Repo 'ValTrainerGodot'
 $sw = [System.Diagnostics.Stopwatch]::StartNew()
+$DoApp = $Stage -eq 'all' -or $Stage -eq 'app'
+$DoPackage = $Stage -eq 'all' -or $Stage -eq 'package'
+$DoChecksums = $Stage -eq 'all' -or $Stage -eq 'checksums'
 
 function Step([string]$msg) { Write-Host ("[{0,5:0}s] {1}" -f $sw.Elapsed.TotalSeconds, $msg) -ForegroundColor Cyan }
 function Fail([string]$msg) { throw $msg }
@@ -71,6 +100,33 @@ function Invoke-Native([string]$exe, [string[]]$arguments, [string]$what) {
 
 function Write-Utf8([string]$path, [string]$text, [bool]$bom = $false) {
   [System.IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding($bom)))
+}
+
+function Resolve-RepoPath([string]$path) {
+  if ([System.IO.Path]::IsPathRooted($path)) { return $path }
+  return (Join-Path $Repo $path)
+}
+
+# The machine-wide Godot slot: only one Godot process at a time on this PC (several at once froze it). Shared with
+# tools\godot-run.ps1, gshot.ps1 and selftest.ps1. Also taken on CI, where nothing else competes for it.
+function Enter-GodotSlot {
+  $slot = New-Object System.Threading.Mutex($false, 'Global\ValTrainerGodotSlot')
+  $waited = [System.Diagnostics.Stopwatch]::StartNew()
+  try {
+    if (-not $slot.WaitOne(0)) {
+      Write-Host "Waiting for the Godot slot (another Godot run is using it)..."
+      [void]$slot.WaitOne()
+    }
+  } catch [System.Threading.AbandonedMutexException] { }   # the previous holder died: the slot is ours
+  if ($waited.Elapsed.TotalSeconds -gt 2) { Write-Host ("Waited {0:0} s for the Godot slot" -f $waited.Elapsed.TotalSeconds) }
+  return $slot
+}
+
+function Exit-GodotSlot($slot) {
+  if ($slot) {
+    try { $slot.ReleaseMutex() } catch { }
+    $slot.Dispose()
+  }
 }
 
 # Multi-size .ico (16-256 px) from the 256 px app icon: BMP entries up to 48 px, PNG entries above (Vista+ format).
@@ -139,60 +195,34 @@ function Find-SignTool {
   Fail "SIGNTOOL_CERT_THUMBPRINT is set but signtool.exe wasn't found (set SIGNTOOL_PATH)"
 }
 
-$work = $null
-try {
-  # ---------------------------------------------------------------- 1. version & tools
-  $global:LASTEXITCODE = 0
-  $Version = (& (Join-Path $PSScriptRoot 'version.ps1')) | Select-Object -Last 1
-  if ($LASTEXITCODE -ne 0 -or -not $Version) { Fail "couldn't read the version (tools\version.ps1)" }
-  $Version = $Version.Trim()
-  $numeric = ($Version -split '[-+]')[0]
-  $FileVersion = "$numeric.0"          # Windows needs 4 numeric parts; prerelease tags can't go in there
-  Write-Host ""
-  Write-Host "ValTrainer $Version  (file version $FileVersion)" -ForegroundColor Green
+function Get-TimestampUrl { if ($env:SIGNTOOL_TIMESTAMP_URL) { $env:SIGNTOOL_TIMESTAMP_URL } else { 'http://timestamp.digicert.com' } }
 
-  if (-not $Godot) { $Godot = $env:GODOT }
-  if (-not $Godot) { $Godot = Join-Path $Repo 'tools\godot\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64_console.exe' }
-  if (-not (Test-Path -LiteralPath $Godot)) { Fail "Godot not found: $Godot (pass -Godot or set `$env:GODOT)" }
-  $godotVer = (& $Godot --version 2>$null | Select-Object -Last 1)
-  if ("$godotVer" -notmatch 'mono') { Fail "$Godot is not a Godot .NET (mono) build ('$godotVer')" }
-  Write-Host "Godot $godotVer"
+# Both exes must carry this build's version and product name, also after signing elsewhere.
+function Assert-ExeMetadata([string]$exe) {
+  $vi = (Get-Item -LiteralPath $exe).VersionInfo
+  if ($vi.FileVersion -ne $FileVersion) { Fail "$exe has file version '$($vi.FileVersion)', expected $FileVersion" }
+  if ($vi.ProductVersion -ne $FileVersion) { Fail "$exe has product version '$($vi.ProductVersion)', expected $FileVersion" }
+  if ($vi.ProductName -ne 'ValTrainer') { Fail "$exe has product name '$($vi.ProductName)', expected ValTrainer" }
+}
 
-  if (-not $SkipInstaller) {
-    if (-not $Iscc) {
-      $candidates = @(
-        (Join-Path $Repo 'tools\innosetup\ISCC.exe'),
-        (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'),
-        (Join-Path $env:ProgramFiles 'Inno Setup 6\ISCC.exe'),
-        (Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6\ISCC.exe'))
-      $Iscc = $candidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
-      if (-not $Iscc) { $c = Get-Command ISCC.exe -ErrorAction SilentlyContinue; if ($c) { $Iscc = $c.Source } }
-    }
-    if (-not $Iscc -or -not (Test-Path -LiteralPath $Iscc)) { Fail "Inno Setup 6 (ISCC.exe) not found: pass -Iscc, install Inno Setup 6, or use -SkipInstaller" }
-    Write-Host "Inno Setup: $Iscc"
-  }
+function Get-SignatureText([string]$file) {
+  $sig = Get-AuthenticodeSignature -LiteralPath $file
+  if ($sig.Status -eq 'NotSigned') { return 'not signed' }
+  $who = if ($sig.SignerCertificate) { $sig.SignerCertificate.GetNameInfo([System.Security.Cryptography.X509Certificates.X509NameType]::SimpleName, $false) } else { '?' }
+  return "signed by $who ($($sig.Status))"
+}
 
-  $license = Join-Path $Repo 'LICENSE'
-  if (-not (Test-Path -LiteralPath $license)) { Fail "LICENSE not found in the repo root" }
-
-  if (-not [System.IO.Path]::IsPathRooted($OutDir)) { $OutDir = Join-Path $Repo $OutDir }
-  New-Item -ItemType Directory -Force $OutDir | Out-Null
-  $OutDir = (Resolve-Path -LiteralPath $OutDir).Path
-
-  if (-not $WorkDir) {
-    $tmp = if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { [System.IO.Path]::GetTempPath() }
-    $WorkDir = Join-Path $tmp 'ValTrainer-build'
-  }
-  $work = $WorkDir
+# ==================================================================== app stage
+function Invoke-AppStage {
   $stage = Join-Path $work 'project'
-  $outInst = Join-Path $work 'installer'
-  $outPort = Join-Path $work 'portable'
-  foreach ($d in @($outInst, $outPort, (Join-Path $work 'zip'), (Join-Path $work 'appdata'))) {
+  $outInst = Join-Path $AppDir 'installer'
+  $outPort = Join-Path $AppDir 'portable'
+  foreach ($d in @($outInst, $outPort, (Join-Path $work 'appdata'))) {
     if (Test-Path -LiteralPath $d) { Remove-Item -LiteralPath $d -Recurse -Force }
   }
   New-Item -ItemType Directory -Force $stage, $outInst, $outPort | Out-Null
 
-  # ---------------------------------------------------------------- 2. private copy of the project
+  # ---------------------------------------------------------------- private copy of the project
   Step "Copying the project to $stage"
   # .godot\imported is copied too (saves re-importing every asset); .godot\mono (build output) is rebuilt.
   & robocopy $Proj $stage /MIR /XD (Join-Path $Proj '.godot\mono') (Join-Path $stage '.godot\mono') /NFL /NDL /NJH /NJS /NP | Out-Null
@@ -209,46 +239,52 @@ try {
 
   # Windows file/product version: Godot falls back to config/version when these are empty, but only for purely
   # numeric versions (1.1.0-beta.1 would become 1.0.0.0), so stamp x.y.z.0 into the private copy's presets.
+  # The product name comes from the presets too; it must stay "ValTrainer" (SignPath checks it before signing).
   $presets = Join-Path $stage 'export_presets.cfg'
   $p = [System.IO.File]::ReadAllText($presets)
   $p = [regex]::Replace($p, '(?m)^application/(file_version|product_version)=".*"', ('application/$1="' + $FileVersion + '"'))
+  $p = [regex]::Replace($p, '(?m)^application/product_name=".*"', 'application/product_name="ValTrainer"')
   Write-Utf8 $presets $p
 
-  # ---------------------------------------------------------------- 3. import, build, export
-  Step "Importing assets"
-  Invoke-Native $Godot @('--headless', '--path', $stage, '--import') 'Godot asset import'
-
-  Step "Building C#"
-  Invoke-Native 'dotnet' @('build', (Join-Path $stage 'ValTrainer.csproj'), '-c', 'Debug', '-nologo', '-v', 'q') 'dotnet build'
-
-  Step "Exporting ""Windows Installer"" -> $outInst"
+  # ---------------------------------------------------------------- import, build, export (in the Godot slot)
   $instExe = Join-Path $outInst 'ValTrainer.exe'
-  Invoke-Native $Godot @('--headless', '--path', $stage, '--export-release', 'Windows Installer', $instExe) 'Godot export (Windows Installer)'
-  $dataDir = Join-Path $outInst 'data_ValTrainer_windows_x86_64'
-  foreach ($f in @($instExe, (Join-Path $outInst 'ValTrainer.pck'), $dataDir)) {
-    if (-not (Test-Path -LiteralPath $f)) { Fail "export output missing: $f" }
-  }
-
-  Step "Exporting ""Windows Desktop"" (single exe) -> $outPort"
   $portExe = Join-Path $outPort 'ValTrainer.exe'
-  Invoke-Native $Godot @('--headless', '--path', $stage, '--export-release', 'Windows Desktop', $portExe) 'Godot export (Windows Desktop)'
-  if (-not (Test-Path -LiteralPath $portExe) -or (Get-Item -LiteralPath $portExe).Length -lt 50MB) { Fail "portable export missing or too small: $portExe" }
-  foreach ($exe in @($instExe, $portExe)) {
-    $fv = (Get-Item -LiteralPath $exe).VersionInfo.FileVersion
-    if ($fv -ne $FileVersion) { Fail "$exe has file version '$fv', expected $FileVersion" }
-  }
-
-  # ---------------------------------------------------------------- 4. notices
-  Step "Writing THIRD-PARTY-NOTICES.txt"
+  $dataDir = Join-Path $outInst 'data_ValTrainer_windows_x86_64'
   $engineNotices = Join-Path $work 'licenses-from-game.txt'
-  if (Test-Path -LiteralPath $engineNotices) { Remove-Item -LiteralPath $engineNotices -Force }
-  # The exported game prints its own notices (Engine.GetLicenseText / GetCopyrightInfo / GetLicenseInfo).
-  # --dev + --data-dir: never touches the real settings; --log-file keeps the user's Godot log folder clean.
-  $argLine = "--headless --log-file `"$(Join-Path $work 'print-licenses.log')`" -- --dev --data-dir `"$(Join-Path $work 'appdata')`" --print-licenses `"$engineNotices`""
-  $proc = Start-Process -FilePath $instExe -ArgumentList $argLine -Wait -PassThru -WindowStyle Hidden
-  if ($proc.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $engineNotices) -or (Get-Item -LiteralPath $engineNotices).Length -lt 20KB) {
-    Fail "the exported game couldn't write its license notices (exit code $($proc.ExitCode)); see $(Join-Path $work 'print-licenses.log')"
-  }
+  $slot = Enter-GodotSlot
+  try {
+    $godotVer = (& $Godot --version 2>$null | Select-Object -Last 1)
+    if ("$godotVer" -notmatch 'mono') { Fail "$Godot is not a Godot .NET (mono) build ('$godotVer')" }
+    Write-Host "Godot $godotVer"
+
+    Step "Importing assets"
+    Invoke-Native $Godot @('--headless', '--path', $stage, '--import') 'Godot asset import'
+
+    Step "Building C#"
+    Invoke-Native 'dotnet' @('build', (Join-Path $stage 'ValTrainer.csproj'), '-c', 'Debug', '-nologo', '-v', 'q') 'dotnet build'
+
+    Step "Exporting ""Windows Installer"" -> $outInst"
+    Invoke-Native $Godot @('--headless', '--path', $stage, '--export-release', 'Windows Installer', $instExe) 'Godot export (Windows Installer)'
+    foreach ($f in @($instExe, (Join-Path $outInst 'ValTrainer.pck'), $dataDir)) {
+      if (-not (Test-Path -LiteralPath $f)) { Fail "export output missing: $f" }
+    }
+
+    Step "Exporting ""Windows Desktop"" (single exe) -> $outPort"
+    Invoke-Native $Godot @('--headless', '--path', $stage, '--export-release', 'Windows Desktop', $portExe) 'Godot export (Windows Desktop)'
+    if (-not (Test-Path -LiteralPath $portExe) -or (Get-Item -LiteralPath $portExe).Length -lt 50MB) { Fail "portable export missing or too small: $portExe" }
+    foreach ($exe in @($instExe, $portExe)) { Assert-ExeMetadata $exe }
+
+    # ---------------------------------------------------------------- notices
+    Step "Writing THIRD-PARTY-NOTICES.txt"
+    if (Test-Path -LiteralPath $engineNotices) { Remove-Item -LiteralPath $engineNotices -Force }
+    # The exported game prints its own notices (Engine.GetLicenseText / GetCopyrightInfo / GetLicenseInfo).
+    # --dev + --data-dir: never touches the real settings; --log-file keeps the user's Godot log folder clean.
+    $argLine = "--headless --log-file `"$(Join-Path $work 'print-licenses.log')`" -- --dev --data-dir `"$(Join-Path $work 'appdata')`" --print-licenses `"$engineNotices`""
+    $proc = Start-Process -FilePath $instExe -ArgumentList $argLine -Wait -PassThru -WindowStyle Hidden
+    if ($proc.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $engineNotices) -or (Get-Item -LiteralPath $engineNotices).Length -lt 20KB) {
+      Fail "the exported game couldn't write its license notices (exit code $($proc.ExitCode)); see $(Join-Path $work 'print-licenses.log')"
+    }
+  } finally { Exit-GodotSlot $slot }
 
   # .NET runtime notices from the runtime pack the export was published with.
   $deps = Get-ChildItem -LiteralPath $dataDir -Recurse -Filter 'ValTrainer.deps.json' | Select-Object -First 1
@@ -282,26 +318,46 @@ try {
     Write-Utf8 (Join-Path $dir 'LICENSE.txt') $licenseText $true
   }
 
-  # ---------------------------------------------------------------- 5a. optional signing
-  $signArgs = @()
+  # ---------------------------------------------------------------- optional local signing
   if ($env:SIGNTOOL_CERT_THUMBPRINT) {
     $signtool = Find-SignTool
-    $ts = if ($env:SIGNTOOL_TIMESTAMP_URL) { $env:SIGNTOOL_TIMESTAMP_URL } else { 'http://timestamp.digicert.com' }
+    $ts = Get-TimestampUrl
     Step "Signing ValTrainer.exe (installer and portable builds)"
     foreach ($exe in @($instExe, $portExe)) {
       Invoke-Native $signtool @('sign', '/sha1', $env:SIGNTOOL_CERT_THUMBPRINT, '/fd', 'sha256', '/tr', $ts, '/td', 'sha256', '/d', 'ValTrainer', $exe) "signtool ($exe)"
     }
-    # Inno Setup signs Setup.exe and the uninstaller with this command ($q = quote, $f = file).
-    $signArgs = @('/DSIGN', ('/Ssigntool=$q' + $signtool + '$q sign /sha1 ' + $env:SIGNTOOL_CERT_THUMBPRINT + ' /fd sha256 /tr ' + $ts + ' /td sha256 /d $qValTrainer Setup$q $f'))
   } else {
     Write-Host "Code signing: skipped (SIGNTOOL_CERT_THUMBPRINT not set)"
   }
+}
 
-  # ---------------------------------------------------------------- 5b. portable zip
+# ==================================================================== package stage
+function Invoke-PackageStage {
+  $outInst = Join-Path $AppDir 'installer'
+  $outPort = Join-Path $AppDir 'portable'
+  $portExe = Join-Path $outPort 'ValTrainer.exe'
+  $instExe = Join-Path $outInst 'ValTrainer.exe'
+  $need = @($portExe, (Join-Path $outPort 'LICENSE.txt'), (Join-Path $outPort 'THIRD-PARTY-NOTICES.txt'))
+  if (-not $SkipInstaller) {
+    $need += @($instExe, (Join-Path $outInst 'ValTrainer.pck'), (Join-Path $outInst 'data_ValTrainer_windows_x86_64'),
+      (Join-Path $outInst 'LICENSE.txt'), (Join-Path $outInst 'THIRD-PARTY-NOTICES.txt'))
+  }
+  foreach ($f in $need) {
+    if (-not (Test-Path -LiteralPath $f)) { Fail "app folder incomplete: $f is missing (run -Stage app first, or pass -AppDir)" }
+  }
+  $exes = @($portExe); if (-not $SkipInstaller) { $exes += $instExe }
+  foreach ($exe in $exes) {
+    Assert-ExeMetadata $exe
+    Write-Host ("{0}: {1}" -f $exe, (Get-SignatureText $exe))
+  }
+
+  # ---------------------------------------------------------------- portable zip
   $zipName = "ValTrainer-$Version-Portable.zip"
   $zipPath = Join-Path $OutDir $zipName
   Step "Packing $zipName"
-  $zipRoot = Join-Path $work "zip\ValTrainer-$Version"
+  $zipDir = Join-Path $work 'zip'
+  if (Test-Path -LiteralPath $zipDir) { Remove-Item -LiteralPath $zipDir -Recurse -Force }
+  $zipRoot = Join-Path $zipDir "ValTrainer-$Version"
   New-Item -ItemType Directory -Force $zipRoot | Out-Null
   Copy-Item -Path (Join-Path $outPort '*') -Destination $zipRoot -Recurse -Force
   $readme = @"
@@ -335,11 +391,17 @@ License: GNU GPL v3 (LICENSE.txt). Third-party licenses: THIRD-PARTY-NOTICES.txt
   Add-Type -AssemblyName System.IO.Compression.FileSystem
   [System.IO.Compression.ZipFile]::CreateFromDirectory($zipRoot, $zipPath, [System.IO.Compression.CompressionLevel]::Optimal, $true)
 
-  # ---------------------------------------------------------------- 5c. installer
-  $setupName = "ValTrainer-$Version-Setup.exe"
-  $setupPath = Join-Path $OutDir $setupName
+  # ---------------------------------------------------------------- installer
+  $setupPath = Join-Path $OutDir "ValTrainer-$Version-Setup.exe"
   if (-not $SkipInstaller) {
-    Step "Compiling $setupName (Inno Setup)"
+    Step "Compiling $(Split-Path -Leaf $setupPath) (Inno Setup)"
+    $signArgs = @()
+    if ($env:SIGNTOOL_CERT_THUMBPRINT) {
+      $signtool = Find-SignTool
+      $ts = Get-TimestampUrl
+      # Inno Setup signs Setup.exe and the uninstaller with this command ($q = quote, $f = file).
+      $signArgs = @('/DSIGN', ('/Ssigntool=$q' + $signtool + '$q sign /sha1 ' + $env:SIGNTOOL_CERT_THUMBPRINT + ' /fd sha256 /tr ' + $ts + ' /td sha256 /d $qValTrainer Setup$q $f'))
+    }
     $ico = Join-Path $work 'ValTrainer.ico'
     New-Icon (Join-Path $Proj 'icon.png') $ico
     $repoMatch = [regex]::Match([System.IO.File]::ReadAllText((Join-Path $Proj 'src\Core\AppInfo.cs')), 'GitHubRepo\s*=\s*"([^"]+)"')
@@ -352,17 +414,87 @@ License: GNU GPL v3 (LICENSE.txt). Third-party licenses: THIRD-PARTY-NOTICES.txt
   } else {
     Write-Host "Installer: skipped (-SkipInstaller)"
   }
+}
 
-  # ---------------------------------------------------------------- 5d. checksums
-  $sums = Join-Path $OutDir 'SHA256SUMS.txt'
-  $lines = foreach ($f in @($setupPath, $zipPath)) {
+# ==================================================================== checksums stage
+function Invoke-ChecksumsStage {
+  $files = @((Join-Path $OutDir "ValTrainer-$Version-Setup.exe"), (Join-Path $OutDir "ValTrainer-$Version-Portable.zip"))
+  if ($Stage -eq 'checksums' -and -not (Test-Path -LiteralPath $files[1])) {
+    Fail "$($files[1]) not found (run -Stage package first)"
+  }
+  Step "Writing SHA256SUMS.txt"
+  $lines = foreach ($f in $files) {
     if (Test-Path -LiteralPath $f) { '{0}  {1}' -f (Get-FileHash -LiteralPath $f -Algorithm SHA256).Hash.ToLowerInvariant(), (Split-Path -Leaf $f) }
   }
-  Write-Utf8 $sums ((@($lines) -join "`n") + "`n")
+  Write-Utf8 (Join-Path $OutDir 'SHA256SUMS.txt') ((@($lines) -join "`n") + "`n")
+}
+
+$work = $null
+try {
+  # ---------------------------------------------------------------- version & tools
+  $global:LASTEXITCODE = 0
+  $Version = (& (Join-Path $PSScriptRoot 'version.ps1')) | Select-Object -Last 1
+  if ($LASTEXITCODE -ne 0 -or -not $Version) { Fail "couldn't read the version (tools\version.ps1)" }
+  $Version = $Version.Trim()
+  $numeric = ($Version -split '[-+]')[0]
+  $FileVersion = "$numeric.0"          # Windows needs 4 numeric parts; prerelease tags can't go in there
+  Write-Host ""
+  Write-Host "ValTrainer $Version  (file version $FileVersion)  stage: $Stage" -ForegroundColor Green
+
+  if ($DoApp) {
+    if (-not $Godot) { $Godot = $env:GODOT }
+    if (-not $Godot) { $Godot = Join-Path $Repo 'tools\godot\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64_console.exe' }
+    if (-not (Test-Path -LiteralPath $Godot)) { Fail "Godot not found: $Godot (pass -Godot or set `$env:GODOT)" }
+  }
+
+  if ($DoPackage -and -not $SkipInstaller) {
+    if (-not $Iscc) {
+      $candidates = @(
+        (Join-Path $Repo 'tools\innosetup\ISCC.exe'),
+        (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'),
+        (Join-Path $env:ProgramFiles 'Inno Setup 6\ISCC.exe'),
+        (Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6\ISCC.exe'))
+      $Iscc = $candidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+      if (-not $Iscc) { $c = Get-Command ISCC.exe -ErrorAction SilentlyContinue; if ($c) { $Iscc = $c.Source } }
+    }
+    if (-not $Iscc -or -not (Test-Path -LiteralPath $Iscc)) { Fail "Inno Setup 6 (ISCC.exe) not found: pass -Iscc, install Inno Setup 6, or use -SkipInstaller" }
+    Write-Host "Inno Setup: $Iscc"
+  }
+
+  $license = Join-Path $Repo 'LICENSE'
+  if ($DoApp -and -not (Test-Path -LiteralPath $license)) { Fail "LICENSE not found in the repo root" }
+
+  $OutDir = Resolve-RepoPath $OutDir
+  New-Item -ItemType Directory -Force $OutDir | Out-Null
+  $OutDir = (Resolve-Path -LiteralPath $OutDir).Path
+
+  if (-not $WorkDir) {
+    $tmp = if ($env:RUNNER_TEMP) { $env:RUNNER_TEMP } else { [System.IO.Path]::GetTempPath() }
+    $WorkDir = Join-Path $tmp 'ValTrainer-build'
+  }
+  $work = $WorkDir
+  if ($DoApp -or $DoPackage) { New-Item -ItemType Directory -Force $work | Out-Null }
+
+  # The app folder: inside the work folder for the one-shot build (dist\ gets only the release files, as before),
+  # <OutDir>\app between separate stages.
+  if (-not $AppDir) { $AppDir = if ($Stage -eq 'all') { Join-Path $work 'app' } else { Join-Path $OutDir 'app' } }
+  $AppDir = Resolve-RepoPath $AppDir
+  if ($DoApp -or $DoPackage) { Write-Host "App folder: $AppDir" }
+
+  if ($DoApp) { Invoke-AppStage }
+  if ($DoPackage) { Invoke-PackageStage }
+  if ($DoChecksums) { Invoke-ChecksumsStage }
 
   Write-Host ""
-  Write-Host ("ValTrainer {0} built in {1:0} s:" -f $Version, $sw.Elapsed.TotalSeconds) -ForegroundColor Green
-  foreach ($f in @($setupPath, $zipPath, $sums)) {
+  Write-Host ("ValTrainer {0} ({1}) built in {2:0} s:" -f $Version, $Stage, $sw.Elapsed.TotalSeconds) -ForegroundColor Green
+  $show = @()
+  if ($Stage -eq 'app') {
+    $show = @((Join-Path $AppDir 'portable\ValTrainer.exe'), (Join-Path $AppDir 'installer\ValTrainer.exe'))
+  } else {
+    $show = @((Join-Path $OutDir "ValTrainer-$Version-Setup.exe"), (Join-Path $OutDir "ValTrainer-$Version-Portable.zip"))
+    if ($DoChecksums) { $show += (Join-Path $OutDir 'SHA256SUMS.txt') }
+  }
+  foreach ($f in $show) {
     if (Test-Path -LiteralPath $f) { Write-Host ("  {0,-48} {1,10:N1} MB" -f $f, ((Get-Item -LiteralPath $f).Length / 1MB)) }
   }
   $exitCode = 0
@@ -373,7 +505,15 @@ License: GNU GPL v3 (LICENSE.txt). Third-party licenses: THIRD-PARTY-NOTICES.txt
   $exitCode = 1
 } finally {
   if ($work -and -not $KeepWork -and (Test-Path -LiteralPath $work)) {
-    Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
+    if ($DoApp) {
+      Remove-Item -LiteralPath $work -Recurse -Force -ErrorAction SilentlyContinue
+    } elseif ($DoPackage) {
+      # Only what this stage made: a project copy kept by "-Stage app -KeepWork" stays.
+      foreach ($d in @((Join-Path $work 'zip'), (Join-Path $work 'ValTrainer.ico'))) {
+        if (Test-Path -LiteralPath $d) { Remove-Item -LiteralPath $d -Recurse -Force -ErrorAction SilentlyContinue }
+      }
+      if (-not (Get-ChildItem -LiteralPath $work -Force -ErrorAction SilentlyContinue)) { Remove-Item -LiteralPath $work -Force -ErrorAction SilentlyContinue }
+    }
   }
 }
 exit $exitCode
