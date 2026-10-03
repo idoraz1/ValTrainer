@@ -1,0 +1,87 @@
+name: itch.io
+
+# Uploads a published GitHub release to itch.io with butler (https://itch.io/docs/butler/):
+#   windows-installer  ValTrainer-<version>-Setup.exe
+#   windows-portable   the contents of ValTrainer-<version>-Portable.zip
+# Runs after every release (called by release.yml) and by hand (Actions → itch.io → Run workflow).
+# Needs the repository secret BUTLER_API_KEY (itch.io → Settings → API keys); without it the job is skipped.
+# The itch.io page is the repository variable ITCH_TARGET (default idoraz1/valtrainer).
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: Version to upload (x.y.z, no leading v)
+        type: string
+        required: true
+    secrets:
+      BUTLER_API_KEY:
+        required: false
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to upload (x.y.z, no leading v)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: itch
+  cancel-in-progress: false
+
+jobs:
+  push:
+    name: Push to itch.io
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERSION: ${{ inputs.version }}
+      TARGET: ${{ vars.ITCH_TARGET || 'idoraz1/valtrainer' }}
+      BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check the API key
+        id: key
+        run: |
+          if [ -z "$BUTLER_API_KEY" ]; then
+            echo "::notice::BUTLER_API_KEY isn't set: skipping the itch.io upload."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download the release files and check them
+        if: steps.key.outputs.ok == 'true'
+        run: |
+          set -euo pipefail
+          VERSION="${VERSION#v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          mkdir -p files && cd files
+          gh release download "v$VERSION" --repo "$GITHUB_REPOSITORY" \
+            -p "ValTrainer-$VERSION-Setup.exe" -p "ValTrainer-$VERSION-Portable.zip" -p "SHA256SUMS.txt"
+          sha256sum --check --strict SHA256SUMS.txt
+          mkdir -p ../installer ../portable
+          mv "ValTrainer-$VERSION-Setup.exe" ../installer/
+          unzip -q "ValTrainer-$VERSION-Portable.zip" -d ../portable
+          ls -la ../installer ../portable/*
+
+      - name: Install butler
+        if: steps.key.outputs.ok == 'true'
+        run: |
+          set -euo pipefail
+          curl -sSfL -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
+          unzip -q butler.zip -d butler && chmod +x butler/butler
+          echo "$PWD/butler" >> "$GITHUB_PATH"
+          ./butler/butler -V
+
+      - name: Push the installer and the portable build
+        if: steps.key.outputs.ok == 'true'
+        run: |
+          set -euo pipefail
+          # The portable zip holds one folder (ValTrainer-<version>/); push its contents.
+          PORTABLE_DIR="$(find portable -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+          [ -n "$PORTABLE_DIR" ] || PORTABLE_DIR=portable
+          butler push installer "$TARGET:windows-installer" --userversion "$VERSION"
+          butler push "$PORTABLE_DIR" "$TARGET:windows-portable" --userversion "$VERSION"
+          butler status "$TARGET"

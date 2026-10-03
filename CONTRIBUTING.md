@@ -265,9 +265,14 @@ only people who download them by hand get them.
    Versions with a `-` become prereleases.
    Once code signing is set up, the workflow stops twice to wait for you: **approve both signing requests in SignPath**
    (the exes, then the installer; see [Code signing](#code-signing)). Nothing is published until both are signed.
-6. Update the winget package once the release is published: `wingetcreate update Valtrainer.ValTrainer --version X.Y.Z
+6. itch.io is updated automatically: after the release is published, the `itch` job (`.github/workflows/itch.yml`)
+   pushes the Setup.exe and the portable build to https://idoraz1.itch.io/valtrainer with butler (channels
+   `windows-installer` and `windows-portable`). It needs the secret `BUTLER_API_KEY` (itch.io → Settings → API keys;
+   `tools\ghin\gh.exe secret set BUTLER_API_KEY`) and is skipped without it. To re-upload a version by hand:
+   Actions → itch.io → Run workflow.
+7. Update the winget package once the release is published: `wingetcreate update Valtrainer.ValTrainer --version X.Y.Z
    --urls "<Setup.exe URL>|x64|user" "<Setup.exe URL>|x64|machine" --token <token> --submit` (see `winget/README.md`).
-7. Close the version's milestone and create the next one (`tools\setup-github.ps1` creates the next minor milestone).
+8. Close the version's milestone and create the next one (`tools\setup-github.ps1` creates the next minor milestone).
 
 Players who allowed updates get the release automatically (see [Automatic updates](#automatic-updates)): within 6 hours, running copies
 download it and install it on their next restart. So **never replace the files of a published release with different

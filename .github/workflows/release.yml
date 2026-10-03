@@ -29,6 +29,9 @@ jobs:
     timeout-minutes: 240
     env:
       SIGNPATH_ENABLED: ${{ vars.SIGNPATH_ORGANIZATION_ID != '' && secrets.SIGNPATH_API_TOKEN != '' }}
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      prerelease: ${{ steps.ver.outputs.prerelease }}
     steps:
       - uses: actions/checkout@v4
 
@@ -309,3 +312,15 @@ jobs:
           name: selftest-logs
           path: selftest-logs
           if-no-files-found: ignore
+
+  # After the GitHub Release is out, upload it to itch.io with butler (skipped while BUTLER_API_KEY isn't set;
+  # prereleases aren't uploaded). See .github/workflows/itch.yml.
+  itch:
+    name: Upload to itch.io
+    needs: release
+    if: needs.release.outputs.prerelease != 'true'
+    uses: ./.github/workflows/itch.yml
+    with:
+      version: ${{ needs.release.outputs.version }}
+    secrets:
+      BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
