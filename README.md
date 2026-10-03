@@ -10,7 +10,7 @@ what holds you back and how to fix it.
 
 Windows 10/11 · free and open source · fan-made, not affiliated with Riot Games
 
-**Website:** [valtrainer.github.io](https://valtrainer.github.io/): features, clips, download and FAQ.
+**Website:** [valtrainer.github.io](https://valtrainer.github.io/): features, clips, download and FAQ. Also on [itch.io](https://idoraz1.itch.io/valtrainer).
 
 | | |
 |---|---|
