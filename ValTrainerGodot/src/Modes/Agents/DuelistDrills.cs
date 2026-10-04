@@ -5,6 +5,7 @@ using ValTrainer.Game.Bots;
 using ValTrainer.Game.Fx;
 using ValTrainer.Maps;
 using ValTrainer.UI;
+using ValTrainer.Valorant;
 
 namespace ValTrainer.Modes;
 
@@ -348,13 +349,13 @@ public sealed partial class MobilityEntryMode : MapMode
             var key = new Rect2(r.Position + new Vector2(12 * k, 12 * k), new Vector2(40 * k, 40 * k));
             c.DrawRect(key, new Color(0, 0, 0, 0.35f));
             c.DrawRect(key, accent, false, Mathf.Max(1f, 2f * k));
-            string kt = (s.Key ?? DuelistKit.KeyText(s.Slot)).ToUpperInvariant();
+            string kt = InputBinding.Cap(s.Key is { } sk ? Main.I.Valorant.Binds.Hint(sk) : DuelistKit.KeyText(s.Slot));
             int ks = UiTheme.Fs(kt.Length > 2 ? 12 : 22, k);
             Gfx.TextC(c, UiTheme.Display, kt, key.GetCenter().X, Gfx.Mid(key.GetCenter().Y, ks), ks, UiTheme.Text);
             int ns = UiTheme.Fs(17, k), ss = UiTheme.Fs(12, k);
             float tx = key.End.X + 12 * k;
             Gfx.TextFit(c, UiTheme.HudWide, s.Name.ToUpperInvariant(), tx, Gfx.Mid(r.Position.Y + 22 * k, ns), ns, UiTheme.Text, r.End.X - tx - 40 * k);
-            Gfx.TextFit(c, UiTheme.HudWide, s.State, tx, Gfx.Mid(r.Position.Y + 44 * k, ss), ss, s.Active ? accent : UiTheme.Dim, r.End.X - tx - 8 * k);
+            Gfx.TextFit(c, UiTheme.HudWide, Main.I.Valorant.Binds.Hint(s.State), tx, Gfx.Mid(r.Position.Y + 44 * k, ss), ss, s.Active ? accent : UiTheme.Dim, r.End.X - tx - 8 * k);
             for (int j = 0; j < s.Max; j++)
             {
                 var pc = new Vector2(r.End.X - 16 * k - j * 16 * k, r.Position.Y + 22 * k);

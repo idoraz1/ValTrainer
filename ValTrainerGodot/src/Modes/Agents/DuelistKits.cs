@@ -4,6 +4,7 @@ using ValTrainer.Game;
 using ValTrainer.Game.Bots;
 using ValTrainer.Game.Fx;
 using ValTrainer.UI;
+using ValTrainer.Valorant;
 
 namespace ValTrainer.Modes;
 
@@ -753,7 +754,7 @@ public sealed class YoruKit : DuelistKit
     public override Color Color => Color.Color8(90, 140, 255);
     public override string HowTo =>
         $"{KeyText(AbilitySlot.E)} equips Gatecrash (0.8 s): LMB sends the tether along the floor, RMB places it 3 m ahead. " +
-        $"{KeyText(AbilitySlot.E)} again teleports to it (0.5 s wind-up, your gun is ready 0.7 s after you arrive) · F fakes it. " +
+        $"{KeyText(AbilitySlot.E)} again teleports to it (0.5 s wind-up, your gun is ready 0.7 s after you arrive) · {UseKey} fakes it. " +
         "Defenders hear the arrival: send it to an angle they don't hold.";
 
     public override void ResetRound()
@@ -909,7 +910,7 @@ public sealed class YoruKit : DuelistKit
     {
         St.Equipped => "LMB: send the tether · RMB: place it",
         St.Windup => null,
-        _ => tether != null ? $"{KeyText(AbilitySlot.E)}: teleport · F: fake it" : null,
+        _ => tether != null ? $"{KeyText(AbilitySlot.E)}: teleport · {UseKey}: fake it" : null,
     };
 
     public override void Draw2D(CanvasItem c, Vector2 size, float k)

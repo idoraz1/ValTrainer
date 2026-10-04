@@ -345,19 +345,33 @@ public partial class SettingsScreen : ScreenBase
         scroll.AddChild(v);
 
         int stripe = 0;
-        void Info(string label, Func<string> value, Func<Color>? color = null, Func<Color?>? swatch = null)
+        var vp = () => App.Valorant;
+        InfoRow Info(string label, Func<string> value, Func<Color>? color = null, Func<Color?>? swatch = null)
         {
             var row = new InfoRow { K = k, H = 31, Label = label, Value = value, ValueColor = color, Swatch = swatch, Stripe = stripe++ % 2 == 0 };
             refreshers.Add(row.QueueRedraw);
             v.AddChild(row);
+            return row;
+        }
+        // Keybind rows: hovering one shows every imported bind (both slots) in a tooltip.
+        void Keys(string label, Func<string> value)
+        {
+            var row = Info(label, value);
+            row.MouseFilter = MouseFilterEnum.Pass;
+            string Tip() => "VALORANT keybinds (primary · secondary)\n" + vp().Binds.ListText();
+            row.TooltipText = Tip();
+            refreshers.Add(() => row.TooltipText = Tip());
         }
 
-        var vp = () => App.Valorant;
         Info("Source", () => vp().Found ? vp().Source : "Not found — Valorant defaults", () => vp().Found ? UiTheme.Good : UiTheme.Warn);
         Info("Sensitivity", () => vp().SensFromFile ? vp().Sensitivity.ToString("0.####", Inv) : $"{vp().Sensitivity.ToString(Inv)} (default)");
         Info("Scoped / ADS multiplier", () => $"{vp().ZoomedSensMult.ToString("0.###", Inv)} / {vp().AdsSensMult.ToString("0.###", Inv)}");
         Info("Sniper scope input", () => vp().HoldToScope ? "Hold" : "Toggle");
-        Info("Keys (move / walk / crouch / jump)", () => $"{vp().KeyForward}{vp().KeyLeft}{vp().KeyBack}{vp().KeyRight} / {vp().KeyWalk} / {vp().KeyCrouch} / {vp().JumpBindText}");
+        Keys("Move (forward left back right)", () => string.Join(" ", new[] { GameAction.MoveForward, GameAction.StrafeLeft, GameAction.MoveBack, GameAction.StrafeRight }.Select(a => vp().Binds.Short(a))));
+        Keys("Walk / crouch / jump", () => $"{vp().Binds.Text(GameAction.Walk)} / {vp().Binds.Text(GameAction.Crouch)} / {vp().Binds.Text(GameAction.Jump)}");
+        Keys("Fire / alt fire", () => $"{vp().Binds.Text(GameAction.Fire)} / {vp().Binds.Text(GameAction.AltFire)}");
+        Keys("Reload / use / plant-defuse", () => $"{vp().Binds.Text(GameAction.Reload)} / {vp().Binds.Text(GameAction.Use)} / {vp().Binds.Text(GameAction.UseSpike)}");
+        Keys("Abilities C Q E X", () => string.Join(" ", Enumerable.Range(0, 4).Select(i => vp().AbilityBindText(i))));
         Info("Resolution", () => $"{vp().ResX} × {vp().ResY}{(vp().Letterbox ? " (letterbox)" : "")}");
         Info("Display mode / monitor", () => $"{WindowModes[Math.Clamp(vp().WindowMode, 0, 2)]} / #{vp().MonitorIndex + 1}");
         Info("VSync / FPS limit", () => $"{(vp().VSync ? "On" : "Off")} / {(vp().FrameRateLimit <= 0 ? "Unlimited" : vp().FrameRateLimit.ToString("0", Inv))}");

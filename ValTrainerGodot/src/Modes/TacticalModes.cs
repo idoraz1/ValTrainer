@@ -4,6 +4,7 @@ using ValTrainer.Game;
 using ValTrainer.Game.Bots;
 using ValTrainer.Game.Fx;
 using ValTrainer.UI;
+using ValTrainer.Valorant;
 
 namespace ValTrainer.Modes;
 
@@ -497,7 +498,7 @@ public sealed class PostPlantMode : TacticalMode
 /// <summary>
 /// Retake: you are the defender who rotated in. The spike was planted (35 s left when you arrive) and 2–3 attackers (by
 /// tier) hold post-plant spots around it — on site, off-angles, crossfires, and at Elite+ a lurk that plays off the defuse
-/// sound. Clear the site and defuse (hold 4, VALORANT's default; 7 s, checkpoint at 3.5 s) before it blows.
+/// sound. Clear the site and defuse (hold the Use Spike bind, VALORANT's default 4; 7 s, checkpoint at 3.5 s) before it blows.
 /// <para>Attackers pre-aim where you will first appear on your route, hold their angle after a duel (low tiers re-peek or
 /// chase your gunfire), and react to the defuse sound: they turn or swing onto the spike after a tier-based delay — Elite+
 /// wait a beat to tell a fake ("stick") from a real defuse; lower tiers swing at the first sound, so a tap-defuse can bait
@@ -507,7 +508,7 @@ public sealed class RetakeMode : TacticalMode
 {
     public override string Key => "retake";
     public override string Name => "Retake";
-    public override string Description => "Retake the site and defuse while attackers hold their post-plant spots. Hold 4 to defuse (7 s, half at 3.5 s).";
+    public override string Description => $"Retake the site and defuse while attackers hold their post-plant spots. Hold {DefuseKeyText} to defuse (7 s, half at 3.5 s).";
     public override string Category => "Map";
     public override string? Subtitle => $"{MapSpot.Map} — Retake";
     protected override string Side => "DEF";
@@ -582,7 +583,7 @@ public sealed class RetakeMode : TacticalMode
         return !G.LineOfSight(be, playerFeet + new Vector3(0, PlayerView.EyeHeight, 0)) && !G.LineOfSight(be, playerFeet + new Vector3(0, 1.1f, 0));
     }
 
-    bool DefuseHeld => (DevAuto && DevDefuseHeld) || (!G.Player.Dead && Input.IsKeyPressed(DefuseKey));
+    bool DefuseHeld => (DevAuto && DevDefuseHeld) || (!G.Player.Dead && Main.I.Valorant.Binds.IsDown(GameAction.UseSpike));
     bool NearSpike => H(PlayerFeet, Spike) <= DefuseRange && Mathf.Abs(PlayerFeet.Y - Spike.Y) < 1.2f;
 
     protected override void UpdateSquad(float dt)
@@ -716,7 +717,7 @@ public sealed class RetakeMode : TacticalMode
         get
         {
             if (G == null || !Live || G.Player.Dead || PlayerDefusing) return null;
-            if (NearSpike) return Defusing ? null : DefuseCheckpoint ? "Hold 4 to defuse (resumes from half)" : "Hold 4 to defuse";
+            if (NearSpike) return Defusing ? null : DefuseCheckpoint ? $"Hold {DefuseKeyText} to defuse (resumes from half)" : $"Hold {DefuseKeyText} to defuse";
             if (Round <= 1 && RoundT < 5f) return "Retake the site — clear the attackers or sneak the defuse";
             return null;
         }

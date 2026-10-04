@@ -101,6 +101,7 @@ public static class CultureCheck
         Check("crosshair dot size 1.5", Near(xh.CenterDotSize, 1.5f), F(xh.CenterDotSize));
         Check("crosshair inner length 4.5 / offset 2.25", Near(xh.Inner.Length, 4.5f) && Near(xh.Inner.Offset, 2.25f), $"{F(xh.Inner.Length)} {F(xh.Inner.Offset)}");
         Check("crosshair outline opacity 0.35", Near(xh.OutlineOpacity, 0.35f), F(xh.OutlineOpacity));
+        KeybindChecks(p, acc);
 
         // Older builds: individual crosshair keys.
         var legacy = CrosshairSettings.FromLegacyKeys(new Dictionary<string, string>
@@ -242,6 +243,73 @@ public static class CultureCheck
         bool naive = float.TryParse("0.352000", out var nv) && Near(nv, 0.352f);
         if (fixActive) Check("culture-default float.Parse(\"0.352000\")", naive, F(nv));
         else Say($"INFO culture-default float.Parse(\"0.352000\") would give {F(nv)} here");
+    }
+
+    // ---------------- keybinds (BackupKeybinds.json) ----------------
+
+    /// <summary>The file only holds what the player changed: everything else must stay at VALORANT's defaults; "None" =
+    /// unbound; bindIndex 1 = the secondary slot; mouse buttons and wheel notches work for any action.</summary>
+    static void KeybindChecks(ValorantProfile noFile, string accDir)
+    {
+        var d = noFile.Binds;
+        Check("keybinds: no file -> VALORANT defaults",
+            d.Text(GameAction.MoveForward) == "W" && d.Text(GameAction.Walk) == "Shift" && d.Text(GameAction.Crouch) == "Ctrl" &&
+            d.Text(GameAction.Jump) == "Space" && d.Text(GameAction.Fire) == "Mouse 1" && d.Text(GameAction.AltFire) == "Mouse 2" &&
+            d.Text(GameAction.Reload) == "R" && d.Text(GameAction.UseSpike) == "4" && d.Text(GameAction.Use) == "F" &&
+            string.Join("", Enumerable.Range(0, 4).Select(noFile.AbilityBindText)) == "CQEX", d.ListText().Replace('\n', ';'));
+
+        string M(string name, int slot, string key, string extra = "") =>
+            $"{{\"name\":\"{name}\",\"characterName\":\"None\",\"bindIndex\":{slot},\"key\":\"{key}\",\"shift\":false,\"ctrl\":false,\"alt\":false,\"cmd\":false,\"tapHoldType\":\"None\"{extra}}}";
+        string json = "{\"settingsVersion\":15,\"actionMappings\":[" + string.Join(",",
+            M("Crouch", 1, "SpaceBar"), M("VOICE_TeamPTTAction", 0, "ThumbMouseButton"), M("OpenMegamap", 0, "None"),
+            M("Jump", 1, "None"), M("Jump", 0, "MouseScrollDown"), M("Reload", 0, "None"), M("UseChannelObject", 0, "Five"),
+            M("Activate_Ability1", 0, "ThumbMouseButton2"), M("Walk", 0, "Escape"), M("PrimaryTrigger", 1, "K"), M("SecondaryTrigger", 0, "ThumbMouseButton"), M("DropEquippable", 0, "F"),
+            M("Crouch", 0, "C", ",\"characterName\":\"Clay\"").Replace("\"characterName\":\"None\",", "")) +
+            "],\"axisMappings\":[],\"settingsProfiles\":[],\"characterProfileData\":[{\"profileName\":\"None\",\"presetIndex\":0}]}";
+        Write(Path.Combine(accDir, "WindowsClient", "BackupKeybinds.json"), json);
+        var p = ValorantImporter.Load(ValorantImporter.FindAccounts().FirstOrDefault());
+        var b = p.Binds;
+        Check("keybinds: secondary slot added, primary kept", b.Text(GameAction.Crouch) == "Ctrl · Space", b.Text(GameAction.Crouch));
+        Check("keybinds: jump on the wheel only (secondary unbound)", b.Text(GameAction.Jump) == "Wheel down" && b[GameAction.Jump, 0].IsWheel && b[GameAction.Jump, 1].IsNone, b.Text(GameAction.Jump));
+        Check("keybinds: \"None\" unbinds", !b.IsBound(GameAction.Reload) && b.Text(GameAction.Reload) == "unbound", b.Text(GameAction.Reload));
+        Check("keybinds: digit key names (use spike on 5)", b.Text(GameAction.UseSpike) == "5" && b.Text(GameAction.EquipSpike) == "4", b.Text(GameAction.UseSpike));
+        Check("keybinds: ability on a thumb button", b.Text(GameAction.Ability1) == "Mouse 5" && p.AbilityBindText(1) == "Mouse 5", b.Text(GameAction.Ability1));
+        Check("keybinds: fire secondary on a key", b.Text(GameAction.Fire) == "Mouse 1 · K", b.Text(GameAction.Fire));
+        Check("keybinds: Escape is never a bind (default kept)", b.Text(GameAction.Walk) == "Shift", b.Text(GameAction.Walk));
+        Check("keybinds: per-agent binds not applied to everyone", b[GameAction.Crouch, 0].Key == Godot.Key.Ctrl && b.Skipped.Any(s => s.Contains("Clay")),
+            string.Join(", ", b.Skipped));
+        Check("keybinds: alt fire on a thumb button", b.Text(GameAction.AltFire) == "Mouse 4", b.Text(GameAction.AltFire));
+        Check("keybinds: untouched actions keep defaults", b.Text(GameAction.MoveForward) == "W" && b.Text(GameAction.Use) == "F" &&
+            p.AbilityBindText(0) == "C" && p.AbilityBindText(3) == "X", b.ListText().Replace('\n', ';'));
+        Check("keybinds: shared bind listed", b.SharedBinds().Any(s => s.StartsWith("F: Use + Drop", StringComparison.Ordinal)), string.Join("; ", b.SharedBinds()));
+
+        // Movement as Unreal axes (MoveForward / MoveRight with a scale), the way the game most likely stores it.
+        var ax = Keybinds.Defaults();
+        ValorantImporter.ApplyKeybindsJson(ax, "{\"actionMappings\":[],\"axisMappings\":[" +
+            "{\"name\":\"MoveForward\",\"characterName\":\"None\",\"bindIndex\":0,\"key\":\"Up\",\"scale\":1}," +
+            "{\"name\":\"MoveForward\",\"characterName\":\"None\",\"bindIndex\":1,\"key\":\"Down\",\"scale\":-1}," +
+            "{\"name\":\"MoveRight\",\"characterName\":\"None\",\"bindIndex\":0,\"key\":\"Left\",\"scale\":-1}," +
+            "{\"name\":\"LookUp\",\"characterName\":\"None\",\"bindIndex\":0,\"key\":\"MouseY\",\"scale\":-1}]}");
+        Check("keybinds: movement axes", ax.Text(GameAction.MoveForward) == "Up" && ax.Text(GameAction.MoveBack) == "S · Down" &&
+            ax.Text(GameAction.StrafeLeft) == "Left" && ax.Text(GameAction.StrafeRight) == "D", ax.ListText().Replace('\n', ';'));
+
+        // Tolerant names (older / undocumented spellings) and modifier flags.
+        var t = Keybinds.Defaults();
+        ValorantImporter.ApplyKeybindsJson(t, "{\"actionMappings\":[" + string.Join(",",
+            M("EquipGrenadeAbility", 0, "One"), M("EquipUltimateAbility", 0, "Four"), M("Use/Equip Ability: 2", 0, "Three"),
+            M("ToggleCrouch", 0, "Z"), M("PingAction", 0, "V"), M("AltFireZoom", 0, "ThumbMouseButton"),
+            M("Inspect", 0, "Q", ",\"shift\":true").Replace("\"shift\":false,", "")) + "]}");
+        Check("keybinds: tolerant ability names", t.Text(GameAction.AbilityGrenade) == "1" && t.Text(GameAction.Ultimate) == "4" && t.Text(GameAction.Ability2) == "3",
+            $"{t.Text(GameAction.AbilityGrenade)} {t.Text(GameAction.Ability2)} {t.Text(GameAction.Ultimate)}");
+        Check("keybinds: toggle / ping actions ignored", t.Text(GameAction.Crouch) == "Ctrl", t.Text(GameAction.Crouch));
+        Check("keybinds: tolerant alt-fire name", t.Text(GameAction.AltFire) == "Mouse 4", t.Text(GameAction.AltFire));
+        Check("keybinds: modifier flag", t.Text(GameAction.Inspect) == "Shift+Q", t.Text(GameAction.Inspect));
+
+        // A broken file keeps every default.
+        Write(Path.Combine(accDir, "WindowsClient", "BackupKeybinds.json"), "{\"actionMappings\":[{\"name\":\"Jump\",\"key\":");
+        var broken = ValorantImporter.Load(ValorantImporter.FindAccounts().FirstOrDefault());
+        Check("keybinds: corrupt file -> defaults", broken.Found && broken.Binds.Text(GameAction.Jump) == "Space",broken.Binds.Text(GameAction.Jump));
+        File.Delete(Path.Combine(accDir, "WindowsClient", "BackupKeybinds.json"));
     }
 
     // ---------------- helpers ----------------

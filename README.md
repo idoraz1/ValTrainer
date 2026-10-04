@@ -89,7 +89,7 @@ ValTrainer reads `%LOCALAPPDATA%\VALORANT\Saved\Config` every time it starts.
 - **Aim:** sensitivity, plus the scoped and ADS multipliers. It uses the same math as VALORANT: 0.07° per count × sens,
   with a 103° horizontal FOV. The mouse is read as raw input, so your cm/360 is identical.
 - **Look:** the crosshair profile, drawn pixel-for-pixel with movement and firing error, and the enemy highlight colour.
-- **Controls:** movement, walk and crouch keybinds; hold or toggle scope. The weapon hand (right or left) is a ValTrainer setting, right by default.
+- **Controls:** all your keybinds (both slots; keys, mouse buttons and the scroll wheel): movement, walk, crouch, jump, fire, alt fire, reload, plant / defuse and abilities; hold or toggle scope. The weapon hand (right or left) is a ValTrainer setting, right by default.
 - **Display:** resolution, display mode, monitor, VSync and FPS cap.
 
 If several VALORANT accounts have played on the PC, you can pick one in Settings. You can override any of these

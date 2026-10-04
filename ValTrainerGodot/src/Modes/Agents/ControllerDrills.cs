@@ -6,6 +6,7 @@ using ValTrainer.Game.Bots;
 using ValTrainer.Game.Fx;
 using ValTrainer.Maps;
 using ValTrainer.UI;
+using ValTrainer.Valorant;
 
 namespace ValTrainer.Modes;
 
@@ -549,31 +550,31 @@ public sealed class SmokeExecuteMode : MapMode
     internal bool HandleInput(InputEvent e)
     {
         if (G is not GameSession { State: GameSession.St.Running }) return false;
+        var binds = Main.I.Valorant.Binds;
         if (phase is Phase.Plan or Phase.Summary)
         {
-            if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left } ||
+            if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Left } || binds.Pressed(e, GameAction.Fire) ||
                 e is InputEventKey { Pressed: true, Echo: false, Keycode: Godot.Key.Space or Godot.Key.Enter or Godot.Key.E })
             { skip = true; return true; }
-            return e is InputEventMouseButton;
+            return e is InputEventMouseButton || binds.Match(e, GameAction.Fire) != 0 || binds.Match(e, GameAction.AltFire) != 0;
         }
-        if (e is InputEventKey { Pressed: true, Echo: false } k)
+        // The player's VALORANT binds: an equip-weapon bind puts the ability away, "use" dissipates (Astra), the ability binds
+        // take the ability in hand. Keys, mouse buttons and wheel notches all work.
+        if (binds.Pressed(e, GameAction.EquipPrimary) || binds.Pressed(e, GameAction.EquipSecondary) || binds.Pressed(e, GameAction.EquipMelee))
         {
-            if (k.Keycode == Godot.Key.Key1)
-            {
-                bool any = false;
-                foreach (var a in abilities) if (a.Equipped && a is not TideAbility) { a.Unequip(); any = true; }
-                return any;
-            }
-            if (Kit.Placing == SmokePlacing.Stars && k.Keycode == Godot.Key.F)
-                return abilities.OfType<NebulaAbility>().FirstOrDefault()?.Dissipate() ?? false;
-            foreach (var a in abilities)
-                if (k.Keycode == a.HotKey)
-                {
-                    foreach (var o in abilities) if (o != a && o.Equipped) o.Unequip();
-                    a.OnKey();
-                    return true;
-                }
+            bool any = false;
+            foreach (var a in abilities) if (a.Equipped && a is not TideAbility) { a.Unequip(); any = true; }
+            if (any) return true;
         }
+        if (Kit.Placing == SmokePlacing.Stars && binds.Pressed(e, GameAction.Use)
+            && (abilities.OfType<NebulaAbility>().FirstOrDefault()?.Dissipate() ?? false)) return true;
+        foreach (var a in abilities)
+            if (binds.Pressed(e, a.HotKey))
+            {
+                foreach (var o in abilities) if (o != a && o.Equipped) o.Unequip();
+                a.OnKey();
+                return true;
+            }
         var eq = abilities.FirstOrDefault(a => a.Equipped);
         return eq != null && eq.OnInput(e);
     }

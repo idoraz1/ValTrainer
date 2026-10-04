@@ -5,6 +5,7 @@ using ValTrainer.Game.Bots;
 using ValTrainer.Game.Fx;
 using ValTrainer.Maps;
 using ValTrainer.UI;
+using ValTrainer.Valorant;
 
 namespace ValTrainer.Modes;
 
@@ -624,8 +625,9 @@ public abstract partial class InitiatorDrill : MapMode
         var key = new Rect2(r.Position + new Vector2(12 * k, 12 * k), new Vector2(40 * k, 40 * k));
         c.DrawRect(key, new Color(0, 0, 0, 0.35f));
         c.DrawRect(key, accent, false, Mathf.Max(1f, 2f * k));
-        int ks = UiTheme.Fs(Kit.KeyText.Length > 2 ? 12 : 22, k);
-        Gfx.TextC(c, UiTheme.Display, Kit.KeyText.ToUpperInvariant(), key.GetCenter().X, Gfx.Mid(key.GetCenter().Y, ks), ks, UiTheme.Text);
+        string cap = InputBinding.Cap(Kit.KeyText);
+        int ks = UiTheme.Fs(cap.Length > 2 ? 12 : 22, k);
+        Gfx.TextC(c, UiTheme.Display, cap, key.GetCenter().X, Gfx.Mid(key.GetCenter().Y, ks), ks, UiTheme.Text);
         // name + state
         int ns = UiTheme.Fs(18, k), ss = UiTheme.Fs(12, k);
         float tx = key.End.X + 12 * k;

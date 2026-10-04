@@ -2,22 +2,24 @@ using Godot;
 using ValTrainer.Game;
 using ValTrainer.Game.Fx;
 using ValTrainer.UI;
+using ValTrainer.Valorant;
 
 namespace ValTrainer.Modes;
 
 /// <summary>
-/// One smoke ability of the Smoke Execute drill (a key, charges, an "in hand" state). The drill routes the ability keys
-/// and, while one is in hand, the mouse buttons (and for the tactical map the mouse motion) to it.
+/// One smoke ability of the Smoke Execute drill (a VALORANT ability bind, charges, an "in hand" state). The drill routes the
+/// ability binds and, while one is in hand, the fire / alt-fire binds (and for the tactical map the mouse motion) to it.
 /// </summary>
 abstract class SmokeAbility
 {
     protected readonly SmokeExecuteMode M;
-    public readonly Key HotKey;
+    /// <summary>The ability's VALORANT action (its binds are the player's imported keybinds).</summary>
+    public readonly GameAction HotKey;
     public int Charges;
     public bool Equipped { get; protected set; }
     public abstract string Name { get; }
 
-    protected SmokeAbility(SmokeExecuteMode m, Key key, int charges) { M = m; HotKey = key; Charges = charges; }
+    protected SmokeAbility(SmokeExecuteMode m, GameAction key, int charges) { M = m; HotKey = key; Charges = charges; }
 
     protected IGame G => M.Game;
     /// <summary>The tactical map covers the screen (mouse moves a cursor instead of the view).</summary>
@@ -48,9 +50,12 @@ abstract class SmokeAbility
     /// <summary>The round ended: free markers, drop anything in flight.</summary>
     public virtual void Clear() { if (Equipped) Unequip(); }
 
-    protected static bool Pressed(InputEvent e, MouseButton b) => e is InputEventMouseButton { Pressed: true } mb && mb.ButtonIndex == b;
-    protected static bool Released(InputEvent e, MouseButton b) => e is InputEventMouseButton { Pressed: false } mb && mb.ButtonIndex == b;
-    protected static bool Button(InputEvent e) => e is InputEventMouseButton mb && mb.ButtonIndex is MouseButton.Left or MouseButton.Right;
+    protected static Keybinds Binds => Main.I.Valorant.Binds;
+    /// <summary>The event presses / releases one of the action's binds (fire / alt fire: mouse 1 / 2 unless rebound).</summary>
+    protected static bool Pressed(InputEvent e, GameAction a) => Binds.Match(e, a) > 0;
+    protected static bool Released(InputEvent e, GameAction a) => Binds.Match(e, a) < 0;
+    /// <summary>Any fire / alt-fire bind event (pressed or released).</summary>
+    protected static bool Button(InputEvent e) => Binds.Match(e, GameAction.Fire) != 0 || Binds.Match(e, GameAction.AltFire) != 0;
 }
 
 // =====================================================================================================================
@@ -63,7 +68,7 @@ abstract class MapAbility : SmokeAbility
 {
     protected Vector2 cursor;
     bool cursorSet;
-    protected MapAbility(SmokeExecuteMode m, Key key, int charges) : base(m, key, charges) { }
+    protected MapAbility(SmokeExecuteMode m, GameAction key, int charges) : base(m, key, charges) { }
     public override bool MapOpen => Equipped;
     public Vector2 Cursor => cursor;
 
@@ -119,7 +124,7 @@ sealed class MapDropAbility : MapAbility
 
     protected override bool OnClick(InputEvent e)
     {
-        if (Pressed(e, MouseButton.Left))
+        if (Pressed(e, GameAction.Fire))
         {
             var map = M.TMap;
             float rpx = M.Kit.Radius * map.Scale;
@@ -131,7 +136,7 @@ sealed class MapDropAbility : MapAbility
             else G.Sound("fail", 0.35f);
             return true;
         }
-        if (Pressed(e, MouseButton.Right))
+        if (Pressed(e, GameAction.AltFire))
         {
             if (Marks.Count > 0) Launch();
             return true;
@@ -173,7 +178,7 @@ sealed class AstraStar
 /// <summary>Astra's Astral Form: the whole map, click to place / take back stars, right-click or X to return. Can't move meanwhile.</summary>
 sealed class AstralAbility : MapAbility
 {
-    public AstralAbility(SmokeExecuteMode m) : base(m, Key.X, 1) { }
+    public AstralAbility(SmokeExecuteMode m) : base(m, GameAction.Ultimate, 1) { }
     public override string Name => "Astral Form";
     public override bool BlocksMovement => Equipped;
     public override bool Spent => !Equipped && M.StarsLeft <= 0;
@@ -191,7 +196,7 @@ sealed class AstralAbility : MapAbility
 
     protected override bool OnClick(InputEvent e)
     {
-        if (Pressed(e, MouseButton.Left))
+        if (Pressed(e, GameAction.Fire))
         {
             var map = M.TMap;
             foreach (var s in M.Stars)
@@ -202,7 +207,7 @@ sealed class AstralAbility : MapAbility
             else G.Sound("fail", 0.35f);
             return true;
         }
-        if (Pressed(e, MouseButton.Right)) { Unequip(); return true; }
+        if (Pressed(e, GameAction.AltFire)) { Unequip(); return true; }
         return Button(e);
     }
 
@@ -216,7 +221,7 @@ sealed class AstralAbility : MapAbility
 /// <summary>Astra's Nebula (E on the star nearest the crosshair) and Dissipate (F: a one-second fake, the star comes back later).</summary>
 sealed class NebulaAbility : SmokeAbility
 {
-    public NebulaAbility(SmokeExecuteMode m) : base(m, Key.E, m.Kit.Charges) { }
+    public NebulaAbility(SmokeExecuteMode m) : base(m, GameAction.Ability2, m.Kit.Charges) { }
     public override string Name => "Nebula";
     public override bool Spent => Charges <= 0 || M.Stars.All(s => s.Used);
     const float AimCone = 11f;
@@ -326,11 +331,9 @@ sealed class AimAbility : SmokeAbility
 
     public override bool OnInput(InputEvent e)
     {
-        if (e is InputEventMouseButton mb)
-        {
-            if (mb.ButtonIndex == MouseButton.Left) { outHeld = mb.Pressed; if (mb.Pressed) holdT = 0; return true; }
-            if (mb.ButtonIndex == MouseButton.Right) { inHeld = mb.Pressed; if (mb.Pressed) holdT = 0; return true; }
-        }
+        int fire = Binds.Match(e, GameAction.Fire), alt = Binds.Match(e, GameAction.AltFire);
+        if (fire != 0) { outHeld = fire > 0; if (fire > 0) holdT = 0; return true; }
+        if (alt != 0) { inHeld = alt > 0; if (alt > 0) holdT = 0; return true; }
         if (e is InputEventKey { Pressed: true, Echo: false, Keycode: Key.R }) { Overhead = !Overhead; return true; }
         return false;
     }
@@ -444,7 +447,7 @@ abstract class ViperGas : SmokeAbility
     float onAt = -99f, offAt = -99f;
     /// <summary>Only the first activation of a gas counts for the round's placement score.</summary>
     protected bool Scored;
-    protected ViperGas(SmokeExecuteMode m, Key key) : base(m, key, 1) { }
+    protected ViperGas(SmokeExecuteMode m, GameAction key) : base(m, key, 1) { }
     public bool On => Active != null && Active.DownAt > M.Clock;
     public override bool Spent => Deployed && !Equipped;
     public override string Status => !Deployed ? (Equipped ? "AIM" : "READY") : On ? "ON" : "OFF";
@@ -508,8 +511,8 @@ sealed class OrbAbility : ViperGas
     public override bool OnInput(InputEvent e)
     {
         if (flying) return Button(e);
-        if (Pressed(e, MouseButton.Left)) { Launch(false); return true; }
-        if (Pressed(e, MouseButton.Right)) { Launch(true); return true; }
+        if (Pressed(e, GameAction.Fire)) { Launch(false); return true; }
+        if (Pressed(e, GameAction.AltFire)) { Launch(true); return true; }
         return Button(e);
     }
 
@@ -643,7 +646,7 @@ sealed class ScreenAbility : ViperGas
 
     public override bool OnInput(InputEvent e)
     {
-        if (Pressed(e, MouseButton.Left)) { Fire(G.View.Eye, G.View.Yaw); return true; }
+        if (Pressed(e, GameAction.Fire)) { Fire(G.View.Eye, G.View.Yaw); return true; }
         return Button(e);
     }
 
@@ -712,9 +715,9 @@ sealed class TideAbility : SmokeAbility
 
     public override bool OnInput(InputEvent e)
     {
-        if (!running && Pressed(e, MouseButton.Left)) { Launch(); steer = true; return true; }
-        if (running && Released(e, MouseButton.Left)) { steer = false; return true; }
-        if (running && Pressed(e, MouseButton.Right)) { Stop(); return true; }
+        if (!running && Pressed(e, GameAction.Fire)) { Launch(); steer = true; return true; }
+        if (running && Released(e, GameAction.Fire)) { steer = false; return true; }
+        if (running && Pressed(e, GameAction.AltFire)) { Stop(); return true; }
         return Button(e);
     }
 

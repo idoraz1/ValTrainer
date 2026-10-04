@@ -75,6 +75,14 @@ public partial class Main : Node
         Log.Info($"ValTrainer {AppInfo.Version}; {SysInfo.Summary}; quality {Settings.Quality}{(Settings.AutoQualityReason != null ? $" (auto: {Settings.AutoQualityReason})" : "")}; " +
                  $"data {Paths.DataDir}{(Paths.DataDirProblem != null ? $" [{Paths.DataDirProblem}]" : "")}; " +
                  $"VALORANT {(Valorant.Found ? "imported" : Valorant.Status.ToString())}; logs {Paths.LogDir}");
+        if (Dev && args.Contains("--keybind-dump"))
+        {
+            // Dev tool (works with --headless): the resolved VALORANT keybinds (defaults + BackupKeybinds.json overrides).
+            GD.Print($"[keybinds] {(Valorant.Found ? "imported account" : "no account: VALORANT defaults")}");
+            foreach (var line in Valorant.Binds.Dump().Split('\n')) GD.Print("[keybinds] " + line);
+            GetTree().Quit();
+            return;
+        }
         if (Dev && args.Contains("--culture-test"))
         {
             // Dev self-test (works with --headless): parsers and number formatting under the current culture.

@@ -7,6 +7,7 @@ using ValTrainer.Game.Fx;
 using ValTrainer.Game.Weapon;
 using ValTrainer.Modes;
 using ValTrainer.UI;
+using ValTrainer.Valorant;
 using ValTrainer.World;
 
 namespace ValTrainer.Game;
@@ -45,7 +46,7 @@ public partial class GameSession : Node3D, IGame
     Node3D envRoot = null!;
     public float Countdown { get; private set; }
     float feetY; // player body feet height; jumping / falling state lives in Mover (MovementBody.cs)
-    bool firePressedEdge, fireHeld, adsHeld, wasReloading;
+    bool firePressedEdge, fireHeld, fireTap, adsHeld, wasReloading;
     public RunRecord? Record { get; private set; }
     /// <summary>Aim-coach review of the run that just finished (results screen).</summary>
     public RunReview? Review { get; private set; }
@@ -167,7 +168,7 @@ public partial class GameSession : Node3D, IGame
         if (!Main.I.Dev) Input.MouseMode = Input.MouseModeEnum.Captured;
     }
 
-    void ResetTransientInput() { fireHeld = firePressedEdge = adsHeld = false; }
+    void ResetTransientInput() { fireHeld = firePressedEdge = fireTap = adsHeld = false; Keybinds.EndFrame(); }
 
     /// <summary>Freeze bots, effects and timers while paused / on the results screen.</summary>
     void SetWorldRunning(bool on)
@@ -177,43 +178,66 @@ public partial class GameSession : Node3D, IGame
 
     public override void _Input(InputEvent e)
     {
-        if (e is InputEventMouseMotion m && State is St.Countdown or St.Running && Input.MouseMode == Input.MouseModeEnum.Captured)
+        Keybinds.Observe(e); // wheel notches count as "held" for one frame (wheel-bound jump / crouch / abilities)
+        if (e is InputEventMouseMotion m)
         {
-            // Raw counts (Godot uses Windows raw input while captured). ScreenRelative ignores stretch scaling.
-            float mult = weaponDef?.Sniper == true ? Main.I.Valorant.ZoomedSensMult : Main.I.Valorant.AdsSensMult;
-            View.Look(m.ScreenRelative, CurrentSens, mult);
-            frameDx += m.ScreenRelative.X;
-            frameDy += m.ScreenRelative.Y;
-            UpdateCamera();
-        }
-        else if (e is InputEventMouseButton mb)
-        {
-            if (mb.ButtonIndex == MouseButton.Left)
+            if (State is St.Countdown or St.Running && Input.MouseMode == Input.MouseModeEnum.Captured)
             {
-                if (mb.Pressed && !fireHeld) firePressedEdge = true;
-                fireHeld = mb.Pressed;
+                // Raw counts (Godot uses Windows raw input while captured). ScreenRelative ignores stretch scaling.
+                float mult = weaponDef?.Sniper == true ? Main.I.Valorant.ZoomedSensMult : Main.I.Valorant.AdsSensMult;
+                View.Look(m.ScreenRelative, CurrentSens, mult);
+                frameDx += m.ScreenRelative.X;
+                frameDy += m.ScreenRelative.Y;
+                UpdateCamera();
             }
-            if (mb.ButtonIndex == MouseButton.Right) OnAdsButton(mb.Pressed);
-            if (mb.Pressed && State == St.Running && Main.I.Valorant.JumpsOn(mb.ButtonIndex)) Mover.QueueJump(); // wheel / mouse-button jump binds
+            return;
         }
-        else if (e is InputEventKey { Pressed: true, Echo: false } k)
+        // Esc always pauses / resumes / leaves the results (never a VALORANT bind); R restarts from the results screen.
+        if (e is InputEventKey { Pressed: true, Echo: false } k)
         {
             if (k.Keycode == Key.Escape)
             {
                 if (State is St.Countdown or St.Running) Pause();
                 else if (State == St.Paused) Resume();
                 else if (State == St.Results) Main.I.ShowMenu();
+                return;
             }
-            else if (k.Keycode == Key.R && State == St.Results) Restart();
-            else if (k.Keycode == Key.R && State == St.Running && Gun != null && !Mode.InfiniteAmmo) Gun.StartReload(Mode.InfiniteReserve);
+            if (k.Keycode == Key.R && State == St.Results) { Restart(); return; }
         }
+        OnBindEvent(e, Main.I.Valorant.Binds);
     }
 
-    void OnAdsButton(bool pressed)
+    /// <summary>
+    /// The player's VALORANT binds for fire, alt fire (ADS / scope), reload and jump: keys, mouse buttons or wheel notches,
+    /// both bind slots. Each action checks the event on its own, so one key bound to several actions triggers all of them.
+    /// </summary>
+    void OnBindEvent(InputEvent e, Keybinds binds)
+    {
+        bool wheel = e is InputEventMouseButton { ButtonIndex: MouseButton.WheelUp or MouseButton.WheelDown or MouseButton.WheelLeft or MouseButton.WheelRight };
+        int fire = binds.Match(e, GameAction.Fire);
+        if (fire > 0)
+        {
+            if (!fireHeld) firePressedEdge = true;
+            if (wheel) fireTap = true; else fireHeld = true; // a wheel notch is a one-frame trigger pull
+        }
+        else if (fire < 0) fireHeld = binds.IsDown(GameAction.Fire, real: true); // the other bind may still be held
+
+        int ads = binds.Match(e, GameAction.AltFire);
+        if (ads != 0) OnAdsButton(ads > 0, wheel, binds);
+
+        if (binds.Pressed(e, GameAction.Reload) && State == St.Running && Gun != null && !Mode.InfiniteAmmo)
+            Gun.StartReload(Mode.InfiniteReserve);
+        // Wheel notches have no hold: queue the jump (key / mouse-button jumps are polled by the Mover).
+        if (wheel && State == St.Running && binds.Pressed(e, GameAction.Jump)) Mover.QueueJump();
+    }
+
+    void OnAdsButton(bool pressed, bool wheel, Keybinds binds)
     {
         if (Gun == null || weaponDef!.Zoom <= 1f) return;
-        bool hold = !weaponDef.Sniper || Main.I.Valorant.HoldToScope;
-        if (!pressed) { if (hold) adsHeld = false; return; }   // releases always count, even while paused
+        // VALORANT: rifles aim down sights while held; snipers follow "Sniper scope input" (hold / toggle). A wheel notch
+        // can't be held, so it always toggles.
+        bool hold = (!weaponDef.Sniper || Main.I.Valorant.HoldToScope) && !wheel;
+        if (!pressed) { if (hold) adsHeld = binds.IsDown(GameAction.AltFire, real: true); return; } // releases always count, even while paused
         if (State == St.Running) adsHeld = hold || !adsHeld;
     }
 
@@ -262,13 +286,14 @@ public partial class GameSession : Node3D, IGame
                 Countdown -= dt;
                 if ((int)Mathf.Ceil(Countdown) != before) Sfx.I.Play(Countdown <= 0 ? "go" : "tick");
                 if (Countdown <= 0) State = St.Running;
-                firePressedEdge = false;
+                firePressedEdge = fireTap = false;
                 frameDx = frameDy = 0; // looking around during the countdown isn't part of the first recorded frame
                 break;
             case St.Running:
                 RunFrame(dt);
                 break;
         }
+        if (Main.I.Dev) DevKeybindTick(); // --keybind-test (KeybindTest.cs)
 
         UpdateCamera();
         crosshair.Showing = State == St.Results || Mode.Is2D ? CrosshairView.Mode.Hidden
@@ -284,6 +309,7 @@ public partial class GameSession : Node3D, IGame
             viewmodel.SetReload(Gun != null && Gun.Reloading ? 1f - Gun.ReloadLeft / weaponDef!.Reload : -1f);
             viewmodel.SetMotion(Mover.Speed, Mover.Crouching);
         }
+        Keybinds.EndFrame(); // wheel notches seen before this frame were polled by it
     }
 
     // Dev-only (--dev --autofire): hold the trigger 2.6 s, release 1.2 s, repeat — for scripted tests of sprays.
@@ -337,7 +363,7 @@ public partial class GameSession : Node3D, IGame
         {
             bool wasScoped = Gun.Scoped;
             bool gunInHand = !Player.Dead && !abilityInHand; // an ability in hand owns mouse 1 (AbilitySession.cs)
-            var shots = Gun.Tick(Now, dt, View, Mover, Rng, fireHeld && gunInHand, firePressedEdge && gunInHand, Mode.InfiniteAmmo, Mode.InfiniteReserve, Mode.Movement);
+            var shots = Gun.Tick(Now, dt, View, Mover, Rng, (fireHeld || fireTap) && gunInHand, firePressedEdge && gunInHand, Mode.InfiniteAmmo, Mode.InfiniteReserve, Mode.Movement);
             foreach (var (dir, accurate) in shots) Bullet(dir, accurate);
             if (shots.Count > 0)
             {
@@ -354,6 +380,7 @@ public partial class GameSession : Node3D, IGame
             Mode.OnBullet(View.Eye, View.Forward, true);
         }
         firePressedEdge = false;
+        fireTap = false;
 
         RecordFrame();
         if ((Mode.Timed && Now >= RunDuration) || Mode.Done) Finish();
@@ -585,7 +612,7 @@ public partial class GameSession : Node3D, IGame
     public IReadOnlyList<SmokeVolume> Smokes => smokes;
     public void AddSmoke(SmokeVolume smoke) => smokes.Add(smoke);
     public void ClearSmokes() => smokes.Clear();
-    public bool TriggerHeld => fireHeld && State == St.Running;
+    public bool TriggerHeld => (fireHeld || fireTap) && State == St.Running;
     public bool FirePressed => firePressedEdge && State == St.Running;
     public float? TrialSens { get; set; }
     public float CurrentSens => TrialSens ?? Main.I.Sens;

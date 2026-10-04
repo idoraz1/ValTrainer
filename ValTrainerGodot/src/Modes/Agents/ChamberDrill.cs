@@ -4,6 +4,7 @@ using ValTrainer.Game;
 using ValTrainer.Game.Bots;
 using ValTrainer.Maps;
 using ValTrainer.UI;
+using ValTrainer.Valorant;
 
 namespace ValTrainer.Modes;
 
@@ -362,6 +363,7 @@ public sealed partial class ChamberMode
         if (!DevAuto || G is not GameSession { Gun: { } gun } || G.Player.Dead) return;
         if (gun.Scoped || gun.Reloading || gun.EquipLeft > 0 || Now - devAdsAt < 0.4f) return;
         devAdsAt = Now;
-        Input.ParseInputEvent(new InputEventMouseButton { ButtonIndex = MouseButton.Right, Pressed = true });
+        // The player's alt-fire bind (default right mouse button), as a real input event.
+        if (Main.I.Valorant.Binds.Primary(GameAction.AltFire).ToEvent(true) is { } press) Input.ParseInputEvent(press);
     }
 }

@@ -4,6 +4,7 @@ using ValTrainer.Core;
 using ValTrainer.Game;
 using ValTrainer.Game.Bots;
 using ValTrainer.Game.Fx;
+using ValTrainer.Valorant;
 
 namespace ValTrainer.Modes;
 
@@ -13,7 +14,7 @@ public readonly record struct KitSlot(AbilitySlot Slot, string Name, int Charges
 
 /// <summary>
 /// The player's movement kit in a Mobility Entry drill (one subclass per agent, DuelistKits.cs). The base class reads the
-/// ability keys (the imported VALORANT binds, default C / Q / E / X; RMB = alt fire; F = "use"), owns the gun-in-hand state
+/// ability keys (the imported VALORANT binds, default C / Q / E / X; alt fire default RMB; "use" default F), owns the gun-in-hand state
 /// (<see cref="IGame.SetAbilityInHand"/>), runs dashes on top of <see cref="IGame.PlayerImpulse"/> (constant speed for the
 /// dash time, then the exit speed; altitude held for horizontal air dashes) with a wall-tunnel guard, and audits every
 /// dash / teleport end (no clipping into walls, not off the map). Distances and times are logged in dev runs.
@@ -71,19 +72,14 @@ public abstract class DuelistKit
     public void DevFire() => devFire = true;
 
     public static string KeyText(AbilitySlot s) => Main.I?.Valorant.AbilityBindText((int)s) ?? s.ToString();
+    /// <summary>The player's "use" bind (default F), for help lines.</summary>
+    public static string UseKey => Main.I?.Valorant.Binds.Short(GameAction.Use) ?? "F";
 
-    static bool AbilityDown(int slot)
-    {
-        var v = Main.I?.Valorant;
-        if (v == null) return false;
-        var mb = v.AbilityMouse[slot];
-        if (mb != MouseButton.None) return Input.IsMouseButtonPressed(mb);
-        var k = v.AbilityKeys[slot];
-        return k != Key.None && Input.IsKeyPressed(k);
-    }
+    /// <summary>An action's VALORANT binds held (both slots; keys, mouse buttons, a wheel notch for one frame; honours the dev
+    /// key override used by scripted / auto runs).</summary>
+    protected static bool Held(GameAction a) => Main.I?.Valorant.Binds.IsDown(a) ?? false;
 
-    /// <summary>A movement key (honours the dev key override used by scripted / auto runs).</summary>
-    protected static bool KeyHeld(Key k) => Mover.KeyOverride is { } f ? f(k) : k != Key.None && Input.IsKeyPressed(k);
+    static bool AbilityDown(int slot) => Held(Keybinds.AbilityAction(slot));
 
     /// <summary>Called every running frame by the drill.</summary>
     public void Tick(float dt)
@@ -95,10 +91,10 @@ public abstract class DuelistKit
             prevKey[i] = down;
             devKey[i] = false;
         }
-        bool alt = Input.IsMouseButtonPressed(MouseButton.Right);
+        bool alt = Held(GameAction.AltFire);
         AltPressed = (alt && !prevAlt) || devAlt;
         prevAlt = alt; devAlt = false;
-        bool use = Input.IsKeyPressed(Key.F);
+        bool use = Held(GameAction.Use);
         UsePressed = (use && !prevUse) || devUse;
         prevUse = use; devUse = false;
         FirePressed = G.FirePressed || devFire;
@@ -186,16 +182,15 @@ public abstract class DuelistKit
     /// <summary>Direction of the movement keys relative to the view (zero = none held).</summary>
     protected Vector3 WishDir()
     {
-        var v = Main.I?.Valorant;
-        if (v == null) return Vector3.Zero;
+        if (Main.I?.Valorant == null) return Vector3.Zero;
         float y = Mathf.DegToRad(G.View.Yaw);
         var fwd = new Vector3(Mathf.Sin(y), 0, -Mathf.Cos(y));
         var right = new Vector3(Mathf.Cos(y), 0, Mathf.Sin(y));
         var w = Vector3.Zero;
-        if (KeyHeld(v.KeyForward)) w += fwd;
-        if (KeyHeld(v.KeyBack)) w -= fwd;
-        if (KeyHeld(v.KeyRight)) w += right;
-        if (KeyHeld(v.KeyLeft)) w -= right;
+        if (Held(GameAction.MoveForward)) w += fwd;
+        if (Held(GameAction.MoveBack)) w -= fwd;
+        if (Held(GameAction.StrafeRight)) w += right;
+        if (Held(GameAction.StrafeLeft)) w -= right;
         return w.LengthSquared() > 1e-3f ? w.Normalized() : Vector3.Zero;
     }
 
@@ -215,11 +210,7 @@ public abstract class DuelistKit
         return f.LengthSquared() > 1e-4f ? f.Normalized() : Vector3.Forward;
     }
 
-    protected bool JumpHeld()
-    {
-        var v = Main.I?.Valorant;
-        return v != null && (KeyHeld(v.KeyJump) || KeyHeld(v.KeyJump2));
-    }
+    protected bool JumpHeld() => Held(GameAction.Jump);
 
     // ------------------------------------------------------------------ dashes
 

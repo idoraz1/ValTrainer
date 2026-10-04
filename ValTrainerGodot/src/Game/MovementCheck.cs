@@ -58,7 +58,7 @@ public static class MovementCheck
     {
         public readonly Mover M = new();
         public readonly List<Box> World;
-        public readonly HashSet<Key> Held = new();
+        public readonly HashSet<InputBinding> Held = new();
         public readonly ValorantProfile Keys = new();
         public Vector3 Feet;
         public float Yaw, T, MaxFeet, MaxEye;
@@ -281,7 +281,7 @@ public static class MovementCheck
         public readonly List<float> StopTimesMs = new(), CounterStopTimesMs = new();
         bool stopping, stoppingCounter, opposedKeys;
         float stopT;
-        public Func<Key, bool> Down = _ => false;
+        public Func<InputBinding, bool> Down = _ => false;
 
         public Vector3 Update(float dt, float yawDeg, ValorantProfile keys)
         {
@@ -350,7 +350,7 @@ public static class MovementCheck
             (Key.Shift, 5.6f, 6.2f), (Key.D, 6.6f, 7.4f), (Key.A, 7.4f, 7.5f), (Key.D, 7.4f, 7.5f),
         };
         float now = 0;
-        bool Down(Key k) => script.Any(s => s.k == k && now >= s.a && now < s.b);
+        bool Down(InputBinding k) => script.Any(s => (InputBinding)s.k == k && now >= s.a && now < s.b);
         var world = new List<Box> { Floor() };
         var m = new Mover();
         var refm = new RefMover { Down = Down, Ads = false };

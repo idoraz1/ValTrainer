@@ -1,5 +1,6 @@
 using Godot;
 using ValTrainer.Game.Fx;
+using ValTrainer.Valorant;
 
 namespace ValTrainer.Modes;
 
@@ -39,10 +40,11 @@ public sealed record ControllerKit
     /// <summary>Seconds from launch until the smoke starts forming.</summary>
     public float Deploy { get; init; } = 1f;
     public float FormTime { get; init; } = 0.6f;
-    public Godot.Key SmokeKey { get; init; } = Godot.Key.E;
+    /// <summary>VALORANT ability slot of the smoke (Ability2 = E, Ability1 = Q …; the player's binds).</summary>
+    public GameAction SmokeKey { get; init; } = GameAction.Ability2;
     public WallKind Wall { get; init; } = WallKind.None;
     public string WallAbility { get; init; } = "";
-    public Godot.Key WallKey { get; init; } = Godot.Key.Q;
+    public GameAction WallKey { get; init; } = GameAction.Ability1;
     /// <summary>Astra: stars per round.</summary>
     public int Stars { get; init; }
     public required SmokeLook Look { get; init; }
@@ -75,7 +77,7 @@ public sealed record ControllerKit
         new()
         {
             Key = "astra", Agent = "Astra", Ability = "Nebula", Placing = SmokePlacing.Stars,
-            Charges = 2, Stars = 5, Radius = 4.75f, Duration = 14.25f, Range = 0f, Deploy = 0.75f, SmokeKey = Godot.Key.E,
+            Charges = 2, Stars = 5, Radius = 4.75f, Duration = 14.25f, Range = 0f, Deploy = 0.75f, SmokeKey = GameAction.Ability2,
             Look = new SmokeLook(C(150, 92, 206), C(34, 16, 62), C(246, 196, 255), C(236, 190, 255), Density: 3.4f, Sparkle: 1f, Swirl: 0.05f),
             HowTo = "Astral Form: CLICK to place stars (click one to take it back) · RIGHT-CLICK or X to return · then LOOK AT A STAR + E = Nebula",
             Summary = "5 stars, 2 Nebulas · 4.75 m · 14 s · anywhere on the map",
@@ -91,8 +93,8 @@ public sealed record ControllerKit
         new()
         {
             Key = "viper", Agent = "Viper", Ability = "Poison Cloud", Placing = SmokePlacing.Throw,
-            Charges = 1, Radius = 4.5f, Duration = float.PositiveInfinity, Range = 0f, Deploy = 0.75f, FormTime = 1f, SmokeKey = Godot.Key.Q,
-            Wall = WallKind.ToxicScreen, WallAbility = "Toxic Screen", WallKey = Godot.Key.E,
+            Charges = 1, Radius = 4.5f, Duration = float.PositiveInfinity, Range = 0f, Deploy = 0.75f, FormTime = 1f, SmokeKey = GameAction.Ability1,
+            Wall = WallKind.ToxicScreen, WallAbility = "Toxic Screen", WallKey = GameAction.Ability2,
             Look = new SmokeLook(C(120, 196, 92), C(22, 64, 22), C(196, 255, 110), C(170, 255, 90), Density: 3.4f, Swirl: 0.09f),
             WallLook = new SmokeLook(C(118, 196, 90), C(24, 70, 22), C(200, 255, 120), C(170, 255, 90)),
             HowTo = "Q orb: CLICK throws, RIGHT-CLICK lobs · E wall: CLICK fires it along your aim (through walls) · Q / E again = gas on/off (fuel)",
@@ -102,7 +104,7 @@ public sealed record ControllerKit
         {
             Key = "harbor", Agent = "Harbor", Ability = "Cove", Placing = SmokePlacing.Aim,
             Charges = 1, Radius = 4.6f, Duration = 19.25f, Range = 80f, Deploy = 1f,
-            Wall = WallKind.HighTide, WallAbility = "High Tide", WallKey = Godot.Key.Q,
+            Wall = WallKind.HighTide, WallAbility = "High Tide", WallKey = GameAction.Ability1,
             Look = new SmokeLook(C(86, 170, 196), C(10, 58, 82), C(196, 246, 255), C(150, 230, 255), Density: 3.1f, Ripple: 1f, Swirl: 0.12f, Water: true),
             WallLook = new SmokeLook(C(92, 176, 204), C(12, 62, 88), C(220, 250, 255), C(150, 230, 255), Water: true),
             HowTo = "E Cove: aim the marker (HOLD CLICK out / RIGHT-CLICK in), E throws · Q High Tide: CLICK sends the wave, HOLD CLICK steers it, RIGHT-CLICK stops it",

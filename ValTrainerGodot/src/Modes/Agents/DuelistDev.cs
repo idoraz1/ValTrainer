@@ -2,6 +2,7 @@ using Godot;
 using ValTrainer.Core;
 using ValTrainer.Game;
 using ValTrainer.Game.Bots;
+using ValTrainer.Valorant;
 
 namespace ValTrainer.Modes;
 
@@ -22,7 +23,7 @@ public sealed class DuelistDev
 
     readonly IGame G;
     readonly MobilityEntryMode M;
-    readonly HashSet<Key> keys = new();
+    readonly HashSet<InputBinding> keys = new();
     readonly bool walks;
     enum St { ToSpot, Entry, Push }
     St st;
@@ -45,7 +46,7 @@ public sealed class DuelistDev
             // Only while that run's session exists: a later run in the same dev process gets the real keyboard back.
             Mover.KeyOverride = k => current != null && GodotObject.IsInstanceValid(current.G as GodotObject)
                 ? current.keys.Contains(k)
-                : k != Key.None && Input.IsKeyPressed(k);
+                : k.RealHeld;
             installed = true;
         }
         current = this;
@@ -58,8 +59,8 @@ public sealed class DuelistDev
     Vector3 Feet => M.PlayerFeet;
 
     public void Next(int step = -1) { Step = step >= 0 ? step : Step + 1; StepT = 0; }
-    public void Hold(Key k) { if (k != Key.None) keys.Add(k); }
-    public void Release(Key k) => keys.Remove(k);
+    public void Hold(InputBinding k) { if (!k.IsNone) keys.Add(k); }
+    public void Release(InputBinding k) => keys.Remove(k);
 
     /// <summary>A point on the site side of the choke, at eye height.</summary>
     public Vector3 SitePoint(float beyond) => M.Spot.Choke + M.SiteAxis * beyond + Vector3.Up * PlayerView.EyeHeight;

@@ -103,6 +103,8 @@ players can never trigger them by accident.
 | `--telemetry-out <dir>` | Saves the run's telemetry (`.vtt`) to that folder. |
 | `--data-dir <dir>` | Uses this folder instead of `%APPDATA%\ValTrainer`. Add `--write-data` to let the dev run save there. |
 | `--valorant-dir <dir>` | Reads VALORANT's settings from this `Saved\Config` folder instead of the real one. |
+| `--keybind-dump` | Prints the resolved VALORANT keybinds (defaults + `BackupKeybinds.json` overrides, both slots, shared binds, skipped entries) as `[keybinds] …` lines, then quits. Works with `--headless`; use it with `--valorant-dir`. |
+| `--keybind-test` | With `--mode <drill>`: feeds every imported bind (keys, mouse buttons, wheel notches, both slots) into the game as real input events and checks movement, crouch, walk, jump, fire, alt fire / scope, reload and the polled actions (abilities, use spike, use). Prints `[keybind-test] RESULT: PASS/FAIL`; the exit code is the number of failures. Works with `--headless`. |
 | `--culture <name>` | Runs in that culture (e.g. `de-DE`) instead of the invariant one, to prove parsing doesn't depend on it. |
 | `--culture-test` | Locale self-test: settings, stats, telemetry and VALORANT ini parsing and number formatting. Prints `[culture-test] RESULT: PASS/FAIL`; the exit code is the number of failures. |
 | `--coach-analyze [dir]` | Prints the coach's analysis (metrics, problems, run review, skill profile, sens advice) of the `.vtt` files in `dir`, then quits. Add `--brief`, `--out <file>`, `--fake-sessions N`. Works with `--headless`. Without `dir` it reads your real telemetry (read-only). |
@@ -119,7 +121,7 @@ players can never trigger them by accident.
 | `--whats-new [fromVersion]` | Shows the "What's new" panel as if you updated from that version. |
 | `--mode <key>:<agent>` | Agent drills take the agent after a colon: `flashpeek:skye`, `recon:fade`, `smokeexec:viper`, `mobility:neon`, `chamber:tdf`, `anchor:cypher`. |
 | `--autothrow`, `--autosmoke`, `--autoability`, `--autosetup`, `--autotac`, `--tacghost` | Auto-play the agent and tactical drills so they can run unattended with `--simaim` (initiator throws, controller smokes, duelist abilities, sentinel setups, post-plant/retake). `--tacghost`: bots can't see you. |
-| `--movescript "<keys>"` / `--movescript auto`, `--movelog`, `--movecheck`, `--jumpaudit all\|<map>\|<mode>` | Movement testing: scripted key presses, landing log, 27 physics checks, and an audit of spots a jump can reach that it shouldn't. |
+| `--movescript "<keys>"` / `--movescript auto`, `--movelog`, `--movecheck`, `--jumpaudit all\|<map>\|<mode>` | Movement testing: scripted key presses (letters, Godot key names, or the player's binds by action: `forward back left right walk crouch jump spike use ability_c ability_q ability_e ability_x`, whatever they're bound to), landing log, 27 physics checks, and an audit of spots a jump can reach that it shouldn't. |
 | `--screen agents`, `--agent <key>`, `--agent-search <text>`, `--agent-role <role>`, `--agent-go routine\|<drill>`, `--map-picker` | Agents screen and map picker. |
 | `--throw-test` | Throws test exceptions to check that they reach the log. |
 | `--vmtest …` | Viewmodel and effects test harness, see `src/Game/Weapon/VmTest.cs`. |

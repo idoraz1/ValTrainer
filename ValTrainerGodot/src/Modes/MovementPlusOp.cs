@@ -3,6 +3,7 @@ using ValTrainer.Core;
 using ValTrainer.Game;
 using ValTrainer.Game.Bots;
 using ValTrainer.UI;
+using ValTrainer.Valorant;
 
 namespace ValTrainer.Modes;
 
@@ -531,12 +532,12 @@ public abstract class OpAngleMode : MovementMode
 
     // ---------------- dev: scripted player (--dev --movescript auto) ----------------
 
-    readonly HashSet<Key> autoKeys = new();
+    readonly HashSet<InputBinding> autoKeys = new();
     protected float AutoT;
     protected int AutoPhase;
 
     /// <summary>Drives <see cref="autoKeys"/> each frame (only with --movescript auto). The simulated aim (--simaim) shoots.</summary>
-    protected virtual void Auto(float dt, HashSet<Key> keys) { }
+    protected virtual void Auto(float dt, HashSet<InputBinding> keys) { }
 
     void AutoPilot(float dt)
     {

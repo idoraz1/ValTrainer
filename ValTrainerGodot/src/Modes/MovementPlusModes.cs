@@ -2,6 +2,7 @@ using Godot;
 using ValTrainer.Core;
 using ValTrainer.Game;
 using ValTrainer.UI;
+using ValTrainer.Valorant;
 
 namespace ValTrainer.Modes;
 
@@ -134,7 +135,7 @@ public sealed class JumpPeekMode : OpAngleMode
             var k = Main.I.Valorant;
             if (PunishWindow) return "He missed — swing out and kill him before he re-chambers";
             if (roundSpotted) return "Spotted. Re-peek to bait a shot, or wait — he repositions";
-            return $"Jump-peek: {k.KeyRight} + {k.JumpBindText} out, {k.KeyLeft} back before you land";
+            return $"Jump-peek: {k.KeyRight} + {k.KeyJump} out, {k.KeyLeft} back before you land";
         }
     }
 
@@ -158,7 +159,7 @@ public sealed class JumpPeekMode : OpAngleMode
     }
 
     // dev --movescript auto: jump-peek from the corner, back out in the air; swing when he misses.
-    protected override void Auto(float dt, HashSet<Key> keys)
+    protected override void Auto(float dt, HashSet<InputBinding> keys)
     {
         var k = Main.I.Valorant;
         keys.Clear();
@@ -331,7 +332,7 @@ public sealed class JigglePeekMode : OpAngleMode
     // when he hits. When baited: wide swing, counter-strafe, let the simulated aim (--simaim) shoot.
     float autoHold = 0.12f;
 
-    protected override void Auto(float dt, HashSet<Key> keys)
+    protected override void Auto(float dt, HashSet<InputBinding> keys)
     {
         var k = Main.I.Valorant;
         keys.Clear();

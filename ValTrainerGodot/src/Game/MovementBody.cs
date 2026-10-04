@@ -106,7 +106,7 @@ public sealed partial class Mover
         if (Grounded) sinceLanded += dt;
         // Jump: a fresh press of a jump key (or a queued mouse-bind jump) while standing on something. Holding the key
         // doesn't re-jump on landing; press again.
-        bool held = Down(keys.KeyJump) || Down(keys.KeyJump2);
+        bool held = Down(keys, GameAction.Jump);
         bool pressed = (held && !jumpWasHeld) || jumpQueued;
         jumpWasHeld = held;
         jumpQueued = false;
@@ -118,7 +118,7 @@ public sealed partial class Mover
             Jumped?.Invoke();
         }
 
-        Shape(Down(keys.KeyCrouch), ref feet, world);
+        Shape(Down(keys, GameAction.Crouch), ref feet, world);
         var delta = Update(dt, yawDeg, keys);
         Collision.MoveAndSlide(ref feet, ref Vel, delta, world,
             Grounded ? Collision.StepHeight : Collision.AirStep, Grounded ? Collision.PlayerHeight : BodyHeight);

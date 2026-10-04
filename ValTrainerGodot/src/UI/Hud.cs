@@ -4,6 +4,7 @@ using ValTrainer.Analysis;
 using ValTrainer.Core;
 using ValTrainer.Game;
 using ValTrainer.Modes;
+using ValTrainer.Valorant;
 
 namespace ValTrainer.UI;
 
@@ -140,7 +141,7 @@ public partial class Hud : Control
             if (m.Movement) DrawSpeed(size, k);
             DrawReload(size, k);
         }
-        if (m.Prompt is { } p) DrawPrompt(size, k, p);
+        if (m.Prompt is { } p) DrawPrompt(size, k, Main.I.Valorant.Binds.Hint(p));
         if (s.BannerTime > 0 && s.BannerText.Length > 0) DrawBanner(size, k);
         if (m.KillBanner.Time > 0 && m.KillBanner.Count > 0) DrawKillBanner(size, k, m.KillBanner.Count, m.KillBanner.Time);
         if (s.State == GameSession.St.Countdown) DrawCountdown(size, k, m);
@@ -230,8 +231,9 @@ public partial class Hud : Control
         }
         y += 34 * k;
         int ls = UiTheme.Fs(18, k);
-        foreach (var line in m.HudLines())
+        foreach (var rawLine in m.HudLines())
         {
+            var line = Main.I.Valorant.Binds.Hint(rawLine);
             // movement drills show their last stop under the speed meter instead
             if (m.Movement && line.StartsWith("Last stop", StringComparison.Ordinal)) continue;
             float w = Gfx.TextW(UiTheme.Body, line, ls);

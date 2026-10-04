@@ -11,7 +11,8 @@ namespace ValTrainer.Game;
 /// <item>Spec: comma-separated items <c>key:start-end</c> (hold) or <c>key:start</c> (a 0.08 s tap), optionally starting with
 /// <c>loop=&lt;period&gt;</c> to repeat the schedule every period seconds.</item>
 /// <item>Keys: any letter, <c>space ctrl shift alt</c>, a Godot key name, or the player's binds by action:
-/// <c>forward back left right jump crouch walk</c>.</item>
+/// <c>forward back left right jump crouch walk spike (use spike: plant / defuse) use ability_c ability_q ability_e ability_x</c> (whatever they are
+/// bound to: a key, a mouse button or the wheel).</item>
 /// <item><c>auto</c>: the drill plays its own scripted movement (Jump Peek, Jiggle Peek); other drills get no script.</item>
 /// </list>
 /// Example: <c>--movescript "loop=2.5,right:0-0.3,jump:0.05,left:0.35-0.6"</c> (strafe out, jump, strafe back, every 2.5 s).
@@ -19,7 +20,7 @@ namespace ValTrainer.Game;
 /// </summary>
 public sealed class MovementScript
 {
-    readonly List<(Key Key, float From, float To)> items = new();
+    readonly List<(InputBinding Key, float From, float To)> items = new();
     readonly float loop;
 
     /// <summary>The --movescript value of a dev run (null otherwise).</summary>
@@ -39,7 +40,7 @@ public sealed class MovementScript
         var bad = new List<string>();
         float loop = 0;
         var parts = spec.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        var list = new List<(Key, float, float)>();
+        var list = new List<(InputBinding, float, float)>();
         foreach (var p in parts)
         {
             if (p.StartsWith("loop=", StringComparison.OrdinalIgnoreCase))
@@ -51,7 +52,7 @@ public sealed class MovementScript
             if (c <= 0) { bad.Add(p); continue; }
             var key = KeyOf(p[..c].Trim(), keys);
             var times = p[(c + 1)..].Split('-', 2);
-            if (key == Key.None || !float.TryParse(times[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float from)) { bad.Add(p); continue; }
+            if (key.IsNone || !float.TryParse(times[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float from)) { bad.Add(p); continue; }
             float to = from + 0.08f;
             if (times.Length == 2 && !float.TryParse(times[1], NumberStyles.Float, CultureInfo.InvariantCulture, out to)) { bad.Add(p); continue; }
             list.Add((key, from, Mathf.Max(to, from + 0.001f)));
@@ -64,9 +65,9 @@ public sealed class MovementScript
     }
 
     /// <summary>Is <paramref name="k"/> held at <paramref name="now"/> (seconds since GO)?</summary>
-    public bool Down(Key k, float now)
+    public bool Down(InputBinding k, float now)
     {
-        if (k == Key.None) return false;
+        if (k.IsNone) return false;
         float t = loop > 0 ? now % loop : now;
         foreach (var (key, from, to) in items)
             if (key == k && t >= from && t < to) return true;
@@ -77,7 +78,7 @@ public sealed class MovementScript
         (loop > 0 ? $"loop {loop.ToString("0.##", CultureInfo.InvariantCulture)} s: " : "") +
         string.Join(", ", items.Select(i => string.Create(CultureInfo.InvariantCulture, $"{i.Key} {i.From:0.###}-{i.To:0.###}")));
 
-    static Key KeyOf(string name, ValorantProfile keys)
+    static InputBinding KeyOf(string name, ValorantProfile keys)
     {
         switch (name.ToLowerInvariant())
         {
@@ -87,7 +88,14 @@ public sealed class MovementScript
             case "right": return keys.KeyRight;
             case "walk": return keys.KeyWalk;
             case "crouch": return keys.KeyCrouch;
-            case "jump": return keys.KeyJump != Key.None ? keys.KeyJump : keys.KeyJump2 != Key.None ? keys.KeyJump2 : Key.Space;
+            case "jump": return keys.KeyJump.IsNone ? Key.Space : keys.KeyJump;
+            // Polled actions (abilities, equip spike = plant / defuse); fire / alt fire / reload are input events, not polled.
+            case "spike": return keys.Binds.Primary(GameAction.UseSpike);
+            case "use": return keys.Binds.Primary(GameAction.Use);
+            case "ability_c": return keys.Binds.Primary(GameAction.AbilityGrenade);
+            case "ability_q": return keys.Binds.Primary(GameAction.Ability1);
+            case "ability_e": return keys.Binds.Primary(GameAction.Ability2);
+            case "ability_x": return keys.Binds.Primary(GameAction.Ultimate);
             case "space": return Key.Space;
             case "ctrl": case "control": return Key.Ctrl;
             case "shift": return Key.Shift;

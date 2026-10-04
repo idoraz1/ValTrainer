@@ -4,6 +4,7 @@ using ValTrainer.Game;
 using ValTrainer.Game.Bots;
 using ValTrainer.Game.Fx;
 using ValTrainer.UI;
+using ValTrainer.Valorant;
 
 namespace ValTrainer.Modes;
 
@@ -14,13 +15,14 @@ namespace ValTrainer.Modes;
 /// 7 s and has a checkpoint at half (3.5 s): a defuse that is stopped after the checkpoint resumes from it, an earlier one
 /// starts over. The defuser can't move or shoot (the gun is put away), and the spike beeps faster as it runs down. Both
 /// drills plant the spike when the round starts.</para>
-/// <para>Defuse key: VALORANT's default for planting and defusing is 4 (the "equip spike" key) — the imported keybinds
-/// don't include it, so it is 4 here.</para>
+/// <para>Defuse key: VALORANT's "Use Spike" bind (plant / defuse, default 4), imported with the other keybinds; both bind
+/// slots work.</para>
 /// </summary>
 public abstract partial class TacticalMode : MapMode
 {
     public const float PlantTime = 4f, DefuseTime = 7f, HalfDefuse = 3.5f, SpikeTimer = 45f, DefuseRange = 1.5f;
-    public const Godot.Key DefuseKey = Godot.Key.Key4;
+    /// <summary>The plant / defuse bind for prompts: "4" unless the player rebound Use Spike.</summary>
+    public static string DefuseKeyText => Main.I?.Valorant.Binds.Short(GameAction.UseSpike) ?? "4";
     public override float Duration => 240f;
     public override string SimKind => "bot";
     public override bool InfiniteReserve => true;

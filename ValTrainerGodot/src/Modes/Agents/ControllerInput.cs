@@ -14,9 +14,10 @@ public partial class ControllerInput : Node
     public override void _Input(InputEvent e)
     {
         if (Mode == null || !Mode.HandleInput(e)) return;
-        // Never swallow a mouse-button RELEASE: the session must see it, or it thinks the trigger is still held
-        // (e.g. the last defender dies while you're firing, the summary takes the release, and the gun fires forever).
-        if (e is InputEventMouseButton { Pressed: false }) return;
+        // Never swallow a RELEASE (mouse button or key — fire can be bound to either): the session must see it, or it thinks
+        // the trigger is still held (e.g. the last defender dies while you're firing, the summary takes the release, and the
+        // gun fires forever).
+        if (e is InputEventMouseButton { Pressed: false } or InputEventKey { Pressed: false }) return;
         GetViewport().SetInputAsHandled();
     }
 }

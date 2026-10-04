@@ -45,13 +45,13 @@ public sealed partial class Mover
     float stopT;
 
     /// <summary>
-    /// DEV / TEST ONLY: when set, every key the mover reads (move, walk, crouch, jump) comes from this function instead
-    /// of the keyboard, so headless runs can script movement (see the --movescript dev flag in MovementScript.cs).
-    /// Null (the default) = the real keyboard.
+    /// DEV / TEST ONLY: when set, every bind the mover (and every other bind check) reads comes from this function instead
+    /// of the keyboard and mouse, so headless runs can script movement (see the --movescript dev flag in MovementScript.cs).
+    /// Same as <see cref="Keybinds.Override"/>. Null (the default) = the real input.
     /// </summary>
-    public static Func<Key, bool>? KeyOverride;
+    public static Func<InputBinding, bool>? KeyOverride { get => Keybinds.Override; set => Keybinds.Override = value; }
 
-    static bool Down(Key k) => KeyOverride is { } f ? f(k) : k != Key.None && Input.IsKeyPressed(k);
+    static bool Down(ValorantProfile keys, GameAction a) => keys.Binds.IsDown(a);
 
     /// <summary>Computes this frame's horizontal velocity and returns the position delta (collision is the caller's job).
     /// Prefer <see cref="Step"/>, which also jumps, falls and collides.</summary>
@@ -62,16 +62,18 @@ public sealed partial class Mover
         var right = new Vector3(Mathf.Cos(y), 0, Mathf.Sin(y));
 
         var wish = Vector3.Zero;
-        if (Down(keys.KeyForward)) wish += fwd;
-        if (Down(keys.KeyBack)) wish -= fwd;
-        if (Down(keys.KeyRight)) wish += right;
-        if (Down(keys.KeyLeft)) wish -= right;
+        bool f = Down(keys, GameAction.MoveForward), b = Down(keys, GameAction.MoveBack);
+        bool l = Down(keys, GameAction.StrafeLeft), r = Down(keys, GameAction.StrafeRight);
+        if (f) wish += fwd;
+        if (b) wish -= fwd;
+        if (r) wish += right;
+        if (l) wish -= right;
         bool wants = wish.LengthSquared() > 0.001f;
         if (wants) wish = wish.Normalized();
-        opposedKeys = !wants && ((Down(keys.KeyLeft) && Down(keys.KeyRight)) || (Down(keys.KeyForward) && Down(keys.KeyBack)));
+        opposedKeys = !wants && ((l && r) || (f && b));
 
-        Crouching = Down(keys.KeyCrouch);
-        Walking = Down(keys.KeyWalk);
+        Crouching = Down(keys, GameAction.Crouch);
+        Walking = Down(keys, GameAction.Walk);
         float target = Crouching ? CrouchEye : StandEye;
         EyeHeight += (target - EyeHeight) * (1f - Mathf.Exp(-14f * dt));
 

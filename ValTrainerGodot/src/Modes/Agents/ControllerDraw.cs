@@ -4,6 +4,7 @@ using ValTrainer.Game;
 using ValTrainer.Game.Fx;
 using ValTrainer.Maps;
 using ValTrainer.UI;
+using ValTrainer.Valorant;
 
 namespace ValTrainer.Modes;
 
@@ -372,7 +373,7 @@ static class ControllerDraw
         else if (astral)
         {
             title = $"ASTRAL FORM  ·  {m.StarsLeft} STAR{(m.StarsLeft == 1 ? "" : "S")} LEFT";
-            help = "CLICK place / take back a star   ·   RIGHT-CLICK or X return   ·   then look at a star + E = Nebula";
+            help = $"CLICK place / take back a star   ·   RIGHT-CLICK or {Key(GameAction.Ultimate)} return   ·   then look at a star + {Key(GameAction.Ability2)} = Nebula";
         }
         else if (a is AimAbility aim)
         {
@@ -408,7 +409,8 @@ static class ControllerDraw
             Gfx.TextC(ci, UiTheme.HudWide, $"PLACEMENT TIME {Mathf.Max(0, m.PhaseLeft):0.0} S", size.X / 2, mr.End.Y + 54 * k, hs, m.PhaseLeft < 3 ? UiTheme.Accent : UiTheme.Warn);
     }
 
-    static string Key(Godot.Key key) => OS.GetKeycodeString(key).ToUpperInvariant();
+    /// <summary>The player's bind for an action, for key caps and help lines ("E", "MOUSE 4").</summary>
+    static string Key(GameAction a) => (Main.I?.Valorant.Binds.Short(a) ?? a.ToString()).ToUpperInvariant();
 
     static void Star(CanvasItem ci, Vector2 c, float r, Color col)
     {
@@ -464,7 +466,7 @@ static class ControllerDraw
         {
             var kr = new Rect2(panel.Position.X + 10 * k, ry + 4 * k, 26 * k, 26 * k);
             ci.DrawRect(kr, a.Equipped ? m.Kit.Look.Rim : new Color(1, 1, 1, 0.12f));
-            Gfx.TextC(ci, UiTheme.HudWide, Key(a.HotKey), kr.GetCenter().X, Gfx.Mid(kr.GetCenter().Y, ks), ks, a.Equipped ? new Color(0.05f, 0.05f, 0.08f) : UiTheme.Text);
+            Gfx.TextC(ci, UiTheme.HudWide, InputBinding.Cap(Key(a.HotKey)), kr.GetCenter().X, Gfx.Mid(kr.GetCenter().Y, ks), ks, a.Equipped ? new Color(0.05f, 0.05f, 0.08f) : UiTheme.Text);
             Gfx.Text(ci, UiTheme.HudWide, a.Name.ToUpperInvariant(), kr.End.X + 10 * k, Gfx.Mid(kr.GetCenter().Y, ns), ns, a.Spent ? UiTheme.Faint : UiTheme.Text);
             Gfx.TextR(ci, UiTheme.HudWide, a.Status, panel.End.X - 10 * k, Gfx.Mid(kr.GetCenter().Y, ns), ns, a.Spent ? UiTheme.Faint : m.Kit.Look.Rim);
             ry += rowH;

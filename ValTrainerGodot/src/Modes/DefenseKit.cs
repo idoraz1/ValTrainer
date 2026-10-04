@@ -1,6 +1,7 @@
 using Godot;
 using ValTrainer.Game;
 using ValTrainer.Game.Fx;
+using ValTrainer.Valorant;
 
 namespace ValTrainer.Modes;
 
@@ -106,15 +107,8 @@ public sealed class SentinelKit
     public string KeyText => Main.I?.Valorant.AbilityBindText(SlotIndex) ?? A.Slot.ToString();
     public bool InHand => State != Phase.Ready;
 
-    bool KeyDown()
-    {
-        var v = Main.I?.Valorant;
-        if (v == null) return false;
-        var mb = v.AbilityMouse[SlotIndex];
-        if (mb != MouseButton.None) return Input.IsMouseButtonPressed(mb);
-        var k = v.AbilityKeys[SlotIndex];
-        return k != Key.None && Input.IsKeyPressed(k);
-    }
+    /// <summary>This ability's VALORANT binds held (both slots; a key, a mouse button or a wheel notch for one frame).</summary>
+    bool KeyDown() => Main.I?.Valorant.Binds.IsDown(Keybinds.AbilityAction(SlotIndex)) ?? false;
 
     void Set(Phase p) { State = p; StateTime = 0; }
 
@@ -145,7 +139,7 @@ public sealed class SentinelKit
         if (RefusalT > 0) RefusalT -= dt;
         bool key = KeyDown(), keyEdge = key && !prevKey;
         prevKey = key;
-        bool alt = Input.IsMouseButtonPressed(MouseButton.Right), altEdge = alt && !prevAlt;
+        bool alt = Main.I?.Valorant.Binds.IsDown(GameAction.AltFire) ?? false, altEdge = alt && !prevAlt;
         prevAlt = alt;
         if (g.Player.Dead) { if (State != Phase.Ready) PutAway(0f); return; }
         switch (State)
