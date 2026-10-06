@@ -13,6 +13,7 @@
 ; /RELAUNCH (silent installs only) starts ValTrainer again when Setup is done, with the '|'-separated arguments of
 ; /RELAUNCHARGS. install.ini next to ValTrainer.exe tells the app it was installed by this Setup (AppId and per-user or
 ; all-users mode); the app also checks that Windows' uninstall entry for that AppId points at its own folder.
+; Setup and the uninstaller wait until ValTrainer.exe has exited before changing anything (see PrepareToInstall).
 ; Interactive installs behave exactly as before.
 
 #ifndef AppVersion
@@ -306,6 +307,74 @@ begin
       Result := Result + AddQuotes(A);
     end;
   end;
+end;
+
+{ ---------- wait until ValTrainer has exited ---------- }
+{ The app quits right after starting an update, but shutting down can take a few seconds. Setup must not touch any file
+  before then: [InstallDelete] would remove the .NET files the app hasn't loaded, a still-locked ValTrainer.exe would
+  then abort the install, and the rollback can't bring the deleted files back (1.4.1 -> 1.4.2 broke like that).
+  Nothing is ever killed: Setup only waits (silent) or asks the player to close it (interactive). }
+
+{ True while some process runs this ValTrainer.exe: Windows refuses to open a running exe for writing. }
+function ExeInUse(const Exe: String): Boolean;
+var
+  F: TFileStream;
+begin
+  Result := False;
+  if not FileExists(Exe) then Exit;
+  try
+    F := TFileStream.Create(Exe, fmOpenReadWrite or fmShareExclusive);
+    F.Free;
+  except
+    Result := True;
+  end;
+end;
+
+{ Waits up to Seconds for Exe to be free; True when it is. }
+function WaitForExit(const Exe: String; Seconds: Integer): Boolean;
+var
+  I: Integer;
+begin
+  for I := 1 to Seconds * 4 do
+  begin
+    if not ExeInUse(Exe) then
+    begin
+      Result := True;
+      Exit;
+    end;
+    Sleep(250);
+  end;
+  Result := not ExeInUse(Exe);
+end;
+
+{ Silent: wait up to 90 s, then give up without changing anything. Interactive: ask until it's closed or cancelled. }
+function WaitUntilClosed(const Exe: String; Silent: Boolean): Boolean;
+begin
+  if Silent then
+  begin
+    Result := WaitForExit(Exe, 90);
+    if not Result then Log('ValTrainer is still running after 90 s: nothing was changed.');
+    Exit;
+  end;
+  Result := WaitForExit(Exe, 3);
+  while not Result do
+  begin
+    if MsgBox('ValTrainer is still running.' + #13#10#13#10 + 'Close it, then click Retry.',
+              mbError, MB_RETRYCANCEL) <> IDRETRY then Exit;
+    Result := WaitForExit(Exe, 3);
+  end;
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+begin
+  Result := '';
+  if not WaitUntilClosed(ExpandConstant('{app}\{#AppExe}'), WizardSilent) then
+    Result := 'ValTrainer is still running. Close it and run Setup again.';
+end;
+
+function InitializeUninstall(): Boolean;
+begin
+  Result := WaitUntilClosed(ExpandConstant('{app}\{#AppExe}'), UninstallSilent);
 end;
 
 { ---------- uninstall: optionally remove the user's data ---------- }

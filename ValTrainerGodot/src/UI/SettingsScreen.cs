@@ -485,7 +485,7 @@ public partial class SettingsScreen : ScreenBase
         }, 210, 40, 17);
         get.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         upd.AddChild(get);
-        var status = new DrawBox { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        var status = new DrawBox { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Pass };
         status.OnDraw = d =>
         {
             int fs = UiTheme.Fs(14, k);
@@ -498,6 +498,7 @@ public partial class SettingsScreen : ScreenBase
         {
             check.Disabled = !UpdateCheck.CanCheck || UpdateCheck.Status == UpdateCheck.State.Checking;
             check.TooltipText = UpdateCheck.CanCheck ? "Ask GitHub once now whether a newer release is out" : UpdateCheck.Message ?? "";
+            status.TooltipText = UpdateCheck.Status == UpdateCheck.State.Failed ? UpdateCheck.Message ?? "" : "";
             bool ready = Updater.ReadyVersion != null;
             get.Visible = ready || (UpdateCheck.NewerAvailable && AppInfo.HasRepo && Updater.Status != Updater.State.Applying);
             get.Label = ready ? "RESTART TO UPDATE" : $"GET {UpdateCheck.Latest}";
@@ -576,7 +577,7 @@ public partial class SettingsScreen : ScreenBase
         UpdateCheck.State.Checking => ("Checking GitHub…", UiTheme.Dim),
         UpdateCheck.State.Available => ($"ValTrainer {UpdateCheck.Latest} is available", UiTheme.Good),
         UpdateCheck.State.UpToDate => ("You have the latest version" + (St.LastUpdateCheck > 0 ? $" · checked {Ago(St.LastUpdateCheck)}" : ""), UiTheme.Dim),
-        UpdateCheck.State.Failed => (UpdateCheck.Message ?? "Couldn't check", UiTheme.Warn),
+        UpdateCheck.State.Failed => (string.IsNullOrWhiteSpace(UpdateCheck.Message) ? "Couldn't check for updates" : $"Couldn't check for updates: {UpdateCheck.Message}", UiTheme.Warn),
         UpdateCheck.State.Off => (UpdateCheck.Message ?? "Off", UiTheme.Faint),
         _ => ("", UiTheme.Dim),
     };

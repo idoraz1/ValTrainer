@@ -184,7 +184,8 @@ public static class UpdateCheck
         }
         if (pending is not { IsCompleted: true } t) return;
         pending = null;
-        var r = t.IsCompletedSuccessfully ? t.Result : new Result(false, null, null, null, t.Exception?.GetBaseException().Message ?? "cancelled");
+        var r = t.IsCompletedSuccessfully ? t.Result : new Result(false, null, null, null, t.Exception is { } ex ? Log.Describe(ex.GetBaseException()) : "cancelled");
+        if (string.IsNullOrWhiteSpace(r.Error)) r = r with { Error = "unknown error" };
         if (!r.Ok)
         {
             Log.Info($"Update check failed: {r.Error}");
@@ -246,8 +247,8 @@ public static class UpdateCheck
             return new Result(true, v, url, ReadAssets(root, v, repo, local ? api : null), null);
         }
         catch (TaskCanceledException) { return new Result(false, null, null, null, "No answer from GitHub within 5 s (offline?)"); }
-        catch (HttpRequestException e) { return new Result(false, null, null, null, $"Can't reach GitHub ({e.Message})"); }
-        catch (Exception e) { return new Result(false, null, null, null, e.Message); }
+        catch (HttpRequestException e) { Log.Exception("Update check", e); return new Result(false, null, null, null, $"Can't reach GitHub ({Log.Describe(e)})"); }
+        catch (Exception e) { Log.Exception("Update check", e); return new Result(false, null, null, null, Log.Describe(e)); }
     }
 
     /// <summary>The release's installer, portable zip and SHA256SUMS.txt. Only download links of this project's own

@@ -52,9 +52,9 @@ public static partial class Updater
             catch (OperationCanceledException) when (cts.IsCancellationRequested) { Outcome = Result.Cancelled; }
             catch (BadFileException e) { Outcome = Result.BadFile; Error = e.Message; }
             catch (OperationCanceledException) { Outcome = Result.Transient; Error = "no answer from the download server (offline?)"; }
-            catch (HttpRequestException e) { Outcome = Result.Transient; Error = e.StatusCode is { } c ? $"HTTP {(int)c}" : $"can't reach the download server ({e.Message})"; }
-            catch (IOException e) { Outcome = Result.Transient; Error = e.Message; }
-            catch (Exception e) { Outcome = Result.Transient; Error = e.Message; }
+            catch (HttpRequestException e) { Outcome = Result.Transient; Error = e.StatusCode is { } c ? $"HTTP {(int)c}" : $"can't reach the download server ({Log.Describe(e)})"; }
+            catch (IOException e) { Outcome = Result.Transient; Error = Log.Describe(e); }
+            catch (Exception e) { Log.Exception("Updater: download", e); Outcome = Result.Transient; Error = Log.Describe(e); }
             finally { done = true; }
         }
 
@@ -130,7 +130,7 @@ public static partial class Updater
             catch (InvalidDataException e)
             {
                 TryDelete(tmp); TryDelete(final);
-                throw new BadFileException($"{Asset} is damaged ({e.Message})");
+                throw new BadFileException($"{Asset} is damaged ({Log.Describe(e)})");
             }
             catch { TryDelete(tmp); throw; }
             TryDelete(final);
@@ -252,7 +252,7 @@ public static partial class Updater
                 }
                 Ok = true;
             }
-            catch (Exception e) { Error = e.Message; }
+            catch (Exception e) { Log.Exception("Updater: checking the downloaded file", e); Error = Log.Describe(e); }
             finally { done = true; }
         }
     }

@@ -8,6 +8,13 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.4.4] - 2026-10-06
+
+### Fixed
+
+- **Automatic updates could break the installed app.** When ValTrainer took a few seconds to close after starting an update, Setup removed part of the old version, failed to replace ValTrainer.exe and rolled back, leaving an install whose update checks failed with no message. Setup now waits until ValTrainer has closed before it changes anything (and the uninstaller does too). If your update checks show an error about missing or damaged files, reinstall from [valtrainer.github.io](https://valtrainer.github.io/).
+- Settings → About always says why an update check failed (it could show an empty line), and the log records the full error.
+
 ## [1.4.3] - 2026-10-04
 
 ### Added
@@ -145,7 +152,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.4.3...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.4.4...HEAD
+[1.4.4]: https://github.com/idoraz1/ValTrainer/compare/v1.4.3...v1.4.4
 [1.4.3]: https://github.com/idoraz1/ValTrainer/compare/v1.4.2...v1.4.3
 [1.4.2]: https://github.com/idoraz1/ValTrainer/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/idoraz1/ValTrainer/compare/v1.4.0...v1.4.1

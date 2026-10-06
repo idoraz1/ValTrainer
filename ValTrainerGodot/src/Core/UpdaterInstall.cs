@@ -67,7 +67,7 @@ public static partial class Updater
         catch (Exception e)
         {
             Kind = InstallKind.Unknown;
-            return $"can't tell how ValTrainer was installed ({e.Message})";
+            return $"can't tell how ValTrainer was installed ({Log.Describe(e)})";
         }
     }
 
@@ -126,12 +126,12 @@ public static partial class Updater
         foreach (var f in new[] { ExePath + ".old", ExePath + ".new" })
         {
             try { if (File.Exists(f)) { File.Delete(f); Log.Info($"Updater: removed {Path.GetFileName(f)}"); } }
-            catch (Exception e) { Log.Info($"Updater: {Path.GetFileName(f)} still in use ({e.Message}); next launch removes it"); }
+            catch (Exception e) { Log.Info($"Updater: {Path.GetFileName(f)} still in use ({Log.Describe(e)}); next launch removes it"); }
         }
     }
 
-    /// <summary>Starts the release's Setup.exe silently (progress window only): it closes ValTrainer if it's still
-    /// running, upgrades in place (same mode as before: per-user or all users, which needs a UAC prompt), writes its log
+    /// <summary>Starts the release's Setup.exe silently (progress window only): it waits until this ValTrainer has exited
+    /// (up to 90 s), upgrades in place (same mode as before: per-user or all users, which needs a UAC prompt), writes its log
     /// into the updates folder and, because of /RELAUNCH, starts ValTrainer again with this run's arguments.</summary>
     static string? LaunchInstaller(string setup)
     {
@@ -149,7 +149,7 @@ public static partial class Updater
             Log.Info($"Updater: started {Path.GetFileName(setup)} (pid {p.Id})");
             return null;
         }
-        catch (Exception e) { return e.Message; }
+        catch (Exception e) { return Log.Describe(e); }
     }
 
     /// <summary>Portable: "ValTrainer.exe" → "ValTrainer.exe.old" (Windows allows renaming a running exe), the verified
@@ -166,14 +166,14 @@ public static partial class Updater
         catch (Exception e)
         {
             TryDelete(staged);
-            return $"can't rename ValTrainer.exe ({e.Message})";
+            return $"can't rename ValTrainer.exe ({Log.Describe(e)})";
         }
         try { File.Move(staged, exe); }
         catch (Exception e)
         {
             try { File.Move(old, exe); } catch (Exception e2) { Log.Error($"Updater: couldn't put the old ValTrainer.exe back: {e2.Message}"); }
             TryDelete(staged);
-            return $"can't put the new ValTrainer.exe in place ({e.Message})";
+            return $"can't put the new ValTrainer.exe in place ({Log.Describe(e)})";
         }
         Log.Info($"Updater: ValTrainer.exe replaced by {st.Version} (old one kept as {Path.GetFileName(old)} until the next launch)");
         RelaunchAfterExit(exe);
@@ -198,14 +198,14 @@ public static partial class Updater
             using var p = Process.Start(psi);
             if (p != null) return;
         }
-        catch (Exception e) { Log.Error($"Updater: relaunch helper failed ({e.Message}); starting the new version directly"); }
+        catch (Exception e) { Log.Error($"Updater: relaunch helper failed ({Log.Describe(e)}); starting the new version directly"); }
         try
         {
             var psi = new ProcessStartInfo(exe) { UseShellExecute = false, WorkingDirectory = wd };
             foreach (var a in RelaunchArgs()) psi.ArgumentList.Add(a);
             Process.Start(psi)?.Dispose();
         }
-        catch (Exception e) { Log.Error($"Updater: couldn't restart ValTrainer ({e.Message}); start it again by hand"); }
+        catch (Exception e) { Log.Error($"Updater: couldn't restart ValTrainer ({Log.Describe(e)}); start it again by hand"); }
     }
 
     /// <summary>This run's command line (engine and ValTrainer arguments, e.g. the "safe graphics" shortcut's

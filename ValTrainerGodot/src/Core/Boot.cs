@@ -115,4 +115,18 @@ public static class Log
     {
         try { GD.Print("[ValTrainer] " + msg); } catch { }
     }
+
+    /// <summary>A short, never-empty reason for the UI (some exceptions have an empty Message). A missing or broken .NET
+    /// file (e.g. an install that was interrupted half-way) says so, because only reinstalling fixes it.</summary>
+    public static string Describe(Exception e)
+    {
+        for (var x = e; x != null; x = x.InnerException)
+            if (x is FileNotFoundException or FileLoadException or BadImageFormatException or TypeLoadException or MissingMethodException)
+                return $"some of ValTrainer's files are missing or damaged ({x.GetType().Name}): reinstall it from {AppInfo.Website}";
+        var m = e.Message?.Trim();
+        return string.IsNullOrEmpty(m) ? e.GetType().Name : m;
+    }
+
+    /// <summary>Logs everything about an exception (type, message, inner exceptions, stack) from any thread.</summary>
+    public static void Exception(string what, Exception e) => Error($"{what}: {e}");
 }

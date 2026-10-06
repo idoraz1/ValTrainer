@@ -367,7 +367,7 @@ public static partial class Updater
                 return s;
             }
         }
-        catch (Exception e) { Log.Error($"Updater: {StatePath} unreadable ({e.Message}); starting over"); }
+        catch (Exception e) { Log.Error($"Updater: {StatePath} unreadable ({Log.Describe(e)}); starting over"); }
         return new UpdaterState();
     }
 
@@ -401,12 +401,12 @@ public static partial class Updater
                 if (!keep.Contains(Path.GetFileName(f))) TryDelete(f);
             if (st.Version == null) TryDelete(StatePath);
         }
-        catch (Exception e) { Log.Error($"Updater: cleaning {dir} failed: {e.Message}"); }
+        catch (Exception e) { Log.Error($"Updater: cleaning {dir} failed: {Log.Describe(e)}"); }
     }
 
     internal static void TryDelete(string path)
     {
-        try { if (File.Exists(path)) File.Delete(path); } catch (Exception e) { Log.Info($"Updater: couldn't delete {path} ({e.Message})"); }
+        try { if (File.Exists(path)) File.Delete(path); } catch (Exception e) { Log.Info($"Updater: couldn't delete {path} ({Log.Describe(e)})"); }
     }
 
     /// <summary>What Settings → About shows under UPDATES.</summary>

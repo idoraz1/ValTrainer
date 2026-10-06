@@ -40,6 +40,8 @@ public static class AppInfo
     public static string LatestReleaseUrl => RepoUrl + "/releases/latest";
     /// <summary>The issue-template chooser (bug report / feature request).</summary>
     public static string NewIssueUrl => RepoUrl + "/issues/new/choose";
+    /// <summary>The project's website (downloads).</summary>
+    public const string Website = "https://valtrainer.github.io/";
     /// <summary>GitHub REST: newest published release (drafts and prereleases are excluded by GitHub).</summary>
     public static string LatestReleaseApi => $"https://api.github.com/repos/{GitHubRepo}/releases/latest";
 
