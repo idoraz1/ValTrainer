@@ -6,18 +6,50 @@ using ValTrainer.UI;
 namespace ValTrainer.Warmup;
 
 /// <summary>
-/// WARM UP setup: pick a routine (Quick / Standard / Pro), set the sens shifter (Off / Higher → your sens /
-/// Lower → your sens, start offset) and see the schedule (sens over time + drills) before starting.
+/// LOCK IN setup: pick a routine (Short / Lock-In / Training day), see the phase timeline, read a short and honest
+/// "why this works", and start. The sens shifter only appears for Training day (off by default, at most 10%).
+/// Keyboard: ←→ or 1–3 pick a routine, Space / Enter start, Esc back.
 /// </summary>
 public partial class WarmupScreen : ScreenBase
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
     WarmupPlan plan = null!;
-    DrawBox? chart, shiftInfo;
 
     WarmupStore Store => WarmupStore.I;
 
+    public WarmupScreen()
+    {
+        // Dev "--wupreset short|standard|training": open on that routine (dev runs never save it).
+        if (Main.I.Dev && CmdLine.After("--wupreset") is { } p) Store.Preset = WarmupPresets.Get(p).Key;
+    }
+
     void MakePlan() => plan = WarmupPlan.Build(WarmupPresets.Get(Store.Preset), Store.ShiftMode, Store.ShiftPct, Main.I.Sens, WarmupRunner.QuickDev);
+
+    void Pick(string key)
+    {
+        if (Store.Preset == key) return;
+        Store.Preset = key;
+        Store.Save();
+        Callable.From(Rebuild).CallDeferred();
+    }
+
+    public override void _UnhandledKeyInput(InputEvent e)
+    {
+        if (e is InputEventKey { Pressed: true, Echo: false } key)
+        {
+            var all = WarmupPresets.All;
+            int i = Array.FindIndex(all, p => p.Key == plan.Preset.Key);
+            int to = key.Keycode switch
+            {
+                Key.Left => i - 1, Key.Right => i + 1,
+                Key.Key1 or Key.Kp1 => 0, Key.Key2 or Key.Kp2 => 1, Key.Key3 or Key.Kp3 => 2,
+                _ => -99,
+            };
+            if (key.Keycode is Key.Space or Key.Enter or Key.KpEnter) { GetViewport().SetInputAsHandled(); StartRoutine(); return; }
+            if (to != -99) { GetViewport().SetInputAsHandled(); Pick(all[Math.Clamp(to, 0, all.Length - 1)].Key); return; }
+        }
+        base._UnhandledKeyInput(e);
+    }
 
     protected override void Build()
     {
@@ -30,7 +62,7 @@ public partial class WarmupScreen : ScreenBase
 
         var head = HBox(16 * k);
         var tier = Difficulty.Get(Main.I.Tier);
-        var title = Heading("WARM UP", $"GUIDED ROUTINE · {tier.Name.ToUpperInvariant()} TIER · EASY → HARD · THE LAST MINUTES ARE ALWAYS AT YOUR REAL SENS");
+        var title = Heading("LOCK IN", $"A SHORT ROUTINE BEFORE RANKED · {tier.Name.ToUpperInvariant()} TIER · EVERYTHING AT YOUR REAL SENS · ENDS WITH YOUR GOAL AND CUE");
         title.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         head.AddChild(title);
         var back = Btn("BACK", VButton.Look.Secondary, Main.I.ShowMenu, 160, 52, 22);
@@ -49,7 +81,7 @@ public partial class WarmupScreen : ScreenBase
         body.AddChild(right);
 
         // ---- routine ----
-        left.AddChild(new SectionLabel { Text = "ROUTINE", Note = "drills at your tier · every drill except deathmatch is a normal 60 s run", K = k });
+        left.AddChild(new SectionLabel { Text = "ROUTINE", Note = "← → or 1–3", K = k });
         var presets = HBox(10 * k);
         foreach (var p in WarmupPresets.All)
         {
@@ -57,117 +89,124 @@ public partial class WarmupScreen : ScreenBase
             var b = new VButton
             {
                 Kind = VButton.Look.Select, K = k, Label = p.Name.ToUpperInvariant(),
-                Sub = $"≈{WarmupPlan.Minutes(pp.EstimatedSeconds)} · {p.Steps.Length} DRILLS", TooltipText = p.Blurb,
+                Sub = $"≈{WarmupPlan.Minutes(pp.EstimatedSeconds)} · {p.Steps.Length} DRILLS" + (p.Key == WarmupPresets.DefaultKey ? " · DEFAULT" : ""),
+                TooltipText = p.Blurb + (p.Note.Length > 0 ? $" ({p.Note})" : ""),
                 FontPx = 26, SubPx = 13, CustomMinimumSize = new Vector2(0, 72 * k), SizeFlagsHorizontal = SizeFlags.ExpandFill,
                 Selected = p.Key == plan.Preset.Key,
             };
             string key = p.Key;
-            b.Pressed += () => { Store.Preset = key; Store.Save(); Callable.From(Rebuild).CallDeferred(); };
+            b.Pressed += () => Pick(key);
             presets.AddChild(b);
         }
         left.AddChild(presets);
-
-        // ---- schedule chart ----
-        var chartPanel = new VPanel { Title = "SCHEDULE", K = k, Caption = $"{plan.Steps.Count} drills · {WarmupPlan.Clock(plan.PlaySeconds)} play time", SizeFlagsVertical = SizeFlags.ExpandFill };
-        left.AddChild(chartPanel);
-        chart = new DrawBox
+        left.AddChild(new DrawBox
         {
-            CustomMinimumSize = new Vector2(0, 250 * k), SizeFlagsVertical = SizeFlags.ExpandFill,
-            OnDraw = d => WarmupCharts.DrawSchedule(d, new Rect2(Vector2.Zero, d.Size), plan, k),
+            CustomMinimumSize = new Vector2(0, 30 * k),
+            OnDraw = d =>
+            {
+                int fs = UiTheme.Fs(16, k);
+                float w = Gfx.TextW(UiTheme.Body, plan.Preset.Blurb + ".", fs);
+                Gfx.Text(d, UiTheme.Body, plan.Preset.Blurb + ".", 0, Gfx.Mid(d.Size.Y / 2, fs), fs, UiTheme.Text);
+                if (plan.Preset.Note.Length > 0)
+                    Gfx.TextFit(d, UiTheme.HudWide, "  ·  " + plan.Preset.Note.ToUpperInvariant(), w, Gfx.Mid(d.Size.Y / 2, UiTheme.Fs(14, k)), UiTheme.Fs(14, k), UiTheme.Warn, d.Size.X - w);
+            },
+        });
+
+        // ---- timeline ----
+        var chartPanel = new VPanel
+        {
+            Title = "TIMELINE", K = k,
+            Caption = $"{plan.Steps.Count} drills · {WarmupPlan.Clock(plan.PlaySeconds)} play · ≈{WarmupPlan.Minutes(plan.EstimatedSeconds).ToLowerInvariant()} in total",
         };
-        chartPanel.AddChild(chart);
+        left.AddChild(chartPanel);
+        chartPanel.AddChild(new DrawBox
+        {
+            CustomMinimumSize = new Vector2(0, 250 * k),
+            OnDraw = d => WarmupCharts.DrawTimeline(d, new Rect2(Vector2.Zero, d.Size), plan, k),
+        });
 
-        // ---- sens shifter ----
-        left.AddChild(new SectionLabel { Text = "SENS SHIFTER", Note = "start a bit off your sens, step back to it, finish on your real sens", K = k });
-        var row = HBox(10 * k);
-        void ShiftBtn(string label, string sub, ShiftMode m)
+        // ---- sens shifter: Training day only ----
+        if (plan.Preset.AllowShift)
         {
-            var b = new VButton
+            left.AddChild(new SectionLabel { Text = "SENS SHIFTER", Note = "training only · first phase only · back to your sens before the calibration", K = k });
+            var row = HBox(10 * k);
+            void ShiftBtn(string label, string sub, ShiftMode m)
             {
-                Kind = VButton.Look.Select, K = k, Label = label, Sub = sub, FontPx = 19, SubPx = 12,
-                CustomMinimumSize = new Vector2(0, 58 * k), SizeFlagsHorizontal = SizeFlags.ExpandFill, Selected = Store.ShiftMode == m,
-            };
-            b.Pressed += () => { Store.ShiftMode = m; Store.Save(); Callable.From(Rebuild).CallDeferred(); };
-            row.AddChild(b);
-        }
-        ShiftBtn("OFF", "every drill at your sens", ShiftMode.Off);
-        ShiftBtn("HIGHER → YOUR SENS", "default · your sens feels slower after", ShiftMode.HighToNormal);
-        ShiftBtn("LOWER → YOUR SENS", "big arm motions first", ShiftMode.LowToNormal);
-        row.AddChild(Spacer(10 * k, 0));
-        foreach (int pct in WarmupPresets.ShiftOptions)
-        {
-            string sign = Store.ShiftMode == ShiftMode.LowToNormal ? "−" : "+";
-            var b = new VButton
+                var b = new VButton
+                {
+                    Kind = VButton.Look.Select, K = k, Label = label, Sub = sub, FontPx = 18, SubPx = 12,
+                    CustomMinimumSize = new Vector2(0, 54 * k), SizeFlagsHorizontal = SizeFlags.ExpandFill, Selected = Store.ShiftMode == m,
+                };
+                b.Pressed += () => { Store.ShiftMode = m; Store.Save(); Callable.From(Rebuild).CallDeferred(); };
+                row.AddChild(b);
+            }
+            ShiftBtn("OFF", "default · every drill at your sens", ShiftMode.Off);
+            ShiftBtn("HIGHER → YOUR SENS", "start a little faster", ShiftMode.HighToNormal);
+            ShiftBtn("LOWER → YOUR SENS", "start a little slower", ShiftMode.LowToNormal);
+            row.AddChild(Spacer(10 * k, 0));
+            foreach (int pct in WarmupPresets.ShiftOptions)
             {
-                Kind = VButton.Look.Select, K = k, Label = $"{sign}{pct}%", Sub = pct == WarmupPresets.DefaultShiftPct ? "default" : pct < WarmupPresets.DefaultShiftPct ? "subtle" : "strong",
-                FontPx = 20, SubPx = 12, CustomMinimumSize = new Vector2(96 * k, 58 * k), Selected = Store.ShiftPct == pct,
-                Disabled = Store.ShiftMode == ShiftMode.Off,
-            };
-            int v = pct;
-            b.Pressed += () => { Store.ShiftPct = v; Store.Save(); Callable.From(Rebuild).CallDeferred(); };
-            row.AddChild(b);
+                string sign = Store.ShiftMode == ShiftMode.LowToNormal ? "−" : "+";
+                var b = new VButton
+                {
+                    Kind = VButton.Look.Select, K = k, Label = $"{sign}{pct}%", FontPx = 20,
+                    CustomMinimumSize = new Vector2(90 * k, 54 * k), Selected = Store.ShiftPct == pct, Disabled = Store.ShiftMode == ShiftMode.Off,
+                };
+                int v = pct;
+                b.Pressed += () => { Store.ShiftPct = v; Store.Save(); Callable.From(Rebuild).CallDeferred(); };
+                row.AddChild(b);
+            }
+            left.AddChild(row);
         }
-        left.AddChild(row);
-        shiftInfo = new DrawBox { CustomMinimumSize = new Vector2(0, 50 * k), OnDraw = DrawShiftInfo };
-        left.AddChild(shiftInfo);
+
+        left.AddChild(new LockInSetupCheck(k)); // same setup as the match: sens, display, VSync, crosshair, headset … (never blocks)
 
         // ---- start ----
+        left.AddChild(new Control { SizeFlagsVertical = SizeFlags.ExpandFill }); // the start button stays at the bottom
+        left.AddChild(Spacer(0, 4 * k));
         var startRow = HBox(16 * k);
-        var start = Btn("START WARM-UP", VButton.Look.Primary, StartRoutine, 340, 62, 26);
+        var start = Btn("START LOCK-IN", VButton.Look.Primary, StartRoutine, 340, 62, 26);
         startRow.AddChild(start);
-        var note = Lbl($"≈{WarmupPlan.Minutes(plan.EstimatedSeconds).ToLowerInvariant()} incl. short breaks · Esc pauses a drill · between drills: Space starts, the card lets you skip",
-            UiTheme.Body, 15, UiTheme.Dim);
+        var note = Lbl("Space starts · a 30-second check-in comes first · Esc pauses a drill", UiTheme.Body, 15, UiTheme.Dim);
         note.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         startRow.AddChild(note);
         left.AddChild(startRow);
 
-        // ---- right: research + history ----
-        var why = new VPanel { Title = "HOW PROS WARM UP", K = k, Caption = "what this routine is built on" };
+        // ---- right: why + history ----
+        var why = new VPanel { Title = "WHY THIS WORKS", K = k, Caption = "what the research supports" };
         right.AddChild(why);
         var wv = VBox(8 * k);
         why.AddChild(wv);
         foreach (var (h, t) in Notes)
         {
             wv.AddChild(Lbl(h, UiTheme.HudWide, 13, UiTheme.Accent));
-            var l = Lbl(t, UiTheme.Body, 14.5f, UiTheme.Text);
+            var l = Lbl(t, UiTheme.Body, 15, UiTheme.Text);
             l.AutowrapMode = TextServer.AutowrapMode.WordSmart;
             l.CustomMinimumSize = new Vector2(440 * k, 0);
             wv.AddChild(l);
         }
+        var honest = Lbl("No study has tested an aim-trainer warm-up on ranked results yet.", UiTheme.Body, 13, UiTheme.Faint);
+        honest.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        honest.CustomMinimumSize = new Vector2(440 * k, 0);
+        wv.AddChild(honest);
 
-        var hist = new VPanel { Title = "YOUR WARM-UPS", K = k, Caption = Store.Warmups.Count == 0 ? "none yet" : $"{Store.Warmups.Count} saved", SizeFlagsVertical = SizeFlags.ExpandFill };
+        var hist = new VPanel { Title = "YOUR LOCK-INS", K = k, Caption = Store.Warmups.Count == 0 ? "none yet" : $"{Store.Warmups.Count} saved", SizeFlagsVertical = SizeFlags.ExpandFill };
         right.AddChild(hist);
-        hist.AddChild(new DrawBox { CustomMinimumSize = new Vector2(0, 110 * k), SizeFlagsVertical = SizeFlags.ExpandFill, OnDraw = DrawHistory });
+        var hv = VBox(14 * k);
+        hist.AddChild(hv);
+        hv.AddChild(new DrawBox { CustomMinimumSize = new Vector2(0, 100 * k), OnDraw = DrawHistory });
+        hv.AddChild(LockInMatchLog.ReadoutBox(k)); // how your first match after each Lock-In went (optional ratings)
     }
 
     static readonly (string, string)[] Notes =
     {
-        ("SHORT AND SPECIFIC",
-         "A warm-up wakes up skill you already have; it doesn't build new skill. Coaches suggest 10–15 minutes, starting easy and slow and ending with game-like fights. Sports science agrees: short, task-specific, getting harder, no fatigue."),
-        ("SMOOTH → FAST → GAME-LIKE",
-         "Tracking and big targets first, then precise flicks and target switching, then strafing bots, movement and peeks, then a deathmatch. Play it to warm up, not to win (Demon1, TenZ, ProSettings and Dignitas routines)."),
-        ("THE SENS SHIFTER: HONEST VERSION",
-         "Warming up slightly faster so your sens feels slower and calmer afterwards is a popular habit. There is no controlled study of it for aiming. Related research (variable practice, weighted-bat warm-ups) shows small or 'feels better' effects. Voltaic suggests small shifts (+10–15%). So the shift stays small and fades out, and the last minutes are always at your real sens."),
+        ("SHORT AND AT YOUR REAL SENS",
+         "A warm-up wakes up skill you already have. About 10 to 15 minutes at the sens you play with is enough; longer mostly adds fatigue."),
+        ("SIMPLE TO GAME-LIKE",
+         "Easy drills first, then drills that adapt to keep you near 8 of 10 hits, then bots and a deathmatch. Its last minute is easier, so the session ends on a good note."),
+        ("CARRY IT INTO THE MATCH",
+         "The effect fades after a 5 to 15 minute break, so queue right away. One goal and one cue word give you something simple to come back to each round."),
     };
-
-    void DrawShiftInfo(DrawBox d)
-    {
-        float k = K;
-        int fs = UiTheme.Fs(16, k), ss = UiTheme.Fs(14, k);
-        string line;
-        if (plan.Shift == ShiftMode.Off || plan.ShiftedCount == 0)
-            line = $"Every drill at your sens {plan.BaseSens.ToString("0.000", Inv)}.";
-        else
-        {
-            var first = plan.Steps[0];
-            var lastShift = plan.Steps.Last(s => s.Shifted);
-            line = $"Starts at {first.Sens.ToString("0.000", Inv)} ({first.OffsetPct:+0;-0}%), steps back over the first {plan.ShiftedCount} drills " +
-                   $"(last {lastShift.Sens.ToString("0.000", Inv)}), then {WarmupPlan.Clock(plan.RealSeconds)} at your sens {plan.BaseSens.ToString("0.000", Inv)}.";
-        }
-        Gfx.TextFit(d, UiTheme.Body, line, 0, Gfx.Mid(14 * k, fs), fs, UiTheme.Text, d.Size.X);
-        Gfx.TextFit(d, UiTheme.Body, "Shifted drills aren't saved to your stats (they'd skew the coach's sens advice); the summary graph shows them all.",
-            0, Gfx.Mid(38 * k, ss), ss, UiTheme.Faint, d.Size.X);
-    }
 
     void DrawHistory(DrawBox d)
     {
@@ -176,17 +215,17 @@ public partial class WarmupScreen : ScreenBase
         int ls = UiTheme.Fs(12, k), fs = UiTheme.Fs(15, k);
         if (Store.Warmups.Count == 0)
         {
-            Gfx.TextFit(d, UiTheme.Body, "Finish a warm-up to see your lock-in graph and how each warm-up compares.", 0, Gfx.Mid(20 * k, fs), fs, UiTheme.Dim, d.Size.X);
+            Gfx.TextFit(d, UiTheme.Body, "Finish a Lock-In to see how each one compares with your usual.", 0, Gfx.Mid(20 * k, fs), fs, UiTheme.Dim, d.Size.X);
             return;
         }
         var lastW = Store.Warmups[^1];
         Gfx.Text(d, UiTheme.HudWide, "LAST", 0, Gfx.Mid(14 * k, ls), ls, UiTheme.Faint);
         string lastText = $"{lastW.When:MMM d, HH:mm} · {WarmupPresets.Get(lastW.Preset).Name}" +
-                          (lastW.Readiness >= 0 ? $" · {lastW.Readiness:0}% of usual at your sens" : "");
+                          (lastW.Readiness >= 0 ? $" · {lastW.Readiness:0}% of usual" : "") + (lastW.Cue.Length > 0 ? $" · cue \"{lastW.Cue}\"" : "");
         Gfx.TextFit(d, UiTheme.Body, lastText, 54 * k, Gfx.Mid(14 * k, fs), fs, UiTheme.Text, d.Size.X - 54 * k);
         if (list.Count >= 2)
         {
-            Gfx.Text(d, UiTheme.HudWide, "READINESS · LAST 20", 0, Gfx.Mid(44 * k, ls), ls, UiTheme.Faint);
+            Gfx.Text(d, UiTheme.HudWide, "VS YOUR USUAL · LAST 20", 0, Gfx.Mid(44 * k, ls), ls, UiTheme.Faint);
             Sparkline.Draw(d, new Rect2(0, 58 * k, d.Size.X, Mathf.Max(20 * k, d.Size.Y - 66 * k)), list.Select(w => w.Readiness).ToList(), k, UiTheme.Teal);
         }
     }

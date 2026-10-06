@@ -119,6 +119,7 @@ public sealed partial class DeathmatchMode : MapMode
             if (Now - noiseAt > 0.5f) { noiseAt = Now; Noise(PlayerFeet, null, 35f); }
         }
         lastShots = Shots;
+        if (!eased && G.EaseLastSeconds > 0 && Now >= G.RunLength - G.EaseLastSeconds) EaseBots();
 
         foreach (var b in bots) b.Update(dt);
         UpdatePacks(dt);
@@ -129,6 +130,28 @@ public sealed partial class DeathmatchMode : MapMode
         else if (top != null && top.Kills >= killTarget) winner = top.Name;
 
         if (DevLog && Now >= logAt) { logAt += 10f; DevReport(false); }
+    }
+
+    // ---------------- finisher (Lock-In) ----------------
+
+    bool eased;
+
+    /// <summary>The bots' combat skill right now: the tier's, or one tier easier once the finisher started.</summary>
+    internal BotSkill BotSkillNow => eased ? Difficulty.EasedBot(Tier) : Difficulty.Get(Tier).Bot;
+
+    /// <summary>Last <see cref="IGame.EaseLastSeconds"/> of a routine's deathmatch: every bot (alive or respawning) fights
+    /// one tier easier, so the player finishes the session on a run of wins. The Lock-In screen says so up front.</summary>
+    void EaseBots()
+    {
+        eased = true;
+        var skill = BotSkillNow;
+        foreach (var b in bots) b.SetSkill(skill);
+        float left = G.RunLength - Now;
+        string when = Mathf.Abs(G.EaseLastSeconds - 60f) < 8f ? "LAST MINUTE" : $"LAST {Mathf.Round(G.EaseLastSeconds)} SECONDS";
+        G.Banner($"{when} · FINISH STRONG", UiTheme.Good);
+        G.Sound("go", 0.6f);
+        Log.Info($"[dm] finisher: bots eased to tier {Math.Max(0, Tier - 1)}{(Tier == 0 ? " (slower Rookie)" : "")} at {Now:0.0}s, {left:0} s left " +
+                 $"(react {skill.ReactMs:0} ms, first-shot hit {skill.PHit1:0.00})");
     }
 
     // ---------------- spawning ----------------
@@ -189,7 +212,7 @@ public sealed partial class DeathmatchMode : MapMode
         var body = G.SpawnBot(p);
         body.FacingYaw = yaw;
         var r = Mathf.DegToRad(yaw);
-        var brain = new BotBrain(body, Difficulty.Get(Tier).Bot, Rng)
+        var brain = new BotBrain(body, BotSkillNow, Rng)
         {
             HeldDir = new Vector3(Mathf.Sin(r), 0, -Mathf.Cos(r)),
             ShoulderSight = Difficulty.ShoulderSight(Tier),
@@ -343,6 +366,7 @@ public sealed partial class DeathmatchMode : MapMode
         var top = bots.OrderByDescending(b => b.Kills).FirstOrDefault();
         if (top != null) yield return top.Kills > Kills ? $"Leader: {top.Name} ({top.Kills})" : top.Kills == Kills ? $"Tied for the lead ({Kills})" : $"You lead by {Kills - top.Kills}";
         if (PlayerAlive && Now < G.Player.ProtectedUntil) yield return "Spawn protection";
+        if (eased) yield return "Finish strong · bots are easier now";
         for (int i = feed.Count - 1, n = 0; i >= 0 && n < 4; i--)
             if (Now - feed[i].T < 5f) { yield return feed[i].Text; n++; }
     }

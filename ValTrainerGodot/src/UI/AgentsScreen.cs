@@ -9,7 +9,7 @@ namespace ValTrainer.UI;
 /// <summary>
 /// AGENTS: agent training hub. Left: every agent grouped by role, with a search box (names, abilities, what they do)
 /// and role filter chips. Right: the selected agent's page (abilities and what trains them, signature drills played with
-/// the agent's own utility, role drills, and a ~10-minute agent warm-up run by the warm-up system), or a role overview.
+/// the agent's own utility, role drills, and a ~10-minute agent Lock-In run by the Lock-In system), or a role overview.
 /// Drills and routines started here come back here afterwards. Esc closes the page, then goes back to the menu.
 /// Dev: --screen agents [--agent jett] [--agent-search smoke] [--agent-role sentinel] [--agent-go routine|&lt;drill key&gt;].
 /// </summary>
@@ -85,7 +85,7 @@ public partial class AgentsScreen : ScreenBase
         var title = VBox(2 * k);
         title.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         title.AddChild(Lbl("AGENTS", UiTheme.Display, 64, UiTheme.Text));
-        var sub = Lbl("SIGNATURE DRILLS WITH EACH AGENT'S OWN UTILITY · ROLE DRILLS · A 10-MINUTE AGENT WARM-UP", UiTheme.HudWide, 15, UiTheme.Dim);
+        var sub = Lbl("SIGNATURE DRILLS WITH EACH AGENT'S OWN UTILITY · ROLE DRILLS · A 10-MINUTE AGENT LOCK-IN", UiTheme.HudWide, 15, UiTheme.Dim);
         sub.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis;
         sub.ClipText = true;
         title.AddChild(sub);
@@ -221,7 +221,7 @@ public partial class AgentsScreen : ScreenBase
     {
         ("SIGNATURE", "drills played with the agent's own utility: flash and swing, recon and clear, smoke and execute, dash in, anchor a site."),
         ("ROLE", "drills for the gunfights the role takes most, from opening duels to post-plant holds."),
-        ("WARM-UP", "aim, role and signature drills and a deathmatch in about 10 minutes, with the sens shifter if you use it."),
+        ("LOCK-IN", "a check-in, aim, role and signature drills and a deathmatch in about 10 minutes, then your goal and cue."),
     };
 
     void DrawHow(DrawBox d)
@@ -348,7 +348,7 @@ public partial class AgentsScreen : ScreenBase
                 Gfx.Text(d, UiTheme.Display, "CHOOSE AN AGENT", 0, 54 * k, ts, UiTheme.Text);
                 d.DrawMultilineString(UiTheme.Body, new Vector2(0, 76 * k + UiTheme.Body.GetAscent(ss)),
                     "Every agent has a page: what each ability does and which drill trains it, signature drills played with that agent's utility, " +
-                    "the drills for the role, and a 10-minute warm-up. Pick a role below to filter the list.",
+                    "the drills for the role, and a 10-minute Lock-In. Pick a role below to filter the list.",
                     HorizontalAlignment.Left, d.Size.X, ss, 2, UiTheme.Dim);
             },
         });
@@ -398,7 +398,7 @@ public partial class AgentsScreen : ScreenBase
             });
         p.AddChild(strip);
 
-        // drills + warm-up
+        // drills + Lock-In
         BoxContainer row = narrow ? VBox(14 * k) : HBox(16 * k);
         row.SizeFlagsVertical = SizeFlags.ExpandFill;
         p.AddChild(row);
@@ -429,7 +429,7 @@ public partial class AgentsScreen : ScreenBase
         dv.AddChild(new SectionLabel { Text = $"ROLE · {a.Role.ToString().ToUpperInvariant()}", Note = "general drills for the role", K = k });
         dv.AddChild(CardGrid(role, a, false));
 
-        var wu = new VPanel { Title = "AGENT WARM-UP", K = k, SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsStretchRatio = 1f };
+        var wu = new VPanel { Title = "AGENT LOCK-IN", K = k, SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsStretchRatio = 1f };
         row.AddChild(wu);
         BuildWarmup(wu, a, sig, col);
     }
@@ -465,7 +465,6 @@ public partial class AgentsScreen : ScreenBase
     {
         float k = K;
         var plan = AgentRoutines.Plan(a);
-        var store = WarmupStore.I;
         wu.Caption = $"≈{WarmupPlan.Minutes(plan.EstimatedSeconds).ToLowerInvariant()} · {plan.Steps.Count} drills";
         var v = VBox(10 * k);
         wu.AddChild(v);
@@ -475,57 +474,25 @@ public partial class AgentsScreen : ScreenBase
             OnDraw = d =>
             {
                 int fs = UiTheme.Fs(14, k);
-                string text = plan.Preset.Blurb + ". Every drill runs at its normal length except the deathmatch.";
+                string text = plan.Preset.Blurb + ". Every drill is at your real sens and runs at its normal length except the deathmatch.";
                 d.DrawMultilineString(UiTheme.Body, new Vector2(0, UiTheme.Body.GetAscent(fs)), text, HorizontalAlignment.Left, d.Size.X, fs, 2, UiTheme.Dim);
             },
         });
         v.AddChild(new RoutineList(plan, sig, col) { K = k, SizeFlagsVertical = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, plan.Steps.Count * 26 * k) });
 
-        var cap = new DrawBox
+        v.AddChild(new DrawBox
         {
-            CustomMinimumSize = new Vector2(0, 20 * k),
+            CustomMinimumSize = new Vector2(0, 44 * k),
             OnDraw = d =>
             {
-                int fs = UiTheme.Fs(12, k), ns = UiTheme.Fs(12.5f, k);
-                Gfx.Text(d, UiTheme.HudWide, "SENS SHIFTER", 0, Gfx.Mid(d.Size.Y / 2, fs), fs, UiTheme.Dim);
-                string note = plan.ShiftedCount > 0 ? $"first {plan.ShiftedCount} drills {plan.ShiftLabel}" : "every drill at your sens";
-                Gfx.TextR(d, UiTheme.Body, note, d.Size.X, Gfx.Mid(d.Size.Y / 2, ns), ns, plan.ShiftedCount > 0 ? WarmupCharts.ShiftCol : UiTheme.Faint);
+                int fs = UiTheme.Fs(12, k), ns = UiTheme.Fs(13, k);
+                Gfx.Text(d, UiTheme.HudWide, "SAME LOCK-IN", 0, Gfx.Mid(10 * k, fs), fs, UiTheme.Dim);
+                Gfx.TextFit(d, UiTheme.Body, "Check-in first, your goal and cue at the end.", 0, Gfx.Mid(32 * k, ns), ns, UiTheme.Faint, d.Size.X);
             },
-        };
-        v.AddChild(cap);
-        var shift = HBox(6 * k);
-        void ShiftChip(string label, ShiftMode m, string tip)
-        {
-            var b = new VButton
-            {
-                Kind = VButton.Look.Select, K = k, Label = label, FontPx = 16, Selected = store.ShiftMode == m, TooltipText = tip,
-                CustomMinimumSize = new Vector2(0, 36 * k), SizeFlagsHorizontal = SizeFlags.ExpandFill,
-            };
-            b.Pressed += () => { store.ShiftMode = m; store.Save(); Callable.From(FillPage).CallDeferred(); };
-            shift.AddChild(b);
-        }
-        ShiftChip("OFF", ShiftMode.Off, "Every drill at your sens");
-        ShiftChip("HIGHER", ShiftMode.HighToNormal, "Start above your sens and step back to it (your sens feels slower after)");
-        ShiftChip("LOWER", ShiftMode.LowToNormal, "Start below your sens and step back to it (big arm motions first)");
-        string sign = store.ShiftMode == ShiftMode.LowToNormal ? "−" : "+";
-        var pct = new VButton
-        {
-            Kind = VButton.Look.Select, K = k, Label = $"{sign}{store.ShiftPct}%", FontPx = 16, Disabled = store.ShiftMode == ShiftMode.Off,
-            CustomMinimumSize = new Vector2(70 * k, 36 * k), TooltipText = "Start offset: click to cycle " + string.Join(" / ", WarmupPresets.ShiftOptions.Select(o => o + "%")),
-        };
-        pct.Pressed += () =>
-        {
-            var opts = WarmupPresets.ShiftOptions;
-            int i = Array.IndexOf(opts, store.ShiftPct);
-            store.ShiftPct = opts[(i + 1 + opts.Length) % opts.Length];
-            store.Save();
-            Callable.From(FillPage).CallDeferred();
-        };
-        shift.AddChild(pct);
-        v.AddChild(shift);
+        });
 
-        var start = Btn($"START {a.Name.ToUpperInvariant()} WARM-UP", VButton.Look.Primary, () => AgentRoutines.Start(a), 0, 56, 21);
-        start.TooltipText = $"{plan.Preset.Blurb} · same warm-up system as WARM UP: step cards, lock-in graph and summary";
+        var start = Btn($"LOCK IN AS {a.Name.ToUpperInvariant()}", VButton.Look.Primary, () => AgentRoutines.Start(a), 0, 56, 21);
+        start.TooltipText = $"{plan.Preset.Blurb} · the same check-in, cards and hand-off as LOCK IN on the menu";
         v.AddChild(start);
     }
 

@@ -110,9 +110,9 @@ change VALORANT either: you set the new sensitivity yourself in VALORANT's setti
 | Movement | Counter-Strafe, Peek Duels (the bot shoots back), Jump Peek (spot an Operator mid-jump), Jiggle Peek (bait the Op, punish during his bolt) |
 | Map | Site Clear, Deathmatch, Post-Plant (hold while defenders retake and defuse), Retake (clear and defuse before the spike blows), Site Anchor (hold a site alone against an execute) on Ascent, Bind, Breeze, Haven, Icebox and Split |
 | Utility | Flash Dodge (Phoenix, Breach, KAY/O, Skye, Yoru, Vyse, Gekko, using VALORANT's on-screen blind rule and per-agent timings and sounds), Sound Lock (pre-aim from footsteps) |
-| Agents | The **Agents** screen covers all 29 agents: signature drills with the agent's own abilities (Flash & Peek, Recon & Clear, Smoke Execute, Mobility Entry, Site Anchor setups, Chamber Guns), drills for their role, and an agent warm-up |
+| Agents | The **Agents** screen covers all 29 agents: signature drills with the agent's own abilities (Flash & Peek, Recon & Clear, Smoke Execute, Mobility Entry, Site Anchor setups, Chamber Guns), drills for their role, and an agent Lock-In |
 | Coach | Sens Finder, Crosshair Finder (see below) |
-| Other | Reaction Test, Warm Up routines |
+| Other | Reaction Test, **Lock-In**: a short routine before ranked (about 12 min). A check-in (energy, confidence, one goal, one cue word), an easy start, aim drills that adapt to keep you near 80% hits, bots, a deathmatch with an easier last minute, an optional breathing guide and a hand-off card for VALORANT |
 
 ## Difficulty tiers (calibrated to ranks)
 

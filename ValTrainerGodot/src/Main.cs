@@ -122,11 +122,12 @@ public partial class Main : Node
             case "settings": Callable.From(ShowSettings).CallDeferred(); break;
             case "about": SettingsScreen.StartPage = SettingsScreen.Page.About; Callable.From(ShowSettings).CallDeferred(); break;
             case "stats": Callable.From(ShowStats).CallDeferred(); break;
-            case "warmup": Callable.From(ShowWarmup).CallDeferred(); break;
+            case "warmup" or "lockin": Callable.From(ShowLockIn).CallDeferred(); break;
             case "agents": Callable.From(ShowAgents).CallDeferred(); break; // + --agent jett, --agent-go routine|<drill> (AgentsScreen)
         }
-        // Dev-only: "--warmup quick|standard|pro|demo" starts a warm-up routine (demo = summary with made-up data).
-        if (Dev && make == null && CmdLine.After("--warmup") is { } wu) Callable.From(() => Warmup.WarmupRunner.StartDev(wu)).CallDeferred();
+        // Dev-only: "--lockin short|standard|training" (or the older "--warmup") starts a Lock-In; "demo", "demo-details",
+        // "demo-breath" show those screens with made-up data. See WarmupRunner for --wuquick, --lockin-checkin E,C, --wuquit.
+        if (Dev && make == null && (CmdLine.After("--lockin") ?? CmdLine.After("--warmup")) is { } wu) Callable.From(() => Warmup.WarmupRunner.StartDev(wu)).CallDeferred();
         Analysis.CoachWarmUp.Start(); // JIT the coach off the main thread before the first results screen
     }
 
@@ -171,7 +172,7 @@ public partial class Main : Node
 
     public void ShowMenu()
     {
-        Warmup.WarmupRunner.Abandon(); // leaving a warm-up mid-routine (pause → Back to menu)
+        Warmup.WarmupRunner.Abandon(); // leaving a Lock-In mid-routine (pause → Back to menu)
         Input.MouseMode = Input.MouseModeEnum.Visible;
         if (ReturnToAgents) { ReturnToAgents = false; SetScreen(new AgentsScreen()); return; }
         SetScreen(new MenuScreen());
@@ -182,8 +183,9 @@ public partial class Main : Node
     public void ShowSettings() => SetScreen(new SettingsScreen());
     public void ShowStats() => SetScreen(new StatsScreen());
     public void ShowProfile() => SetScreen(new ProfileScreen());
-    public void ShowWarmup() => SetScreen(new Warmup.WarmupScreen());
-    /// <summary>Shows any screen node (warm-up step cards, sessions prepared with routine hooks, the warm-up summary).</summary>
+    /// <summary>The Lock-In setup screen (menu LOCK IN).</summary>
+    public void ShowLockIn() => SetScreen(new Warmup.WarmupScreen());
+    /// <summary>Shows any screen node (Lock-In check-in and step cards, sessions prepared with routine hooks, the hand-off).</summary>
     public void ShowScreen(Node n) => SetScreen(n);
 
     public void StartMode(Func<TrainingMode> make) => SetScreen(new GameSession(make));

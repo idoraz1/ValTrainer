@@ -20,13 +20,14 @@ public sealed class GridshotMode : TrainingMode
                 float a = AngleFromCrosshair(targets[k]!.GlobalPosition);
                 if (a < bestA) { bestA = a; best = k; }
             }
-            return best < 0 ? null : new AimFocus(ids[best], targets[best]!.GlobalPosition, radius);
+            return best < 0 ? null : new AimFocus(ids[best], targets[best]!.GlobalPosition, targets[best]!.Radius);
         }
     }
 
     public override string Key => "gridshot";
     public override string Name => "Gridshot";
     public override string Description => "3 targets on a 3x3 grid. Warm-up for speed and click timing.";
+    public override bool SupportsAdaptive => true;
 
     readonly int[] active = new int[3];
     readonly Target?[] targets = new Target?[3];
@@ -36,10 +37,20 @@ public sealed class GridshotMode : TrainingMode
 
     public override IEnumerable<Box> ExtraSolids => new[] { new Box(new Vector3(-2.6f, 0f, -9.9f), new Vector3(2.6f, 4.4f, -9.75f)) };
 
+    /// <summary>Adaptive runs: size and spacing for the next target from the staircase level (the others keep theirs;
+    /// cells at different spacings still sit at least the smaller spacing apart).</summary>
+    void AdaptParams()
+    {
+        if (Adapt is not { } a) return;
+        radius = Difficulty.GridshotRadius(a.Level);
+        spacing = Difficulty.GridshotSpacing(a.Level);
+    }
+
     protected override void Setup()
     {
         radius = Difficulty.GridshotRadius(Tier);
         spacing = Difficulty.GridshotSpacing(Tier);
+        AdaptParams();
         var cells = Enumerable.Range(0, 9).OrderBy(_ => Rng.Next()).Take(3).ToArray();
         for (int k = 0; k < 3; k++)
         {
@@ -62,7 +73,7 @@ public sealed class GridshotMode : TrainingMode
             float t = targets[k]!.Ray(o, d);
             if (t < bestD && t < G.BulletWallDist) { bestD = t; best = k; }
         }
-        if (best < 0) { Score -= 25; return float.PositiveInfinity; }
+        if (best < 0) { Score -= 25; Adapt?.Miss(); return float.PositiveInfinity; }
         Hits++;
         LastShotZone = HitZone.Body;
         Score += 100;
@@ -73,6 +84,7 @@ public sealed class GridshotMode : TrainingMode
         int old = active[best], n;
         do n = Rng.Next(9); while (n == old || active.Contains(n));
         active[best] = n;
+        if (Adapt is { } a) { a.Hit(); AdaptParams(); targets[best]!.SetRadius(radius); }
         targets[best]!.Position = Cell(n);
         ids[best] = nextId++;
         Event("target_spawn", ids[best], AngleFromCrosshair(targets[best]!.GlobalPosition));
@@ -93,9 +105,11 @@ public sealed class FlickMode : TrainingMode
     public override string Name => "Head Flicks";
     public override string Description => "One real-size head (r 0.14 m). Flick, click, repeat. Higher tiers: farther, wider, timed.";
     public override bool UsesHeadshots => false;
+    public override bool SupportsAdaptive => true;
 
     Target target = null!;
     int expired;
+    float life; // adaptive runs: this target's lifetime (0 = never expires)
 
     protected override void Setup()
     {
@@ -105,8 +119,10 @@ public sealed class FlickMode : TrainingMode
 
     void Spawn()
     {
-        var (dMin, dMax) = Difficulty.FlickDistance(Tier);
-        float yawRange = Difficulty.FlickYaw(Tier), dist = R(dMin, dMax);
+        float? lv = Adapt?.Level; // adaptive: continuous level from the staircase
+        var (dMin, dMax) = lv is { } l ? Difficulty.FlickDistance(l) : Difficulty.FlickDistance(Tier);
+        float yawRange = lv is { } l2 ? Difficulty.FlickYaw(l2) : Difficulty.FlickYaw(Tier), dist = R(dMin, dMax);
+        if (lv is { } l3) life = Difficulty.FlickLifetime(l3);
         float yaw = 0, pitch = 0;
         for (int i = 0; i < 20; i++)
         {
@@ -122,15 +138,20 @@ public sealed class FlickMode : TrainingMode
 
     public override void Update(float dt)
     {
-        float life = Difficulty.FlickLifetime(Tier);
-        if (life > 0 && Now - target.SpawnTime > life) { expired++; Score -= 30; G.Sound("fail", 0.5f); Event("target_expired", fid); Spawn(); }
+        float life = Adapt != null ? this.life : Difficulty.FlickLifetime(Tier);
+        if (life > 0 && Now - target.SpawnTime > life)
+        {
+            expired++; Score -= 30; G.Sound("fail", 0.5f); Event("target_expired", fid);
+            Adapt?.Miss();
+            Spawn();
+        }
     }
 
     public override float OnBullet(Vector3 o, Vector3 d, bool accurate)
     {
         Shots++;
         float t = target.Ray(o, d);
-        if (float.IsPositiveInfinity(t)) { Score -= 20; return t; }
+        if (float.IsPositiveInfinity(t)) { Score -= 20; Adapt?.Miss(); return t; }
         float ms = (Now - target.SpawnTime) * 1000f;
         Hits++; Kills++;
         LastShotZone = HitZone.Head;
@@ -138,6 +159,7 @@ public sealed class FlickMode : TrainingMode
         Event("target_hit", fid, ms);
         Score += 100 + (int)Mathf.Max(0, (900 - ms) / 6);
         G.Sound("head");
+        Adapt?.Hit();
         Spawn();
         return t;
     }
@@ -146,7 +168,8 @@ public sealed class FlickMode : TrainingMode
     {
         yield return ("Accuracy", $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
         yield return ("Median time to hit", KillTimes.Count > 0 ? $"{Median(KillTimes):0} ms" : "—");
-        if (Difficulty.FlickLifetime(Tier) > 0) yield return ("Expired targets", expired.ToString());
+        if (Adapt != null ? expired > 0 : Difficulty.FlickLifetime(Tier) > 0) yield return ("Expired targets", expired.ToString());
+        if (AdaptiveResult() is { } ar) yield return ar;
     }
 
     public override int Badge() => Accuracy < 0.7f || KillTimes.Count == 0 ? -1 : Difficulty.BadgeLower(Median(KillTimes), Difficulty.FlickBadges[Tier]);
@@ -161,29 +184,42 @@ public sealed class SpidershotMode : TrainingMode
     public override string Key => "spider";
     public override string Name => "Spidershot";
     public override string Description => "Centre target, then a random one. Flick out and back; higher tiers are smaller and wider.";
+    public override bool SupportsAdaptive => true;
 
     bool center = true;
     Target target = null!;
-    float radius;
+    float radius, life; // life: adaptive runs, this target's lifetime (0 = never expires)
     int expired;
 
     protected override void Setup()
     {
-        radius = Difficulty.SpiderRadius(Tier);
+        radius = Adapt is { } a ? Difficulty.SpiderRadius(a.Level) : Difficulty.SpiderRadius(Tier);
         target = G.SpawnTarget(radius);
         target.Position = new Vector3(0, PlayerView.EyeHeight, -10);
     }
 
     public override void Update(float dt)
     {
-        float life = Difficulty.SpiderLifetime(Tier);
-        if (!center && life > 0 && Now - target.SpawnTime > life) { expired++; Score -= 30; Event("target_expired", sid); Next(); }
+        float life = Adapt != null ? this.life : Difficulty.SpiderLifetime(Tier);
+        if (!center && life > 0 && Now - target.SpawnTime > life)
+        {
+            expired++; Score -= 30; Event("target_expired", sid);
+            Adapt?.Miss();
+            Next();
+        }
     }
 
     void Next()
     {
         center = !center;
-        var (yr, pr) = Difficulty.SpiderRange(Tier);
+        if (Adapt is { } a)
+        {
+            // Adaptive: size, spread and lifetime of every new target follow the staircase level.
+            radius = Difficulty.SpiderRadius(a.Level);
+            target.SetRadius(radius);
+            life = Difficulty.SpiderLifetime(a.Level);
+        }
+        var (yr, pr) = Adapt is { } b ? Difficulty.SpiderRange(b.Level) : Difficulty.SpiderRange(Tier);
         target.Position = center ? new Vector3(0, PlayerView.EyeHeight, -10)
             : G.View.Eye + PlayerView.Dir(R(-yr, yr), R(Mathf.Max(-pr, MinPitch(G.View.Eye.Y, 10f, radius)), pr)) * 10f;
         target.SpawnTime = Now;
@@ -195,13 +231,14 @@ public sealed class SpidershotMode : TrainingMode
     {
         Shots++;
         float t = target.Ray(o, d);
-        if (float.IsPositiveInfinity(t)) { Score -= 20; return t; }
+        if (float.IsPositiveInfinity(t)) { Score -= 20; Adapt?.Miss(); return t; }
         Hits++;
         LastShotZone = HitZone.Body;
         KillTimes.Add((Now - target.SpawnTime) * 1000f);
         Event("target_hit", sid, KillTimes[^1]);
         Score += 100;
         G.Sound("body");
+        Adapt?.Hit();
         Next();
         return t;
     }

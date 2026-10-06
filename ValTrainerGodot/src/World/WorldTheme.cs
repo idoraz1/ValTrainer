@@ -160,19 +160,22 @@ public static class Themes
         MinH = 12f, MaxH = 30f,
     };
 
-    /// <summary>VALORANT-style range: clean light panels, dark wainscot, orange markings.</summary>
+    /// <summary>VALORANT-style range: clean light panels, dark wainscot, orange markings.
+    /// Contrast rule for the aim targets (dark body + enemy-colour outline): surfaces behind targets are either
+    /// light (floor, upper walls: the dark body gives the edge) or deep dark (wainscot, cover panels: the outline gives
+    /// it), never mid-dark, where red and purple outlines (luminance ≈ 0.2–0.3) would be near-isoluminant.</summary>
     public static readonly Theme Range = new()
     {
         Key = "range", Style = DecorStyle.Range, SkyYaw = 0,
-        SunColor = new Color(1f, 0.96f, 0.9f), SunEnergy = 1.6f, Ground = C(92, 96, 100),
-        Floor = new Surface("concrete_floor_worn_02", C(124, 127, 132), 0.9f, 3f, 0.8f, Macro: 0.12f, Grime: 0f),
+        SunColor = new Color(1f, 0.96f, 0.9f), SunEnergy = 1.6f, Ground = C(92, 96, 100), FogDensity = 0.0007f,
+        Floor = new Surface("concrete_floor_worn_02", C(134, 137, 142), 0.9f, 3f, 0.8f, Macro: 0.12f, Grime: 0f),
         Wall = new Surface("painted_plaster_wall", C(176, 182, 192), 0.9f, 2.2f, 1.2f, Macro: 0.06f),
-        Base = new Surface("concrete_wall_008", C(62, 66, 74), 0.9f, 2.7f, 1f, Grime: 0.1f),
-        Cap = new Surface("metal_plate_02", C(58, 62, 70), 0.85f, 2f, 0.6f, Metal: 0.5f, Grime: 0f),
-        Trim = new Surface("metal_plate_02", C(58, 62, 70), 0.85f, 2f, 0.6f, Metal: 0.5f),
+        Base = new Surface("concrete_wall_008", C(30, 32, 38), 0.9f, 2.7f, 1f, Grime: 0.1f),
+        Cap = new Surface("metal_plate_02", C(36, 38, 44), 0.85f, 2f, 0.6f, Metal: 0.5f, Grime: 0f),
+        Trim = new Surface("metal_plate_02", C(36, 38, 44), 0.85f, 2f, 0.6f, Metal: 0.5f),
         Elevated = new Surface("metal_plate_02", C(90, 94, 102), 0.85f, 2f, 0.6f, Metal: 0.5f),
-        Cover = new Surface("painted_plaster_wall", C(66, 72, 84), 0.95f, 2f, 1.2f, Grime: 0.15f),
-        CoverFrame = new Surface("metal_plate_02", C(46, 50, 58), 0.85f, 1.6f, 0.6f, Metal: 0.5f, Grime: 0f),
+        Cover = new Surface("painted_plaster_wall", C(34, 37, 44), 0.95f, 2f, 1.2f, Grime: 0.15f),
+        CoverFrame = new Surface("metal_plate_02", C(28, 30, 36), 0.85f, 1.6f, 0.6f, Metal: 0.5f, Grime: 0f),
         GroundSurf = new Surface("concrete_floor_worn_02", C(110, 112, 114), 0.85f, 3f, 0.5f, Grime: 0f),
         Backdrop = new Surface("concrete_wall_008", Colors.White, 0.9f, 2.7f, 1f),
         Roof = new Surface("metal_plate_02", C(70, 74, 82), 0.85f, 2f, 0.6f, Metal: 0.5f, Grime: 0f),

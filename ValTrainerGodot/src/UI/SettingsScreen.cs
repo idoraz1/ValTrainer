@@ -192,6 +192,9 @@ public partial class SettingsScreen : ScreenBase
             swatch: () => App.EnemyColor));
         v.AddChild(Segmented("Enemy outlines + fresnel", new[] { "OFF", "ON" }, () => St.Outlines ? 1 : 0, i => St.Outlines = i == 1,
             note: () => "Valorant: \"Hide outlines and fresnel\" off = ON"));
+        v.AddChild(Segmented("Aim drill targets", new[] { "VALORANT", "CLASSIC" }, () => St.TargetStyle == Target.StyleClassic ? 1 : 0,
+            i => St.TargetStyle = i == 1 ? Target.StyleClassic : Target.StyleValorant,
+            note: () => St.TargetStyle == Target.StyleClassic ? "Solid spheres in the highlight colour" : "Dark body + highlight outline, like VALORANT enemies"));
 
         // Crosshair: VALORANT's imported profile, or the Crosshair Finder's result (ValTrainer only; VALORANT is never changed).
         v.AddChild(Spacer(0, 6 * k));
@@ -200,9 +203,41 @@ public partial class SettingsScreen : ScreenBase
             i => St.UseFinderCrosshair = i == 1 && CrosshairCode.Finder != null,
             note: () => CrosshairCode.Finder == null ? "Run the Crosshair Finder (Coach) to get a second option"
                 : St.UseFinderCrosshair ? "Crosshair Finder result · ValTrainer only" : "Your imported VALORANT crosshair"));
+        v.AddChild(CrosshairHintRow());
         v.AddChild(CodeRow("Code of the crosshair ValTrainer uses now", () => CrosshairCode.EffectiveCode));
         if (!string.IsNullOrWhiteSpace(St.LastFinderCrosshairCode))
             v.AddChild(CodeRow("Last Crosshair Finder result", () => St.LastFinderCrosshairCode ?? ""));
+    }
+
+    /// <summary>Visibility hint for the imported VALORANT crosshair (same check as the Lock-In setup check); refreshed on re-import.</summary>
+    Control CrosshairHintRow()
+    {
+        float k = K;
+        var row = HBox(8 * k);
+        var mark = Lbl("", UiTheme.Body, 16, UiTheme.Good);
+        mark.CustomMinimumSize = new Vector2(18 * k, 0);
+        mark.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+        var text = Lbl("", UiTheme.Body, 14, UiTheme.Dim);
+        text.MouseFilter = MouseFilterEnum.Pass;
+        text.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        text.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        row.AddChild(Spacer(2 * k, 0));
+        row.AddChild(mark);
+        row.AddChild(text);
+        void Refresh()
+        {
+            var hint = Modes.CrosshairHint.ForImported();
+            row.Visible = hint != null;
+            if (hint is not { } h) return;
+            mark.Text = h.Ok ? "✓" : "!";
+            mark.LabelSettings.FontColor = h.Ok ? UiTheme.Good : UiTheme.Warn;
+            text.Text = h.Ok ? "Your VALORANT crosshair stands out on common map colours." : h.Long;
+            text.TooltipText = h.Ok ? h.Long : "";
+            text.LabelSettings.FontColor = h.Ok ? UiTheme.Dim : UiTheme.Text;
+        }
+        Refresh();
+        refreshers.Add(Refresh);
+        return row;
     }
 
     /// <summary>A VALORANT crosshair code with a COPY button (paste it in VALORANT → Settings → Crosshair → Import Profile Code).</summary>

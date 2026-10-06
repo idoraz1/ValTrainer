@@ -137,9 +137,10 @@ public static class AgentDrills
 }
 
 /// <summary>
-/// The agent warm-up: about 10 minutes built from the warm-up system (<see cref="WarmupPlan"/>, <see cref="WarmupRunner"/>):
-/// two aim drills (the sens-shifter phase when it's on), then the agent's role drills and signature drills alternating,
-/// and a deathmatch to finish. Preset keys are "agent:&lt;agent&gt;" so warmups.json and the summary know whose routine it was.
+/// The agent Lock-In: about 10 minutes built from the Lock-In system (<see cref="WarmupPlan"/>, <see cref="WarmupRunner"/>):
+/// the same check-in, an easy tracking start one tier down, an adaptive flick drill, then the agent's role drills and
+/// signature drills alternating, a deathmatch with an easier last 45 s, and the same goal and cue hand-off. Everything is at
+/// the real sens (no shifter). Preset keys are "agent:&lt;agent&gt;" so warmups.json and the hand-off know whose routine it was.
 /// </summary>
 public static class AgentRoutines
 {
@@ -149,7 +150,7 @@ public static class AgentRoutines
     /// <summary>Estimated routine length (play time + the break before each drill): role drills are added up to ~11 minutes,
     /// and the deathmatch gets shorter if long signature drills would push the routine past 12.</summary>
     const float Target = 660, MaxTotal = 720;
-    const int ShiftSteps = 2;
+    const float DmEase = 45;
 
     static readonly Dictionary<string, float> secs = new();
 
@@ -165,9 +166,9 @@ public static class AgentRoutines
         return s;
     }
 
-    const string CueTrack = "Smooth and relaxed: light grip, keep the crosshair glued to the target.";
-    const string CueFlick = "One clean motion to the head, stop, click. Accuracy before speed.";
-    const string CueDm = "Play it to warm up, not to win: crosshair at head height, first-bullet accuracy, calm resets.";
+    const string CueTrack = WarmupPresets.CueTrack;
+    const string CueFlick = WarmupPresets.CueFlick;
+    const string CueDm = WarmupPresets.CueDm;
 
     public static WarmupPreset Build(AgentInfo a)
     {
@@ -191,38 +192,38 @@ public static class AgentRoutines
         float dm = hasDm ? Math.Max(MinDm, DmSeconds - Math.Max(0, total - MaxTotal)) : 0;
 
         var steps = new List<WarmupStepDef>();
-        foreach (var k in aim) steps.Add(new(k, AimSeconds, k == "tracking" ? CueTrack : CueFlick));
+        foreach (var k in aim)
+            steps.Add(k == "tracking" ? new(k, AimSeconds, CueTrack, Phase.Activation, TierOffset: -1) : new(k, AimSeconds, CueFlick, Phase.Calibration, Adaptive: true));
         for (int ri = 0, si = 0; ri < role.Count || si < sig.Count;)
         {
             if (ri < role.Count) { var k = role[ri++]; steps.Add(new(k, RoleSeconds, RoleCue(k))); }
             if (si < sig.Count) { var k = sig[si++]; steps.Add(new(k, SigSeconds, SigCue(a, k))); }
         }
-        if (hasDm) steps.Add(new("deathmatch", dm, CueDm));
+        if (hasDm) steps.Add(new("deathmatch", dm, CueDm, Phase.Deathmatch, EaseLast: Math.Min(DmEase, dm)));
         string roleText = $"{role.Count} {a.Role.ToString().ToLowerInvariant()} drill{(role.Count == 1 ? "" : "s")}";
         string what = sig.Count > 0 ? $"{(sig.Count == 1 ? "a signature drill" : $"{sig.Count} signature drills")}, {roleText}" : roleText;
-        return new WarmupPreset(Prefix + a.Key, a.Name, $"{a.Name} warm-up: aim, {what} and a deathmatch", ShiftSteps, steps.ToArray());
+        return new WarmupPreset(Prefix + a.Key, a.Name, $"{a.Name} Lock-In: aim, {what} and a deathmatch", 0, steps.ToArray());
     }
 
-    /// <summary>The plan as it would run now (the player's sens and saved sens-shifter settings).</summary>
+    /// <summary>The plan as it would run now (the player's sens and tier).</summary>
     public static WarmupPlan Plan(AgentInfo a)
     {
-        var store = WarmupStore.I;
-        return WarmupPlan.Build(Build(a), store.ShiftMode, store.ShiftPct, Main.I.Sens, WarmupRunner.QuickDev);
+        return WarmupPlan.Build(Build(a), ShiftMode.Off, 0, Main.I.Sens, WarmupRunner.QuickDev);
     }
 
     public static void Start(AgentInfo a)
     {
         var plan = Plan(a);
-        Main.I.ReturnToAgents = true; // leaving the routine (or its summary's MENU) comes back to the Agents screen
+        Main.I.ReturnToAgents = true; // leaving the routine (or its hand-off's MENU) comes back to the Agents screen
         WarmupRunner.Start(plan);
     }
 
-    /// <summary>Preset for an "agent:&lt;key&gt;" key (warm-up history and summary), null for anything else.</summary>
+    /// <summary>Preset for an "agent:&lt;key&gt;" key (Lock-In history and hand-off), null for anything else.</summary>
     public static WarmupPreset? Find(string? presetKey) =>
         presetKey != null && presetKey.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase) && AgentRoster.ByKey(presetKey[Prefix.Length..]) is { } a
             ? Build(a) : null;
 
-    /// <summary>"Warm up again" on the summary of an agent routine restarts that routine (null: not an agent routine).</summary>
+    /// <summary>"Lock in again" on the details of an agent routine restarts that routine (null: not an agent routine).</summary>
     public static Action? Again(string? presetKey) =>
         presetKey != null && presetKey.StartsWith(Prefix, StringComparison.OrdinalIgnoreCase) && AgentRoster.ByKey(presetKey[Prefix.Length..]) is { } a
             ? () => Start(a) : null;
@@ -271,7 +272,7 @@ public static class AgentRoutines
         };
     }
 
-    /// <summary>Short labels for the warm-up progress strip (drills added in 1.4; null = let the warm-up decide).</summary>
+    /// <summary>Short labels for the Lock-In timeline (drills added in 1.4; null = let the Lock-In decide).</summary>
     public static string? ShortLabel(string key) => AgentDrills.Base(key) switch
     {
         "flashpeek" => "FLASH",

@@ -399,7 +399,7 @@ public partial class AgentsLinkCard : BaseButton
     {
         FocusMode = FocusModeEnum.None;
         MouseDefaultCursorShape = CursorShape.PointingHand;
-        TooltipText = $"Agent training: abilities, signature drills, role drills and a warm-up for each of the {AgentRoster.All.Length} agents";
+        TooltipText = $"Agent training: abilities, signature drills, role drills and a Lock-In for each of the {AgentRoster.All.Length} agents";
     }
 
     public override void _Ready()
@@ -433,7 +433,7 @@ public partial class AgentsLinkCard : BaseButton
         int ns = UiTheme.Fs(23, k);
         Gfx.TextFit(this, UiTheme.Display, "AGENT TRAINING", pad, Gfx.Mid(24 * k, ns), ns, UiTheme.Text, gx - pad);
         int ds = UiTheme.Fs(13.5f, k);
-        string d = $"All {AgentRoster.All.Length} agents: signature drills with their own utility, role drills and a 10-minute warm-up.";
+        string d = $"All {AgentRoster.All.Length} agents: signature drills with their own utility, role drills and a 10-minute Lock-In.";
         if (TwoLines)
             DrawMultilineString(UiTheme.Body, new Vector2(pad, 42 * k + UiTheme.Body.GetAscent(ds)), d, HorizontalAlignment.Left, r.Size.X - pad * 2, ds, 2, UiTheme.Dim);
         else
@@ -441,7 +441,8 @@ public partial class AgentsLinkCard : BaseButton
     }
 }
 
-/// <summary>The agent page's warm-up schedule: one row per drill with its length and sens (shifted drills in the shifter colour).</summary>
+/// <summary>The agent page's Lock-In schedule: one row per drill with its length and what's special about it (easy start,
+/// adaptive, easier last seconds).</summary>
 public partial class RoutineList : Control
 {
     readonly Warmup.WarmupPlan plan;
@@ -474,10 +475,13 @@ public partial class RoutineList : Control
             Gfx.Text(this, UiTheme.HudWide, (i + 1).ToString(Inv), 6 * k, Gfx.Mid(cy, ls), ls, UiTheme.Faint);
             float x = 30 * k;
             if (sig) { Gfx.Diamond(this, new Vector2(x + 4 * k, cy), 4 * k, 5 * k, sigCol); x += 14 * k; }
-            string sens = s.Shifted ? $"{s.OffsetPct:+0;-0}%" : "";
+            var (sens, tagCol) = s.Shifted ? ($"{s.OffsetPct:+0;-0}%", Warmup.WarmupCharts.ShiftCol)
+                : s.Adaptive ? ("ADAPTIVE", Warmup.WarmupCharts.PhaseColor(Warmup.Phase.Calibration))
+                : s.Easier ? ("EASY", Warmup.WarmupCharts.PhaseColor(Warmup.Phase.Activation))
+                : s.EaseLast > 0 ? ("EASIER END", UiTheme.Good) : ("", UiTheme.Dim);
             float right = w - 6 * k;
             float tw = Gfx.TextR(this, UiTheme.HudWide, Warmup.WarmupPlan.Clock(s.Seconds), right, Gfx.Mid(cy, ls), ls, UiTheme.Dim);
-            float sw = sens.Length > 0 ? Gfx.TextR(this, UiTheme.HudWide, sens, right - tw - 12 * k, Gfx.Mid(cy, ls), ls, Warmup.WarmupCharts.ShiftCol) + 12 * k : 0;
+            float sw = sens.Length > 0 ? Gfx.TextR(this, UiTheme.HudWide, sens, right - tw - 12 * k, Gfx.Mid(cy, ls), ls, tagCol) + 12 * k : 0;
             Gfx.TextFit(this, UiTheme.Body, AgentDrills.Title(s.Mode), x, Gfx.Mid(cy, fs), fs, sig ? sigCol : UiTheme.Text, right - tw - sw - 14 * k - x);
         }
     }

@@ -14,7 +14,8 @@ namespace ValTrainer.Game.Bots;
 public sealed class BotBrain
 {
     public readonly BotCharacter Body;
-    public readonly BotSkill Skill;
+    /// <summary>Combat skill. Replaceable mid-life (the deathmatch finisher eases it); the next shot / sighting uses the new one.</summary>
+    public BotSkill Skill;
     readonly Random rng;
     readonly WeaponDef weapon = Weapons.Vandal;
 

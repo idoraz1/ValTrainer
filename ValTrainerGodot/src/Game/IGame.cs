@@ -38,7 +38,15 @@ public interface IGame
     PlayerView View { get; }
     Mover Mover { get; }
     PlayerState Player { get; }
+    /// <summary>Tier this run plays at (the session's <c>TierOverride</c> or the chosen tier, 0..4).</summary>
     int Tier { get; }
+    /// <summary>Routine: adapt difficulty to keep the hit rate near <see cref="ValTrainer.Modes.Staircase.TargetHitRate"/>
+    /// (modes with <c>SupportsAdaptive</c> read its level at every spawn). null = a normal fixed-tier run.</summary>
+    ValTrainer.Modes.Staircase? Adaptive { get; }
+    /// <summary>Routine: for the last N seconds of a timed run the bots get easier (deathmatch finisher). 0 = off.</summary>
+    float EaseLastSeconds { get; }
+    /// <summary>Length of this timed run in seconds (the mode's own, or a routine / dev override).</summary>
+    float RunLength { get; }
     Color Enemy { get; }
     Random Rng { get; }
     /// <summary>Seconds since the round started running.</summary>

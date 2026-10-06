@@ -4,8 +4,8 @@ using ValTrainer.UI;
 
 namespace ValTrainer.Warmup;
 
-/// <summary>The warm-up's two charts, drawn with Godot 2D in the VALORANT UI style: the sens schedule (setup screen)
-/// and the performance-over-the-warm-up graph with the sens overlaid (summary screen).</summary>
+/// <summary>The Lock-In's two charts, drawn with Godot 2D in the VALORANT UI style: the phase timeline (setup screen)
+/// and the lock-in graph: each drill vs your usual, adaptive drills as the level held, the sens only if it was shifted.</summary>
 public static class WarmupCharts
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -16,6 +16,36 @@ public static class WarmupCharts
 
     static string Sens(float s) => s.ToString("0.000", Inv);
 
+    /// <summary>A shape that says the direction without colour (colour-blind safe): ▲ up (dir &gt; 0), ▼ down (dir &lt; 0),
+    /// "=" for about the same (0). Drawn, not typed: the HUD fonts (Bahnschrift) have no ▲▼ glyphs.
+    /// <paramref name="s"/> is the half-width.</summary>
+    public static void TrendMark(CanvasItem c, Vector2 at, float s, int dir, Color col)
+    {
+        if (dir == 0)
+        {
+            float t = Mathf.Max(1, s * 0.3f); // "=": about the same
+            c.DrawRect(new Rect2(at.X - s, at.Y - s * 0.45f - t / 2, s * 2, t), col);
+            c.DrawRect(new Rect2(at.X - s, at.Y + s * 0.45f - t / 2, s * 2, t), col);
+            return;
+        }
+        float h = s * 0.95f, d = dir > 0 ? -1 : 1;
+        Span<Vector2> p = stackalloc Vector2[3];
+        p[0] = new(at.X, at.Y + d * h);
+        p[1] = new(at.X + s, at.Y - d * h);
+        p[2] = new(at.X - s, at.Y - d * h);
+        c.FillPoly(p, col);
+    }
+
+    /// <summary>The <see cref="WarmupScore.VerdictDir"/> shape in front of a verdict headline whose text's vertical middle
+    /// is at <paramref name="mid"/>.Y. Returns the x where the headline starts (0 when there's nothing to compare).</summary>
+    public static float VerdictMark(CanvasItem c, float readiness, Vector2 mid, float k, Color col)
+    {
+        int dir = WarmupScore.VerdictDir(readiness);
+        if (dir == -2) return mid.X;
+        TrendMark(c, new Vector2(mid.X + 9 * k, mid.Y), 9 * k, dir, col);
+        return mid.X + 28 * k;
+    }
+
     static void Dashed(CanvasItem c, Vector2 a, Vector2 b, Color col, float w, float dash)
     {
         float len = a.DistanceTo(b);
@@ -25,84 +55,89 @@ public static class WarmupCharts
     }
 
     // =====================================================================================
-    // Schedule: sens over the warm-up timeline + drill blocks
+    // Timeline: phases on top, drills below (setup screen)
     // =====================================================================================
 
-    public static void DrawSchedule(CanvasItem c, Rect2 r, WarmupPlan plan, float k)
+    public static Color PhaseColor(Phase p) => p switch
+    {
+        Phase.Activation => UiTheme.Teal,
+        Phase.Calibration => new Color(0.45f, 0.66f, 0.98f),
+        Phase.Mechanics => UiTheme.Warn,
+        Phase.Deathmatch => UiTheme.Accent,
+        _ => UiTheme.Dim,
+    };
+
+    public static void DrawTimeline(CanvasItem c, Rect2 r, WarmupPlan plan, float k)
     {
         if (plan.Steps.Count == 0) return;
-        int ls = UiTheme.Fs(12, k), ts = UiTheme.Fs(13, k), vs = UiTheme.Fs(15, k);
+        int ns = UiTheme.Fs(13, k), bs = UiTheme.Fs(12, k), ls = UiTheme.Fs(11, k);
+        float fw = 110 * k, gap = 6 * k;                          // check-in and lock-in: fixed-width ends
+        float left = r.Position.X, right = r.End.X;
+        float x0 = left + fw + gap, x1 = right - fw - gap;
         float total = plan.PlaySeconds;
-        float left = r.Position.X + 84 * k, right = r.End.X - 12 * k;
-        float blockH = 54 * k, axisH = 26 * k;
-        float blocksY = r.End.Y - axisH - blockH;
-        float top = r.Position.Y + 34 * k, bottom = blocksY - 22 * k;
-        float X(float t) => left + t / total * (right - left);
+        float X(float t) => x0 + t / total * (x1 - x0);
+        float phaseH = 70 * k, drillH = Mathf.Clamp(r.Size.Y - phaseH - 12 * k - 90 * k, 70 * k, 150 * k);
+        float phaseY = r.Position.Y + 6 * k;
+        float drillY = phaseY + phaseH + 12 * k;
 
-        // sens range (log scale is overkill for ±35%)
-        float baseS = plan.BaseSens > 0 ? plan.BaseSens : 1;
-        float lo = plan.Steps.Min(s => s.Sens), hi = plan.Steps.Max(s => s.Sens);
-        float pad = Mathf.Max(baseS * 0.06f, (hi - lo) * 0.18f);
-        lo -= pad; hi += pad;
-        float Y(float s) => bottom - (s - lo) / Mathf.Max(1e-5f, hi - lo) * (bottom - top);
+        void PhaseBox(float xa, float xb, Phase p, string time)
+        {
+            var col = PhaseColor(p);
+            var pr = new Rect2(xa, phaseY, xb - xa, phaseH);
+            c.DrawRect(pr, new Color(col, 0.07f));
+            c.DrawRect(new Rect2(pr.Position, new Vector2(pr.Size.X, 3 * k)), col);
+            float tx = xa + 10 * k, tw = pr.Size.X - 16 * k;
+            Gfx.TextFit(c, UiTheme.HudWide, Phases.Name(p), tx, phaseY + 26 * k, ns, UiTheme.Text, tw);
+            Gfx.TextFit(c, UiTheme.Body, Phases.Blurb(p), tx, phaseY + 46 * k, bs, UiTheme.Dim, tw);
+            Gfx.TextFit(c, UiTheme.Body, time, tx, phaseY + 63 * k, bs, UiTheme.Faint, tw);
+        }
 
-        Gfx.Text(c, UiTheme.HudWide, "SENSITIVITY", r.Position.X, r.Position.Y + 14 * k, ls, UiTheme.Dim);
-        string legend = plan.Shift == ShiftMode.Off ? "SENS SHIFTER OFF · EVERY DRILL AT YOUR SENS" : $"SENS SHIFTER {plan.ShiftLabel.ToUpperInvariant()}";
-        Gfx.TextR(c, UiTheme.HudWide, legend, right, r.Position.Y + 14 * k, ls, plan.Shift == ShiftMode.Off ? UiTheme.Faint : ShiftCol);
-
-        // shifted band
+        // phases
+        PhaseBox(left, left + fw, Phase.CheckIn, "30 s");
         float t0 = 0;
-        float shiftEnd = 0;
-        foreach (var s in plan.Steps) { if (s.Shifted) shiftEnd = t0 + s.Seconds; t0 += s.Seconds; }
-        if (shiftEnd > 0)
+        foreach (var (p, secs, n) in plan.PhaseSpans())
         {
-            c.DrawRect(new Rect2(X(0), top - 8 * k, X(shiftEnd) - X(0), blocksY + blockH - top + 8 * k), new Color(ShiftCol, 0.06f));
-            c.DrawLine(new Vector2(X(shiftEnd), top - 8 * k), new Vector2(X(shiftEnd), blocksY + blockH), new Color(ShiftCol, 0.4f), Mathf.Max(1, k));
-            Gfx.Text(c, UiTheme.HudWide, "BACK TO YOUR SENS", X(shiftEnd) + 8 * k, top + 4 * k, ls, new Color(RealCol, 0.9f));
+            PhaseBox(X(t0) + (t0 > 0 ? gap / 2 : 0), X(t0 + secs) - gap / 2, p, $"{WarmupPlan.Clock(secs)} · {n} drill{(n == 1 ? "" : "s")}");
+            t0 += secs;
         }
+        PhaseBox(right - fw, right, Phase.LockIn, "goal card");
 
-        // real sens reference
-        float yb = Y(baseS);
-        Dashed(c, new Vector2(left, yb), new Vector2(right, yb), new Color(UiTheme.Text, 0.3f), Mathf.Max(1, k), 6 * k);
-        Gfx.TextR(c, UiTheme.Body, Sens(baseS), left - 10 * k, Gfx.Mid(yb, ts), ts, UiTheme.Text);
-        Gfx.TextR(c, UiTheme.HudWide, "YOURS", left - 10 * k, Gfx.Mid(yb, ts) + 15 * k, UiTheme.Fs(10, k), UiTheme.Faint);
-
-        // step line
-        t0 = 0;
-        float? prevY = null;
-        float lastLabelX = -1e9f;
-        foreach (var s in plan.Steps)
-        {
-            float xa = X(t0), xb = X(t0 + s.Seconds), y = Y(s.Sens);
-            var col = s.Shifted ? ShiftCol : RealCol;
-            if (prevY is { } py && Mathf.Abs(py - y) > 0.5f) c.DrawLine(new Vector2(xa, py), new Vector2(xa, y), new Color(UiTheme.Text, 0.5f), Mathf.Max(1, 1.5f * k));
-            c.DrawLine(new Vector2(xa, y), new Vector2(xb, y), col, Mathf.Max(2, 3.5f * k));
-            if (s.Shifted && xa - lastLabelX > 52 * k)
-            {
-                Gfx.TextC(c, UiTheme.Display, Sens(s.Sens), (xa + xb) / 2, y - 10 * k, vs, col);
-                Gfx.TextC(c, UiTheme.Body, $"{s.OffsetPct:+0;-0}%", (xa + xb) / 2, y + 20 * k, UiTheme.Fs(12, k), UiTheme.Dim);
-                lastLabelX = xa;
-            }
-            prevY = y;
-            t0 += s.Seconds;
-        }
-
-        // drill blocks
+        // drills
         t0 = 0;
         foreach (var s in plan.Steps)
         {
-            var br = new Rect2(X(t0) + 1.5f * k, blocksY, X(t0 + s.Seconds) - X(t0) - 3 * k, blockH);
-            var cc = WarmupCharts.CatColor(s.Mode);
+            var br = new Rect2(X(t0) + 1.5f * k, drillY, X(t0 + s.Seconds) - X(t0) - 3 * k, drillH);
+            var pc = PhaseColor(s.Phase);
             c.DrawRect(br, new Color(0.07f, 0.11f, 0.15f, 0.92f));
-            c.DrawRect(new Rect2(br.Position, new Vector2(br.Size.X, 3 * k)), s.Shifted ? ShiftCol : cc);
+            if (s.EaseLast > 0)
+            {
+                float ex = X(t0 + s.Seconds - s.EaseLast);
+                var er = new Rect2(ex, br.Position.Y, br.End.X - ex, br.Size.Y);
+                c.DrawRect(er, new Color(UiTheme.Good, 0.1f));
+                c.DrawLine(new Vector2(ex, br.Position.Y), new Vector2(ex, br.End.Y), new Color(UiTheme.Good, 0.5f), 1);
+                Gfx.TextFit(c, UiTheme.HudWide, "EASIER", ex + 2 * k, br.End.Y - 10 * k, ls, UiTheme.Good, er.Size.X - 4 * k, HorizontalAlignment.Center);
+            }
+            c.DrawRect(new Rect2(br.Position, new Vector2(br.Size.X, 3 * k)), s.Shifted ? ShiftCol : pc);
             c.DrawRect(br, new Color(UiTheme.Text, 0.1f), false, 1);
-            Gfx.TextFit(c, UiTheme.HudWide, s.Short, br.Position.X + 2 * k, Gfx.Mid(br.Position.Y + 22 * k, ls), ls, UiTheme.Text, br.Size.X - 4 * k, HorizontalAlignment.Center);
-            Gfx.TextFit(c, UiTheme.Body, WarmupPlan.Clock(s.Seconds), br.Position.X + 2 * k, Gfx.Mid(br.Position.Y + 40 * k, ls), ls, UiTheme.Dim, br.Size.X - 4 * k, HorizontalAlignment.Center);
+            float lw = s.EaseLast > 0 ? X(t0 + s.Seconds - s.EaseLast) - br.Position.X - 4 * k : br.Size.X - 4 * k;
+            Gfx.TextFit(c, UiTheme.HudWide, s.Short, br.Position.X + 2 * k, br.Position.Y + 24 * k, ls, UiTheme.Text, lw, HorizontalAlignment.Center);
+            Gfx.TextFit(c, UiTheme.Body, WarmupPlan.Clock(s.Seconds), br.Position.X + 2 * k, br.Position.Y + 42 * k, ls, UiTheme.Dim, lw, HorizontalAlignment.Center);
+            string tag = s.Shifted ? $"{s.OffsetPct:+0;-0}%" : s.Adaptive ? "ADAPT" : s.Easier ? "EASY" : "";
+            if (tag.Length > 0 && drillH > 58 * k)
+                Gfx.TextFit(c, UiTheme.HudWide, tag, br.Position.X + 2 * k, br.Position.Y + 60 * k, ls, s.Shifted ? ShiftCol : pc, lw, HorizontalAlignment.Center);
             t0 += s.Seconds;
         }
 
-        // time axis (minutes)
-        float ay = r.End.Y - axisH + 6 * k;
+        // ends: no drills
+        foreach (var xa in new[] { left, right - fw })
+        {
+            var er = new Rect2(xa, drillY, fw, drillH);
+            c.DrawRect(er, new Color(UiTheme.Text, 0.025f));
+            c.DrawRect(er, new Color(UiTheme.Text, 0.06f), false, 1);
+        }
+
+        // time axis (minutes of play)
+        float ay = drillY + drillH + 8 * k;
         int stepMin = total > 900 ? 5 : total > 420 ? 2 : 1;
         if (plan.Quick) stepMin = 0;
         if (stepMin > 0)
@@ -112,6 +147,26 @@ public static class WarmupCharts
                 c.DrawLine(new Vector2(x, ay - 4 * k), new Vector2(x, ay), new Color(UiTheme.Text, 0.3f), 1);
                 Gfx.TextC(c, UiTheme.Body, m == 0 ? "0 min" : m.ToString(Inv), x, ay + 14 * k, ls, UiTheme.Faint);
             }
+
+        // what the tags mean (honest: the player knows when the difficulty moves)
+        float gy = ay + 50 * k, gx = left;
+        int gs = UiTheme.Fs(13, k);
+        foreach (var (tag, text, col) in new[]
+        {
+            ("EASY", "one tier below yours", PhaseColor(Phase.Activation)),
+            ("ADAPT", "gets harder or easier to keep you near 80% hits", PhaseColor(Phase.Calibration)),
+            ("EASIER", "the deathmatch's last minute has easier bots", UiTheme.Good),
+        })
+        {
+            if (tag == "ADAPT" && !plan.Steps.Any(s => s.Adaptive)) continue;
+            if (tag == "EASY" && !plan.Steps.Any(s => s.Easier)) continue;
+            if (tag == "EASIER" && !plan.Steps.Any(s => s.EaseLast > 0)) continue;
+            float tw = Gfx.TextW(UiTheme.HudWide, tag, ls);
+            Gfx.Text(c, UiTheme.HudWide, tag, gx, gy, ls, col);
+            float w2 = Gfx.TextW(UiTheme.Body, text, gs);
+            Gfx.Text(c, UiTheme.Body, text, gx + tw + 8 * k, gy, gs, UiTheme.Dim);
+            gx += tw + 8 * k + w2 + 30 * k;
+        }
     }
 
     // =====================================================================================
@@ -154,9 +209,18 @@ public static class WarmupCharts
             else c.DrawRect(new Rect2(sx + 3 * k, sy - 6 * k, 11 * k, 11 * k), col);
             lx = sx - 18 * k;
         }
-        Legend("SENSITIVITY (RIGHT AXIS)", ShiftCol, true);
-        Legend("YOUR SENS", RealCol, false);
-        if (steps.Any(s => s.Shifted)) Legend("SHIFTED SENS", new Color(ShiftCol, 0.75f), false);
+        bool sensLine = steps.Any(s => s.Shifted);
+        if (sensLine)
+        {
+            Legend("SENSITIVITY (RIGHT AXIS)", ShiftCol, true);
+            Legend("YOUR SENS", RealCol, false);
+            Legend("SHIFTED SENS", new Color(ShiftCol, 0.75f), false);
+        }
+        else
+        {
+            if (steps.Any(s => s.Adaptive)) Legend("ADAPTIVE: LEVEL HELD", PhaseColor(Phase.Calibration), false);
+            Legend("% OF YOUR USUAL", RealCol, false);
+        }
 
         // grid + left axis
         for (float p = pLo; p <= pHi + 0.1f; p += 10)
@@ -192,7 +256,7 @@ public static class WarmupCharts
 
         // bars
         t0 = 0;
-        var pts = new List<Vector2>();
+        var segs = new List<List<Vector2>> { new() }; // trend line pieces, broken at adaptive drills (no % of usual there)
         foreach (var s in steps)
         {
             float w = Mathf.Max(1, s.Seconds);
@@ -220,7 +284,24 @@ public static class WarmupCharts
                 string lab = $"{s.Index:0}";
                 float ly = s.Index >= 100 ? y - 8 * k : y + vs + 4 * k;
                 if (xb - xa > 26 * k) Gfx.TextC(c, UiTheme.Display, lab, cx, ly, vs, s.Index >= 100 ? UiTheme.Text : UiTheme.Dim);
-                pts.Add(new Vector2(cx, y));
+                segs[^1].Add(new Vector2(cx, y));
+            }
+            else if (s.Adaptive && s.Level >= 0)
+            {
+                // adaptive drills: the level held near 80% hits (their scores aren't comparable with normal runs)
+                var ac = PhaseColor(Phase.Calibration);
+                var box = new Rect2(xa + gap, top + 6 * k, xb - xa - 2 * gap, bottom - top - 12 * k);
+                c.DrawRect(box, new Color(ac, 0.06f));
+                c.DrawRect(box, new Color(ac, 0.35f), false, 1);
+                if (segs[^1].Count > 0) segs.Add(new());
+                float my = top + 44 * k;
+                Gfx.Diamond(c, new Vector2(cx, my - 18 * k), 6 * k, 7 * k, ac);
+                if (xb - xa > 26 * k)
+                {
+                    Gfx.TextC(c, UiTheme.HudWide, "LEVEL", cx, my + 2 * k, UiTheme.Fs(10, k), UiTheme.Dim);
+                    Gfx.TextC(c, UiTheme.Display, s.Level.ToString("0.0", Inv), cx, my + 2 * k + vs + 4 * k, vs, UiTheme.Text);
+                    if (s.HitRate >= 0) Gfx.TextC(c, UiTheme.Body, $"{s.HitRate * 100:0}% hits", cx, my + 2 * k + vs * 2 + 8 * k, UiTheme.Fs(11, k), UiTheme.Dim);
+                }
             }
             else
             {
@@ -233,10 +314,18 @@ public static class WarmupCharts
         }
 
         // trend line through the bar tops
-        if (pts.Count >= 2) c.DrawPolyline(pts.ToArray(), new Color(UiTheme.Text, 0.55f), Mathf.Max(1, 1.5f * k), true);
-        foreach (var p in pts) c.DrawCircle(p, 3 * k, UiTheme.Text);
+        foreach (var seg in segs.Where(s => s.Count >= 2)) c.DrawPolyline(seg.ToArray(), new Color(UiTheme.Text, 0.55f), Mathf.Max(1, 1.5f * k), true);
+        foreach (var p in segs.SelectMany(s => s)) c.DrawCircle(p, 3 * k, UiTheme.Text);
 
-        // sens overlay (step line, right axis)
+        // time axis
+        float ay = bottom + 34 * k;
+        Gfx.Text(c, UiTheme.Body, "0:00", left, ay + 4 * k, ls, UiTheme.Faint);
+        Gfx.TextR(c, UiTheme.Body, WarmupPlan.Clock(total), right, ay + 4 * k, ls, UiTheme.Faint);
+        Gfx.TextC(c, UiTheme.HudWide, "LOCK-IN TIMELINE (PLAY TIME)", (left + right) / 2, ay + 4 * k, ls, UiTheme.Faint);
+        c.DrawLine(new Vector2(left, bottom), new Vector2(right, bottom), new Color(UiTheme.Text, 0.25f), 1);
+        if (!sensLine) return;
+
+        // sens overlay (step line, right axis): only when the shifter was on
         t0 = 0;
         float? prev = null;
         foreach (var s in steps)
@@ -258,12 +347,5 @@ public static class WarmupCharts
             Gfx.Text(c, UiTheme.Body, Sens(tv), right + 9 * k, Gfx.Mid(y, ts), ts, Mathf.Abs(tv - baseS) < 1e-4f ? UiTheme.Text : ShiftCol);
         }
         Gfx.Text(c, UiTheme.HudWide, "SENS", right + 9 * k, top - 22 * k + ls, ls, ShiftCol);
-
-        // time axis
-        float ay = bottom + 34 * k;
-        Gfx.Text(c, UiTheme.Body, "0:00", left, ay + 4 * k, ls, UiTheme.Faint);
-        Gfx.TextR(c, UiTheme.Body, WarmupPlan.Clock(total), right, ay + 4 * k, ls, UiTheme.Faint);
-        Gfx.TextC(c, UiTheme.HudWide, "WARM-UP TIMELINE (PLAY TIME)", (left + right) / 2, ay + 4 * k, ls, UiTheme.Faint);
-        c.DrawLine(new Vector2(left, bottom), new Vector2(right, bottom), new Color(UiTheme.Text, 0.25f), 1);
     }
 }

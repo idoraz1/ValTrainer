@@ -92,6 +92,9 @@ public sealed partial class DeathmatchMode
             Body = null; brain = null; foe = null; path = null; pending = null;
         }
 
+        /// <summary>New combat skill for this life (finisher); later lives get it from <see cref="DeathmatchMode.BotSkillNow"/>.</summary>
+        public void SetSkill(BotSkill s) { skill = s; if (brain != null) brain.Skill = s; }
+
         public void ForgetPlayer() { lkp = null; if (State == St.Hunt) { State = St.Roam; Replan(); } }
 
         /// <summary>Gunfire heard at a point (the player's if <paramref name="player"/>).</summary>

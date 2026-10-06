@@ -8,6 +8,28 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-10-07
+
+### Added
+
+- **Lock-In replaces Warm-up.** A routine built from sports-psychology and motor-learning research to get you ready for ranked: about 12 minutes (or a 7-minute Short), all at your real sensitivity, going from easy drills to drills that adapt to you, then bots and a deathmatch. Training Day (about 20 minutes) is for practice days and is the only routine with the sens shifter (off by default, at most 10%).
+  - **Check-in:** rate your energy and confidence, then pick one goal for your games ("crosshair at head height") and one cue word. An optional breathing guide (slow breaths, longer out than in) turns itself on when you feel wired.
+  - **Adaptive drills:** Head Flicks, Spidershot and Gridshot adjust target size, spread and timing to keep you near 80% hits, and report the level you held.
+  - **Finish on a good note:** the deathmatch bots get easier for the last minute.
+  - **Hand-off:** your goal and cue, a three-step buy-phase routine, "queue now" tips and a LAUNCH VALORANT button when the Riot Client is installed. Results compare you with your usual range in neutral words, plus what went well; the graph and table are under DETAILS.
+  - **Setup check:** the Lock-In screen shows whether your sens, FOV, display mode, monitor, VSync and FPS cap match VALORANT, plus a short checklist (same headset and volume, a lamp on, warm hands).
+  - **Stop when you're ready:** once your adaptive drills are back in your usual range (after 3 or more Lock-Ins), you can skip straight to the deathmatch. It's only offered, never automatic.
+  - **Match log (optional, stays on your PC):** after a Lock-In the menu asks once how your next match went and whether you felt locked in. After 15 answers, Lock-In shows what seems to work for you (energy before, breathing, full routine or not), labelled as a small personal sample.
+  - Agent routines on the Agents screen use the same flow ("LOCK IN AS JETT").
+  - Your warm-up history is kept. The sens shifter is switched off once, because shifting sensitivity right before ranked isn't supported by the research.
+- **Aim targets look like VALORANT enemies:** a dark body with a fresnel rim and an outline in your enemy highlight colour, so they stand out on light and dark surfaces in every highlight colour. Settings → Enemies → Aim drill targets → CLASSIC brings back the old solid spheres.
+
+### Changed
+
+- The Range has a darker lower wall band and darker cover panels, and less haze, so targets have more contrast.
+- **Crosshair visibility hint** in Settings → Crosshair and on the Lock-In screen: a warning when your crosshair is close to your enemy highlight colour or fades into common map colours, with a link to the Crosshair Finder.
+- **Colour-blind friendly results:** better/worse is now also shown with ▲ / ▼ / = marks, not only green and red (Lock-In results, the drill table and the history graph's best/latest points).
+
 ## [1.4.4] - 2026-10-06
 
 ### Fixed
@@ -152,7 +174,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.4.4...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/idoraz1/ValTrainer/compare/v1.4.4...v1.5.0
 [1.4.4]: https://github.com/idoraz1/ValTrainer/compare/v1.4.3...v1.4.4
 [1.4.3]: https://github.com/idoraz1/ValTrainer/compare/v1.4.2...v1.4.3
 [1.4.2]: https://github.com/idoraz1/ValTrainer/compare/v1.4.1...v1.4.2

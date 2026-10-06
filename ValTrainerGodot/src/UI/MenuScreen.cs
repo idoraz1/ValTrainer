@@ -11,7 +11,7 @@ namespace ValTrainer.UI;
 /// Main menu: VALORANT-styled lobby. Left: tier selector (with the map selector on its caption row) and the drill
 /// cards, grouped by category (PB at the current tier, best rank badge ever) and packed into balanced columns so the
 /// whole list fits without scrolling on 16:9 screens. Agent drills live on the Agents screen; a link card stands in for
-/// them. Right: everything imported from Valorant plus a live crosshair preview. Top-right: Warm up / Agents / Coach /
+/// them. Right: everything imported from Valorant plus a live crosshair preview. Top-right: Lock in / Agents / Coach /
 /// Settings / Stats / Quit.
 /// </summary>
 public partial class MenuScreen : ScreenBase
@@ -237,11 +237,11 @@ public partial class MenuScreen : ScreenBase
         right.Alignment = BoxContainer.AlignmentMode.Center;
         var nav = HBox(12 * k);
         nav.Alignment = BoxContainer.AlignmentMode.End;
-        var warm = Btn("WARM UP", VButton.Look.Primary, Main.I.ShowWarmup, 176 * bw, 48, fpx);
-        warm.TooltipText = "Guided warm-up routine (8 / 15 / 25 min) with an optional sens shifter and a lock-in graph";
+        var warm = Btn("LOCK IN", VButton.Look.Primary, Main.I.ShowLockIn, 176 * bw, 48, fpx);
+        warm.TooltipText = "Lock-In: about 12 minutes before ranked. A check-in, aim drills that adapt to you, a deathmatch, then your goal and cue";
         nav.AddChild(warm);
         var agents = Btn("AGENTS", VButton.Look.Secondary, Main.I.ShowAgents, 156 * bw, 48, fpx);
-        agents.TooltipText = "Agent training: every agent's abilities, signature drills with their own utility, role drills and a 10-minute agent warm-up";
+        agents.TooltipText = "Agent training: every agent's abilities, signature drills with their own utility, role drills and a 10-minute agent Lock-In";
         nav.AddChild(agents);
         var coach = Btn("COACH", VButton.Look.Secondary, Main.I.ShowProfile, 156 * bw, 48, fpx);
         coach.TooltipText = "Aim coach: your estimated rank per skill, what you do wrong, how to fix it and a sens recommendation";
@@ -268,9 +268,12 @@ public partial class MenuScreen : ScreenBase
     public override void _Ready()
     {
         CoachData.Request(); // background: ready by the time the player looks at the header
+        CheckMatchPrompt(false);
         base._Ready();
         if (devScreenDone || !Main.I.Dev) return;
         devScreenDone = true;
+        // Dev-only: "--matchlog-readout" shows the Lock-In match-log readout over the menu (with --matchlog-demo [N]).
+        if (CmdLine.Has("--matchlog-readout")) Callable.From(() => AddChild(new Warmup.MatchLogDevPanel(K))).CallDeferred();
         // Dev-only: "--screen profile" opens the coach screen directly (layout checks / screenshots).
         var a = OS.GetCmdlineUserArgs().Concat(OS.GetCmdlineArgs()).ToArray();
         int i = Array.IndexOf(a, "--screen");
@@ -285,6 +288,49 @@ public partial class MenuScreen : ScreenBase
     {
         if (!coachHintDone) UpdateCoachHint();
         if (bannerRev != UpdateCheck.Revision) RefreshBanner();
+        // the menu may stay open while the player is in VALORANT: look again now and then
+        if ((matchRecheck -= dt) <= 0) CheckMatchPrompt(true);
+    }
+
+    public override void _Notification(int what)
+    {
+        base._Notification(what);
+        if (what == NotificationApplicationFocusIn && IsInsideTree()) CheckMatchPrompt(true); // back from VALORANT
+    }
+
+    // ---------------- match log (Lock-In) ----------------
+
+    VBoxContainer? matchSlot;
+    Warmup.WarmupRecord? matchAsk;
+    bool matchDone;
+    float matchRecheck = 30;
+
+    /// <summary>"How did your first match after Lock-In go?": at most one card per menu, once per Lock-In, never while
+    /// the "What's new" or updates panels are up (see <see cref="Warmup.LockInMatchLog.Due"/>).</summary>
+    void CheckMatchPrompt(bool refill)
+    {
+        matchRecheck = 30;
+        if (matchAsk != null || matchDone || WhatsNew.Pending != null || UpdatesPrompt.Pending) return;
+        var rec = Warmup.LockInMatchLog.Due(Warmup.WarmupStore.I, DateTime.Now);
+        if (rec == null) return;
+        matchAsk = rec;
+        Warmup.LockInMatchLog.MarkAsked(rec);
+        if (refill) Callable.From(Rebuild).CallDeferred(); // the crosshair preview makes room
+    }
+
+    void FillMatchSlot()
+    {
+        if (matchSlot == null) return;
+        foreach (var c in matchSlot.GetChildren()) c.QueueFree();
+        bool show = matchAsk != null && !matchDone;
+        matchSlot.Visible = show;
+        if (show) matchSlot.AddChild(new Warmup.MatchLogPrompt(matchAsk!, K, CloseMatchPrompt));
+    }
+
+    void CloseMatchPrompt()
+    {
+        matchDone = true;
+        Callable.From(Rebuild).CallDeferred();
     }
 
     void UpdateCoachHint()
@@ -494,6 +540,10 @@ public partial class MenuScreen : ScreenBase
 
         var panel = new VPanel { Title = "FROM VALORANT", K = k, Caption = v.Found ? "auto-imported" : "defaults" };
         right.AddChild(panel);
+        // the match-log card goes between the two panels (the crosshair preview gives up the room)
+        matchSlot = VBox(0);
+        right.AddChild(matchSlot);
+        FillMatchSlot();
         var rows = VBox(0);
         panel.AddChild(rows);
 
@@ -525,7 +575,7 @@ public partial class MenuScreen : ScreenBase
         var col = new VBoxContainer { SizeFlagsVertical = SizeFlags.ExpandFill };
         col.AddThemeConstantOverride("separation", (int)(8 * k));
         xp.AddChild(col);
-        var box = new DrawBox { SizeFlagsVertical = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 150 * k), ClipContents = true, OnDraw = DrawRange };
+        var box = new DrawBox { SizeFlagsVertical = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, (matchSlot.Visible ? 90 : 150) * k), ClipContents = true, OnDraw = DrawRange };
         col.AddChild(box);
         var xh = new CrosshairView { Profile = Valorant.CrosshairCode.Effective, LocalCenter = true };
         box.AddChild(xh);

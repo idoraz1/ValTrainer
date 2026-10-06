@@ -29,7 +29,7 @@ public partial class GameSession : Node3D, IGame
     public PlayerView View { get; } = new();
     public Mover Mover { get; private set; } = new();
     public PlayerState Player { get; } = new();
-    public int Tier => Main.I.Tier;
+    public int Tier => Math.Clamp(TierOverride ?? Main.I.Tier, 0, 4);
     public Color Enemy => Main.I.EnemyColor;
     public Random Rng { get; } = new();
     public float Now { get; private set; }
@@ -88,7 +88,25 @@ public partial class GameSession : Node3D, IGame
         hud = new Hud(this);
         layer.AddChild(hud);
 
+        if (Main.I.Dev && OnFinished == null) DevRoutineArgs();
         Restart();
+    }
+
+    /// <summary>
+    /// Dev-only Lock-In hooks for single drills (a routine sets these itself): "--tier-override N" plays at tier N,
+    /// "--adaptive [start level]" runs the adaptive staircase (start = the session tier), "--ease S" eases the bots for
+    /// the last S seconds.
+    /// </summary>
+    void DevRoutineArgs()
+    {
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var num = System.Globalization.NumberStyles.Float;
+        if (int.TryParse(ArgAfter("--tier-override"), out var to)) TierOverride = Math.Clamp(to, 0, 4);
+        if (OS.GetCmdlineUserArgs().Concat(OS.GetCmdlineArgs()).Contains("--adaptive"))
+            Adaptive = new Staircase(float.TryParse(ArgAfter("--adaptive"), num, inv, out var sl) ? sl : Tier);
+        if (float.TryParse(ArgAfter("--ease"), num, inv, out var ease)) EaseLastSeconds = ease;
+        if (TierOverride != null || Adaptive != null || EaseLastSeconds > 0)
+            Log.Info($"[dev] session tier {Tier}{(Adaptive != null ? $", adaptive from {Adaptive.Level:0.0}" : "")}{(EaseLastSeconds > 0 ? $", ease last {EaseLastSeconds:0} s" : "")}");
     }
 
     public void Restart()
@@ -99,6 +117,8 @@ public partial class GameSession : Node3D, IGame
         cam?.QueueFree();
 
         Mode = factory();
+        Mode.Attach(this); // ExtraSolids / Map below already follow the session tier
+        if (Adaptive is { Trials: > 0 } stair) Adaptive = stair.Fresh(); // a restarted run adapts from the start level again
         TrialSens = SessionSens; // null unless a routine (warm-up sens shifter) set one
         TrialCrosshair = null;
         Mover = new Mover();
@@ -383,6 +403,8 @@ public partial class GameSession : Node3D, IGame
         fireTap = false;
 
         RecordFrame();
+        if (Main.I.Dev && Adaptive != null && Mode.SupportsAdaptive && (int)(Now / 10f) != (int)((Now - dt) / 10f))
+            Log.Info($"[adapt] t={Now:0} {Adaptive}"); // dev: the staircase every 10 s
         if ((Mode.Timed && Now >= RunDuration) || Mode.Done) Finish();
     }
 
@@ -504,6 +526,17 @@ public partial class GameSession : Node3D, IGame
             Review = Coach.ReviewRun(Telemetry, Record.Metrics, Tier);
         }
         catch (Exception ex) { GD.PushWarning($"Coach failed: {ex.Message}"); }
+        bool adaptive = Mode.SupportsAdaptive && Adaptive != null;
+        if (adaptive)
+        {
+            // Lock-In calibration drills: the level held at the target hit rate (Threshold; the final level if too few trials).
+            var st = Adaptive!;
+            Record.Metrics ??= new();
+            Record.Metrics["adapt.level"] = st.Threshold >= 0 ? st.Threshold : st.Level;
+            Record.Metrics["adapt.hitrate"] = st.HitRate;
+            Record.Metrics["adapt.trials"] = st.Trials;
+            Log.Info($"[adapt] {Mode.Key}: start {st.StartLevel:0.00} -> {st}");
+        }
         if (app.SavesData)
         {
             // Written on a worker: ≈1.5 MB for 60 s at 600 FPS, ≈20 MB for a full Sens Finder run. This run's telemetry
@@ -518,7 +551,8 @@ public partial class GameSession : Node3D, IGame
             catch { }
         }
         else if (TelemetryOut != null) { try { Telemetry.Save(TelemetryOut, keep: 500); } catch { } }
-        if (app.SavesData && KeepInStats) // automated/dev runs never touch the user's stats
+        // Automated/dev runs never touch the user's stats; adaptive runs' scores aren't comparable with fixed-tier runs.
+        if (app.SavesData && KeepInStats && !adaptive)
         {
             app.Stats.Runs.Add(Record);
             app.Stats.Save();
@@ -535,6 +569,15 @@ public partial class GameSession : Node3D, IGame
     public bool KeepInStats { get; set; } = true;
     /// <summary>Routine mode: called once when the run ends (after it is recorded) instead of leaving the results screen up.</summary>
     public Action<GameSession>? OnFinished { get; set; }
+    /// <summary>Routine: play this run at another tier (e.g. Main.I.Tier - 1 for the easy activation drills). null = Main.I.Tier.</summary>
+    public int? TierOverride { get; set; }
+    /// <summary>Routine: adapt difficulty to keep the hit rate near <see cref="Staircase.TargetHitRate"/> (null = normal
+    /// fixed-tier run). Only modes with <see cref="TrainingMode.SupportsAdaptive"/> use it. Set a fresh one per run.</summary>
+    public Staircase? Adaptive { get; set; }
+    /// <summary>Routine: for the last N seconds of a timed run, bots get easier (deathmatch finisher). 0 = off.</summary>
+    public float EaseLastSeconds { get; set; }
+    /// <summary>Length of this timed run in seconds (the mode's own, a routine override or the dev --duration).</summary>
+    public float RunLength => RunDuration;
 
     // ---------------- IGame ----------------
 

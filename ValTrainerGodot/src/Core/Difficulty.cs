@@ -34,9 +34,57 @@ public static class Difficulty
 
     public static Tier Get(int id) => Tiers[Math.Clamp(id, 0, Tiers.Length - 1)];
 
+    /// <summary>
+    /// The deathmatch finisher's bots: <paramref name="tier"/>'s bot with the combat skill (reaction, crosshair error,
+    /// settle speed, hit chances) of one tier lower. Burst rhythm and run-and-gun stay the tier's own. Rookie has no lower
+    /// tier: it reacts 30% slower and hits 25% less often instead.
+    /// </summary>
+    public static BotSkill EasedBot(int tier)
+    {
+        var b = Get(tier).Bot;
+        if (tier <= 0) return b with { ReactMs = b.ReactMs * 1.3f, ReactSd = b.ReactSd * 1.3f, PHit1 = b.PHit1 * 0.75f, PHead1 = b.PHead1 * 0.75f };
+        var l = Get(tier - 1).Bot;
+        return b with
+        {
+            ReactMs = l.ReactMs, ReactSd = l.ReactSd, XhairErrDeg = l.XhairErrDeg, MsPerBit = l.MsPerBit,
+            PHit1 = l.PHit1, PHead1 = l.PHead1, Decay = l.Decay,
+        };
+    }
+
     /// <summary>Pick per-tier values: T(tier, rookie, regular, veteran, elite, pro).</summary>
     public static float T(int tier, params float[] v) => v[Math.Clamp(tier, 0, v.Length - 1)];
     public static int Ti(int tier, params int[] v) => v[Math.Clamp(tier, 0, v.Length - 1)];
+
+    // ---- continuous levels (Lock-In adaptive drills): level 2.5 = halfway between Veteran and Elite ----
+
+    /// <summary>Per-tier values at a continuous level: linear interpolation between the neighbouring tiers (whole levels
+    /// give exactly the tier's value).</summary>
+    public static float Tf(float level, params float[] v)
+    {
+        level = Math.Clamp(level, 0f, v.Length - 1);
+        int i = (int)level;
+        return i >= v.Length - 1 ? v[^1] : v[i] + (v[i + 1] - v[i]) * (level - i);
+    }
+
+    /// <summary>
+    /// Like <see cref="Tf"/> for lifetimes where 0 means "never expires". Between a tier without expiry and the next tier
+    /// with lifetime L, the lifetime is L / f (f = how far past the lower tier the level is): no expiry at the lower tier,
+    /// very long just above it, L at the next tier. Continuous, so a small level change never jumps from "never" to L.
+    /// </summary>
+    public static float TfLifetime(float level, params float[] v)
+    {
+        level = Math.Clamp(level, 0f, v.Length - 1);
+        int i = (int)level;
+        if (i >= v.Length - 1) return v[^1];
+        float f = level - i, a = v[i], b = v[i + 1];
+        if (a > 0 && b > 0) return a + (b - a) * f;
+        if (a <= 0 && b <= 0) return 0f;
+        if (a <= 0) return f < 0.05f ? 0f : b / f;  // from "never" towards L
+        return a;                                   // never happens in the tables (expiry only gets stricter)
+    }
+
+    static (float, float) Tf2(float level, (float, float)[] v) =>
+        (Tf(level, v.Select(x => x.Item1).ToArray()), Tf(level, v.Select(x => x.Item2).ToArray()));
 
     // ---------------- per-mode parameters (research-calibrated) ----------------
 
@@ -53,6 +101,27 @@ public static class Difficulty
     public static (float yaw, float pitch) SpiderRange(int t) => t switch
     { 0 => (25, 8), 1 => (35, 11), 2 => (45, 14), 3 => (55, 16), _ => (65, 18) };
     public static float SpiderLifetime(int t) => T(t, 0, 0, 0, 1.2f, 0.9f);
+
+    // Continuous-level versions for the adaptive drills (same tables; integer levels give exactly the tier values).
+    public static float GridshotRadius(float l) => Tf(l, .45f, .36f, .28f, .22f, .17f);
+    public static float GridshotSpacing(float l) => Tf(l, 1.15f, 1.15f, 1.25f, 1.35f, 1.45f);
+    public static (float min, float max) FlickDistance(float l) => Tf2(l, FlickDistances);
+    public static float FlickYaw(float l) => Tf(l, 20, 28, 38, 45, 55);
+    public static float FlickLifetime(float l) => TfLifetime(l, 0, 2.0f, 1.6f, 1.3f, 1.0f);
+    public static float SpiderRadius(float l) => Tf(l, .40f, .32f, .25f, .20f, .16f);
+    public static (float yaw, float pitch) SpiderRange(float l) => Tf2(l, SpiderRanges);
+    public static float SpiderLifetime(float l) => TfLifetime(l, 0, 0, 0, 1.2f, 0.9f);
+    static readonly (float, float)[] FlickDistances = { (8, 12), (10, 16), (12, 22), (15, 28), (18, 35) };
+    static readonly (float, float)[] SpiderRanges = { (25, 8), (35, 11), (45, 14), (55, 16), (65, 18) };
+
+    /// <summary>A continuous level as a tier name with a +/− hint: 2.0 "Veteran", 2.4 "Veteran+", 2.8 "Elite−".</summary>
+    public static string LevelName(float level)
+    {
+        level = Math.Clamp(level, 0f, 4f);
+        int n = (int)MathF.Round(level);
+        float d = level - n;
+        return Tiers[n].Name + (d >= 0.2f ? "+" : d <= -0.2f ? "−" : "");
+    }
 
     public static float TrackRadius(int t) => T(t, .45f, .38f, .30f, .22f, .16f);
     public static float TrackSpeed(int t) => T(t, 2.7f, 4.0f, 5.4f, 5.4f, 5.4f);

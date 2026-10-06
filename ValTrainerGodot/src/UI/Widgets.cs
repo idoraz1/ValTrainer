@@ -301,7 +301,7 @@ public static class Sparkline
             try { ci.GradPoly(area, cols); } catch { /* degenerate area: skip fill */ }
             ci.Polyline(pts, line, Mathf.Max(1.5f, 2f * k), true);
         }
-        ci.DrawCircle(P(best), 3.5f * k, UiTheme.Good);
+        Gfx.Diamond(ci, P(best), 5 * k, 5 * k, UiTheme.Good); // best: a diamond, latest: a dot (shape as well as colour)
         ci.DrawCircle(P(v.Count - 1), 3.5f * k, UiTheme.Text);
     }
 }

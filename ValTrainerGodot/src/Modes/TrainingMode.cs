@@ -33,11 +33,15 @@ public abstract class TrainingMode
     public virtual Vector3 StartFeet => Vector3.Zero;
     public virtual float StartYaw => 0f;
     public virtual string? Subtitle => null;
+    /// <summary>The drill can adapt its difficulty per spawn to the session's <see cref="IGame.Adaptive"/> staircase.</summary>
+    public virtual bool SupportsAdaptive => false;
     /// <summary>Extra solid boxes the mode adds to the range (cover, lanes, walls).</summary>
     public virtual IEnumerable<Box> ExtraSolids => Array.Empty<Box>();
 
     protected IGame G = null!;
     protected int Tier => G?.Tier ?? Main.I.Tier; // ExtraSolids/Map can be read before Begin()
+    /// <summary>The session's adaptive staircase when this drill supports it (null = a normal fixed-tier run).</summary>
+    protected Staircase? Adapt => SupportsAdaptive ? G?.Adaptive : null;
     protected Random Rng => G.Rng;
     protected float Now => G.Now;
 
@@ -66,6 +70,10 @@ public abstract class TrainingMode
     int streak;
     float lastKillAt = -99f;
 
+    /// <summary>Binds the mode to its session before the environment is built, so <see cref="ExtraSolids"/> and
+    /// <see cref="Map"/> already see the session's tier (a routine's tier override).</summary>
+    public void Attach(IGame game) => G = game;
+
     public void Begin(IGame game)
     {
         G = game;
@@ -87,7 +95,8 @@ public abstract class TrainingMode
     public virtual void OnPlayerDied() { }
 
     /// <summary>Left-side HUD lines (state, prompts).</summary>
-    public virtual IEnumerable<string> HudLines() => Array.Empty<string>();
+    public virtual IEnumerable<string> HudLines() => Adapt is { } a ? new[] { AdaptiveLine(a) } : Array.Empty<string>();
+    protected static string AdaptiveLine(Staircase a) => $"Level {Difficulty.LevelName(a.Level)} ({a.Level:0.0}) · adapts to {a.TargetHitRate * 100:0}% hits";
     /// <summary>Centre prompt (e.g. "Keep strafing").</summary>
     public virtual string? Prompt => null;
     /// <summary>Custom 2D drawing on the HUD canvas (reaction test, etc.).</summary>
@@ -101,6 +110,15 @@ public abstract class TrainingMode
         if (Kills > 0) yield return ("Kills", Kills.ToString());
         if (KillTimes.Count > 0) yield return ("Avg time to kill", $"{KillTimes.Average():0} ms");
         if (UsesHeadshots && Hits > 0) yield return ("Headshot %", $"{100f * HeadHits / Hits:0}%");
+        if (AdaptiveResult() is { } ar) yield return ar;
+    }
+
+    /// <summary>Adaptive runs: the level the player held at the target hit rate.</summary>
+    protected (string Label, string Value)? AdaptiveResult()
+    {
+        if (Adapt is not { } a) return null;
+        float lv = a.Threshold >= 0 ? a.Threshold : a.Level;
+        return ($"Level at {a.TargetHitRate * 100:0}% hits", $"{Difficulty.LevelName(lv)} ({lv:0.0}) · {a.HitRate * 100:0}% of {a.Trials}");
     }
 
     /// <summary>Extra buttons on the results screen (e.g. the sens finder's "Use this sens").</summary>
