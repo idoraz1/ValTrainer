@@ -12,6 +12,9 @@ Windows 10/11 · free and open source · fan-made, not affiliated with Riot Game
 
 **Website:** [valtrainer.github.io](https://valtrainer.github.io/): features, clips, download and FAQ. Also on [itch.io](https://idoraz1.itch.io/valtrainer).
 
+**Support:** ValTrainer is free, with no ads and no account. If it helps your game, you can
+[buy me a coffee](https://buymeacoffee.com/idoraz1) or support it on [Ko-fi](https://ko-fi.com/idoraz1).
+
 | | |
 |---|---|
 | ![Main menu with difficulty tiers, drills and the imported VALORANT settings](docs/images/menu.png) | ![Vandal Spray drill with the spray chart](docs/images/drill-spray.png) |
@@ -201,6 +204,8 @@ The ratings need data: play Head Flicks, Strafe Tracking, Peek Practice, Counter
   asks for the latest release of this project, and downloading that release's files from GitHub. Turn it off in
   Settings and ValTrainer never goes online. Downloaded updates wait in `%LOCALAPPDATA%\ValTrainer\updates` and are
   deleted after they're installed.
+- The **Support ValTrainer** panel (Buy Me a Coffee / Ko-fi) makes no network requests: its buttons only open the page
+  in your browser.
 
 ## Troubleshooting
 
@@ -226,6 +231,8 @@ project layout and the release process.
   Give the ones you want a 👍.
 - Suggest a drill or feature, or report a bug: [new issue](https://github.com/idoraz1/ValTrainer/issues/new/choose).
 - What changed in each version: [CHANGELOG.md](CHANGELOG.md).
+- Support development: [Buy Me a Coffee](https://buymeacoffee.com/idoraz1) or [Ko-fi](https://ko-fi.com/idoraz1). In the app,
+  the menu's SUPPORT VALTRAINER button opens the same links; its occasional reminder can be turned off in Settings → About.
 
 ## License, credits and legal
 

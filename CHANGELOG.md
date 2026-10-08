@@ -8,6 +8,12 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-10-08
+
+### Added
+
+- **Support ValTrainer:** a SUPPORT VALTRAINER button on the menu and in Settings → About opens [Buy Me a Coffee](https://buymeacoffee.com/idoraz1) or [Ko-fi](https://ko-fi.com/idoraz1) in your browser. A short panel asks once on first launch (after the updates question) and then at most every 14 days; DON'T SHOW AGAIN or Settings → About → Support reminders turns it off. ValTrainer stays free either way, and the panel makes no network requests.
+
 ## [1.6.0] - 2026-10-08
 
 ### Added
@@ -195,7 +201,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/idoraz1/ValTrainer/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/idoraz1/ValTrainer/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/idoraz1/ValTrainer/compare/v1.4.4...v1.5.0
 [1.4.4]: https://github.com/idoraz1/ValTrainer/compare/v1.4.3...v1.4.4

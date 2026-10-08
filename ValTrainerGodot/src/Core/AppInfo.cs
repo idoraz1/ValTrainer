@@ -54,6 +54,18 @@ public static class AppInfo
         catch (Exception e) { Log.Error($"Couldn't open {url}: {e.Message}"); return false; }
     }
 
+    /// <summary>Tip jars (Support panel, Settings → About). Opened in the browser only when the player clicks.</summary>
+    public const string BuyMeACoffeeUrl = "https://buymeacoffee.com/idoraz1";
+    public const string KofiUrl = "https://ko-fi.com/idoraz1";
+
+    /// <summary>Opens one of the two support pages in the browser (nothing else; nothing is sent by ValTrainer itself).</summary>
+    public static bool OpenSupport(string url)
+    {
+        if (url != BuyMeACoffeeUrl && url != KofiUrl) return false;
+        try { return OS.ShellOpen(url) == Error.Ok; }
+        catch (Exception e) { Log.Error($"Couldn't open {url}: {e.Message}"); return false; }
+    }
+
     /// <summary>Shows a local folder in Explorer (created first if missing).</summary>
     public static void OpenFolder(string dir)
     {

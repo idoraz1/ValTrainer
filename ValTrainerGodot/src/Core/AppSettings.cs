@@ -41,6 +41,11 @@ public sealed class AppSettings
     public string? SkippedVersion;     // "Skip this version" on the menu's update banner
     public string? LastSeenVersion;    // version whose "What's new" was shown (or that was installed fresh)
 
+    // ---- support reminders (see SupportPrompt) ----
+    public bool SupportReminders = true; // the "Support ValTrainer" panel may show on its own (first launch, then now and then)
+    public long SupportLastShown;      // unix seconds (UTC) it last showed on its own, 0 = never
+    public int SupportLaunches;        // launches since then
+
     static readonly JsonSerializerOptions Json = new() { IncludeFields = true, WriteIndented = true };
     static string FilePath => Path.Combine(Paths.DataDir, "settings.json");
 

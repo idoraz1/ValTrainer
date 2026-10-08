@@ -638,6 +638,24 @@ public partial class SettingsScreen : ScreenBase
         });
 
         v.AddChild(Spacer(0, 6 * k));
+        v.AddChild(new SectionLabel { Text = "SUPPORT", K = k });
+        v.AddChild(Segmented("Support reminders", new[] { "OFF", "ON" }, () => St.SupportReminders ? 1 : 0,
+            i => { St.SupportReminders = i == 1; SupportPrompt.Pending = false; },
+            note: () => St.SupportReminders ? "Now and then the menu shows the Buy Me a Coffee / Ko-fi panel (at most every 14 days)"
+                : "Off: the panel only opens from the menu's SUPPORT VALTRAINER button"));
+        var jars = HBox(12 * k);
+        jars.CustomMinimumSize = new Vector2(0, 52 * k);
+        jars.AddChild(Spacer(4 * k, 0));
+        foreach (var (label, url) in new[] { ("BUY ME A COFFEE", AppInfo.BuyMeACoffeeUrl), ("KO-FI", AppInfo.KofiUrl) })
+        {
+            var b = Btn(label, VButton.Look.Secondary, () => AppInfo.OpenSupport(url), label.Length > 6 ? 210 : 120, 40, 17);
+            b.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            b.TooltipText = $"Opens {url.Replace("https://", "")} in your browser";
+            jars.AddChild(b);
+        }
+        v.AddChild(jars);
+
+        v.AddChild(Spacer(0, 6 * k));
         v.AddChild(new SectionLabel { Text = "HELP & FEEDBACK", K = k });
         var help = HBox(10 * k);
         help.CustomMinimumSize = new Vector2(0, 52 * k);

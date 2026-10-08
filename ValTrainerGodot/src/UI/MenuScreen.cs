@@ -77,11 +77,12 @@ public partial class MenuScreen : ScreenBase
             },
         });
 
-        // first-launch panels, one at a time: "What's new" first, then the updates opt-in
+        // first-launch panels, one at a time: "What's new" first, then the updates opt-in, then "Support ValTrainer"
         if (WhatsNew.Pending is { } notes)
             AddChild(new WhatsNewPanel(notes, k, CloseWhatsNew));
         else if (UpdatesPrompt.Pending)
             AddChild(new UpdatesPromptPanel(k, AnswerUpdatesPrompt));
+        else ShowSupportIfDue();
 
         var body = HBox(34 * k);
         body.SizeFlagsVertical = SizeFlags.ExpandFill;
@@ -110,6 +111,7 @@ public partial class MenuScreen : ScreenBase
         UiTheme.ClickSound();
         if (UpdatesPrompt.Pending && !GetChildren().Any(c => c is UpdatesPromptPanel))
             AddChild(new UpdatesPromptPanel(K, AnswerUpdatesPrompt));
+        else ShowSupportIfDue();
     }
 
     void AnswerUpdatesPrompt(bool yes)
@@ -117,6 +119,23 @@ public partial class MenuScreen : ScreenBase
         foreach (var c in GetChildren()) if (c is UpdatesPromptPanel p) p.QueueFree();
         UiTheme.ClickSound();
         UpdatesPrompt.Answer(yes);
+        ShowSupportIfDue();
+    }
+
+    /// <summary>The support panel when it's due (after the other first-launch panels).</summary>
+    void ShowSupportIfDue()
+    {
+        if (!SupportPrompt.Pending || GetChildren().Any(c => c is SupportPanel)) return;
+        SupportPrompt.Shown();
+        AddChild(new SupportPanel(K, true, () => { }));
+    }
+
+    /// <summary>The menu's SUPPORT button.</summary>
+    void ShowSupport()
+    {
+        if (GetChildren().Any(c => c is SupportPanel)) return;
+        UiTheme.ClickSound();
+        AddChild(new SupportPanel(K, false, () => { }));
     }
 
     // ---------------- update banner ----------------
@@ -253,7 +272,15 @@ public partial class MenuScreen : ScreenBase
         coachHint = new CoachHint { K = k, CustomMinimumSize = new Vector2(0, 22 * k), Visible = false };
         coachHint.Pressed += Main.I.ShowProfile;
         right.AddChild(coachHint);
-        right.AddChild(Lbl("Fan-made trainer · not endorsed by or affiliated with Riot Games", UiTheme.Body, 13, UiTheme.Faint, HorizontalAlignment.Right));
+        var foot = HBox(14 * k);
+        foot.Alignment = BoxContainer.AlignmentMode.End;
+        var fan = Lbl("Fan-made trainer · not endorsed by or affiliated with Riot Games", UiTheme.Body, 13, UiTheme.Faint, HorizontalAlignment.Right);
+        fan.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        foot.AddChild(fan);
+        var support = Btn("SUPPORT VALTRAINER", VButton.Look.Secondary, ShowSupport, 210, 32, 14);
+        support.TooltipText = "Buy Me a Coffee or Ko-fi: ValTrainer stays free either way";
+        foot.AddChild(support);
+        right.AddChild(foot);
         h.AddChild(right);
         UpdateCoachHint();
         return h;
@@ -310,7 +337,7 @@ public partial class MenuScreen : ScreenBase
     void CheckMatchPrompt(bool refill)
     {
         matchRecheck = 30;
-        if (matchAsk != null || matchDone || WhatsNew.Pending != null || UpdatesPrompt.Pending) return;
+        if (matchAsk != null || matchDone || WhatsNew.Pending != null || UpdatesPrompt.Pending || SupportPrompt.Pending) return;
         var rec = Warmup.LockInMatchLog.Due(Warmup.WarmupStore.I, DateTime.Now);
         if (rec == null) return;
         matchAsk = rec;
