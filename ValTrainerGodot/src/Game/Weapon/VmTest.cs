@@ -11,6 +11,9 @@ namespace ValTrainer.Game.Weapon;
 /// <c>--vmreload 0..1</c> (or <c>--vmreload loop</c>), <c>--vmspeed m/s</c>, <c>--vmcrouch</c>, <c>--vmlook</c>,
 /// <c>--vmflash</c> (hold the muzzle flash), <c>--vmwall</c> (wall 0.2 m in front of the eye: clip test),
 /// <c>--vmview side|left|top</c> (debug orthographic-ish views with a 5 cm grid).
+/// Once the gun is fully aimed (<c>--vmads 1</c>, or a session aimed with <c>--force-ads</c>) it prints the ADS pose check
+/// ("[vmtest] ads sight top …": the gun's top must sit at 0.60–0.65 H); <c>--vmprofile</c> adds the model's top silhouette.
+/// The log may not be flushed when gshot kills the game: add <c>--vmshots T --vmout prefix</c> so it quits by itself.
 /// </summary>
 static class VmTest
 {
@@ -181,9 +184,30 @@ static class VmTest
         }
     }
 
+    /// <summary>ADS pose check, printed once the gun is fully aimed (--vmads 1, or a session aimed with --force-ads): the
+    /// gun's on-screen top must sit at 0.60–0.65 H, below the crosshair, like VALORANT (ads-model.md §4.3).
+    /// --vmprofile also prints the model's gun-space top silhouette.</summary>
+    static void AdsCheck(Viewmodel vm)
+    {
+        if (adsChecked || clock < 1.5f || View != null) return;
+        var (top, x, width, ads) = vm.SightTop();
+        if (ads < 0.999f) return;
+        adsChecked = true;
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        float aspect = vm.GetViewport().GetVisibleRect().Size.Aspect();
+        bool ok = top >= 0.60f && top <= 0.65f && Mathf.Abs(x - aspect / 2f) < 0.03f;
+        GD.Print(string.Format(inv, "[vmtest] ads sight top {0}: y {1:0.000} H (target 0.60-0.65), x {2:+0.000;-0.000} H from centre, top width {3:0.000} H -> {4}",
+            vm.Kind, top, x - aspect / 2f, width, ok ? "PASS" : "FAIL"));
+        if (CmdLine.Has("--vmprofile"))
+            foreach (var (z, y, px) in vm.GunProfile())
+                GD.Print(string.Format(inv, "[vmprofile] z {0:0.000} y {1:0.000} x {2:0.000}", z, y, px));
+    }
+    static bool adsChecked;
+
     public static void Tick(Viewmodel vm, float dt)
     {
         clock += dt;
+        AdsCheck(vm);
         if (Hide) vm.Hide();
         if (Bench) BenchTick(vm, dt);
         if (shotPrefix != null && shotIdx < shotTimes.Length && clock >= shotTimes[shotIdx])

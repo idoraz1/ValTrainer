@@ -570,16 +570,17 @@ public partial class MenuScreen : ScreenBase
         Row("Crosshair profile", () => Valorant.CrosshairCode.Effective.Name);
 
         // crosshair preview
-        var xp = new VPanel { Title = "CROSSHAIR", K = k, Caption = "primary · real pixel size", SizeFlagsVertical = SizeFlags.ExpandFill };
+        var xp = new VPanel { Title = "CROSSHAIR", K = k, Caption = "real pixel size", SizeFlagsVertical = SizeFlags.ExpandFill };
         right.AddChild(xp);
         var col = new VBoxContainer { SizeFlagsVertical = SizeFlags.ExpandFill };
         col.AddThemeConstantOverride("separation", (int)(8 * k));
         xp.AddChild(col);
-        var box = new DrawBox { SizeFlagsVertical = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, (matchSlot.Visible ? 90 : 150) * k), ClipContents = true, OnDraw = DrawRange };
-        col.AddChild(box);
-        var xh = new CrosshairView { Profile = Valorant.CrosshairCode.Effective, LocalCenter = true };
-        box.AddChild(xh);
-        xh.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        // PRIMARY / ADS / SNIPER tabs only for a split profile (own ADS crosshair or sniper dot): the menu is tight.
+        col.AddChild(new CrosshairPreview
+        {
+            K = k, BoxHeight = matchSlot.Visible ? 90 : 150, Backdrop = DrawRange, TabsOnlyWhenSplit = true, Caption = false,
+            SizeFlagsVertical = SizeFlags.ExpandFill,
+        });
         VButton? copy = null;
         copy = Btn("COPY CROSSHAIR CODE", VButton.Look.Secondary, () =>
         {

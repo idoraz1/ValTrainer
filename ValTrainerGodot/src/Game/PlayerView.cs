@@ -14,7 +14,10 @@ public sealed class PlayerView
 
     public Vector3 Eye = new(0, EyeHeight, 0);
     public float Yaw, Pitch;
+    /// <summary>Zoom of the mouse look and the telemetry: the weapon's zoom from the moment alt fire aims, else 1.</summary>
     public float Zoom = 1f;
+    /// <summary>Zoom of the picture (<see cref="HFov"/>): eases from 1 to the weapon's zoom while the gun is raised.</summary>
+    public float VisualZoom = 1f;
 
     /// <summary>Recoil currently applied to the view (degrees). Added to the look angles.</summary>
     public float RecoilPitch, RecoilYaw;
@@ -39,8 +42,8 @@ public sealed class PlayerView
         return new Vector3(Mathf.Sin(y) * Mathf.Cos(p), Mathf.Sin(p), -Mathf.Cos(y) * Mathf.Cos(p));
     }
 
-    /// <summary>Horizontal FOV at the current zoom (degrees).</summary>
-    public float HFov => Mathf.RadToDeg(2f * Mathf.Atan(Mathf.Tan(Mathf.DegToRad(HipHFov / 2f)) / Zoom));
+    /// <summary>Horizontal FOV on screen at the current <see cref="VisualZoom"/> (degrees).</summary>
+    public float HFov => Mathf.RadToDeg(2f * Mathf.Atan(Mathf.Tan(Mathf.DegToRad(HipHFov / 2f)) / VisualZoom));
 
     public float AngleTo(Vector3 target)
     {

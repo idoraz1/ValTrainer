@@ -24,8 +24,14 @@ namespace ValTrainer.Modes;
 /// head flicks (ln ID/MT'), micro-adjusts on far heads (ln ID/MT' − 0.4·first-shot error in head radii) and one agent
 /// to kill (−ln TTK), compared like the sens finder (standardized within the match, Welch SE, weights 0.4/0.4/0.2).
 /// |t| ≥ 1 decides; otherwise the player's "which felt better?" answer, otherwise the edge in d.</para>
+/// <para>Tabs (shot on the start screen): PRIMARY as above; ADS plays the rounds aimed down sights with the Vandal
+/// (<see cref="IGame.ForcedScope"/>) and shows the candidates as the ADS crosshair; SNIPER tests the scope's centre dot
+/// (<see cref="XfDots"/>: size and opacity, after the colour part) scoped in with the Operator. Every candidate is the
+/// player's whole profile with only that tab replaced (<see cref="XfTabs.Merge"/>), so the code and "Use in ValTrainer"
+/// never touch the other tabs.</para>
 /// Dev flags (with --dev): --xfquick (short protocol), --xfseed N, --xfexit (quit at the result), --xfpick key,key,...
-/// (fix the shape picks), --xftest (code and shape self-test, then quit with the number of failures).
+/// (fix the shape picks), --xftype primary|ads|sniper (the tab the dev run picks), --xhair-code CODE (the player's crosshair
+/// for this run), --xftest (code, shape and merge self-test, then quit with the number of failures).
 /// </summary>
 public sealed partial class CrosshairFinderMode : TrainingMode
 {
@@ -33,7 +39,7 @@ public sealed partial class CrosshairFinderMode : TrainingMode
 
     public override string Key => "xhairfinder";
     public override string Name => "Crosshair Finder";
-    public override string Description => "Try dot, cross, plus, circle and box crosshairs in real drills; get the one you see and shoot best with as a VALORANT code.";
+    public override string Description => "Try dot, cross, plus, circle and box crosshairs in real drills (hip fire, ADS or the sniper scope); get the one you see and shoot best with as a VALORANT code.";
     public override string Category => "Coach";
     public override WeaponKind Weapon => WeaponKind.Vandal;
     public override bool Timed => false;
@@ -46,18 +52,22 @@ public sealed partial class CrosshairFinderMode : TrainingMode
 
     Ph phase;
     float phaseT;
-    bool done, devExit, simPlayer;
+    bool done, devExit, simPlayer, quick;
     ulong lastRealUsec;
     XfConfig cfg = null!;
+    XfTab tab, devTab;
+    bool devTabSet;
+    float lastShotAt = -99f;
     Random rng = null!;
     string notice = "";
     float noticeUntil;
     int focusId = 1;
 
-    // the player's crosshair and ValTrainer setting before the drill ("Keep my crosshair" restores them)
+    // the player's crosshair (whole profile + the code-only flags) and ValTrainer setting before the drill
+    // ("Keep my crosshair" restores them)
     CrosshairSettings cur = null!;
     bool origUse;
-    string? origCode;
+    string? origCode, origTab;
     static readonly CrosshairSettings Hidden = new() { Name = "hidden", Primary = new CrosshairStyle { Hide = true } };
 
     // ---- part 1 ----
@@ -109,6 +119,7 @@ public sealed partial class CrosshairFinderMode : TrainingMode
         Ph.Trial when trialLive => new AimFocus(focusId, target.GlobalPosition, target.Radius),
         Ph.Pref when simPref >= 0 && phaseT > 1.5f => new AimFocus(focusId, prefT[simPref].GlobalPosition, prefT[simPref].Radius),
         Ph.Pick when simPlan.Count > 0 && phaseT > 1.2f => new AimFocus(focusId, CardQuad(simPlan[0]).C, CardQuad(simPlan[0]).U.Length() * 0.3f),
+        Ph.Intro when simPlayer && phaseT > 1.5f => new AimFocus(focusId, Quad(ChoiceLayout((int)devTab)).C, Quad(ChoiceLayout((int)devTab)).U.Length() * 0.3f),
         _ => null,
     };
 
@@ -124,20 +135,20 @@ public sealed partial class CrosshairFinderMode : TrainingMode
     {
         bool dev = Main.I.Dev;
         if (dev && Args.Contains("--xftest")) { RunSelfTest(); return; }
-        cfg = dev && Args.Contains("--xfquick") ? XfConfig.Quick() : XfConfig.Full();
+        quick = dev && Args.Contains("--xfquick");
+        cfg = XfConfig.For(XfTab.Primary, quick); // per tab once the player picks one
         int seed = dev && int.TryParse(ArgAfter("--xfseed"), out var s) ? s : System.Environment.TickCount;
         rng = new Random(seed);
         devExit = dev && Args.Contains("--xfexit");
         simPlayer = dev && ArgAfter("--simaim") != null;
+        devTab = (ArgAfter("--xftype") ?? "").ToLowerInvariant() switch { "ads" => XfTab.Ads, "sniper" => XfTab.Sniper, _ => XfTab.Primary };
+        devTabSet = dev && (simPlayer || ArgAfter("--xftype") != null);
         origUse = Main.I.Settings.UseFinderCrosshair;
         origCode = Main.I.Settings.FinderCrosshairCode;
-        cur = CrosshairCode.Effective;
+        origTab = Main.I.Settings.FinderCrosshairTab;
+        cur = CrosshairCode.Effective.Clone(); // the whole profile (every tab and the General flags)
         G.TrialCrosshair = null;
-
-        BuildColorCandidates();
-        foreach (var sc in cfg.Scenes)
-            for (int c = 0; c < colors.Count; c++) visQueue.Add((c, sc, rng.Next()));
-        Shuffle(visQueue);
+        G.ForcedScope = false;
 
         // Targets / an agent stay visible (covered by the intro and part-1 backdrops) so their materials are compiled
         // before the first timed trial.
@@ -154,17 +165,42 @@ public sealed partial class CrosshairFinderMode : TrainingMode
         phase = Ph.Intro;
         phaseT = 0;
         lastRealUsec = Time.GetTicksUsec();
-        GD.Print($"[xf] start seed={seed} quick={cfg.BlocksPerMatch < 4} current={CrosshairCode.Encode(cur)} candidates: "
-                 + string.Join(" | ", colors.Select(c => $"{c.Name}{(c.IsCurrent ? " (current)" : "")} contrast={c.Contrast:0.000}")));
+        GD.Print($"[xf] start seed={seed} quick={quick} current={CrosshairCode.Encode(cur)}");
     }
+
+    /// <summary>The player picked the tab to test: set up its protocol, its colour candidates and its gun.</summary>
+    void Choose(XfTab t)
+    {
+        tab = t;
+        cfg = XfConfig.For(t, quick);
+        BuildColorCandidates();
+        foreach (var sc in cfg.Scenes)
+            for (int c = 0; c < colors.Count; c++) visQueue.Add((c, sc, rng.Next()));
+        Shuffle(visQueue);
+        if (t == XfTab.Sniper) G.SwitchWeapon(WeaponKind.Operator);
+        Event("xhair_tab", (int)t);
+        GD.Print($"[xf] tab {XfTabs.Name(t)}: your {XfTabs.Name(t)} now = {CurrentLook(t)}; candidates: "
+                 + string.Join(" | ", colors.Select(c => $"{c.Name}{(c.IsCurrent ? " (current)" : "")} contrast={c.Contrast:0.000}")));
+        StartHeader(1);
+    }
+
+    /// <summary>Short description of the player's crosshair in a tab (log and start screen).</summary>
+    string CurrentLook(XfTab t) => t switch
+    {
+        XfTab.Sniper => XfDot.Describe(cur.SniperDotFor()) + (cur.SniperIsOwn ? "" : " (VALORANT's default)"),
+        XfTab.Ads when !cur.AdsIsOwn => "copies your primary",
+        _ => CrosshairCode.ColorName(XfTabs.Style(t, cur).Color),
+    };
 
     void RunSelfTest()
     {
         var fails = CrosshairCode.SelfTest(out int n);
         fails.AddRange(XfShapes.SelfTest(out int ns));
         n += ns;
+        fails.AddRange(XfTabs.SelfTest(out int nt));
+        n += nt;
         foreach (var f in fails) GD.Print($"[xf] FAIL {f}");
-        GD.Print($"[xf] code self-test: {n - fails.Count}/{n} passed");
+        GD.Print($"[xf] code self-test: {n - fails.Count}/{n} passed ({ns} shape checks, {nt} tab merge checks)");
         foreach (var (who, c) in CrosshairCode.ProCodes) GD.Print($"[xf]   {who}: {c}");
         foreach (var e in XfShapes.All(Colors.White, false))
             GD.Print($"[xf]   {e.Name} (white): {e.Code}  {string.Join("/", CrosshairView.Raster(e.Xhair.Primary, 7).Skip(1).Take(12).Select(r => r[1..13]))}");
@@ -193,6 +229,9 @@ public sealed partial class CrosshairFinderMode : TrainingMode
         phaseT += dt;
         aimFwd = G.View.Forward;
         if (bot != null && GodotObject.IsInstanceValid(bot)) bot.Velocity = Vector3.Zero;
+        // ADS / sniper rounds (and the look-around before them) are played aimed / scoped in; everything else hip fire
+        bool aim = tab != XfTab.Primary && phase is Ph.Rest or Ph.Trial;
+        if (G.ForcedScope != aim) G.ForcedScope = aim;
 
         // A pause (Esc / focus loss) inside a timed trial invalidates it.
         if (realGap > dt + 0.75f)
@@ -204,7 +243,10 @@ public sealed partial class CrosshairFinderMode : TrainingMode
         switch (phase)
         {
             case Ph.Intro:
-                if ((phaseT > 2f && pressed) || (Main.I.Dev && phaseT > 3f)) StartHeader(1);
+                pickEye = G.View.Eye; // the start cards hang in front of the starting view (the player can't move here)
+                // dev: --xftype picks after 3 s (the simulated player shoots the card itself; 8 s fallback); a plain dev
+                // run waits on this screen
+                if (devTabSet && phaseT > (simPlayer ? 8f : 3f)) Choose(devTab);
                 break;
             case Ph.Header:
                 if (phaseT >= cfg.PartHeaderSec)
@@ -300,23 +342,31 @@ public sealed partial class CrosshairFinderMode : TrainingMode
     /// </summary>
     void BuildColorCandidates()
     {
+        // the sniper dot has no outline
+        bool[] outlines = tab == XfTab.Sniper ? new[] { false } : new[] { false, true };
         var bgs = XfVisibility.Backgrounds(G.Enemy);
         var all = new List<XfColor>();
         foreach (var col in CrosshairCode.Presets)
-            foreach (bool o in new[] { false, true })
+            foreach (bool o in outlines)
                 all.Add(new XfColor { Color = col, Outline = o, Contrast = XfVisibility.Score(col, o, bgs, G.Enemy) });
         all.Sort((x, y) => y.Contrast.CompareTo(x.Contrast));
 
-        var mine = cur.Primary;
-        var curColor = new Color(mine.Color, 1f);
-        bool curOutline = mine.HasOutline && mine.OutlineOpacity > 0.05f && mine.OutlineThickness > 0;
+        Color curColor;
+        bool curOutline = false;
+        if (tab == XfTab.Sniper) curColor = new Color(cur.SniperDotFor().Color, 1f);
+        else
+        {
+            var mine = XfTabs.Style(tab, cur);
+            curColor = new Color(mine.Color, 1f);
+            curOutline = mine.HasOutline && mine.OutlineOpacity > 0.05f && mine.OutlineThickness > 0;
+        }
         colors.Add(new XfColor { Color = curColor, Outline = curOutline, IsCurrent = true, Contrast = XfVisibility.Score(curColor, curOutline, bgs, G.Enemy) });
         bool Has(Color c, bool o) => colors.Any(x => x.Color.ToRgba32() == c.ToRgba32() && x.Outline == o);
         bool HasColor(Color c) => colors.Any(x => x.Color.ToRgba32() == c.ToRgba32());
         var best = all[0];
         if (!Has(best.Color, best.Outline)) colors.Add(best);
-        var flip = all.First(x => x.Color.ToRgba32() == best.Color.ToRgba32() && x.Outline != best.Outline);
-        if (colors.Count < cfg.ColorCandidates && !Has(flip.Color, flip.Outline)) colors.Add(flip);
+        var flip = all.FirstOrDefault(x => x.Color.ToRgba32() == best.Color.ToRgba32() && x.Outline != best.Outline);
+        if (flip != null && colors.Count < cfg.ColorCandidates && !Has(flip.Color, flip.Outline)) colors.Add(flip);
         foreach (var c in all)
         {
             if (colors.Count >= cfg.ColorCandidates) break;
@@ -358,7 +408,9 @@ public sealed partial class CrosshairFinderMode : TrainingMode
         GD.Print($"[xf] colour pick: {chosen.Name} (false starts {falseStarts})");
         Event("xhair_color", CrosshairCode.PresetIndex(chosen.Color), chosen.MedianMs);
 
-        shapes = XfShapes.All(chosen.Color, chosen.Outline);
+        // each candidate is the player's whole profile with only the tested tab replaced
+        var raw = tab == XfTab.Sniper ? XfDots.All(chosen.Color) : XfShapes.All(chosen.Color, chosen.Outline);
+        shapes = raw.Select(e => XfTabs.Into(tab, cur, e)).ToList();
         phase = Ph.VisResult;
         phaseT = 0;
         G.TrialCrosshair = null;
@@ -372,6 +424,9 @@ public sealed partial class CrosshairFinderMode : TrainingMode
     // 0.31 ≈ 17° between card centres in the middle; the whole grid fits in VALORANT's 103° field of view.
     const float CardDist = 10f, CardW = 0.272f, CardH = 0.263f, CardStep = 0.31f;
     int PickedCount => sel.Count(b => b);
+    /// <summary>The recommended candidates (picked when the pick screen opens).</summary>
+    string[] Defaults => tab == XfTab.Sniper ? XfDots.Defaults : XfShapes.Defaults;
+    string ShapeWord => tab == XfTab.Sniper ? "dot" : "shape";
     int StartCard => shapes.Count;
 
     /// <summary>Card <paramref name="i"/> (the last index is START) on the plane: centre and size (right / up, in units
@@ -385,29 +440,48 @@ public sealed partial class CrosshairFinderMode : TrainingMode
         return ((col - (nRow - 1) / 2f) * CardStep, row0 ? 0.167f : -0.13f, CardW, CardH);
     }
 
+    /// <summary>Start screen card of tab <paramref name="i"/>: ADS left, PRIMARY (the default) in the middle where the
+    /// crosshair starts, SNIPER right.</summary>
+    static (float X, float Y, float W, float H) ChoiceLayout(int i) =>
+        ((XfTab)i switch { XfTab.Ads => -0.47f, XfTab.Sniper => 0.47f, _ => 0f }, -0.02f, 0.42f, 0.40f);
+
     /// <summary>The card as a world-space rectangle: centre and right / up half-extents.</summary>
-    (Vector3 C, Vector3 R, Vector3 U) CardQuad(int i)
+    (Vector3 C, Vector3 R, Vector3 U) CardQuad(int i) => Quad(CardLayout(i));
+
+    (Vector3 C, Vector3 R, Vector3 U) Quad((float X, float Y, float W, float H) l)
     {
-        var (x, y, w, h) = CardLayout(i);
         var fwd = PlayerView.Dir(0, 0);
         var right = fwd.Cross(Vector3.Up).Normalized();
         var up = right.Cross(fwd).Normalized();
-        return (pickEye + (fwd + right * x + up * y) * CardDist, right * (w / 2 * CardDist), up * (h / 2 * CardDist));
+        return (pickEye + (fwd + right * l.X + up * l.Y) * CardDist, right * (l.W / 2 * CardDist), up * (l.H / 2 * CardDist));
     }
 
     /// <summary>The card the ray points at, or -1.</summary>
-    int CardHit(Vector3 o, Vector3 d)
+    int CardHit(Vector3 o, Vector3 d) => Hit(o, d, shapes.Count + 1, CardLayout);
+
+    int Hit(Vector3 o, Vector3 d, int count, Func<int, (float, float, float, float)> layout)
     {
         var n = PlayerView.Dir(0, 0);
         float den = d.Dot(n);
         if (den <= 1e-4f) return -1;
-        for (int i = 0; i <= shapes.Count; i++)
+        for (int i = 0; i < count; i++)
         {
-            var (c, r, u) = CardQuad(i);
+            var (c, r, u) = Quad(layout(i));
             var p = o + d * ((c - o).Dot(n) / den) - c;
             if (Mathf.Abs(p.Dot(r.Normalized())) <= r.Length() && Mathf.Abs(p.Dot(u.Normalized())) <= u.Length()) return i;
         }
         return -1;
+    }
+
+    /// <summary>Start screen: shooting a card picks the tab to test.</summary>
+    float ChoiceShot()
+    {
+        if (phaseT < 0.8f) return float.PositiveInfinity;
+        int i = Hit(G.View.Eye, aimFwd, 3, ChoiceLayout);
+        if (i < 0) return float.PositiveInfinity;
+        G.Sound("head", 0.8f);
+        Choose((XfTab)i);
+        return float.PositiveInfinity;
     }
 
     void StartPick()
@@ -418,7 +492,7 @@ public sealed partial class CrosshairFinderMode : TrainingMode
         foreach (var t in prefT) t.Visible = false;
         if (bot != null && GodotObject.IsInstanceValid(bot)) bot.Visible = false;
         G.TrialCrosshair = null;
-        sel = shapes.Select(e => XfShapes.Defaults.Contains(e.Key)).ToArray();
+        sel = shapes.Select(e => Defaults.Contains(e.Key)).ToArray();
 
         // dev: --xfpick key,key,... (2–4 shape keys) fixes the picks; the simulated player then only shoots START
         string? forced = Main.I.Dev ? ArgAfter("--xfpick") : null;
@@ -470,8 +544,8 @@ public sealed partial class CrosshairFinderMode : TrainingMode
             StartBracket();
             return float.PositiveInfinity;
         }
-        if (sel[i] && PickedCount <= 2) { Notice("Keep at least 2 shapes"); G.Sound("fail", 0.4f); }
-        else if (!sel[i] && PickedCount >= 4) { Notice("Up to 4 shapes: shoot a picked one to drop it first"); G.Sound("fail", 0.4f); }
+        if (sel[i] && PickedCount <= 2) { Notice($"Keep at least 2 {ShapeWord}s"); G.Sound("fail", 0.4f); }
+        else if (!sel[i] && PickedCount >= 4) { Notice($"Up to 4 {ShapeWord}s: shoot a picked one to drop it first"); G.Sound("fail", 0.4f); }
         else
         {
             sel[i] = !sel[i];
@@ -499,7 +573,7 @@ public sealed partial class CrosshairFinderMode : TrainingMode
             entrants.Insert(0, b);
             byeName = b.Name;
         }
-        entrants.Add(XfShapes.Current(cur));
+        entrants.Add(XfShapes.Current(cur, tab));
         simPlan.Clear();
         totalBlocks = BracketMatches * cfg.BlocksPerMatch; // the bracket (+ the check, added when it starts)
         Event("xhair_pick", nPick, shapes.Select((e, i) => sel[i] ? 1 << i : 0).Sum());
@@ -584,12 +658,16 @@ public sealed partial class CrosshairFinderMode : TrainingMode
 
     float Timeout(TK k) => k switch { TK.Flick => cfg.FlickTimeout, TK.Micro => cfg.MicroTimeout, _ => cfg.KillTimeout };
 
+    /// <summary>The next target waits for the Operator's bolt and scope (a target the gun can't shoot yet would only
+    /// time the bolt). Other guns are always ready.</summary>
+    bool GunReady => tab != XfTab.Sniper || G.Weapon == null || Now - lastShotAt >= G.Weapon.Interval + 0.25f;
+
     void UpdateTrial()
     {
         if (!trialLive)
         {
             if (phaseT > 0.08f) target.Visible = false; // the hit flash shows briefly, then the gap
-            if (phaseT >= cfg.Foreperiod) SpawnTrial();
+            if (phaseT >= cfg.Foreperiod && GunReady) SpawnTrial();
             return;
         }
         if (Now - spawnAt >= Timeout(seq[trialIdx])) EndTrial(false);
@@ -606,8 +684,8 @@ public sealed partial class CrosshairFinderMode : TrainingMode
         if (k == TK.Kill)
         {
             if (bot == null || !GodotObject.IsInstanceValid(bot) || bot.Dead) bot = G.SpawnBot(new Vector3(0, -6f, 0));
-            float yaw = Mathf.Clamp(G.View.ViewYaw + (rng.Next(2) == 0 ? -1 : 1) * Rf(10f, 24f), -50f, 50f);
-            float dist = Rf(15f, 20f);
+            float yaw = Mathf.Clamp(G.View.ViewYaw + (rng.Next(2) == 0 ? -1 : 1) * Rf(cfg.KillYawMin, cfg.KillYawMax), -50f, 50f);
+            float dist = Rf(cfg.KillDistMin, cfg.KillDistMax);
             var dir = PlayerView.Dir(yaw, 0);
             bot!.Feet = new Vector3(dir.X * dist, 0f, dir.Z * dist);
             bot.FacingYaw = yaw + 180f;
@@ -619,8 +697,8 @@ public sealed partial class CrosshairFinderMode : TrainingMode
             return;
         }
         bool micro = k == TK.Micro;
-        amp = micro ? Rf(1.5f, 5f) : Rf(8f, 30f);
-        float d = micro ? Rf(28f, 36f) : Rf(13f, 18f);
+        amp = micro ? Rf(cfg.MicroAmpMin, cfg.MicroAmpMax) : Rf(cfg.FlickAmpMin, cfg.FlickAmpMax);
+        float d = micro ? Rf(cfg.MicroDistMin, cfg.MicroDistMax) : Rf(cfg.FlickDistMin, cfg.FlickDistMax);
         target.Position = G.View.Eye + Place(amp) * d;
         target.SpawnTime = Now;
         target.Visible = true;
@@ -651,6 +729,8 @@ public sealed partial class CrosshairFinderMode : TrainingMode
     public override float OnBullet(Vector3 o, Vector3 d, bool accurate)
     {
         Shots++;
+        lastShotAt = Now;
+        if (phase == Ph.Intro) return ChoiceShot();
         if (phase == Ph.Pref) return PrefShot(o, d);
         if (phase == Ph.Pick) return PickShot(o, d);
         if (phase != Ph.Trial || !trialLive) return float.PositiveInfinity;
@@ -769,13 +849,14 @@ public sealed partial class CrosshairFinderMode : TrainingMode
         phaseT = 0;
     }
 
-    /// <summary>Left = A, middle = no preference, right = B.</summary>
+    /// <summary>Left = A, middle = no preference, right = B. Judged on the crosshair ray: an unscoped Operator's
+    /// hip-fire spread must not pick the wrong answer.</summary>
     float PrefShot(Vector3 o, Vector3 d)
     {
         if (phaseT < 0.4f) return float.PositiveInfinity; // ignore a shot still in flight from the last block
         for (int i = 0; i < 3; i++)
         {
-            float t = prefT[i].Ray(o, d);
+            float t = prefT[i].Ray(G.View.Eye, aimFwd);
             if (float.IsPositiveInfinity(t)) continue;
             prefT[i].Hit();
             G.Sound("head", 0.7f);
@@ -825,7 +906,7 @@ public sealed partial class CrosshairFinderMode : TrainingMode
         if (matches.Count < BracketMatches) { BeginMatch(); return; }
         if (matches.Count == BracketMatches)
         {
-            if (!XfShapes.SameLook(entrants[Winner(BracketMatches - 1)].Xhair, cur)) { totalBlocks += cfg.BlocksPerMatch; BeginMatch(); return; }
+            if (!XfTabs.SameLook(tab, entrants[Winner(BracketMatches - 1)].Xhair, cur)) { totalBlocks += cfg.BlocksPerMatch; BeginMatch(); return; }
             GD.Print("[xf] the winner already is your crosshair: no check needed");
         }
         Finish();
@@ -845,19 +926,33 @@ public sealed partial class CrosshairFinderMode : TrainingMode
         if (bot != null && GodotObject.IsInstanceValid(bot)) bot.Visible = false;
         int last = matches.Count(m => m.Result != null) - 1;
         int idx = last < 0 ? 0 : matches[last].Entrant[Math.Max(0, matches[last].Winner)];
-        result = entrants.Count > 0 ? entrants[idx] : XfShapes.Current(cur);
-        keepCurrent = result.IsCurrent || XfShapes.SameLook(result.Xhair, cur);
+        result = entrants.Count > 0 ? entrants[idx] : XfShapes.Current(cur, tab);
+        keepCurrent = result.IsCurrent || XfTabs.SameLook(tab, result.Xhair, cur);
+        // the player's whole profile with only the tested tab changed (or, kept, their own profile)
         code = result.Code;
         Main.I.Settings.LastFinderCrosshairCode = code; // copyable later from Settings → Crosshair
         Main.I.Settings.Save();                          // no-op in --dev (AppSettings.ReadOnly)
-        Event("xhair_result", idx, CrosshairCode.PresetIndex(result.Xhair.Primary.Color));
-        GD.Print($"[xf] RESULT t={Now:0.0}s {result.Name}{(keepCurrent ? " (keep yours)" : "")} colour={CrosshairCode.ColorName(result.Xhair.Primary.Color)} outline={result.Xhair.Primary.HasOutline} code={code} aborted={aborted}");
+        var col = XfTabs.ColorOf(tab, result.Xhair);
+        Event("xhair_result", idx, CrosshairCode.PresetIndex(col));
+        GD.Print($"[xf] RESULT t={Now:0.0}s tab={XfTabs.Name(tab)} {result.Name}{(keepCurrent ? " (keep yours)" : "")} colour={CrosshairCode.ColorName(col)}"
+                 + (tab == XfTab.Sniper ? $" dot={XfDot.Describe(result.Xhair.SniperDotFor())}" : $" outline={XfTabs.Style(tab, result.Xhair).HasOutline}")
+                 + $" code={code} was={CrosshairCode.Encode(cur)} aborted={aborted}");
         phase = Ph.Summary;
         phaseT = 0;
     }
 
-    string ResultName => result == null ? "" : result.IsCurrent ? "Your crosshair"
-        : $"{CrosshairCode.ColorName(result.Xhair.Primary.Color)} {result.Name.ToLowerInvariant()}";
+    string ResultName => result == null ? "" : result.IsCurrent ? result.Name
+        : $"{CrosshairCode.ColorName(XfTabs.ColorOf(tab, result.Xhair))} {result.Name.ToLowerInvariant()}";
+
+    /// <summary>What importing the code changes in VALORANT (result screen).</summary>
+    string ChangeNote => tab switch
+    {
+        XfTab.Ads => "Only your ADS crosshair changes. After import, Use Advanced Options is on and Copy Primary Crosshair is off.",
+        XfTab.Sniper => "Only your sniper scope dot changes. After import, Use Advanced Options is on.",
+        _ => cur.UseAdvancedOptions && !cur.UsePrimaryForAds
+            ? "Only your primary crosshair changes. Your ADS crosshair and sniper dot stay as they are."
+            : "Only your primary crosshair changes (your ADS crosshair copies it). Your sniper dot stays as it is.",
+    };
 
     public override IEnumerable<string> HudLines()
     {
@@ -886,12 +981,16 @@ public sealed partial class CrosshairFinderMode : TrainingMode
     {
         if (phase != Ph.Summary || result == null) yield break;
         if (aborted) yield return ("Result", "provisional (fatigue)");
-        yield return ("Crosshair", keepCurrent ? "keep yours" : Short(ResultName));
-        yield return ("Colour", Short($"{CrosshairCode.ColorName(result.Xhair.Primary.Color)}{(result.Xhair.Primary.HasOutline ? " + outline" : "")}"));
+        yield return ("Tested", tab switch { XfTab.Ads => "ADS crosshair", XfTab.Sniper => "sniper scope dot", _ => "primary crosshair" });
+        yield return (tab == XfTab.Sniper ? "Dot" : "Crosshair", keepCurrent ? "keep yours" : Short(ResultName));
+        bool outline = tab != XfTab.Sniper && XfTabs.Style(tab, result.Xhair).HasOutline;
+        yield return ("Colour", Short($"{CrosshairCode.ColorName(XfTabs.ColorOf(tab, result.Xhair))}{(outline ? " + outline" : "")}"));
         if (chosen != null && !float.IsNaN(chosen.MedianMs)) yield return ("Spotted in", $"{chosen.MedianMs:0} ms (median)");
         var fin = matches.LastOrDefault(m => m.Result != null);
         if (fin != null) yield return ("Decided by", fin.DecidedBy);
         yield return ("In VALORANT", keepCurrent ? "nothing to change" : "Import Profile Code");
+        if (!keepCurrent) yield return ("Code changes", $"{XfTabs.Name(tab)} tab only");
+        if (!keepCurrent && tab != XfTab.Primary) yield return ("Advanced Options", "on after import");
         yield return ("Code", "Copy it with the button");
     }
 
@@ -906,21 +1005,26 @@ public sealed partial class CrosshairFinderMode : TrainingMode
             DisplayServer.ClipboardSet(c);
             GD.Print("[xf] code copied to the clipboard");
         });
+        // The code is the player's profile with only the tested tab changed; ValTrainer applies just that tab on top of the
+        // live VALORANT import (CrosshairCode.ApplyTab), so later changes to the other tabs in VALORANT still show.
+        string tabName = CrosshairCode.TabName(tab switch { XfTab.Ads => CrosshairView.Mode.Ads, XfTab.Sniper => CrosshairView.Mode.Sniper, _ => CrosshairView.Mode.Primary });
         if (!keepCurrent && !aborted)
             yield return ("Use in ValTrainer", () =>
             {
                 var s = Main.I.Settings;
                 s.UseFinderCrosshair = true;
                 s.FinderCrosshairCode = c;
+                s.FinderCrosshairTab = tabName;
                 s.Save(); // no-op in --dev (AppSettings.ReadOnly)
             });
         // Undoes "Use in ValTrainer" if it was clicked; otherwise nothing changes.
         yield return ("Keep my crosshair", () =>
         {
             var s = Main.I.Settings;
-            if (s.UseFinderCrosshair == origUse && s.FinderCrosshairCode == origCode) return;
+            if (s.UseFinderCrosshair == origUse && s.FinderCrosshairCode == origCode && s.FinderCrosshairTab == origTab) return;
             s.UseFinderCrosshair = origUse;
             s.FinderCrosshairCode = origCode;
+            s.FinderCrosshairTab = origTab;
             s.Save();
         });
     }

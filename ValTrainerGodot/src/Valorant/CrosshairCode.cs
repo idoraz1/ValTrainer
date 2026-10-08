@@ -7,23 +7,42 @@ using Color = Godot.Color;
 namespace ValTrainer.Valorant;
 
 /// <summary>
-/// Settings of a VALORANT crosshair code that <see cref="CrosshairSettings"/> doesn't model. They only matter for
-/// reproducing a code exactly; ValTrainer's drawing ignores them.
+/// Settings of a VALORANT crosshair code beyond the drawn styles (<see cref="CrosshairSettings.Extras"/>): General flags,
+/// colour provenance and anything unknown, so a decoded code re-encodes without loss.
 /// </summary>
 public sealed class CrosshairCodeExtras
 {
-    /// <summary>Global "s": Use Advanced Options (shows the ADS / Sniper tabs).</summary>
+    /// <summary>Global "s" as seen by the code alone: kept equal to <see cref="CrosshairSettings.UseAdvancedOptions"/> by
+    /// the decoders. The encoder treats the profile as advanced when either flag is set.</summary>
     public bool AdvancedOptions;
-    /// <summary>Global "c": Override All Primary Crosshairs With My Primary Crosshair.</summary>
+    /// <summary>Global "c":Override All Primary Crosshairs With My Primary Crosshair (shotguns; ValTrainer has none).</summary>
     public bool OverrideAllPrimary;
     public CrosshairCodeSection Primary = new(), Ads = new();
     /// <summary>Sniper "b" / "c;8": custom centre-dot colour even if it equals a preset.</summary>
     public bool SniperCustom;
+    /// <summary>The decoded code had an "A" / "S" section the game wouldn't export with its flags (A without s;1 + p;0,
+    /// S without s;1): VALORANT ignores it, the encoder re-emits it so the code round-trips.</summary>
+    public bool KeepAdsSection, KeepSniperSection;
+    /// <summary>Keys ValTrainer doesn't know, per section ("" global, "P", "A", "S"), re-emitted at the end of it.</summary>
+    public List<(string Section, string Key, string Value)> UnknownKeys = new();
+    /// <summary>Sections with a marker ValTrainer doesn't know (a future tab, the community NAME;"…" extension), kept
+    /// verbatim and re-emitted after the known sections.</summary>
+    public List<(string Marker, List<string> Tokens)> UnknownSections = new();
+
+    public CrosshairCodeExtras Clone()
+    {
+        var c = (CrosshairCodeExtras)MemberwiseClone();
+        c.Primary = Primary.Clone();
+        c.Ads = Ads.Clone();
+        c.UnknownKeys = new(UnknownKeys);
+        c.UnknownSections = UnknownSections.Select(s => (s.Marker, new List<string>(s.Tokens))).ToList();
+        return c;
+    }
 }
 
 public sealed class CrosshairCodeSection
 {
-    /// <summary>"f": Fade Crosshair With Firing Error (default on).</summary>
+    /// <summary>"f": Fade Crosshair With Firing Error (default on; a General setting stored with the primary).</summary>
     public bool Fade = true;
     /// <summary>"s": Show Spectated Player's Crosshair (default on).</summary>
     public bool ShowSpectated = true;
@@ -33,15 +52,18 @@ public sealed class CrosshairCodeSection
     public bool CustomViaC8, CustomViaB;
     /// <summary>A leftover "u" kept by the game while a preset colour is selected (exported as-is).</summary>
     public string? StaleHex;
+
+    public CrosshairCodeSection Clone() => (CrosshairCodeSection)MemberwiseClone();
 }
 
 /// <summary>
 /// VALORANT crosshair profile codes (Settings → Crosshair → Import Profile Code), e.g. "0;P;c;5;h;0;0l;4;0o;2;0a;1;1b;0".
 /// <para>Grammar: version token "0", then key;value pairs. Bare "P" / "A" / "S" switch to the primary / ADS / sniper
-/// section; pairs before the first "P" are global ("p" copy primary for ADS, "c" override all primary, "s" advanced
-/// options). Keys equal to their default are omitted; numbers have at most 3 decimals ("0.374", "1"); colours are
-/// "RRGGBBAA". Key table, defaults and order follow the @valapi/crosshair library and real in-game exports
-/// (genesy/crosshair-codes samples, prosettings.net pro codes). See docs in the CHANGELOG / crosshair finder.</para>
+/// section; pairs before the first marker are global ("p" copy primary for ADS, "c" override all primary, "s" advanced
+/// options). Any other bare upper-case token is an unknown section (kept verbatim). Keys equal to their default are
+/// omitted; numbers have at most 3 decimals ("0.374", "1"); colours are "RRGGBBAA". The game exports "A" only with
+/// s;1 and p;0, and "S" only with s;1. Key table, defaults and order follow the @valapi/crosshair library and real
+/// in-game exports (genesy/crosshair-codes samples, prosettings.net pro codes).</para>
 /// ValTrainer only reads and writes these strings: VALORANT's files are never touched.
 /// </summary>
 public static class CrosshairCode
@@ -95,6 +117,7 @@ public static class CrosshairCode
         Primary = DefaultStyle(),
         Ads = DefaultStyle(),
         UsePrimaryForAds = true,
+        UseAdvancedOptions = false,
         SniperDot = true, SniperDotColor = Presets[7], SniperDotSize = 1, SniperDotOpacity = 0.75f,
     };
 
@@ -102,10 +125,20 @@ public static class CrosshairCode
     // Decode
     // =====================================================================================
 
-    /// <summary>Parses a crosshair code; null if it isn't one. Unknown keys are ignored, keys may come in any order,
-    /// a repeated key wins last, out-of-range numbers are clamped.</summary>
+    static readonly HashSet<string> GlobalKeys = new() { "p", "c", "s" };
+    static readonly HashSet<string> StyleKeys = new[] { "c", "u", "h", "t", "o", "d", "b", "z", "a", "f", "s", "m" }
+        .Concat(new[] { "0", "1" }.SelectMany(p => new[] { "b", "t", "l", "v", "g", "o", "a", "m", "s", "f", "e" }.Select(k => p + k)))
+        .ToHashSet();
+    static readonly HashSet<string> SniperKeys = new() { "d", "b", "c", "t", "s", "o" };
+
+    /// <summary>A bare upper-case token in key position: a section marker ("P", "A", "S" or an unknown one).</summary>
+    static bool IsMarker(string t) => t.Length is >= 1 and <= 16 && t.All(ch => ch is >= 'A' and <= 'Z');
+
+    /// <summary>Parses a crosshair code; null if it isn't one. Keys may come in any order, a repeated key wins last,
+    /// out-of-range numbers are clamped; unknown keys and sections are kept in <see cref="CrosshairSettings.Extras"/>.</summary>
     public static CrosshairSettings? Decode(string? code) => Decode(code, out _);
 
+    /// <summary><paramref name="extras"/> is the result's <see cref="CrosshairSettings.Extras"/>.</summary>
     public static CrosshairSettings? Decode(string? code, out CrosshairCodeExtras extras)
     {
         extras = new CrosshairCodeExtras();
@@ -114,30 +147,51 @@ public static class CrosshairCode
         while (tok.Count > 0 && tok[^1].Length == 0) tok.RemoveAt(tok.Count - 1);
         if (tok.Count == 0 || tok[0] != "0") return null;
 
-        var sec = new Dictionary<char, Dictionary<string, string>>
+        var sec = new Dictionary<string, Dictionary<string, string>>
         {
-            ['G'] = new(), ['P'] = new(), ['A'] = new(), ['S'] = new(),
+            [""] = new(), ["P"] = new(), ["A"] = new(), ["S"] = new(),
         };
-        char cur = 'G';
+        string cur = "";
+        bool hadA = false, hadS = false;
+        List<string>? unknown = null; // tokens of the unknown section being read
         for (int i = 1; i < tok.Count;)
         {
             string t = tok[i];
-            if (t is "P" or "A" or "S") { cur = t[0]; i++; continue; }
+            if (IsMarker(t))
+            {
+                if (t is "P" or "A" or "S") { cur = t; unknown = null; hadA |= t == "A"; hadS |= t == "S"; }
+                else { unknown = new List<string>(); extras.UnknownSections.Add((t, unknown)); }
+                i++;
+                continue;
+            }
+            if (unknown != null)
+            {
+                // Verbatim: key;value pairs, or a lone token (the community NAME;"…" extension) before a known marker / the end.
+                unknown.Add(t);
+                i++;
+                if (i < tok.Count && !t.StartsWith('"') && tok[i] is not ("P" or "A" or "S")) unknown.Add(tok[i++]);
+                continue;
+            }
             if (t.Length == 0 || t.Length > 3 || i + 1 >= tok.Count) return null; // not a key;value list
-            sec[cur][t] = tok[i + 1];
+            var known = cur switch { "" => GlobalKeys, "S" => SniperKeys, _ => StyleKeys };
+            if (known.Contains(t)) sec[cur][t] = tok[i + 1];
+            else extras.UnknownKeys.Add((cur, t, tok[i + 1]));
             i += 2;
         }
 
         var s = DefaultSettings();
         s.Name = "Crosshair code";
-        var g = sec['G'];
+        s.Extras = extras;
+        var g = sec[""];
         s.UsePrimaryForAds = Bool(g, "p", true);
         extras.OverrideAllPrimary = Bool(g, "c", false);
-        extras.AdvancedOptions = Bool(g, "s", false);
-        ReadStyle(sec['P'], s.Primary, extras.Primary);
-        ReadStyle(sec['A'], s.Ads, extras.Ads);
+        s.UseAdvancedOptions = extras.AdvancedOptions = Bool(g, "s", false);
+        extras.KeepAdsSection = hadA && !s.AdsIsOwn;
+        extras.KeepSniperSection = hadS && !s.UseAdvancedOptions;
+        ReadStyle(sec["P"], s.Primary, extras.Primary);
+        ReadStyle(sec["A"], s.Ads, extras.Ads);
 
-        var sn = sec['S'];
+        var sn = sec["S"];
         s.SniperDot = Bool(sn, "d", true);
         int sc = Int(sn, "c", 7, 0, 8);
         bool sCustom = Bool(sn, "b", false) || sc == 8;
@@ -219,39 +273,54 @@ public static class CrosshairCode
     /// <summary>
     /// Canonical code for <paramref name="s"/> in VALORANT's own key order, omitting every default (like the game's
     /// export). Pixel sizes are rounded to whole pixels where VALORANT only allows integers; values are clamped to the
-    /// in-game ranges. The ADS section is written only when it isn't copied from the primary.
+    /// in-game ranges. Like the game: "s;1" only from <see cref="CrosshairSettings.UseAdvancedOptions"/>, the ADS section
+    /// only when advanced options are on and ADS doesn't copy the primary, the sniper section only with advanced
+    /// options (plus any A / S section, unknown key or section a decoded code carried, see <see cref="CrosshairCodeExtras"/>).
+    /// <paramref name="x"/> defaults to <c>s.Extras</c>.
     /// </summary>
     public static string Encode(CrosshairSettings s, CrosshairCodeExtras? x = null)
     {
-        x ??= new CrosshairCodeExtras();
+        x ??= s.Extras ?? new CrosshairCodeExtras();
         var sb = new StringBuilder("0");
         void Put(string k, string v) => sb.Append(';').Append(k).Append(';').Append(v);
+        string Unknown(string section) =>
+            string.Concat(x.UnknownKeys.Where(u => u.Section == section).Select(u => ";" + u.Key + ";" + u.Value));
 
-        bool separateAds = !s.UsePrimaryForAds;
-        if (separateAds) Put("p", "0");
+        bool adv = s.UseAdvancedOptions || x.AdvancedOptions;
+        if (!s.UsePrimaryForAds) Put("p", "0");
         if (x.OverrideAllPrimary) Put("c", "1");
-        if (x.AdvancedOptions || separateAds) Put("s", "1");
+        if (adv) Put("s", "1");
+        sb.Append(Unknown(""));
 
-        var p = Section(s.Primary, x.Primary);
+        var p = Section(s.Primary, x.Primary) + Unknown("P");
         if (p.Length > 0) sb.Append(";P").Append(p);
-        if (separateAds)
+        if ((adv && !s.UsePrimaryForAds) || x.KeepAdsSection)
         {
-            var a = Section(s.Ads, x.Ads);
+            var a = Section(s.Ads, x.Ads) + Unknown("A");
             if (a.Length > 0) sb.Append(";A").Append(a);
         }
 
-        var sn = new StringBuilder();
-        void SPut(string k, string v) => sn.Append(';').Append(k).Append(';').Append(v);
-        if (!s.SniperDot) SPut("d", "0");
-        int si = PresetIndex(s.SniperDotColor);
-        bool sCustom = x.SniperCustom || si < 0;
-        if (sCustom) SPut("b", "1");
-        if (sCustom) SPut("c", "8");
-        else if (si != 7) SPut("c", si.ToString(Inv));
-        if (sCustom && Hex(s.SniperDotColor) != "FFFFFFFF") SPut("t", Hex(s.SniperDotColor));
-        PutNum(SPut, "s", s.SniperDotSize, 1, 0, 4, false);
-        PutNum(SPut, "o", s.SniperDotOpacity, 0.75f, 0, 1, false);
-        if (sn.Length > 0) sb.Append(";S").Append(sn);
+        if (adv || x.KeepSniperSection)
+        {
+            var sn = new StringBuilder();
+            void SPut(string k, string v) => sn.Append(';').Append(k).Append(';').Append(v);
+            if (!s.SniperDot) SPut("d", "0");
+            int si = PresetIndex(s.SniperDotColor);
+            bool sCustom = x.SniperCustom || si < 0;
+            if (sCustom) SPut("b", "1");
+            if (sCustom) SPut("c", "8");
+            else if (si != 7) SPut("c", si.ToString(Inv));
+            if (sCustom && Hex(s.SniperDotColor) != "FFFFFFFF") SPut("t", Hex(s.SniperDotColor));
+            PutNum(SPut, "s", s.SniperDotSize, 1, 0, 4, false);
+            PutNum(SPut, "o", s.SniperDotOpacity, 0.75f, 0, 1, false);
+            sn.Append(Unknown("S"));
+            if (sn.Length > 0) sb.Append(";S").Append(sn);
+        }
+        foreach (var (marker, tokens) in x.UnknownSections)
+        {
+            sb.Append(';').Append(marker);
+            foreach (var t in tokens) sb.Append(';').Append(t);
+        }
         return sb.ToString();
     }
 
@@ -314,42 +383,150 @@ public static class CrosshairCode
     // ValTrainer's effective crosshair
     // =====================================================================================
 
-    static string? finderCode;
-    static CrosshairSettings? finder;
+    static string? finderCode, finderLast, finderTab;
+    static CrosshairSettings? finder, finderLive;
 
-    /// <summary>The Crosshair Finder's result saved with "Use in ValTrainer" (null = none / unreadable).</summary>
+    /// <summary>ValTrainer's own crosshair (Settings → Crosshair → CUSTOM; null = none / unreadable): a code the player
+    /// pasted (the whole profile), or the Crosshair Finder's result saved with "Use in ValTrainer", which overrides only
+    /// the tab it tested (<see cref="AppSettings.FinderCrosshairTab"/>) on top of the live VALORANT import, so later
+    /// changes to the other tabs in VALORANT still show up (<see cref="ApplyTab"/>).</summary>
     public static CrosshairSettings? Finder
     {
         get
         {
-            var code = Main.I?.Settings.FinderCrosshairCode;
-            if (code != finderCode)
+            var st = Main.I?.Settings;
+            var code = st?.FinderCrosshairCode;
+            var last = st?.LastFinderCrosshairCode;
+            var tabName = st?.FinderCrosshairTab;
+            var live = Main.I?.Valorant?.Crosshair;
+            if (code != finderCode || last != finderLast || tabName != finderTab || !ReferenceEquals(live, finderLive))
             {
                 finderCode = code;
+                finderLast = last;
+                finderTab = tabName;
+                finderLive = live;
                 finder = Decode(code);
-                if (finder != null) finder.Name = "Crosshair Finder";
+                if (finder != null && TabFromName(tabName) is { } tab && live != null)
+                {
+                    finder = ApplyTab(tab, live, finder);
+                    finder.Name = $"{live.Name} + Finder {TabName(tab).ToUpperInvariant()}";
+                }
+                else if (finder != null) finder.Name = IsFinderResult(code) ? "Crosshair Finder" : "Custom code";
             }
             return finder;
         }
     }
 
-    /// <summary>VALORANT profile code of the crosshair ValTrainer uses now (copy buttons in Settings and on the menu).</summary>
+    /// <summary>"primary" / "ads" / "sniper" (<see cref="AppSettings.FinderCrosshairTab"/>).</summary>
+    public static string TabName(UI.CrosshairView.Mode tab) => tab switch
+    {
+        UI.CrosshairView.Mode.Ads => "ads",
+        UI.CrosshairView.Mode.Sniper => "sniper",
+        _ => "primary",
+    };
+
+    public static UI.CrosshairView.Mode? TabFromName(string? name) => name?.Trim().ToLowerInvariant() switch
+    {
+        "primary" => UI.CrosshairView.Mode.Primary,
+        "ads" => UI.CrosshairView.Mode.Ads,
+        "sniper" => UI.CrosshairView.Mode.Sniper,
+        _ => null,
+    };
+
+    /// <summary>
+    /// <paramref name="live"/> (the player's VALORANT profile) with only <paramref name="tab"/> taken from
+    /// <paramref name="result"/> (a whole profile, e.g. the Crosshair Finder's merged result code). The live profile keeps
+    /// its other tabs and general flags, except what the tab needs to show in VALORANT:
+    /// <list type="bullet">
+    /// <item>Primary: P (the result's fade flag; the live "show spectated" stays).</item>
+    /// <item>ADS: A, Copy Primary off (p;0) and Use Advanced Options on (s;1). If advanced options were off, the sniper
+    /// dot stays VALORANT's default one (what the player saw).</item>
+    /// <item>Sniper: S and Use Advanced Options on (s;1). If advanced options were off, ADS keeps copying the primary.</item>
+    /// </list>
+    /// Same rules as the Crosshair Finder's merge (XfTabs.Merge). Returns a new profile; neither input changes.
+    /// </summary>
+    public static CrosshairSettings ApplyTab(UI.CrosshairView.Mode tab, CrosshairSettings live, CrosshairSettings result)
+    {
+        var s = live.Clone();
+        var x = s.Extras;
+        bool adv = s.UseAdvancedOptions;
+        switch (tab)
+        {
+            case UI.CrosshairView.Mode.Ads:
+                s.Ads = result.Ads.Clone();
+                x.Ads = result.Extras.Ads.Clone();
+                s.UsePrimaryForAds = false;
+                if (!adv)
+                {
+                    var d = new CrosshairSettings().SniperDotFor();
+                    (s.SniperDot, s.SniperDotColor, s.SniperDotSize, s.SniperDotOpacity) = (d.Show, d.Color, d.Size, d.Opacity);
+                    x.SniperCustom = false;
+                }
+                SetAdvanced(s);
+                break;
+            case UI.CrosshairView.Mode.Sniper:
+                if (!adv) s.UsePrimaryForAds = true;
+                (s.SniperDot, s.SniperDotColor, s.SniperDotSize, s.SniperDotOpacity) =
+                    (result.SniperDot, result.SniperDotColor, result.SniperDotSize, result.SniperDotOpacity);
+                x.SniperCustom = result.Extras.SniperCustom;
+                SetAdvanced(s);
+                break;
+            default:
+                s.Primary = result.Primary.Clone();
+                var sec = result.Extras.Primary.Clone();
+                sec.ShowSpectated = x.Primary.ShowSpectated;
+                x.Primary = sec;
+                break;
+        }
+        return s;
+
+        static void SetAdvanced(CrosshairSettings s)
+        {
+            s.UseAdvancedOptions = s.Extras.AdvancedOptions = true;
+            s.Extras.KeepAdsSection = s.Extras.KeepSniperSection = false; // as the game exports it: no ignored leftovers
+        }
+    }
+
+    /// <summary>True when <paramref name="code"/> is the Crosshair Finder's latest result (not a pasted code).</summary>
+    public static bool IsFinderResult(string? code) =>
+        !string.IsNullOrWhiteSpace(code) && code.Trim() == Main.I?.Settings.LastFinderCrosshairCode?.Trim();
+
+    static bool devRead;
+    static CrosshairSettings? devCode;
+
+    /// <summary>Dev-only "--xhair-code CODE": every drill and preview uses this crosshair (screenshots, tests).</summary>
+    public static CrosshairSettings? DevOverride
+    {
+        get
+        {
+            if (devRead) return devCode;
+            devRead = true;
+            devCode = Decode(CmdLine.DevAfter("--xhair-code"));
+            if (devCode != null) devCode.Name = "Dev code (--xhair-code)";
+            return devCode;
+        }
+    }
+
+    /// <summary>VALORANT profile code of the crosshair ValTrainer uses now (copy buttons in Settings and on the menu): the
+    /// whole profile (Primary, ADS, sniper dot and General flags), as VALORANT would export it.</summary>
     public static string EffectiveCode
     {
         get
         {
             var s = Main.I.Settings;
-            if (s.UseFinderCrosshair && Finder != null && !string.IsNullOrWhiteSpace(s.FinderCrosshairCode)) return s.FinderCrosshairCode!;
+            if (DevOverride is { } dev) return Encode(dev);
+            if (s.UseFinderCrosshair && Finder is { } f && !string.IsNullOrWhiteSpace(s.FinderCrosshairCode))
+                return TabFromName(s.FinderCrosshairTab) != null ? Encode(f) : s.FinderCrosshairCode!.Trim(); // one tab on the live import / the pasted code as is
             try { return Encode(Main.I.Valorant.Crosshair); } catch { return "0"; } // "0" = VALORANT's default crosshair
         }
     }
 
-    /// <summary>The crosshair drills use: the finder's result when Settings → Crosshair is FINDER, else VALORANT's.</summary>
+    /// <summary>The crosshair drills use: ValTrainer's own code when Settings → Crosshair is CUSTOM, else VALORANT's.</summary>
     public static CrosshairSettings Effective =>
-        Main.I.Settings.UseFinderCrosshair && Finder is { } f ? f : Main.I.Valorant.Crosshair;
+        DevOverride ?? (Main.I.Settings.UseFinderCrosshair && Finder is { } f ? f : Main.I.Valorant.Crosshair);
 
     // =====================================================================================
-    // Self-test (dev: --dev --mode xhairfinder --xftest)
+    // Self-test (dev: --dev --culture-test, which tools/selftest.ps1 runs; also --dev --mode xhairfinder --xftest)
     // =====================================================================================
 
     /// <summary>Real codes (prosettings.net) exported by the game, i.e. canonical: re-encoding must reproduce them exactly.</summary>
@@ -379,6 +556,34 @@ public static class CrosshairCode
         ("Medium dot (green)", "0;P;c;1;h;0;d;1;z;1;f;0;0t;6;0l;5;0o;0;0a;1;0f;0;1b;0", null),
         ("Large square dot (cyan)", "0;P;c;5;h;0;d;1;z;6;f;0;0b;0;1b;0", null),
         ("Closed plus (green)", "0;P;c;1;h;0;0l;3;0o;0;0a;1;0f;0;1b;0", null),
+    };
+
+    /// <summary>Real split codes (genesy/crosshair-codes samples, prosettings.net) exported by the game, i.e. canonical,
+    /// plus one hand-made code with A / S sections VALORANT ignores (no s;1).</summary>
+    public static readonly (string Name, string Code)[] SplitCodes =
+    {
+        ("split 1 (red cross, red ADS dot)", "0;p;0;s;1;P;c;7;u;64AAE6FF;h;0;f;0;0l;5;0o;0;0a;1;0f;0;1b;0;A;c;7;u;EF92BFFF;o;1;d;1;f;0;s;0;0b;0;1b;0;S;o;1"),
+        ("split 2", "0;p;0;s;1;P;o;1;f;0;0t;1;0l;2;0o;2;0a;1;0f;0;1b;0;A;o;1;d;1;0b;0;1b;0;S;s;0.359;o;1"),
+        ("split 3", "0;p;0;s;1;P;o;1;f;0;0t;1;0l;2;0a;1;0f;0;1l;0;A;o;1;d;1;z;1;0l;0;1l;0;S;c;0;s;0.75;o;1"),
+        ("Crazyface (now)", "0;s;1;P;c;5;h;0;d;1;f;0;m;1;0l;2;0a;1;0e;0.7;1b;0;S;c;0;s;0.652;o;1"),
+        ("p;0 without advanced options", "0;p;0;P;c;5;u;A020F0FF;h;0;f;0;0l;4;0o;2;0a;1;0f;0;1b;0"),
+        ("A / S without s;1 (hand-made)", "0;p;0;P;c;1;A;c;5;S;c;0"),
+    };
+
+    /// <summary>Unlinked lengths with a 0 horizontal length (a "|" crosshair) and split inner / outer lengths.</summary>
+    public static readonly (string Name, string Code)[] VerticalOnlyCodes =
+    {
+        ("vertical-only inner lines", "0;P;h;0;0l;0;0v;4;0g;1;0o;2;1b;0"),
+        ("horizontal inner + vertical outer", "0;P;h;0;0l;5;0v;0;0g;1;1l;0;1v;4;1g;1;1o;4"),
+    };
+
+    /// <summary>Codes with keys / sections ValTrainer doesn't know: they must survive a round trip.</summary>
+    public static readonly (string Name, string Code)[] UnknownCodes =
+    {
+        ("unknown section at the end", "0;s;1;P;c;1;S;o;1;F;c;5;0l;3"),
+        ("community NAME extension", "0;P;c;1;NAME;\"Test\""),
+        ("unknown global and primary keys", "0;q;1;P;c;1;zz;5"),
+        ("unknown sniper key", "0;s;1;S;o;1;q;2"),
     };
 
     /// <summary>Hand-made (non-canonical) code: out of order, 6-digit hex, explicit defaults.</summary>
@@ -427,7 +632,7 @@ public static class CrosshairCode
         var demon = Decode(ProCodes[2].Code, out var demonX)!;
         Check("Demon1: white dot only, solid outline",
             demon.Primary.CenterDot && Near(demon.Primary.CenterDotSize, 2) && demon.Primary.HasOutline && Near(demon.Primary.OutlineOpacity, 1)
-            && !demon.Primary.Inner.Show && !demon.Primary.Outer.Show && demonX.AdvancedOptions && demonX.Primary.OverrideFiringOffset);
+            && !demon.Primary.Inner.Show && !demon.Primary.Outer.Show && demon.UseAdvancedOptions && demonX.Primary.OverrideFiringOffset);
         var scream = Decode(ProCodes[3].Code, out var screamX)!;
         Check("ScreaM: cyan dot 3, inner length 0, pink sniper dot 0.949",
             SameColor(scream.Primary.Color, Presets[5]) && scream.Primary.CenterDot && Near(scream.Primary.CenterDotSize, 3)
@@ -467,6 +672,97 @@ public static class CrosshairCode
         Check("large hollow square: 9 thick, length 1, default offset 3", Near(sq.Thickness, 9) && Near(sq.Length, 1) && Near(sq.Offset, 3));
         var sqDot = Decode(ShapeCodes[6].Code)!.Primary;
         Check("large square dot: dot 6, no lines", sqDot.CenterDot && Near(sqDot.CenterDotSize, 6) && !sqDot.Inner.Show);
+
+        // 3c. split crosshairs, the advanced-options gate, vertical-only lines, unknown keys / sections
+        Check("new CrosshairSettings() is VALORANT's factory profile", Diff(new CrosshairSettings(), DefaultSettings()) == null,
+            Diff(new CrosshairSettings(), DefaultSettings()) ?? "");
+        foreach (var (name, code) in SplitCodes)
+        {
+            var s = Decode(code);
+            Check($"{name} decodes", s != null);
+            if (s == null) continue;
+            string again = Encode(s);
+            Check($"{name} re-encodes exactly", again == code, again);
+            Check($"{name} survives Clone()", Encode(s.Clone()) == code, Encode(s.Clone()));
+        }
+        var sp1 = Decode(SplitCodes[0].Code)!;
+        var hip1 = sp1.StyleFor(UI.CrosshairView.Mode.Primary);
+        var ads1 = sp1.StyleFor(UI.CrosshairView.Mode.Ads);
+        var dot1 = sp1.SniperDotFor();
+        Check("split 1: red primary cross (stale hex kept), red ADS dot, opaque default-red sniper dot",
+            sp1.UseAdvancedOptions && sp1.AdsIsOwn && SameColor(hip1.Color, Presets[7]) && !hip1.CenterDot && hip1.Inner.Show && sp1.Extras.Primary.StaleHex == "64AAE6FF"
+            && ads1 == sp1.Ads && ads1.CenterDot && SameColor(ads1.Color, Presets[7]) && !ads1.Inner.Show && !ads1.Outer.Show
+            && dot1.Show && SameColor(dot1.Color, Presets[7]) && Near(dot1.Opacity, 1) && Near(dot1.Size, 1));
+        var sp3 = Decode(SplitCodes[2].Code)!;
+        Check("split 3: ADS dot only (zero-length lines), white sniper dot 0.75",
+            sp3.StyleFor(UI.CrosshairView.Mode.Ads).CenterDot && Near(sp3.Ads.Inner.Length, 0) && Near(sp3.Ads.Outer.Length, 0)
+            && SameColor(sp3.SniperDotFor().Color, Presets[0]) && Near(sp3.SniperDotFor().Size, 0.75f));
+        var cf = Decode(SplitCodes[3].Code)!;
+        Check("Crazyface now: ADS copies the primary, own sniper dot", cf.UseAdvancedOptions && !cf.AdsIsOwn
+            && cf.StyleFor(UI.CrosshairView.Mode.Ads) == cf.Primary && SameColor(cf.SniperDotFor().Color, Presets[0]) && Near(cf.SniperDotFor().Size, 0.652f));
+        var p0 = Decode(SplitCodes[4].Code)!;
+        Check("p;0 with advanced options off: ADS = primary, default sniper dot", !p0.UseAdvancedOptions && !p0.UsePrimaryForAds && !p0.AdsIsOwn
+            && p0.StyleFor(UI.CrosshairView.Mode.Ads) == p0.Primary && SameColor(p0.SniperDotFor().Color, Presets[7]) && Near(p0.SniperDotFor().Opacity, 0.75f));
+        var gated = Decode(SplitCodes[5].Code)!;
+        Check("A / S without s;1: kept for the code, ignored for drawing", gated.Extras.KeepAdsSection && gated.Extras.KeepSniperSection
+            && gated.StyleFor(UI.CrosshairView.Mode.Ads) == gated.Primary && SameColor(gated.Ads.Color, Presets[5])
+            && SameColor(gated.SniperDotFor().Color, Presets[7]) && SameColor(gated.SniperDotColor, Presets[0]));
+
+        // The encoder writes s;1 only from the flag, A only with advanced options + own ADS, S only with advanced options.
+        var split = DefaultSettings();
+        split.UsePrimaryForAds = false;
+        split.Ads.CenterDot = true;
+        split.SniperDotColor = Presets[5];
+        Check("encode: p;0 without advanced options = no s;1, no A, no S", Encode(split) == "0;p;0", Encode(split));
+        split.UseAdvancedOptions = true;
+        Check("encode: advanced split = s;1 + A + S", Encode(split) == "0;p;0;s;1;A;d;1;S;c;5", Encode(split));
+        var copy = split.Clone();
+        copy.Ads.CenterDot = false;
+        copy.Extras.UnknownKeys.Add(("", "q", "1"));
+        Check("Clone() is deep", split.Ads.CenterDot && split.Extras.UnknownKeys.Count == 0);
+
+        // Vertical-only lines (unlinked lengths with a 0 horizontal length) must draw their vertical arms.
+        var vert = Decode(VerticalOnlyCodes[0].Code)!.Primary;
+        var vr = UI.CrosshairView.Raster(vert, 10);
+        Check("vertical-only inner lines draw (| shape)", vr[5].Contains('#') && vr[14].Contains('#') && !vr[9].Contains('#') && !vr[10].Contains('#'),
+            string.Join("/", vr));
+        var vOuter = Decode(VerticalOnlyCodes[1].Code)!.Primary;
+        var vo = UI.CrosshairView.Raster(vOuter, 12);
+        Check("vertical-only outer lines + horizontal-only inner lines draw (split lengths)",
+            vo[11][5] == '#' && vo[11][18] == '#' && vo[5].Contains('#') && vo[18].Contains('#') && !vo[11].Substring(10, 4).Contains('#') && !vo[9].Contains('#'),
+            string.Join("/", vo));
+        foreach (var (name, code) in VerticalOnlyCodes)
+            Check($"{name} re-encodes exactly", Decode(code) is { } vc && Encode(vc) == code, Decode(code) is { } vc2 ? Encode(vc2) : "null");
+
+        // Unknown sections (a future tab marker, the community NAME;"…" extension) and unknown keys are kept.
+        foreach (var (name, code) in UnknownCodes)
+            Check($"{name} re-encodes exactly", Decode(code) is { } uc && Encode(uc) == code, Decode(code) is { } uc2 ? Encode(uc2) : "null");
+        var mid = Decode("0;s;1;P;c;1;F;c;5;0l;3;S;o;1")!;
+        Check("unknown section in the middle doesn't leak into P / S", SameColor(mid.Primary.Color, Presets[1]) && Near(mid.Primary.Inner.Length, 6)
+            && Near(mid.SniperDotFor().Opacity, 1) && mid.Extras.UnknownSections.Count == 1 && mid.Extras.UnknownSections[0].Marker == "F",
+            Diff(mid, DefaultSettings()) ?? "");
+        Check("unknown section in the middle re-encodes after the known ones", Encode(mid) == "0;s;1;P;c;1;S;o;1;F;c;5;0l;3", Encode(mid));
+
+        // 3d. a Finder result applied as one tab on top of the live VALORANT profile
+        string crazyNow = SplitCodes[3].Code, split1 = SplitCodes[0].Code, tenzCode = ProCodes[0].Code;
+        foreach (var (what, tab, live, result, want) in new[]
+                 {
+                     ("ADS onto an advanced profile", UI.CrosshairView.Mode.Ads, crazyNow, split1,
+                         "0;p;0;s;1;P;c;5;h;0;d;1;f;0;m;1;0l;2;0a;1;0e;0.7;1b;0;A;c;7;u;EF92BFFF;o;1;d;1;f;0;s;0;0b;0;1b;0;S;c;0;s;0.652;o;1"),
+                     ("ADS onto advanced off (sniper dot stays default)", UI.CrosshairView.Mode.Ads, tenzCode, split1,
+                         "0;p;0;s;1;P;c;5;h;0;0l;4;0o;2;0a;1;1b;0;A;c;7;u;EF92BFFF;o;1;d;1;f;0;s;0;0b;0;1b;0"),
+                     ("sniper onto p;0 with advanced off (ADS stays the primary)", UI.CrosshairView.Mode.Sniper, SplitCodes[4].Code, SplitCodes[1].Code,
+                         "0;s;1;P;c;5;u;A020F0FF;h;0;f;0;0l;4;0o;2;0a;1;0f;0;1b;0;S;s;0.359;o;1"),
+                     ("primary onto a split profile", UI.CrosshairView.Mode.Primary, split1, tenzCode,
+                         "0;p;0;s;1;P;c;5;h;0;0l;4;0o;2;0a;1;1b;0;A;c;7;u;EF92BFFF;o;1;d;1;f;0;s;0;0b;0;1b;0;S;o;1"),
+                 })
+        {
+            var l = Decode(live)!;
+            var r = Decode(result)!;
+            string got = Encode(ApplyTab(tab, l, r));
+            Check($"ApplyTab: {what}", got == want, got);
+            Check($"ApplyTab: {what} leaves its inputs alone", Encode(l) == live && Encode(r) == result);
+        }
 
         // 4. non-canonical input
         var derke = Decode(DerkeCode, out var derkeX);
@@ -522,7 +818,7 @@ public static class CrosshairCode
         bool sep = B();
         var s = new CrosshairSettings
         {
-            Name = "random", Primary = St(), UsePrimaryForAds = !sep, SniperDot = B(), SniperDotColor = Col(),
+            Name = "random", Primary = St(), UsePrimaryForAds = !sep, UseAdvancedOptions = B(), SniperDot = B(), SniperDotColor = Col(),
             SniperDotSize = D(0, 4), SniperDotOpacity = D(0, 1),
         };
         s.Ads = sep ? St() : DefaultStyle(); // a copied ADS isn't in the code: it decodes as the factory style
@@ -559,11 +855,15 @@ public static class CrosshairCode
             if (!N(a.FiringErrorScale, b.FiringErrorScale)) return w + ".fireErrScale";
             return null;
         }
+        if (a.UseAdvancedOptions != b.UseAdvancedOptions) return "advancedOptions";
         if (a.UsePrimaryForAds != b.UsePrimaryForAds) return "usePrimaryForAds";
-        if (a.SniperDot != b.SniperDot) return "sniperDot";
-        if (a.SniperDotColor.ToRgba32() != b.SniperDotColor.ToRgba32()) return "sniperColor";
-        if (!N(a.SniperDotSize, b.SniperDotSize)) return "sniperSize";
-        if (!N(a.SniperDotOpacity, b.SniperDotOpacity)) return "sniperOpacity";
-        return Style("primary", a.Primary, b.Primary) ?? (a.UsePrimaryForAds ? null : Style("ads", a.Ads, b.Ads));
+        if (a.SniperIsOwn) // advanced options off: VALORANT ignores (and doesn't export) the Sniper tab
+        {
+            if (a.SniperDot != b.SniperDot) return "sniperDot";
+            if (a.SniperDotColor.ToRgba32() != b.SniperDotColor.ToRgba32()) return "sniperColor";
+            if (!N(a.SniperDotSize, b.SniperDotSize)) return "sniperSize";
+            if (!N(a.SniperDotOpacity, b.SniperDotOpacity)) return "sniperOpacity";
+        }
+        return Style("primary", a.Primary, b.Primary) ?? (a.AdsIsOwn ? Style("ads", a.Ads, b.Ads) : null);
     }
 }

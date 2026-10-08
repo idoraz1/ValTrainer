@@ -196,17 +196,108 @@ public partial class SettingsScreen : ScreenBase
             i => St.TargetStyle = i == 1 ? Target.StyleClassic : Target.StyleValorant,
             note: () => St.TargetStyle == Target.StyleClassic ? "Solid spheres in the highlight colour" : "Dark body + highlight outline, like VALORANT enemies"));
 
-        // Crosshair: VALORANT's imported profile, or the Crosshair Finder's result (ValTrainer only; VALORANT is never changed).
+        // Crosshair: VALORANT's imported profile, or ValTrainer's own code: the Crosshair Finder's result or a pasted code
+        // (ValTrainer only; VALORANT is never changed).
         v.AddChild(Spacer(0, 6 * k));
         v.AddChild(new SectionLabel { Text = "CROSSHAIR", K = k });
-        v.AddChild(Segmented("Crosshair", new[] { "VALORANT", "FINDER" }, () => St.UseFinderCrosshair && CrosshairCode.Finder != null ? 1 : 0,
+        v.AddChild(Segmented("Crosshair", new[] { "VALORANT", "CUSTOM" }, () => St.UseFinderCrosshair && CrosshairCode.Finder != null ? 1 : 0,
             i => St.UseFinderCrosshair = i == 1 && CrosshairCode.Finder != null,
-            note: () => CrosshairCode.Finder == null ? "Run the Crosshair Finder (Coach) to get a second option"
-                : St.UseFinderCrosshair ? "Crosshair Finder result · ValTrainer only" : "Your imported VALORANT crosshair"));
+            note: () => CrosshairCode.Finder is not { } f ? "Run the Crosshair Finder (Coach) or paste a code below for a second option"
+                : St.UseFinderCrosshair ? $"{f.Name} · ValTrainer only" : "Your imported VALORANT crosshair"));
+        v.AddChild(NoteRow(() => !St.UseFinderCrosshair && App.Valorant.Found ? App.Valorant.CrosshairNote : null));
+        v.AddChild(new CrosshairPreview { K = k, BoxHeight = 120, Backdrop = CrosshairBackdrop });
         v.AddChild(CrosshairHintRow());
         v.AddChild(CodeRow("Code of the crosshair ValTrainer uses now", () => CrosshairCode.EffectiveCode));
         if (!string.IsNullOrWhiteSpace(St.LastFinderCrosshairCode))
             v.AddChild(CodeRow("Last Crosshair Finder result", () => St.LastFinderCrosshairCode ?? ""));
+        v.AddChild(PasteRow());
+    }
+
+    /// <summary>A warning line (hidden while <paramref name="text"/> returns null).</summary>
+    Control NoteRow(Func<string?> text)
+    {
+        float k = K;
+        var row = HBox(8 * k);
+        var mark = Lbl("!", UiTheme.Body, 16, UiTheme.Warn);
+        mark.CustomMinimumSize = new Vector2(18 * k, 0);
+        mark.SizeFlagsVertical = SizeFlags.ShrinkBegin;
+        var lbl = Lbl("", UiTheme.Body, 14, UiTheme.Text);
+        lbl.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        lbl.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        row.AddChild(Spacer(2 * k, 0));
+        row.AddChild(mark);
+        row.AddChild(lbl);
+        void Refresh()
+        {
+            var t = text();
+            row.Visible = t != null;
+            lbl.Text = t ?? "";
+        }
+        Refresh();
+        refreshers.Add(Refresh);
+        return row;
+    }
+
+    /// <summary>"Paste a crosshair code": uses a VALORANT code from the clipboard as ValTrainer's CUSTOM crosshair (for
+    /// accounts whose profiles VALORANT keeps online, or to try a pro's crosshair). VALORANT itself is never changed.</summary>
+    Control PasteRow()
+    {
+        float k = K;
+        var row = HBox(12 * k);
+        row.CustomMinimumSize = new Vector2(0, 50 * k);
+        var txt = new DrawBox
+        {
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            OnDraw = d =>
+            {
+                float cy = d.Size.Y / 2;
+                int ls = UiTheme.Fs(14, k);
+                Gfx.TextFit(d, UiTheme.Body, "Use a crosshair code", 10 * k, Gfx.Mid(cy - 9 * k, ls), ls, UiTheme.Dim, d.Size.X - 10 * k);
+                Gfx.TextFit(d, UiTheme.Body, "Copy it in VALORANT (Export Profile Code), then PASTE here", 10 * k, Gfx.Mid(cy + 10 * k, ls), ls, UiTheme.Text, d.Size.X - 10 * k);
+            },
+        };
+        row.AddChild(txt);
+        VButton? paste = null;
+        void Flash(string label)
+        {
+            paste!.Label = label;
+            paste.QueueRedraw();
+            GetTree().CreateTimer(2.5).Timeout += () => { if (IsInstanceValid(paste)) { paste.Label = "PASTE"; paste.QueueRedraw(); } };
+        }
+        paste = Btn("PASTE", VButton.Look.Secondary, () =>
+        {
+            string code = (DisplayServer.ClipboardGet() ?? "").Trim();
+            if (CrosshairCode.Decode(code) == null) { Flash("NOT A CODE"); return; }
+            St.FinderCrosshairCode = code;
+            St.FinderCrosshairTab = null; // a pasted code is the whole profile
+            St.UseFinderCrosshair = true;
+            Flash("USED ✓");
+            Changed();
+        }, 110, 36, 16);
+        paste.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        paste.TooltipText = "Uses the crosshair code on your clipboard in ValTrainer (Crosshair → CUSTOM). VALORANT isn't changed.";
+        row.AddChild(paste);
+        return row;
+    }
+
+    /// <summary>Range wall with a dummy head under the crosshair (the preview's backdrop).</summary>
+    void CrosshairBackdrop(DrawBox d)
+    {
+        float k = K;
+        var s = d.Size;
+        var c = (s / 2).Floor();
+        float floorY = c.Y + 52 * k;
+        Gfx.VGradient(d, new Rect2(0, 0, s.X, floorY), Color.Color8(96, 112, 126), Color.Color8(74, 88, 100));
+        Gfx.VGradient(d, new Rect2(0, floorY, s.X, s.Y - floorY), Color.Color8(58, 66, 76), Color.Color8(40, 46, 54));
+        var enemy = App.EnemyColor;
+        var body = Color.Color8(120, 128, 136);
+        float hr = 8 * k, ow = 2f * Mathf.Max(1, k);
+        var torso = new Rect2(c.X - 20 * k, c.Y + hr + 4 * k, 40 * k, s.Y - (c.Y + hr + 4 * k));
+        d.DrawRect(torso.Grow(ow), enemy);
+        d.DrawCircle(c, hr + ow, enemy);
+        d.DrawRect(torso, body);
+        d.DrawCircle(c, hr, body.Lightened(0.08f));
+        Gfx.Brackets(d, new Rect2(Vector2.Zero, s).Grow(-1), 12 * k, new Color(UiTheme.Text, 0.35f), Mathf.Max(1, 2 * k));
     }
 
     /// <summary>Visibility hint for the imported VALORANT crosshair (same check as the Lock-In setup check); refreshed on re-import.</summary>
@@ -246,19 +337,20 @@ public partial class SettingsScreen : ScreenBase
         float k = K;
         var row = HBox(12 * k);
         row.CustomMinimumSize = new Vector2(0, 50 * k);
-        var txt = new DrawBox
-        {
-            SizeFlagsHorizontal = SizeFlags.ExpandFill,
-            OnDraw = d =>
-            {
-                float cy = d.Size.Y / 2;
-                int ls = UiTheme.Fs(14, k);
-                Gfx.TextFit(d, UiTheme.Body, label, 10 * k, Gfx.Mid(cy - 9 * k, ls), ls, UiTheme.Dim, d.Size.X - 10 * k);
-                Gfx.TextFit(d, UiTheme.Body, code(), 10 * k, Gfx.Mid(cy + 10 * k, ls), ls, UiTheme.Text, d.Size.X - 10 * k);
-            },
-        };
-        refreshers.Add(txt.QueueRedraw);
-        row.AddChild(txt);
+        // The whole code, wrapped anywhere (a split profile's code is long): what you see is what COPY copies.
+        var txt = VBox(2 * k);
+        txt.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        txt.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        var head = Lbl(label, UiTheme.Body, 14, UiTheme.Dim);
+        var body = Lbl(code(), UiTheme.Body, 13, UiTheme.Text);
+        body.AutowrapMode = TextServer.AutowrapMode.Arbitrary;
+        body.MouseFilter = MouseFilterEnum.Pass;
+        txt.AddChild(head);
+        txt.AddChild(body);
+        refreshers.Add(() => { var c = code(); if (body.Text != c) body.Text = c; });
+        var pad = Margins(txt, 10 * k, 0, 0, 0);
+        pad.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        row.AddChild(pad);
         VButton? copy = null;
         copy = Btn("COPY", VButton.Look.Secondary, () =>
         {

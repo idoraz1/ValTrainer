@@ -62,7 +62,11 @@ public sealed class ValorantProfile
     public string AbilityBindText(int slot) => slot is < 0 or > 3 ? "?" : Binds.Short(Keybinds.AbilityAction(slot));
 
     // Visual
-    public CrosshairSettings Crosshair = new();
+    /// <summary>The active crosshair profile; VALORANT's factory crosshair when nothing could be read.</summary>
+    public CrosshairSettings Crosshair = CrosshairCode.DefaultSettings();
+    /// <summary>Why <see cref="Crosshair"/> may not be the player's (no profiles on this PC, unreadable profiles); null
+    /// when the profiles were read or nothing was imported at all.</summary>
+    public string? CrosshairNote;
     public int EnemyHighlight;         // 0 red, 1 yellow (deut), 2 yellow (prot), 3 purple (trit)
     public int ColorBlindMode;
     public bool ShowFps;
@@ -194,10 +198,7 @@ public static partial class ValorantImporter
         p.HoldToScope = GetB(rus, "HoldInputForSniperScopes") ?? false;
         p.LeftHanded = GetB(rus, "LeftHanded") ?? false;
 
-        p.Crosshair = rus.TryGetValue("SavedCrosshairProfileData", out var xh)
-                      && CrosshairSettings.FromProfileJson(UnquoteUe(xh)) is { } parsed
-            ? parsed
-            : CrosshairSettings.FromLegacyKeys(rus);
+        ImportCrosshair(p, rus);
 
         p.ColorBlindMode = GetI(rus, "ColorBlindMode", 0);
         var hlKey = rus.Keys.FirstOrDefault(k => k.Contains("EnemyHighlight", StringComparison.OrdinalIgnoreCase));
@@ -219,6 +220,31 @@ public static partial class ValorantImporter
 
         ApplyKeybinds(p, Path.Combine(acc.Folder, "WindowsClient", "BackupKeybinds.json"));
         return p;
+    }
+
+    /// <summary>The active crosshair profile from SavedCrosshairProfileData. Accounts whose profiles live only in Riot's
+    /// cloud have just the old flat keys (often stale), so those are used only when the JSON is missing; a JSON that is
+    /// there but unreadable gives VALORANT's default crosshair, never the stale keys.</summary>
+    static void ImportCrosshair(ValorantProfile p, Dictionary<string, string> rus)
+    {
+        const string Paste = " Paste your crosshair code in Settings → Crosshair to use yours.";
+        if (rus.TryGetValue("SavedCrosshairProfileData", out var xh))
+        {
+            if (CrosshairSettings.FromProfileJson(UnquoteUe(xh)) is { } parsed) { p.Crosshair = parsed; return; }
+            Log.Error("Couldn't read VALORANT's crosshair profiles (SavedCrosshairProfileData): using VALORANT's default crosshair");
+            p.Crosshair = CrosshairCode.DefaultSettings();
+            p.Crosshair.Name = "VALORANT default (yours couldn't be read)";
+            p.CrosshairNote = "Couldn't read your VALORANT crosshair profiles, so this is VALORANT's default crosshair." + Paste;
+            return;
+        }
+        if (rus.Keys.Any(k => k.StartsWith("Crosshair", StringComparison.OrdinalIgnoreCase) || k.Equals("FadeCrosshairWithFiringError", StringComparison.OrdinalIgnoreCase)))
+        {
+            p.Crosshair = CrosshairSettings.FromLegacyKeys(rus);
+            p.CrosshairNote = "VALORANT keeps this account's crosshair profiles online, so this is the older crosshair saved on this PC; it may be out of date." + Paste;
+            return;
+        }
+        p.Crosshair = CrosshairCode.DefaultSettings();
+        p.CrosshairNote = "VALORANT keeps this account's crosshair profiles online, so this is VALORANT's default crosshair." + Paste;
     }
 
     static void ApplyGameUserSettings(ValorantProfile p, Dictionary<string, string> g)

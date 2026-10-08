@@ -29,7 +29,8 @@ public partial class Viewmodel : Node3D
     MeshInstance3D gripHand = null!, supportHand = null!, spareMag = null!;
     MuzzleFlash flash = null!;
     readonly List<ShaderMaterial> gunMats = new();
-    Transform3D gripRest, supportRest, boltPose;
+    Transform3D gripRest, supportRest, boltPose, aimRest = Transform3D.Identity;
+    readonly List<MeshInstance3D> modelMeshes = new();
     readonly Random rng = new();
 
     // inputs from the session
@@ -98,6 +99,28 @@ public partial class Viewmodel : Node3D
         }
     }
 
+    /// <summary>
+    /// Pixel offset of the gun's hologram sight from the screen centre (<see cref="UI.AdsSight"/>): a point 0.5 m ahead of
+    /// the eye, carried by the gun, projected with the kick, sway, bob and breathing minus without them. The sight therefore
+    /// rides the gun's motion like VALORANT's (Headhunter ADS Fire: about 0.02–0.03 H per shot).
+    /// </summary>
+    public Vector2 SightScreenOffset()
+    {
+        var anchor = new Vector3(0f, 0f, -0.5f);
+        var now = pivot.Transform * (aimRest.AffineInverse() * anchor);
+        return ToScreenPx(now) - ToScreenPx(anchor);
+    }
+
+    /// <summary>A viewmodel-space point (camera space: this node sits at the camera) to pixels from the screen centre,
+    /// with the viewmodel's own projection.</summary>
+    Vector2 ToScreenPx(Vector3 p)
+    {
+        var size = GetViewport().GetVisibleRect().Size;
+        float z = Mathf.Max(0.01f, -p.Z);
+        float nx = mats.Focal / (size.X / size.Y) * p.X / z, ny = mats.Focal * p.Y / z;
+        return new Vector2(nx * size.X / 2f, -ny * size.Y / 2f);
+    }
+
     float MainFocalY(Camera3D cam)
     {
         var size = GetViewport().GetVisibleRect().Size;
@@ -133,6 +156,7 @@ public partial class Viewmodel : Node3D
         gun.Name = "Gun";
         pivot.AddChild(gun);
         muzzle = gun.GetNodeOrNull<Node3D>("Muzzle");
+        modelMeshes.AddRange(FindMeshes(gun)); // the gun model only (hands, magazine and flash are added below)
 
         // Re-material the gun (flat FBX colours → metal / polymer).
         var clipMin = pose.MagWell + new Vector3(-0.06f, -0.4f, -pose.MagHalf.Z - 0.012f - (pose.MagCurve > 1f ? 0.07f : 0f));
@@ -241,10 +265,9 @@ public partial class Viewmodel : Node3D
         crouchK = Mathf.Lerp(crouchK, crouch ? 1f : 0f, 1f - Mathf.Exp(-10f * dt));
         float hip = 1f - adsK;
 
-        // Headhunter is the only aimed pistol: sit its sights a little lower so the slide doesn't hide a head-height target.
-        var adsPos = actual == WeaponKind.Headhunter ? pose.AdsPos + new Vector3(0f, -0.032f, 0.02f) : pose.AdsPos;
-        var pos = pose.HipPos.Lerp(adsPos, adsK);
+        var pos = pose.HipPos.Lerp(pose.AdsPos, adsK);
         var rot = pose.HipRot.Lerp(pose.AdsRot, adsK);
+        aimRest = X(new Transform3D(VmMesh.Euler(rot.X, rot.Y, rot.Z), pos)); // before kick, sway and bob (SightScreenOffset)
 
         // Crouch: a little lower and canted in.
         pos += new Vector3(-0.006f, -0.013f, 0.004f) * crouchK * hip;
@@ -447,6 +470,49 @@ public partial class Viewmodel : Node3D
         float nx = mats.Focal / aspect * p.X / -p.Z, ny = mats.Focal * p.Y / -p.Z;
         return new Vector2((nx + 1f) / 2f * size.X, (1f - ny) / 2f * size.Y);
     }
+    /// <summary>The gun's on-screen top (its highest projected vertex, hands excluded) as a fraction of the screen height,
+    /// with the horizontal position of that vertex and the silhouette's width within 0.03 H below it (fractions of H),
+    /// for the ADS pose check (VmTest). Also returns the eased ADS weight the pose was drawn with.</summary>
+    internal (float TopY, float TopX, float Width, float Ads) SightTop()
+    {
+        var size = GetViewport().GetVisibleRect().Size;
+        var toCam = ((Node3D)GetParent()).GlobalTransform.AffineInverse();
+        var pts = new List<Vector2>();
+        foreach (var mi in modelMeshes)
+        {
+            var xf = toCam * mi.GlobalTransform;
+            for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+                foreach (var v in mi.Mesh.SurfaceGetArrays(s)[(int)Mesh.ArrayType.Vertex].AsVector3Array())
+                {
+                    var c = ToScreenPx(xf * v) + size / 2;
+                    pts.Add(new Vector2(c.X / size.Y, c.Y / size.Y));
+                }
+        }
+        if (pts.Count == 0) return (float.NaN, float.NaN, 0f, adsK);
+        var top = pts.MinBy(p => p.Y);
+        var band = pts.Where(p => p.Y <= top.Y + 0.03f).ToList();
+        return (top.Y, top.X, band.Max(p => p.X) - band.Min(p => p.X), adsK);
+    }
+
+    /// <summary>Gun-space top silhouette of the model (dev): highest vertex per 2 cm of length, as (z, y) in metres.</summary>
+    internal IEnumerable<(float Z, float Y, float X)> GunProfile()
+    {
+        var toGun = gun.GlobalTransform.AffineInverse();
+        var best = new SortedDictionary<int, Vector3>();
+        foreach (var mi in modelMeshes)
+        {
+            var xf = toGun * mi.GlobalTransform;
+            for (int s = 0; s < mi.Mesh.GetSurfaceCount(); s++)
+                foreach (var v in mi.Mesh.SurfaceGetArrays(s)[(int)Mesh.ArrayType.Vertex].AsVector3Array())
+                {
+                    var g = xf * v;
+                    int bin = Mathf.FloorToInt(g.Z / 0.02f);
+                    if (!best.TryGetValue(bin, out var b) || g.Y > b.Y) best[bin] = g;
+                }
+        }
+        return best.Values.Select(v => (v.Z, v.Y, v.X));
+    }
+
     internal MuzzleFlash Flash => flash;
     internal bool LeftLayout => left;
     internal VmMaterials Materials => mats;

@@ -27,6 +27,9 @@ public sealed record WeaponDef(
     public bool Sniper => Family == WeaponKind.Operator;
     /// <summary>Bolt action (Operator only): the scope drops after every shot and the bolt cycles.</summary>
     public bool Bolt => Kind == WeaponKind.Operator;
+    /// <summary>Max move speed while aimed / scoped, as a fraction of the run speed (valorant-api adsStats
+    /// runSpeedMultiplier; Operator "decreased scoped movement speed 76% >>> 72%"). Chamber's guns: no number, 0.76.</summary>
+    public float AdsMoveMul => Kind == WeaponKind.Operator ? 0.72f : 0.76f;
 
     /// <summary>Damage for a hit zone at a distance (meters).</summary>
     public float Damage(int zone, float dist)

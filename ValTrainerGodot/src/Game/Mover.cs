@@ -28,6 +28,9 @@ public sealed partial class Mover
     public bool Crouching, Walking;
     public float EyeHeight = StandEye;
     public bool Ads;
+    /// <summary>Aimed / scoped max speed as a fraction of the run speed: the gun's (<see cref="Core.WeaponDef.AdsMoveMul"/>,
+    /// Operator 0.72), <see cref="AdsMultiplier"/> by default.</summary>
+    public float AdsSpeedMul = AdsMultiplier;
 
     /// <summary>Horizontal (ground) speed in m/s.</summary>
     public float Speed => new Vector2(Vel.X, Vel.Z).Length();
@@ -78,7 +81,7 @@ public sealed partial class Mover
         EyeHeight += (target - EyeHeight) * (1f - Mathf.Exp(-14f * dt));
 
         float max = (Crouching ? CrouchSpeed : Walking ? WalkSpeed : RunSpeed) * SpeedScale;
-        if (Ads) max = Mathf.Min(max, RunSpeed * AdsMultiplier * SpeedScale);
+        if (Ads) max = Mathf.Min(max, RunSpeed * AdsSpeedMul * SpeedScale);
 
         // Ability dash: no steering and no friction until the lock runs out (gravity still applies in the air).
         if (SteerLockLeft > 0)

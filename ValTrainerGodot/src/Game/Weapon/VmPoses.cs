@@ -68,11 +68,15 @@ public sealed record VmPose(
     }
 
     // ---------------- weapons ----------------
+    // ADS poses (VALORANT look, ads-model.md §4.3): the gun is raised low and centred and you look OVER it, never through
+    // its iron sights. Solved from the models' sight points with the viewmodel projection (70° vertical FOV): rear sight top
+    // ≈ 0.625 H, front post ≈ 0.61 H (Headhunter 0.66 / 0.645 H), so the gun's top sits about 0.12 H under the crosshair.
+    // The muzzle tilts down a few degrees so the front post doesn't climb toward the crosshair. VmTest checks the result.
 
     public static readonly VmPose Vandal = new(
         "res://assets/weapons/AssaultRifle_AK.tscn",
         HipPos: new Vector3(0.225f, -0.19f, -0.36f), HipRot: new Vector3(-1.5f, -2.5f, -4f),
-        AdsPos: new Vector3(0f, -0.152f, -0.16f), AdsRot: new Vector3(0f, 0f, 0f),
+        AdsPos: new Vector3(0f, -0.2066f, -0.24f), AdsRot: new Vector3(-7.05f, 0f, 0f),
         Grip: GripAt(new Vector3(0f, 0.01f, 0f), 25f, PistolGrip),
         Support: CupAt(new Vector3(0f, 0.07f, -0.34f)),
         Bolt: null,
@@ -84,7 +88,7 @@ public sealed record VmPose(
     public static readonly VmPose Phantom = Vandal with
     {
         Scene = "res://assets/weapons/AssaultRifle_M4.tscn",
-        AdsPos = new Vector3(0f, -0.172f, -0.17f),
+        AdsPos = new Vector3(0f, -0.206f, -0.24f), AdsRot = new Vector3(-10.8f, 0f, 0f),
         Grip = GripAt(new Vector3(0f, 0f, 0.01f), 30f, PistolGrip),
         Support = CupAt(new Vector3(0f, 0.077f, -0.3f)),
         Eject = new Vector3(0.02f, 0.11f, -0.07f),
@@ -96,7 +100,7 @@ public sealed record VmPose(
     {
         Scene = "res://assets/weapons/SniperRifle_Bolt.tscn",
         HipPos = new Vector3(0.22f, -0.175f, -0.36f), HipRot = new Vector3(-1f, -2f, -4f),
-        AdsPos = new Vector3(0f, -0.114f, -0.12f),
+        AdsPos = new Vector3(0f, -0.114f, -0.12f), AdsRot = new Vector3(0f, 0f, 0f), // scope to the eye (then the overlay)
         Grip = GripAt(new Vector3(0f, -0.015f, 0.015f), 15f, PistolGrip),
         Support = CupAt(new Vector3(0f, 0.01f, -0.33f)),
         Bolt = new HandPlacement(new Vector3(0.075f, 0.045f, 0.09f), new Vector3(-0.5f, -0.1f, -0.86f), new Vector3(0.7f, 0.7f, 0f), new Vector3(0.4f, -0.4f, 0.8f), Pinch),
@@ -108,7 +112,7 @@ public sealed record VmPose(
     public static readonly VmPose Sheriff = new(
         "res://assets/weapons/Pistol_Compact.tscn",
         HipPos: new Vector3(0.125f, -0.15f, -0.42f), HipRot: new Vector3(-3f, -4f, -2f),
-        AdsPos: new Vector3(0f, -0.083f, -0.42f), AdsRot: new Vector3(0f, 0f, 0f),
+        AdsPos: new Vector3(0f, -0.1334f, -0.26f), AdsRot: new Vector3(-9.7f, 0f, 0f), // aimed only as the Headhunter
         Grip: GripAt(new Vector3(0f, -0.005f, 0.005f), 15f, PistolGrip, new Vector3(0.3f, -0.8f, 0.52f)),
         Support: PistolSupportAt(new Vector3(0f, -0.005f, 0.005f), 15f),
         Bolt: null,

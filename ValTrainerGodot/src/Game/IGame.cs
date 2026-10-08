@@ -87,6 +87,19 @@ public interface IGame
     float CurrentSens { get; }
     /// <summary>Crosshair override for this session (crosshair finder trials); null = the player's crosshair.</summary>
     ValTrainer.Valorant.CrosshairSettings? TrialCrosshair { get; set; }
+    /// <summary>
+    /// Aim-down-sights override (crosshair finder ADS / sniper trials). null = normal (the player's alt fire);
+    /// true = the gun stays aimed / scoped as if alt fire were held, with the normal raise (a bolt-action Operator
+    /// scopes back in after each shot); false = never aim. Only guns with a zoom aim (see <see cref="WeaponDef.Zoom"/>).
+    /// Resets to null when the drill restarts; set it in Setup or any time during the run.
+    /// </summary>
+    bool? ForcedScope { get; set; }
+    /// <summary>
+    /// Swaps the gun in hand mid-run (fresh magazine, the weapon's equip time, the viewmodel's raise; aiming drops).
+    /// A drill normally picks its gun once with <c>TrainingMode.Weapon</c> (read at every restart); use this only to change
+    /// it during a run. Telemetry keeps one weapon per run: it is relabelled to the new gun.
+    /// </summary>
+    void SwitchWeapon(WeaponKind kind);
     /// <summary>Record a gameplay event for the aim coach (see <see cref="TelemetryEvent"/> for kinds).</summary>
     void Event(string kind, float a = 0, float b = 0);
     /// <summary>Mouse 1 currently held (tracking drills).</summary>

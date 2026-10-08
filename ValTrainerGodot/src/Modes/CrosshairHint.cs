@@ -37,40 +37,46 @@ public static class CrosshairHint
     }
 
     /// <summary>The hint for the imported VALORANT crosshair against VALORANT's own enemy highlight (null when nothing
-    /// was imported: there is no crosshair of the player's to judge).</summary>
+    /// was imported: there is no crosshair of the player's to judge). A split profile's own ADS crosshair is judged
+    /// too: the first one with a problem is reported (the primary first).</summary>
     public static Result? ForImported()
     {
         var v = Main.I.Valorant;
         if (!v.Found) return null;
         int e = Math.Clamp(v.EnemyHighlight, 0, UiTheme.EnemyColors.Length - 1);
         string enemyName = UiTheme.EnemyColorNames[e].Split(" (")[0].ToLowerInvariant();
-        return Check(v.Crosshair.Primary, UiTheme.EnemyColors[e], enemyName);
+        var primary = Check(v.Crosshair.Primary, UiTheme.EnemyColors[e], enemyName);
+        if (!primary.Ok || !v.Crosshair.AdsIsOwn) return primary;
+        var ads = Check(v.Crosshair.Ads, UiTheme.EnemyColors[e], enemyName, ads: true);
+        return ads.Ok ? primary : ads;
     }
 
-    public static Result Check(CrosshairStyle s, Color enemy, string enemyName)
+    /// <param name="ads">Judging the profile's own ADS crosshair (the wording says so).</param>
+    public static Result Check(CrosshairStyle s, Color enemy, string enemyName, bool ads = false)
     {
         var fill = new Color(s.Color, 1f);
         bool outlineOn = s.HasOutline && s.OutlineThickness > 0;
         bool faint = outlineOn && s.OutlineOpacity < FaintOutline;
+        string who = ads ? "Your VALORANT ADS crosshair" : "Your VALORANT crosshair", pre = ads ? "ADS: " : "";
 
         const string Finder = " The Crosshair Finder (Coach) can suggest one that stands out.";
         if (XfVisibility.DeltaE(fill, enemy) < EnemyDeltaE)
-            return new(Verdict.NearEnemy, $"colour is close to the {enemyName} enemy highlight",
-                $"Your VALORANT crosshair's colour is close to the {enemyName} enemy highlight, so it can melt into an enemy's outline right when you're on target." + Finder);
+            return new(Verdict.NearEnemy, $"{pre}colour is close to the {enemyName} enemy highlight",
+                $"{who}'s colour is close to the {enemyName} enemy highlight, so it can melt into an enemy's outline right when you're on target." + Finder);
 
-        if (outlineOn && !faint) return Ok();
+        if (outlineOn && !faint) return Ok(who);
         var (share, maps) = Fades(fill);
-        if (share < FadeShare) return Ok();
+        if (share < FadeShare) return Ok(who);
         string where = maps.Count switch { 0 => "some map surfaces", 1 => $"parts of {maps[0]}", _ => $"parts of {maps[0]} and {maps[1]}" };
         return faint
-            ? new(Verdict.FaintOutlineFades, $"faint outline, fades on {where}",
-                $"Your VALORANT crosshair's outline is almost see-through and its colour fades on {where}. A solid outline or another colour helps." + Finder)
-            : new(Verdict.NoOutlineFades, $"no outline, fades on {where}",
-                $"Your VALORANT crosshair has no outline and its colour fades on {where}. An outline or another colour helps." + Finder);
+            ? new(Verdict.FaintOutlineFades, $"{pre}faint outline, fades on {where}",
+                $"{who}'s outline is almost see-through and its colour fades on {where}. A solid outline or another colour helps." + Finder)
+            : new(Verdict.NoOutlineFades, $"{pre}no outline, fades on {where}",
+                $"{who} has no outline and its colour fades on {where}. An outline or another colour helps." + Finder);
     }
 
-    static Result Ok() => new(Verdict.Ok, "stands out on common map colours",
-        "Your VALORANT crosshair stands out on common map colours and isn't close to the enemy highlight.");
+    static Result Ok(string who) => new(Verdict.Ok, "stands out on common map colours",
+        $"{who} stands out on common map colours and isn't close to the enemy highlight.");
 
     /// <summary>Weighted share of map surfaces (and the enemy body) where the fill alone fades, and the maps where it
     /// fades worst (display names, up to two).</summary>

@@ -26,7 +26,8 @@ public sealed class AppSettings
     public bool ViewModel = true;      // first-person gun
     public bool LeftHandedWeapon;      // weapon hand: false = right (default), true = left (VALORANT's own setting is not used)
     public bool UseFinderCrosshair;    // crosshair: false = VALORANT's (imported), true = FinderCrosshairCode
-    public string? FinderCrosshairCode; // VALORANT profile code from the Crosshair Finder ("Use in ValTrainer"); VALORANT itself is never changed
+    public string? FinderCrosshairCode; // VALORANT profile code from the Crosshair Finder ("Use in ValTrainer") or pasted (Settings → Crosshair); VALORANT itself is never changed
+    public string? FinderCrosshairTab;  // "primary" / "ads" / "sniper": only that tab of FinderCrosshairCode is used, on top of the live VALORANT import (Crosshair Finder); null = the whole code (a pasted code, results from before 1.6)
     public string? LastFinderCrosshairCode; // the latest Crosshair Finder result, kept so it can be copied any time (Settings → Crosshair)
 
     // ---- updates / version (see UpdateCheck, WhatsNew, UpdatesPrompt) ----

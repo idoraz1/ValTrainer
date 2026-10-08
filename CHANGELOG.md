@@ -8,6 +8,27 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-10-08
+
+### Added
+
+- **Crosshair Finder for every crosshair tab:** pick PRIMARY, ADS or SNIPER. ADS rounds are played aiming down sights with the Vandal; SNIPER tests the scope's centre dot with the Operator. The result changes only the tab you tested and keeps the rest of your profile, and its code turns on Use Advanced Options when VALORANT needs it.
+- **See all your crosshairs:** Settings → Crosshair (and the menu, for split profiles) shows your PRIMARY, ADS and SNIPER crosshairs, with a line saying where each one is used.
+- **Paste a crosshair code** in Settings → Crosshair if your crosshair didn't import.
+
+### Changed
+
+- **Aiming down sights looks like VALORANT:** the gun stays low and you aim over it, a thin sight outline (the "box") fades in around your crosshair, and the zoom eases in instead of jumping. Your sensitivity while aiming is unchanged.
+- **New sniper scopes:** the Operator scope has VALORANT's eyepiece look with a full reticle and range marks and fades in after the gun is raised, and Chamber's Tour de Force has its own orange scope. Moving while scoped with the Operator is slower (72%), as in VALORANT.
+- The Crosshair setting's second option is now CUSTOM (a Crosshair Finder result or a pasted code). A Finder result follows later changes you make in VALORANT to your other tabs.
+
+### Fixed
+
+- **Split crosshairs:** ValTrainer now follows VALORANT's Use Advanced Options switch, so your ADS crosshair and sniper dot appear exactly when they do in the game, and crosshairs with only vertical lines (horizontal length 0) are drawn instead of disappearing.
+- Crosshairs saved in VALORANT's older settings format import correctly again (dot-only crosshairs were invisible), and unreadable crosshair data falls back to VALORANT's default crosshair with a note in Settings instead of an old one.
+- Crosshair codes keep everything VALORANT writes (fade, spectated crosshair, override settings and unknown sections), and the code ValTrainer shows is a complete code VALORANT imports as is.
+- Firing-error lines rest where VALORANT draws them, and the crosshair uses the aiming accuracy while aiming down sights.
+
 ## [1.5.0] - 2026-10-07
 
 ### Added
@@ -174,7 +195,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/idoraz1/ValTrainer/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/idoraz1/ValTrainer/compare/v1.4.4...v1.5.0
 [1.4.4]: https://github.com/idoraz1/ValTrainer/compare/v1.4.3...v1.4.4
 [1.4.3]: https://github.com/idoraz1/ValTrainer/compare/v1.4.2...v1.4.3

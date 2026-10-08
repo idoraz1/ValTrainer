@@ -23,6 +23,12 @@ public sealed class XfConfig
     public float Foreperiod = 0.3f;
     public float FlickTimeout = 2.0f, MicroTimeout = 2.5f, KillTimeout = 4f;
     public float PrefTimeout = 10f;
+    // Target placement: angle from the crosshair (°) and distance (m) per trial kind; the agent's yaw offset and distance
+    public float FlickAmpMin = 8f, FlickAmpMax = 30f, FlickDistMin = 13f, FlickDistMax = 18f;
+    public float MicroAmpMin = 1.5f, MicroAmpMax = 5f, MicroDistMin = 28f, MicroDistMax = 36f;
+    public float KillYawMin = 10f, KillYawMax = 24f, KillDistMin = 15f, KillDistMax = 20f;
+    /// <summary>Rough seconds per flick / micro-adjust / kill (for <see cref="EstimatedMinutes"/>).</summary>
+    public float FlickSec = 1.2f, MicroSec = 1.3f, KillSec = 1.6f;
     // Shape pick (before the bracket): the time limit, and how long a pick or drop keeps it open at least
     public float PickTimeout = 30f, PickExtend = 10f;
     /// <summary>Flick / micro-adjust hit rate (clicks and timeouts) below which a match means fatigue or a break.</summary>
@@ -34,9 +40,25 @@ public sealed class XfConfig
     /// <summary>Rough wall-clock estimate (the shape pick, then 4 matches incl. the check against the player's crosshair, counted as 5 for the screens in between), minutes.</summary>
     public float EstimatedMinutes =>
         (VisTrials * ((ForeMin + ForeMax) / 2 + 0.4f + VisFeedback) + 2 * PartHeaderSec + 15f
-         + 5 * (BlocksPerMatch * (RestSec + Flicks * 1.2f + Micros * 1.3f + Kills * 1.6f) + 5f)) / 60f;
+         + 5 * (BlocksPerMatch * (RestSec + Flicks * FlickSec + Micros * MicroSec + Kills * KillSec) + 5f)) / 60f;
 
     public static XfConfig Full() => new();
+
+    /// <summary>The protocol for a tab. ADS keeps the primary's drills (aimed with the Vandal: 1.25× zoom, about 90° wide).
+    /// Sniper drills fit the Operator's scope (2.5×, the glass about ±17° high): shorter flicks, farther heads, and one
+    /// target per bolt cycle (1.7 s), so a round has fewer targets.</summary>
+    public static XfConfig For(XfTab tab, bool quick)
+    {
+        var c = quick ? Quick() : Full();
+        if (tab != XfTab.Sniper) return c;
+        if (!quick) { c.Flicks = 3; c.Micros = 3; }
+        c.FlickAmpMin = 3f; c.FlickAmpMax = 11f; c.FlickDistMin = 24f; c.FlickDistMax = 32f;
+        c.MicroAmpMin = 0.6f; c.MicroAmpMax = 2.2f; c.MicroDistMin = 42f; c.MicroDistMax = 55f;
+        c.KillYawMin = 3f; c.KillYawMax = 9f; c.KillDistMin = 28f; c.KillDistMax = 38f;
+        c.FlickTimeout = 2.6f; c.MicroTimeout = 3f; c.KillTimeout = 4f;
+        c.FlickSec = c.MicroSec = 2.2f; c.KillSec = 2.4f;
+        return c;
+    }
 
     public static XfConfig Quick() => new()
     {
@@ -284,7 +306,7 @@ public static class XfShapes
         return new XfEntrant
         {
             Key = key, Name = name, Why = why, Extras = x,
-            Xhair = new CrosshairSettings { Name = name, Primary = st, Ads = CrosshairCode.DefaultStyle(), UsePrimaryForAds = true },
+            Xhair = new CrosshairSettings { Name = name, Primary = st, Ads = CrosshairCode.DefaultStyle(), UsePrimaryForAds = true, Extras = x },
         };
     }
 
@@ -455,20 +477,14 @@ public static class XfShapes
         return true;
     }
 
-    /// <summary>The crosshair the player uses now (imported from VALORANT, or ValTrainer's finder setting).</summary>
-    public static XfEntrant Current(CrosshairSettings cur) => new()
+    /// <summary>The crosshair the player uses now (imported from VALORANT, or ValTrainer's finder setting): their whole
+    /// profile; <paramref name="tab"/> only names it.</summary>
+    public static XfEntrant Current(CrosshairSettings cur, XfTab tab = XfTab.Primary) => new()
     {
-        Key = "current", Name = "Your crosshair", Why = "what you use now", IsCurrent = true,
-        Xhair = cur,
+        Key = "current", IsCurrent = true, Why = "what you use now",
+        Name = tab switch { XfTab.Ads => "Your ADS crosshair", XfTab.Sniper => "Your sniper dot", _ => "Your crosshair" },
+        Xhair = cur, Extras = cur.Extras,
     };
-
-    /// <summary>Same look on screen (primary crosshair) — used to skip the check when the winner already is the player's.</summary>
-    public static bool SameLook(CrosshairSettings a, CrosshairSettings b)
-    {
-        var x = new CrosshairSettings { Primary = a.Primary, UsePrimaryForAds = true };
-        var y = new CrosshairSettings { Primary = b.Primary, UsePrimaryForAds = true };
-        return CrosshairCode.Diff(x, y) == null;
-    }
 }
 
 /// <summary>Procedural VALORANT-like backdrops for part 1 (drawn on the HUD canvas, behind a self-drawn crosshair).</summary>

@@ -81,6 +81,8 @@ public partial class GameSession : Node3D, IGame
         // HUD layer (crosshair under the blind overlay, HUD on top)
         var layer = new CanvasLayer { Layer = 5 };
         AddChild(layer);
+        adsSight = new AdsSight(); // the gun's hologram sight outline, under the crosshair (AdsSession.cs)
+        layer.AddChild(adsSight);
         crosshair = new CrosshairView { Profile = Main.I.Valorant.Crosshair };
         layer.AddChild(crosshair);
         Blind = new BlindOverlay();
@@ -121,6 +123,7 @@ public partial class GameSession : Node3D, IGame
         if (Adaptive is { Trials: > 0 } stair) Adaptive = stair.Fresh(); // a restarted run adapts from the start level again
         TrialSens = SessionSens; // null unless a routine (warm-up sens shifter) set one
         TrialCrosshair = null;
+        ForcedScope = null;
         Mover = new Mover();
         WireMover(); // movement events / dev scripts for the new run (MovementSession.cs)
         Player.Reset();
@@ -136,7 +139,7 @@ public partial class GameSession : Node3D, IGame
         BannerTime = 0;
         AdsBlend = 0;
         abilityInHand = false; // agent drills: the gun is in hand (AbilitySession.cs)
-        View.Zoom = 1;
+        View.Zoom = View.VisualZoom = 1;
         View.RecoilPitch = View.RecoilYaw = 0;
 
         var built = Mode.Map != null
@@ -155,23 +158,17 @@ public partial class GameSession : Node3D, IGame
         cam = new Camera3D { Fov = PlayerView.HipHFov, KeepAspect = Camera3D.KeepAspectEnum.Width, Near = 0.03f, Far = 400f, Current = true };
         AddChild(cam);
 
-        weaponDef = Weapons.Get(Mode.Weapon);
-        Gun = weaponDef != null ? new WeaponController(weaponDef) : null;
-        if (weaponDef != null && !Mode.Is2D && Main.I.Settings.ViewModel)
-        {
-            viewmodel = Viewmodel.Create(weaponDef.Kind, Main.I.Settings.LeftHandedWeapon);
-            cam.AddChild(viewmodel);
-            Gun!.Fired += () => viewmodel?.OnFire();
-        }
+        Equip(Weapons.Get(Mode.Weapon));
 
         GetViewport().Disable3D = Mode.Is2D;
         Telemetry = new RunTelemetry
         {
             Mode = Mode.Key, Tier = Tier, Sens = SessionSens ?? Main.I.Sens, Dpi = Main.I.Settings.Dpi,
             Weapon = Mode.Weapon.ToString(), Map = Mode.Map?.Key ?? "range", When = DateTime.Now,
-            ZoomSensMult = Weapons.FamilyOf(Mode.Weapon) == WeaponKind.Operator ? Main.I.Valorant.ZoomedSensMult : Main.I.Valorant.AdsSensMult,
+            ZoomSensMult = ZoomSensMultFor(Weapons.Get(Mode.Weapon)),
         };
         Mode.Begin(this);
+        if (Main.I.Dev) DevAdsArgs(); // --force-ads (AdsSession.cs)
         Respawn(Mode.StartFeet, Mode.StartYaw);
         Blind.Reset();
         Countdown = 3f;
@@ -204,8 +201,7 @@ public partial class GameSession : Node3D, IGame
             if (State is St.Countdown or St.Running && Input.MouseMode == Input.MouseModeEnum.Captured)
             {
                 // Raw counts (Godot uses Windows raw input while captured). ScreenRelative ignores stretch scaling.
-                float mult = weaponDef?.Sniper == true ? Main.I.Valorant.ZoomedSensMult : Main.I.Valorant.AdsSensMult;
-                View.Look(m.ScreenRelative, CurrentSens, mult);
+                View.Look(m.ScreenRelative, CurrentSens, ZoomSensMultFor(weaponDef));
                 frameDx += m.ScreenRelative.X;
                 frameDy += m.ScreenRelative.Y;
                 UpdateCamera();
@@ -316,16 +312,16 @@ public partial class GameSession : Node3D, IGame
         if (Main.I.Dev) DevKeybindTick(); // --keybind-test (KeybindTest.cs)
 
         UpdateCamera();
-        crosshair.Showing = State == St.Results || Mode.Is2D ? CrosshairView.Mode.Hidden
-            : Gun?.Scoped == true && weaponDef!.Sniper ? CrosshairView.Mode.Sniper
-            : Gun?.Scoped == true ? CrosshairView.Mode.Ads : CrosshairView.Mode.Primary;
+        UpdateAdsVisuals(); // crosshair mode, scope, sight outline, viewmodel aim pose (AdsSession.cs)
         crosshair.Profile = TrialCrosshair ?? ValTrainer.Valorant.CrosshairCode.Effective;
         crosshair.MoveError = Mode.Movement ? Mover.MoveError : 0f;
-        crosshair.FiringErrorPx = Gun != null && weaponDef != null ? DegToPx(Mathf.Max(0, Gun.SpreadNow - weaponDef.FirstShotHip)) : 0;
+        // Firing error beyond the first shot's: the aimed first-shot error while aimed (CurrentError already subtracts it).
+        crosshair.FiringErrorPx = Gun != null && weaponDef != null
+            ? DegToPx(Mathf.Max(0, Gun.SpreadNow - (Gun.Scoped ? weaponDef.FirstShotAds : weaponDef.FirstShotHip))) : 0;
+        // VALORANT rests firing-error lines at the weapon's minimum error unless the profile overrides it with its offset ("m").
+        crosshair.MinErrorPx = Gun != null && weaponDef != null ? DegToPx(Gun.Scoped ? weaponDef.FirstShotAds : weaponDef.FirstShotHip) : 0;
         if (viewmodel != null)
         {
-            viewmodel.Visible = !(Gun?.Scoped == true && weaponDef!.Sniper) && State != St.Results && !abilityInHand;
-            viewmodel.SetAds(AdsBlend);
             viewmodel.SetReload(Gun != null && Gun.Reloading ? 1f - Gun.ReloadLeft / weaponDef!.Reload : -1f);
             viewmodel.SetMotion(Mover.Speed, Mover.Crouching);
         }
@@ -352,8 +348,7 @@ public partial class GameSession : Node3D, IGame
         {
             // Dev-only simulated player (validation of the aim coach / sens finder without a human).
             var (counts, held, pressed) = Sim.Next(dt, Now, View, Mode.Focus, CurrentSens);
-            float mult = weaponDef?.Sniper == true ? Main.I.Valorant.ZoomedSensMult : Main.I.Valorant.AdsSensMult;
-            View.Look(counts, CurrentSens, mult);
+            View.Look(counts, CurrentSens, ZoomSensMultFor(weaponDef));
             frameDx += counts.X; frameDy += counts.Y;
             if (pressed && !fireHeld) firePressedEdge = true;
             fireHeld = held;
@@ -369,13 +364,7 @@ public partial class GameSession : Node3D, IGame
         if (Mode.Movement && !Player.Dead) MovePlayer(dt); // dead = waiting to respawn (no moving or shooting)
 
         // Weapon
-        if (Gun != null && !Mode.Is2D)
-        {
-            Gun.Scoped = adsHeld && !abilityInHand && !Gun.Reloading && weaponDef!.Zoom > 1f && (!weaponDef.Sniper || Gun.EquipLeft <= 0);
-            Mover.Ads = Gun.Scoped;
-            AdsBlend = Mathf.MoveToward(AdsBlend, Gun.Scoped ? 1f : 0f, dt / 0.12f);
-            View.Zoom = Gun.Scoped ? weaponDef!.Zoom : 1f;
-        }
+        if (Gun != null && !Mode.Is2D) UpdateAds(dt); // aim / scope, raise and zoom (AdsSession.cs)
 
         Mode.Update(dt);
 

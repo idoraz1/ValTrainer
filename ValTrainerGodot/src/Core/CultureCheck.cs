@@ -30,6 +30,7 @@ public static class CultureCheck
         try
         {
             Directory.CreateDirectory(root);
+            CrosshairChecks();
             ValorantChecks(root);
             CorruptChecks(root);
             DataChecks(root);
@@ -58,6 +59,8 @@ public static class CultureCheck
         Check("no VALORANT folder -> NotInstalled", none.Count == 0 && ValorantImporter.LastScan == ValorantStatus.NotInstalled, ValorantImporter.LastScan.ToString());
         var p0 = ValorantImporter.Load(null);
         Check("no VALORANT folder -> defaults + message", !p0.Found && p0.NotFoundMessage != null && p0.Sensitivity == 1f, p0.NotFoundMessage ?? "null");
+        Check("no VALORANT folder -> VALORANT's factory crosshair", CrosshairCode.Diff(p0.Crosshair, CrosshairCode.DefaultSettings()) == null
+            && CrosshairCode.Encode(p0.Crosshair) == "0", CrosshairCode.Encode(p0.Crosshair));
         Directory.CreateDirectory(val);
         ValorantImporter.FindAccounts();
         Check("empty config folder -> NoAccounts", ValorantImporter.LastScan == ValorantStatus.NoAccounts, ValorantImporter.LastScan.ToString());
@@ -112,6 +115,99 @@ public static class CultureCheck
         Check("legacy crosshair values", Near(legacy.Primary.Inner.Opacity, 0.5f) && Near(legacy.Primary.Inner.Length, 6f)
                                          && Near(legacy.Primary.CenterDotSize, 2.5f) && legacy.Primary.Color.G8 == 255 && legacy.Primary.Color.R8 == 0,
             $"{F(legacy.Primary.Inner.Opacity)} {F(legacy.Primary.Inner.Length)} {F(legacy.Primary.CenterDotSize)}");
+
+        // An account whose profiles live only in Riot's cloud: no JSON, just the old flat keys (dot only). The importer uses
+        // them (with a note) and the dot is drawn.
+        Write(Path.Combine(acc, "Windows", "RiotUserSettings.ini"),
+            "[/Script/ShooterGame.ShooterGameUserSettings]\r\nEAresFloatSettingName::MouseSensitivity=0.352000\r\n" +
+            "EAresBoolSettingName::CrosshairDisplayCenterDot=True\r\nEAresBoolSettingName::CrosshairInnerLinesShowLines=False\r\n" +
+            "EAresBoolSettingName::CrosshairOuterLinesShowLines=False\r\nEAresStringSettingName::CrosshairColor=(R=0,G=255,B=255,A=255)\r\n");
+        var cloud = ValorantImporter.Load(ValorantImporter.FindAccounts().FirstOrDefault());
+        var dot = cloud.Crosshair.Primary;
+        Check("no crosshair JSON -> legacy dot-only crosshair + note", cloud.Found && cloud.CrosshairNote != null && dot.CenterDot && !dot.Inner.Show
+            && !dot.Outer.Show && dot.Color.B8 == 255 && dot.Color.R8 == 0 && UI.CrosshairView.Raster(dot).Any(r => r.Contains('#')),
+            $"{cloud.CrosshairNote} {CrosshairCode.Encode(cloud.Crosshair)}");
+    }
+
+    // ---------------- crosshair model (codes, profile JSON, legacy keys) ----------------
+
+    static void CrosshairChecks()
+    {
+        // Codes: the encoder/decoder self-test (split codes, vertical-only lines, the advanced gate, unknown sections …).
+        var fails = CrosshairCode.SelfTest(out int n);
+        foreach (var f in fails) Fail("crosshair code: " + f, "");
+        Check($"crosshair code self-test ({n} checks)", fails.Count == 0, $"{fails.Count} failed");
+
+        // Profile JSON (synthetic, shaped like VALORANT's SavedCrosshairProfileData): the active profile is a split one.
+        const string split = "{\"currentProfile\":1,\"profiles\":[" +
+            "{\"profileName\":\"Other\",\"primary\":{\"color\":{\"r\":255,\"g\":0,\"b\":0,\"a\":255}}}," +
+            "{\"profileName\":\"Split\",\"bUseAdvancedOptions\":true,\"bUsePrimaryCrosshairForADS\":false,\"bUsePrimaryCrosshairForFocusMode\":false," +
+            "\"bUseCustomCrosshairOnAllPrimary\":false,\"bScaleToResolution\":false," +
+            "\"primary\":{\"color\":{\"r\":0,\"g\":255,\"b\":255,\"a\":255},\"bUseCustomColor\":false,\"colorCustom\":{\"r\":255,\"g\":255,\"b\":255,\"a\":255}," +
+            "\"bHasOutline\":false,\"outlineThickness\":1,\"outlineOpacity\":0.5,\"outlineColor\":{\"r\":0,\"g\":0,\"b\":0,\"a\":255},\"bDisplayCenterDot\":false," +
+            "\"centerDotSize\":2,\"centerDotOpacity\":1,\"bFadeCrosshairWithFiringError\":false,\"bShowSpectatedPlayerCrosshair\":true," +
+            "\"bFixMinErrorAcrossWeapons\":true,\"bHideCrosshair\":false," +
+            "\"innerLines\":{\"bShowLines\":true,\"lineThickness\":2,\"lineLength\":4,\"lineLengthVertical\":6,\"bAllowVertScaling\":false,\"lineOffset\":2," +
+            "\"opacity\":1,\"bShowMovementError\":false,\"movementErrorScale\":1,\"bShowShootingError\":false,\"firingErrorScale\":1,\"bShowMinError\":true}," +
+            "\"outerLines\":{\"bShowLines\":false,\"lineThickness\":2,\"lineLength\":2,\"lineLengthVertical\":2,\"bAllowVertScaling\":false,\"lineOffset\":10," +
+            "\"opacity\":0.34999999403953552,\"bShowMovementError\":true,\"movementErrorScale\":1,\"bShowShootingError\":true,\"firingErrorScale\":1}}," +
+            "\"aDS\":{\"color\":{\"r\":255,\"g\":0,\"b\":0,\"a\":255},\"bUseCustomColor\":false,\"colorCustom\":{\"r\":239,\"g\":146,\"b\":191,\"a\":255}," +
+            "\"bHasOutline\":true,\"outlineThickness\":1,\"outlineOpacity\":1,\"bDisplayCenterDot\":true,\"centerDotSize\":2,\"centerDotOpacity\":1," +
+            "\"bFadeCrosshairWithFiringError\":false,\"bShowSpectatedPlayerCrosshair\":false,\"bFixMinErrorAcrossWeapons\":false," +
+            "\"innerLines\":{\"bShowLines\":false},\"outerLines\":{\"bShowLines\":false}}," +
+            "\"focusMode\":{\"color\":{\"r\":0,\"g\":0,\"b\":0,\"a\":0},\"bHasOutline\":false,\"outlineThickness\":0,\"outlineOpacity\":0,\"centerDotSize\":0," +
+            "\"centerDotOpacity\":0,\"innerLines\":{\"bShowLines\":false,\"lineThickness\":0,\"lineLength\":0,\"opacity\":0},\"outerLines\":{\"bShowLines\":false}}," +
+            "\"sniper\":{\"centerDotColor\":{\"r\":255,\"g\":0,\"b\":0,\"a\":255},\"bUseCustomCenterDotColor\":true," +
+            "\"centerDotColorCustom\":{\"r\":0,\"g\":255,\"b\":128,\"a\":255},\"bDisplayCenterDot\":true,\"centerDotSize\":0.5,\"centerDotOpacity\":0.80000001192092896}}]}";
+        var s = CrosshairSettings.FromProfileJson(split);
+        Check("split profile JSON parses (current profile 1)", s is { Name: "Split" }, s?.Name ?? "null");
+        if (s != null)
+        {
+            var ads = s.StyleFor(UI.CrosshairView.Mode.Ads);
+            var hip = s.StyleFor(UI.CrosshairView.Mode.Primary);
+            var dot = s.SniperDotFor();
+            Check("split JSON: advanced on, own ADS = red dot, hip = cyan lines", s.UseAdvancedOptions && s.AdsIsOwn && ads == s.Ads && ads.CenterDot
+                && ads.Color.R8 == 255 && ads.Color.G8 == 0 && !ads.Inner.Show && hip == s.Primary && hip.Color.G8 == 255 && hip.Color.R8 == 0 && hip.Inner.Show);
+            Check("split JSON: custom sniper dot", dot.Show && dot.Color.G8 == 255 && dot.Color.B8 == 128 && dot.Color.R8 == 0 && Near(dot.Size, 0.5f) && Near(dot.Opacity, 0.8f),
+                dot.ToString());
+            Check("split JSON: fade / firing-offset flags read", !s.Extras.Primary.Fade && s.Extras.Primary.OverrideFiringOffset && s.Extras.Ads.Fade);
+            Check("split JSON: focusMode (console only, all zeros) is never drawn", hip.Inner.Opacity > 0 && ads.CenterDotSize > 0);
+            const string want = "0;p;0;s;1;P;c;5;h;0;f;0;m;1;0l;4;0o;2;0a;1;0f;0;1b;0;A;c;7;u;EF92BFFF;o;1;d;1;0b;0;1b;0;S;b;1;c;8;t;00FF80FF;s;0.5;o;0.8";
+            string got = CrosshairCode.Encode(s);
+            Check("split JSON -> the full code VALORANT would export", got == want, got);
+            Check("split JSON code decodes to the same crosshair", CrosshairCode.Decode(got) is { } back && CrosshairCode.Diff(back, s) == null);
+        }
+
+        // Copy Primary off but Use Advanced Options off: VALORANT ignores the ADS and Sniper tabs.
+        const string gated = "{\"currentProfile\":0,\"profiles\":[{\"profileName\":\"P0\",\"bUseAdvancedOptions\":false,\"bUsePrimaryCrosshairForADS\":false," +
+            "\"primary\":{\"color\":{\"r\":0,\"g\":255,\"b\":0,\"a\":255}},\"aDS\":{\"color\":{\"r\":255,\"g\":0,\"b\":0,\"a\":255},\"innerLines\":{\"opacity\":0}}," +
+            "\"sniper\":{\"centerDotColor\":{\"r\":0,\"g\":255,\"b\":255,\"a\":255},\"centerDotOpacity\":1}}]}";
+        var g = CrosshairSettings.FromProfileJson(gated);
+        Check("advanced off + copy off: ADS draws the primary, default red sniper dot, code without s;1 / A / S",
+            g != null && !g.AdsIsOwn && g.StyleFor(UI.CrosshairView.Mode.Ads) == g.Primary && g.SniperDotFor().Color.R8 == 255
+            && g.SniperDotFor().Color.G8 == 0 && Near(g.SniperDotFor().Opacity, 0.75f) && CrosshairCode.Encode(g) == "0;p;0;P;c;1",
+            g == null ? "null" : CrosshairCode.Encode(g));
+
+        // A custom colour (bUseCustomColor) exports like the game: c;8 + u + b;1.
+        var cust = CrosshairSettings.FromProfileJson("{\"currentProfile\":0,\"profiles\":[{\"primary\":{\"color\":{\"r\":255,\"g\":255,\"b\":255,\"a\":255}," +
+            "\"bUseCustomColor\":true,\"colorCustom\":{\"r\":255,\"g\":255,\"b\":204,\"a\":255}}}]}");
+        Check("custom colour JSON -> c;8;u;…;b;1", cust != null && CrosshairCode.Encode(cust) == "0;P;c;8;u;FFFFCCFF;b;1", cust == null ? "null" : CrosshairCode.Encode(cust));
+        Check("broken / empty profile JSON -> null", CrosshairSettings.FromProfileJson("{not json") == null
+            && CrosshairSettings.FromProfileJson("{\"currentProfile\":0,\"profiles\":[]}") == null);
+
+        // Legacy flat keys: only non-default values are written, so a missing key is VALORANT's factory value.
+        var lg = CrosshairSettings.FromLegacyKeys(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["CrosshairDisplayCenterDot"] = "True", ["CrosshairInnerLinesAllowVertScaling"] = "True", ["CrosshairInnerLinesLineLengthVertical"] = "9.000000",
+            ["CrosshairInnerLinesShowShootingError"] = "False", ["CrosshairOuterLinesFiringErrorScale"] = "2.500000", ["FadeCrosshairWithFiringError"] = "False",
+        });
+        var lp = lg.Primary;
+        Check("legacy keys: real dot key, unlinked length, error flags, fade; factory defaults elsewhere",
+            lp.CenterDot && lp.Inner.AllowVertScaling && Near(lp.Inner.LengthVertical, 9) && Near(lp.Inner.Length, 6) && !lp.Inner.ShowShootingError
+            && Near(lp.Outer.FiringErrorScale, 2.5f) && lp.Outer.ShowMovementError && lp.Outer.ShowShootingError && !lg.Extras.Primary.Fade
+            && Near(lp.Inner.Offset, 3) && lp.Color == Godot.Colors.White, CrosshairCode.Encode(lg));
+        var none = CrosshairSettings.FromLegacyKeys(new Dictionary<string, string>());
+        Check("legacy keys: none written -> VALORANT's factory crosshair", CrosshairCode.Encode(none) == "0", CrosshairCode.Encode(none));
     }
 
     // ---------------- corrupt files ----------------
@@ -148,6 +244,8 @@ public static class CultureCheck
         Check("corrupt: monitor/highlight sane", p.MonitorIndex == 0 && p.EnemyHighlight == 0, $"{p.MonitorIndex} {p.EnemyHighlight}");
         var c = CrosshairSettings.ParseUeColor("(R=99999999999999,G=255,B=0,A=255)");
         Check("corrupt: overflowing colour parses", c is { } cc && cc.G8 == 255, c?.ToString() ?? "null");
+        Check("corrupt: unreadable crosshair JSON -> VALORANT's default + note (never the stale flat keys)",
+            CrosshairCode.Encode(p.Crosshair) == "0" && p.CrosshairNote != null, $"{CrosshairCode.Encode(p.Crosshair)} {p.CrosshairNote}");
     }
 
     // ---------------- settings / stats / telemetry round trips ----------------

@@ -2,21 +2,28 @@ using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Godot;
+using ValTrainer.UI;
 using Color = Godot.Color;
 
 namespace ValTrainer.Valorant;
 
+/// <summary>One line group (inner or outer). Field defaults are VALORANT's factory inner lines; the outer group's
+/// factory values are set by <see cref="CrosshairStyle"/>.</summary>
 public sealed class CrosshairLines
 {
     public bool Show = true;
-    public float Thickness = 2, Length = 4, LengthVertical = 4, Offset = 3, Opacity = 0.8f;
+    public float Thickness = 2, Length = 6, LengthVertical = 6, Offset = 3, Opacity = 0.8f;
+    /// <summary>"Separate vertical length" (the chain icon off): <see cref="LengthVertical"/> is used for the vertical arms.</summary>
     public bool AllowVertScaling;
     public bool ShowMovementError;
     public float MovementErrorScale = 1;
-    public bool ShowShootingError;
+    public bool ShowShootingError = true;
     public float FiringErrorScale = 1;
+
+    public CrosshairLines Clone() => (CrosshairLines)MemberwiseClone();
 }
 
+/// <summary>One crosshair (VALORANT's Primary or ADS tab). <c>new CrosshairStyle()</c> is VALORANT's factory crosshair.</summary>
 public sealed class CrosshairStyle
 {
     public Color Color = Colors.White;
@@ -27,21 +34,75 @@ public sealed class CrosshairStyle
     public float CenterDotSize = 2, CenterDotOpacity = 1;
     public bool Hide;
     public CrosshairLines Inner = new();
-    public CrosshairLines Outer = new() { Thickness = 2, Length = 2, LengthVertical = 2, Offset = 10, Opacity = 0.35f };
+    public CrosshairLines Outer = new()
+    {
+        Thickness = 2, Length = 2, LengthVertical = 2, Offset = 10, Opacity = 0.35f, ShowMovementError = true, ShowShootingError = true,
+    };
+
+    public CrosshairStyle Clone()
+    {
+        var c = (CrosshairStyle)MemberwiseClone();
+        c.Inner = Inner.Clone();
+        c.Outer = Outer.Clone();
+        return c;
+    }
 }
 
+/// <summary>The sniper scope centre dot VALORANT draws (see <see cref="CrosshairSettings.SniperDotFor"/>).</summary>
+public readonly record struct SniperDotStyle(bool Show, Color Color, float Size, float Opacity);
+
+/// <summary>A VALORANT crosshair profile: Primary, ADS and sniper dot plus the General flags. <c>new()</c> is VALORANT's
+/// factory profile (the code "0").</summary>
 public sealed class CrosshairSettings
 {
-    public string Name = "Valorant default";
+    public string Name = "VALORANT default";
     public CrosshairStyle Primary = new();
+    /// <summary>The ADS tab as stored. Only drawn when <see cref="AdsIsOwn"/>; use <see cref="StyleFor"/>.</summary>
     public CrosshairStyle Ads = new();
+    /// <summary>ADS ▸ "Copy Primary Crosshair" (JSON bUsePrimaryCrosshairForADS, code global "p"; default on).</summary>
     public bool UsePrimaryForAds = true;
+    /// <summary>General ▸ "Use Advanced Options" (JSON bUseAdvancedOptions, code global "s"). Off: VALORANT ignores the
+    /// ADS and Sniper tabs (ADS uses the primary crosshair, the scope shows the default red dot).</summary>
+    public bool UseAdvancedOptions;
     public bool ScaleToResolution;
+    /// <summary>The Sniper tab as stored. Only drawn when <see cref="UseAdvancedOptions"/>; use <see cref="SniperDotFor"/>.</summary>
     public Color SniperDotColor = Color.Color8(255, 0, 0, 255);
     public bool SniperDot = true;
     public float SniperDotSize = 1, SniperDotOpacity = 0.75f;
+    /// <summary>Everything else a crosshair code holds (fade, spectated, colour provenance, unknown keys / sections), so
+    /// <see cref="CrosshairCode.Encode"/> reproduces the profile without loss.</summary>
+    public CrosshairCodeExtras Extras = new();
 
-    /// <summary>Parses Valorant's SavedCrosshairProfileData JSON (the active profile).</summary>
+    /// <summary>True when VALORANT draws the ADS tab while aiming down sights (advanced options on, copy primary off).</summary>
+    public bool AdsIsOwn => UseAdvancedOptions && !UsePrimaryForAds;
+
+    /// <summary>True when the scope shows the player's own Sniper tab dot (advanced options on).</summary>
+    public bool SniperIsOwn => UseAdvancedOptions;
+
+    /// <summary>The crosshair VALORANT draws in this mode: ADS uses the ADS tab only when <see cref="AdsIsOwn"/>, else the
+    /// primary (also for Sniper / Hidden, which draw no crosshair style).</summary>
+    public CrosshairStyle StyleFor(CrosshairView.Mode m) => m == CrosshairView.Mode.Ads && AdsIsOwn ? Ads : Primary;
+
+    /// <summary>The code section ("P" or "A") of <see cref="StyleFor"/>: firing-error offset override etc.</summary>
+    public CrosshairCodeSection SectionFor(CrosshairView.Mode m) => m == CrosshairView.Mode.Ads && AdsIsOwn ? Extras.Ads : Extras.Primary;
+
+    /// <summary>The scope centre dot VALORANT draws: the Sniper tab with advanced options on, else the default red dot.</summary>
+    public SniperDotStyle SniperDotFor() => UseAdvancedOptions
+        ? new SniperDotStyle(SniperDot, SniperDotColor, SniperDotSize, SniperDotOpacity)
+        : new SniperDotStyle(true, CrosshairCode.Presets[7], 1f, 0.75f);
+
+    /// <summary>Deep copy (styles, extras): change one tab without touching the original.</summary>
+    public CrosshairSettings Clone()
+    {
+        var c = (CrosshairSettings)MemberwiseClone();
+        c.Primary = Primary.Clone();
+        c.Ads = Ads.Clone();
+        c.Extras = Extras.Clone();
+        return c;
+    }
+
+    /// <summary>Parses Valorant's SavedCrosshairProfileData JSON (the active profile); null if it isn't readable.
+    /// <c>focusMode</c> (console only, all zeros on PC) is never read.</summary>
     public static CrosshairSettings? FromProfileJson(string json)
     {
         try
@@ -49,25 +110,37 @@ public sealed class CrosshairSettings
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
             var profiles = root.GetProperty("profiles");
-            if (profiles.GetArrayLength() == 0) return null;
+            if (profiles.ValueKind != JsonValueKind.Array || profiles.GetArrayLength() == 0) return null;
             int idx = Math.Clamp(Int(root, "currentProfile", 0), 0, profiles.GetArrayLength() - 1);
             var p = profiles[idx];
+            if (p.ValueKind != JsonValueKind.Object) return null;
 
             var c = new CrosshairSettings
             {
-                Name = p.TryGetProperty("profileName", out var n) ? n.GetString() ?? "Profile" : "Profile",
+                Name = p.TryGetProperty("profileName", out var n) && n.ValueKind == JsonValueKind.String && n.GetString() is { } nm
+                       && !string.IsNullOrWhiteSpace(nm) ? nm : $"Profile {idx + 1}",
                 UsePrimaryForAds = Bool(p, "bUsePrimaryCrosshairForADS", true),
+                UseAdvancedOptions = Bool(p, "bUseAdvancedOptions", false),
                 ScaleToResolution = Bool(p, "bScaleToResolution", false),
             };
-            if (p.TryGetProperty("primary", out var prim)) c.Primary = Style(prim);
-            if (p.TryGetProperty("aDS", out var ads)) c.Ads = Style(ads);
-            if (p.TryGetProperty("sniper", out var sn))
+            c.Extras.AdvancedOptions = c.UseAdvancedOptions;
+            c.Extras.OverrideAllPrimary = Bool(p, "bUseCustomCrosshairOnAllPrimary", false);
+            if (p.TryGetProperty("primary", out var prim) && prim.ValueKind == JsonValueKind.Object)
+            {
+                c.Primary = Style(prim, c.Extras.Primary);
+                c.Extras.Primary.Fade = Bool(prim, "bFadeCrosshairWithFiringError", true);
+                c.Extras.Primary.ShowSpectated = Bool(prim, "bShowSpectatedPlayerCrosshair", true);
+            }
+            if (p.TryGetProperty("aDS", out var ads) && ads.ValueKind == JsonValueKind.Object)
+                c.Ads = Style(ads, c.Extras.Ads); // the aDS fade / spectated flags are always false and unused: recent exports omit them
+            if (p.TryGetProperty("sniper", out var sn) && sn.ValueKind == JsonValueKind.Object)
             {
                 c.SniperDot = Bool(sn, "bDisplayCenterDot", true);
                 c.SniperDotSize = Float(sn, "centerDotSize", 1);
                 c.SniperDotOpacity = Float(sn, "centerDotOpacity", 0.75f);
-                c.SniperDotColor = Bool(sn, "bUseCustomCenterDotColor", false)
-                    ? Col(sn, "centerDotColorCustom", c.SniperDotColor)
+                c.Extras.SniperCustom = Bool(sn, "bUseCustomCenterDotColor", false);
+                c.SniperDotColor = c.Extras.SniperCustom
+                    ? Col(sn, "centerDotColorCustom", Colors.White)
                     : Col(sn, "centerDotColor", c.SniperDotColor);
             }
             return c;
@@ -78,42 +151,51 @@ public sealed class CrosshairSettings
         }
     }
 
-    /// <summary>Older Valorant builds stored the crosshair as individual keys.</summary>
+    /// <summary>Older Valorant builds (and accounts whose profiles live only in Riot's cloud) keep the primary crosshair as
+    /// individual keys. Only non-default values are written, so every missing key means VALORANT's factory value.</summary>
     public static CrosshairSettings FromLegacyKeys(IReadOnlyDictionary<string, string> s)
     {
-        var c = new CrosshairSettings();
+        var c = CrosshairCode.DefaultSettings();
         var st = c.Primary;
+        bool useCustom = GetB(s, "CrosshairUseCustomColor", false);
         if (s.TryGetValue("CrosshairColor", out var col) && ParseUeColor(col) is { } cc) st.Color = cc;
-        if (s.TryGetValue("CrosshairColorCustom", out var cus) && ParseUeColor(cus) is { } cu
-            && s.TryGetValue("CrosshairUseCustomColor", out var uc) && uc.Equals("True", StringComparison.OrdinalIgnoreCase))
-            st.Color = cu;
+        if (useCustom && s.TryGetValue("CrosshairColorCustom", out var cus) && ParseUeColor(cus) is { } cu) st.Color = cu;
+        c.Extras.Primary.CustomViaB = c.Extras.Primary.CustomViaC8 = useCustom;
         st.HasOutline = GetB(s, "CrosshairHasOutline", st.HasOutline);
         st.OutlineThickness = GetF(s, "CrosshairOutlineThickness", st.OutlineThickness);
         st.OutlineOpacity = GetF(s, "CrosshairOutlineOpacity", st.OutlineOpacity);
-        st.CenterDot = GetB(s, "CrosshairHasCenterDot", st.CenterDot);
+        st.CenterDot = GetB(s, "CrosshairDisplayCenterDot", GetB(s, "CrosshairHasCenterDot", st.CenterDot));
         st.CenterDotSize = GetF(s, "CrosshairCenterDotSize", st.CenterDotSize);
         st.CenterDotOpacity = GetF(s, "CrosshairCenterDotOpacity", st.CenterDotOpacity);
-        st.Inner.Show = GetB(s, "CrosshairInnerLinesShowLines", st.Inner.Show);
-        st.Inner.Thickness = GetF(s, "CrosshairInnerLinesLineThickness", st.Inner.Thickness);
-        st.Inner.Length = GetF(s, "CrosshairInnerLinesLineLength", st.Inner.Length);
-        st.Inner.LengthVertical = GetF(s, "CrosshairInnerLinesLineLengthVertical", st.Inner.Length);
-        st.Inner.Offset = GetF(s, "CrosshairInnerLinesLineOffset", st.Inner.Offset);
-        st.Inner.Opacity = GetF(s, "CrosshairInnerLinesOpacity", st.Inner.Opacity);
-        st.Outer.Show = GetB(s, "CrosshairOuterLinesShowLines", st.Outer.Show);
-        st.Outer.Thickness = GetF(s, "CrosshairOuterLinesLineThickness", st.Outer.Thickness);
-        st.Outer.Length = GetF(s, "CrosshairOuterLinesLineLength", st.Outer.Length);
-        st.Outer.LengthVertical = GetF(s, "CrosshairOuterLinesLineLengthVertical", st.Outer.Length);
-        st.Outer.Offset = GetF(s, "CrosshairOuterLinesLineOffset", st.Outer.Offset);
-        st.Outer.Opacity = GetF(s, "CrosshairOuterLinesOpacity", st.Outer.Opacity);
-        c.Name = "Imported (legacy keys)";
+        c.Extras.Primary.Fade = GetB(s, "FadeCrosshairWithFiringError", true);
+        LegacyLines(s, "CrosshairInnerLines", st.Inner);
+        LegacyLines(s, "CrosshairOuterLines", st.Outer);
+        c.Name = s.TryGetValue("CrosshairProfileName", out var name) && name.Trim().Trim('"') is { Length: > 0 } nm ? nm : "Imported (legacy keys)";
         return c;
     }
 
-    static CrosshairStyle Style(JsonElement e)
+    static void LegacyLines(IReadOnlyDictionary<string, string> s, string p, CrosshairLines l)
     {
+        l.Show = GetB(s, p + "ShowLines", l.Show);
+        l.Thickness = GetF(s, p + "LineThickness", l.Thickness);
+        l.Length = GetF(s, p + "LineLength", l.Length);
+        l.LengthVertical = GetF(s, p + "LineLengthVertical", l.LengthVertical);
+        l.AllowVertScaling = GetB(s, p + "AllowVertScaling", l.AllowVertScaling);
+        l.Offset = GetF(s, p + "LineOffset", l.Offset);
+        l.Opacity = GetF(s, p + "Opacity", l.Opacity);
+        l.ShowMovementError = GetB(s, p + "ShowMovementError", l.ShowMovementError);
+        l.MovementErrorScale = GetF(s, p + "MovementErrorScale", l.MovementErrorScale);
+        l.ShowShootingError = GetB(s, p + "ShowShootingError", l.ShowShootingError);
+        l.FiringErrorScale = GetF(s, p + "FiringErrorScale", l.FiringErrorScale);
+    }
+
+    static CrosshairStyle Style(JsonElement e, CrosshairCodeSection x)
+    {
+        bool custom = Bool(e, "bUseCustomColor", false);
+        var colorCustom = Col(e, "colorCustom", Colors.White);
         var s = new CrosshairStyle
         {
-            Color = Bool(e, "bUseCustomColor", false) ? Col(e, "colorCustom", Colors.White) : Col(e, "color", Colors.White),
+            Color = custom ? colorCustom : Col(e, "color", Colors.White),
             HasOutline = Bool(e, "bHasOutline", true),
             OutlineThickness = Float(e, "outlineThickness", 1),
             OutlineOpacity = Float(e, "outlineOpacity", 0.5f),
@@ -123,45 +205,55 @@ public sealed class CrosshairSettings
             CenterDotOpacity = Float(e, "centerDotOpacity", 1),
             Hide = Bool(e, "bHideCrosshair", false),
         };
-        if (e.TryGetProperty("innerLines", out var il)) s.Inner = Lines(il);
-        if (e.TryGetProperty("outerLines", out var ol)) s.Outer = Lines(ol);
+        // Colour provenance for the code: the game's exports write both "c;8" and "b;1" for a custom colour, and keep a
+        // stale custom hex ("u") while a preset is selected.
+        x.CustomViaB = x.CustomViaC8 = custom;
+        string staleHex = $"{colorCustom.R8:X2}{colorCustom.G8:X2}{colorCustom.B8:X2}{colorCustom.A8:X2}";
+        x.StaleHex = !custom && staleHex != "FFFFFFFF" ? staleHex : null;
+        x.OverrideFiringOffset = Bool(e, "bFixMinErrorAcrossWeapons", false);
+        var def = new CrosshairStyle();
+        if (e.TryGetProperty("innerLines", out var il) && il.ValueKind == JsonValueKind.Object) s.Inner = Lines(il, def.Inner);
+        if (e.TryGetProperty("outerLines", out var ol) && ol.ValueKind == JsonValueKind.Object) s.Outer = Lines(ol, def.Outer);
         return s;
     }
 
-    static CrosshairLines Lines(JsonElement e) => new()
+    static CrosshairLines Lines(JsonElement e, CrosshairLines d) => new()
     {
-        Show = Bool(e, "bShowLines", true),
-        Thickness = Float(e, "lineThickness", 2),
-        Length = Float(e, "lineLength", 4),
-        LengthVertical = Float(e, "lineLengthVertical", 4),
-        Offset = Float(e, "lineOffset", 3),
-        Opacity = Float(e, "opacity", 0.8f),
-        AllowVertScaling = Bool(e, "bAllowVertScaling", false),
-        ShowMovementError = Bool(e, "bShowMovementError", false),
-        MovementErrorScale = Float(e, "movementErrorScale", 1),
-        ShowShootingError = Bool(e, "bShowShootingError", false),
-        FiringErrorScale = Float(e, "firingErrorScale", 1),
+        Show = Bool(e, "bShowLines", d.Show),
+        Thickness = Float(e, "lineThickness", d.Thickness),
+        Length = Float(e, "lineLength", d.Length),
+        LengthVertical = Float(e, "lineLengthVertical", d.LengthVertical),
+        Offset = Float(e, "lineOffset", d.Offset),
+        Opacity = Float(e, "opacity", d.Opacity),
+        AllowVertScaling = Bool(e, "bAllowVertScaling", d.AllowVertScaling),
+        ShowMovementError = Bool(e, "bShowMovementError", d.ShowMovementError),
+        MovementErrorScale = Float(e, "movementErrorScale", d.MovementErrorScale),
+        ShowShootingError = Bool(e, "bShowShootingError", d.ShowShootingError),
+        FiringErrorScale = Float(e, "firingErrorScale", d.FiringErrorScale),
     };
 
     static float Float(JsonElement e, string name, float def) =>
-        e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetSingle() : def;
+        e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && float.IsFinite(v.GetSingle()) ? v.GetSingle() : def;
 
     static int Int(JsonElement e, string name, int def) =>
-        e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? (int)v.GetDouble() : def;
+        e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number && v.GetDouble() is var d && double.IsFinite(d)
+            ? (int)Math.Clamp(d, int.MinValue, int.MaxValue) : def;
 
     static bool Bool(JsonElement e, string name, bool def) =>
         e.TryGetProperty(name, out var v) && v.ValueKind is JsonValueKind.True or JsonValueKind.False ? v.GetBoolean() : def;
 
     static Color Col(JsonElement e, string name, Color def) =>
         e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Object
-            ? Color.Color8((byte)Int(v, "r", 255), (byte)Int(v, "g", 255), (byte)Int(v, "b", 255), (byte)Int(v, "a", 255))
+            ? Color.Color8(B8(v, "r"), B8(v, "g"), B8(v, "b"), B8(v, "a"))
             : def;
 
+    static byte B8(JsonElement e, string name) => (byte)Math.Clamp(Int(e, name, 255), 0, 255);
+
     static float GetF(IReadOnlyDictionary<string, string> s, string k, float def) =>
-        s.TryGetValue(k, out var v) && float.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out var f) ? f : def;
+        s.TryGetValue(k, out var v) && float.TryParse(v.Trim().Trim('"'), NumberStyles.Float, CultureInfo.InvariantCulture, out var f) && float.IsFinite(f) ? f : def;
 
     static bool GetB(IReadOnlyDictionary<string, string> s, string k, bool def) =>
-        s.TryGetValue(k, out var v) ? v.Equals("True", StringComparison.OrdinalIgnoreCase) : def;
+        s.TryGetValue(k, out var v) ? v.Trim().Equals("True", StringComparison.OrdinalIgnoreCase) : def;
 
     /// <summary>Parses Unreal's "(R=0,G=255,B=255,A=255)" color format.</summary>
     public static Color? ParseUeColor(string v)
