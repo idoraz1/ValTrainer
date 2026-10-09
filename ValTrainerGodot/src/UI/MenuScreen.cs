@@ -280,6 +280,9 @@ public partial class MenuScreen : ScreenBase
         var support = Btn("SUPPORT VALTRAINER", VButton.Look.Secondary, ShowSupport, 210, 32, 14);
         support.TooltipText = "Buy Me a Coffee or Ko-fi: ValTrainer stays free either way";
         foot.AddChild(support);
+        var discord = Btn("DISCORD", VButton.Look.Secondary, () => AppInfo.OpenSupport(AppInfo.DiscordUrl), 110, 32, 14);
+        discord.TooltipText = "Join the ValTrainer Discord: release news, help, bug reports, suggestions and voice chats by rank";
+        foot.AddChild(discord);
         right.AddChild(foot);
         h.AddChild(right);
         UpdateCoachHint();

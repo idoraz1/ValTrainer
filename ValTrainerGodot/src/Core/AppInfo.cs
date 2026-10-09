@@ -57,11 +57,14 @@ public static class AppInfo
     /// <summary>Tip jars (Support panel, Settings → About). Opened in the browser only when the player clicks.</summary>
     public const string BuyMeACoffeeUrl = "https://buymeacoffee.com/idoraz1";
     public const string KofiUrl = "https://ko-fi.com/idoraz1";
+    /// <summary>The ValTrainer Discord (release news, bug reports, suggestions, help, voice chats by rank).</summary>
+    public const string DiscordUrl = "https://discord.gg/Y6UKUX89C8";
 
-    /// <summary>Opens one of the two support pages in the browser (nothing else; nothing is sent by ValTrainer itself).</summary>
+    /// <summary>Opens one of the support pages or the Discord invite in the browser (nothing else; nothing is sent by
+    /// ValTrainer itself).</summary>
     public static bool OpenSupport(string url)
     {
-        if (url != BuyMeACoffeeUrl && url != KofiUrl) return false;
+        if (url != BuyMeACoffeeUrl && url != KofiUrl && url != DiscordUrl) return false;
         try { return OS.ShellOpen(url) == Error.Ok; }
         catch (Exception e) { Log.Error($"Couldn't open {url}: {e.Message}"); return false; }
     }

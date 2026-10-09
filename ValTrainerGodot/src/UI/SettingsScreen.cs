@@ -660,6 +660,10 @@ public partial class SettingsScreen : ScreenBase
         var help = HBox(10 * k);
         help.CustomMinimumSize = new Vector2(0, 52 * k);
         help.AddChild(Spacer(4 * k, 0));
+        var discord = Btn("DISCORD", VButton.Look.Secondary, () => AppInfo.OpenSupport(AppInfo.DiscordUrl), 130, 40, 17);
+        discord.TooltipText = "Opens the ValTrainer Discord invite: help, bug reports, suggestions and voice chats";
+        discord.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        help.AddChild(discord);
         if (AppInfo.HasRepo)
         {
             var bug = Btn("REPORT A BUG", VButton.Look.Secondary, () => AppInfo.OpenGitHub(AppInfo.NewIssueUrl), 170, 40, 17);
