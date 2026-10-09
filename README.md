@@ -12,6 +12,8 @@ Windows 10/11 · free and open source · fan-made, not affiliated with Riot Game
 
 **Website:** [valtrainer.github.io](https://valtrainer.github.io/): features, clips, download and FAQ. Also on [itch.io](https://idoraz1.itch.io/valtrainer).
 
+**Discord:** [discord.gg/Y6UKUX89C8](https://discord.gg/Y6UKUX89C8): release news, bug reports, suggestions, help and voice chats by rank.
+
 **Support:** ValTrainer is free, with no ads and no account. If it helps your game, you can
 [buy me a coffee](https://buymeacoffee.com/idoraz1) or support it on [Ko-fi](https://ko-fi.com/idoraz1).
 
@@ -230,6 +232,7 @@ project layout and the release process.
 - Ideas and plans: [open feature requests](https://github.com/idoraz1/ValTrainer/issues?q=is%3Aissue+is%3Aopen+label%3Afeature).
   Give the ones you want a 👍.
 - Suggest a drill or feature, or report a bug: [new issue](https://github.com/idoraz1/ValTrainer/issues/new/choose).
+  Or post it in the [Discord](https://discord.gg/Y6UKUX89C8) (#bug-reports, #suggestions, #help).
 - What changed in each version: [CHANGELOG.md](CHANGELOG.md).
 - Support development: [Buy Me a Coffee](https://buymeacoffee.com/idoraz1) or [Ko-fi](https://ko-fi.com/idoraz1). In the app,
   the menu's SUPPORT VALTRAINER button opens the same links; its occasional reminder can be turned off in Settings → About.

@@ -1,0 +1,87 @@
+name: Discord announcement
+
+# Posts a published GitHub release to the ValTrainer Discord's #announcements channel through a webhook: the version,
+# its release notes (the CHANGELOG section) and the download links.
+# Runs after every release (called by release.yml) and by hand (Actions → Discord announcement → Run workflow).
+# Needs the repository secret DISCORD_WEBHOOK_URL (#announcements → Edit Channel → Integrations → Webhooks →
+# Copy Webhook URL); without it the job is skipped.
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: Version to announce (x.y.z, no leading v)
+        type: string
+        required: true
+    secrets:
+      DISCORD_WEBHOOK_URL:
+        required: false
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to announce (x.y.z, no leading v)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  post:
+    name: Post to Discord
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VERSION: ${{ inputs.version }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check the webhook
+        id: hook
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "::notice::DISCORD_WEBHOOK_URL isn't set: skipping the Discord announcement."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Post the release
+        if: steps.hook.outputs.ok == 'true'
+        run: |
+          set -euo pipefail
+          VERSION="${VERSION#v}"
+          gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" --json body,url,isPrerelease > release.json
+          if [ "$(jq -r .isPrerelease release.json)" = "true" ]; then
+            echo "::notice::v$VERSION is a prerelease: not announced."
+            exit 0
+          fi
+          URL=$(jq -r .url release.json)
+          # The release notes without the download footer (everything from the first '---' line on).
+          NOTES=$(jq -r .body release.json | awk '/^---[[:space:]]*$/ {exit} {print}' | sed -e 's/\r$//')
+          # Discord embeds allow 4096 characters in the description.
+          if [ ${#NOTES} -gt 3500 ]; then NOTES="${NOTES:0:3500}…"$'\n\n'"Full notes: $URL"; fi
+          jq -n \
+            --arg version "$VERSION" --arg url "$URL" --arg notes "$NOTES" \
+            '{
+              username: "ValTrainer Releases",
+              content: ("**ValTrainer " + $version + " is out!** With updates turned on, ValTrainer installs it by itself."),
+              allowed_mentions: { parse: [] },
+              embeds: [{
+                title: ("ValTrainer " + $version),
+                url: $url,
+                description: $notes,
+                color: 16729685,
+                fields: [
+                  { name: "Download", value: ("[Website](https://valtrainer.github.io) · [GitHub](" + $url + ") · [itch.io](https://idoraz1.itch.io/valtrainer)"), inline: false }
+                ],
+                footer: { text: "Free VALORANT aim, movement and utility trainer for Windows" }
+              }]
+            }' > payload.json
+          # The webhook URL is a secret: never echo it.
+          code=$(curl -sS -o response.txt -w '%{http_code}' -H 'Content-Type: application/json' -X POST --data @payload.json "$DISCORD_WEBHOOK_URL")
+          if [ "$code" != "204" ] && [ "$code" != "200" ]; then
+            echo "::error::Discord answered HTTP $code"
+            cat response.txt
+            exit 1
+          fi
+          echo "Announced ValTrainer $VERSION in Discord."

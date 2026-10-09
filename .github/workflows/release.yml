@@ -324,3 +324,15 @@ jobs:
       version: ${{ needs.release.outputs.version }}
     secrets:
       BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+
+  # Then announce it in the ValTrainer Discord's #announcements (skipped while DISCORD_WEBHOOK_URL isn't set;
+  # prereleases aren't announced). See .github/workflows/discord.yml.
+  discord:
+    name: Announce on Discord
+    needs: release
+    if: needs.release.outputs.prerelease != 'true'
+    uses: ./.github/workflows/discord.yml
+    with:
+      version: ${{ needs.release.outputs.version }}
+    secrets:
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
