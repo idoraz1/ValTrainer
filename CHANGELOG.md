@@ -8,6 +8,13 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.7.1] - 2026-10-09
+
+### Fixed
+
+- **Peek Duels:** after the bot killed you, you never came back (from the menu and from agent training). You now respawn behind the corner a moment later and the next duel starts.
+- **Only one ValTrainer at a time:** opening ValTrainer while it's already running brings the open window to the front (restoring it if it was minimized) instead of starting a second copy.
+
 ## [1.7.0] - 2026-10-08
 
 ### Added
@@ -201,7 +208,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.7.0...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.7.1...HEAD
+[1.7.1]: https://github.com/idoraz1/ValTrainer/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/idoraz1/ValTrainer/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/idoraz1/ValTrainer/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/idoraz1/ValTrainer/compare/v1.4.4...v1.5.0

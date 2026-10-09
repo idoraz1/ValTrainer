@@ -15,6 +15,8 @@ namespace ValTrainer;
 public partial class Main : Node
 {
     public static Main I { get; private set; } = null!;
+    /// <summary>This copy found another ValTrainer running and is quitting (it loads nothing and saves nothing).</summary>
+    bool singleInstanceExit;
 
     public AppSettings Settings = AppSettings.Load();
     public StatsStore Stats = StatsStore.Load();
@@ -46,6 +48,16 @@ public partial class Main : Node
     {
         I = this;
         Boot.InstallCrashHandlers();
+        // One ValTrainer at a time (dev / automated runs excepted; dev: --single-instance tests it): a second launch brings
+        // this one to the front and quits.
+        var startArgs = OS.GetCmdlineUserArgs().Concat(OS.GetCmdlineArgs()).ToArray();
+        if ((!startArgs.Contains("--dev") || startArgs.Contains("--single-instance")) && !SingleInstance.Claim())
+        {
+            Log.Info("ValTrainer is already running: brought that window to the front; quitting this copy");
+            singleInstanceExit = true;
+            GetTree().Quit();
+            return;
+        }
         // Old builds stored Easy/Normal/Hard; map once onto the 5 rank tiers.
         if (Settings.Tier < 0 || Settings.Tier > 4) Settings.Tier = Settings.Difficulty switch { 0 => 0, 2 => 3, _ => 2 };
         Reimport();
@@ -236,6 +248,8 @@ public partial class Main : Node
 
     public override void _Process(double delta)
     {
+        if (singleInstanceExit) return;
+        SingleInstance.Poll(); // a second launch asked this copy to come to the front (no-op unless this copy holds the lock)
         UpdateCheck.Poll(); // picks up the background update check's answer (cheap when idle)
         Updater.Poll();     // background update download / install (cheap when idle)
         // Dev runs log FPS so automated checks can read performance from stdout.
@@ -257,6 +271,7 @@ public partial class Main : Node
 
     public override void _Input(InputEvent e)
     {
+        if (singleInstanceExit) return;
         if (e is InputEventKey { Pressed: true, Echo: false, Keycode: Key.F11 })
         {
             Settings.WindowModeOverride = WindowMode == 2 ? 1 : 2;
@@ -267,6 +282,6 @@ public partial class Main : Node
 
     public override void _Notification(int what)
     {
-        if (what == NotificationWMCloseRequest) Settings.Save();
+        if (what == NotificationWMCloseRequest && !singleInstanceExit) Settings.Save();
     }
 }

@@ -178,7 +178,13 @@ public sealed class PeekDuelMode : MovementMode
                 if (bot != null && brain is { FirstSeenAt: >= 0 } && bot.SpawnTime < brain.FirstSeenAt) bot.SpawnTime = brain.FirstSeenAt;
                 break;
             case St.After:
-                if (stateT > 0.8f) st = St.ToCover;
+                // Lost the duel: a dead player can't walk back, so respawn behind the corner (then the next duel starts).
+                if (G.Player.Dead && stateT > 1.2f)
+                {
+                    G.Respawn(StartFeet, StartYaw);
+                    if (Main.I.Dev) GD.Print($"[peekduel] respawned behind the corner ({losses} lost, {wins} won)");
+                }
+                if (stateT > 0.8f && !G.Player.Dead) st = St.ToCover;
                 break;
         }
     }
@@ -186,6 +192,7 @@ public sealed class PeekDuelMode : MovementMode
     public override void OnPlayerDied()
     {
         losses++; Deaths++; Score -= 75;
+        if (Main.I.Dev) GD.Print($"[peekduel] you died at {Now:0.0}s");
         Event("round_lost");
         G.Banner("YOU DIED — they hit first", UI.UiTheme.Accent);
         if (bot != null) { var b = bot; b.GetTree().CreateTimer(0.6).Timeout += () => G.Despawn(b); }
