@@ -119,6 +119,7 @@ public partial class GameSession : Node3D, IGame
         cam?.QueueFree();
 
         Mode = factory();
+        Main.I.LastModeKey = Mode.Key; // bug reports say which drill ran last
         Mode.Attach(this); // ExtraSolids / Map below already follow the session tier
         if (Adaptive is { Trials: > 0 } stair) Adaptive = stair.Fresh(); // a restarted run adapts from the start level again
         TrialSens = SessionSens; // null unless a routine (warm-up sens shifter) set one

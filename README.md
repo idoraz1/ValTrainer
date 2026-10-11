@@ -199,13 +199,19 @@ The ratings need data: play Head Flicks, Strafe Tracking, Peek Practice, Counter
 
 ## Privacy
 
-- **Nothing is uploaded.** No account, no analytics, no telemetry leaves your PC.
+- **Nothing is uploaded on its own.** No account, no analytics, no telemetry leaves your PC.
 - Your settings, stats and run recordings stay in `%APPDATA%\ValTrainer` on your PC. Delete that folder to reset
   everything.
-- The **only** network traffic is the optional update check to `api.github.com` (at startup and every 6 hours), which
-  asks for the latest release of this project, and downloading that release's files from GitHub. Turn it off in
-  Settings and ValTrainer never goes online. Downloaded updates wait in `%LOCALAPPDATA%\ValTrainer\updates` and are
-  deleted after they're installed.
+- Apart from bug reports you send yourself (below), the **only** network traffic is the optional update check to
+  `api.github.com` (at startup and every 6 hours), which asks for the latest release of this project, and downloading
+  that release's files from GitHub. Turn it off in Settings and ValTrainer never goes online. Downloaded updates wait
+  in `%LOCALAPPDATA%\ValTrainer\updates` and are deleted after they're installed.
+- **Bug reports** are sent only when you press **SEND** in **Report a bug** (menu, or Settings → About), and contain
+  exactly what the form's "What gets sent" preview shows: your text, system info (version, Windows, CPU, RAM, GPU and
+  driver, renderer, display), the settings that matter for bugs (sensitivity, FPS cap, graphics…) and the end of the
+  current log. Your Windows user name, PC name and user folders are removed first. The report goes through a small
+  relay ([`tools/bug-relay`](tools/bug-relay)) to the public **#bug-reports** forum on the ValTrainer Discord, where
+  server members can see it. Nothing else is uploaded; COPY REPORT lets you post it yourself instead.
 - The **Support ValTrainer** panel (Buy Me a Coffee / Ko-fi) makes no network requests: its buttons only open the page
   in your browser.
 
@@ -219,7 +225,8 @@ The ratings need data: play Head Flicks, Strafe Tracking, Peek Practice, Counter
   info for a bug report.
 - A damaged settings or stats file is kept as `*.corrupt` and the app starts fresh.
 - Numbers always use "." as the decimal point, regardless of Windows region settings.
-- Still stuck? [Open a bug report](https://github.com/idoraz1/ValTrainer/issues/new/choose) and attach `godot.log`.
+- Still stuck? Press **REPORT A BUG** on the menu (it adds your system info and the end of the log for you), or
+  [open a GitHub issue](https://github.com/idoraz1/ValTrainer/issues/new/choose) and attach `godot.log`.
 
 ## Building from source
 

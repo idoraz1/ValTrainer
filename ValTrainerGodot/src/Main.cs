@@ -30,6 +30,8 @@ public partial class Main : Node
     public bool Dev { get; private set; }
     public int? TierOverride { get; private set; }
     public string? MapOverride { get; private set; }
+    /// <summary>Key of the last drill started this session (the context of a bug report), null before the first.</summary>
+    public string? LastModeKey;
 
     /// <summary>Whether this run may write settings, stats and telemetry: always in normal play; in dev runs only with
     /// --data-dir &lt;folder&gt; --write-data (so tests can exercise saving without touching the user's real files).</summary>
@@ -99,6 +101,13 @@ public partial class Main : Node
         {
             // Dev self-test (works with --headless): parsers and number formatting under the current culture.
             int failures = CultureCheck.Run();
+            GetTree().Quit(failures == 0 ? 0 : 1);
+            return;
+        }
+        if (Dev && args.Contains("--bugreport-test"))
+        {
+            // Dev self-test (works with --headless): bug report redaction, JSON shape and size limits.
+            int failures = BugReport.SelfTest();
             GetTree().Quit(failures == 0 ? 0 : 1);
             return;
         }

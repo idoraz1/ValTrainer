@@ -11,7 +11,7 @@ public static class AppInfo
     public const string Name = "ValTrainer";
     public const string Publisher = "ValTrainer contributors";
 
-    /// <summary>"owner/repo" on GitHub. Update checks, "Report a bug" and the installer's links stay off while this
+    /// <summary>"owner/repo" on GitHub. Update checks, the GitHub issue links and the installer's links stay off while this
     /// still holds the "OWNER" placeholder (tools\build-release.ps1 reads it from here too).</summary>
     public const string GitHubRepo = "idoraz1/ValTrainer";
 
@@ -59,6 +59,10 @@ public static class AppInfo
     public const string KofiUrl = "https://ko-fi.com/idoraz1";
     /// <summary>The ValTrainer Discord (release news, bug reports, suggestions, help, voice chats by rank).</summary>
     public const string DiscordUrl = "https://discord.gg/Y6UKUX89C8";
+    /// <summary>The bug-report relay: the public Cloudflare Worker URL (see tools/bug-relay) that posts in-app reports to
+    /// #bug-reports on the Discord. Only used when the player presses SEND in the Report a bug panel. Empty = this build
+    /// can't send reports: the panel copies the report and opens the Discord invite instead.</summary>
+    public const string BugReportUrl = "https://valtrainer-bug-relay.idoraz2008.workers.dev/report";
 
     /// <summary>Opens one of the support pages or the Discord invite in the browser (nothing else; nothing is sent by
     /// ValTrainer itself).</summary>

@@ -32,8 +32,9 @@ These are hard rules. A pull request that breaks one can't be merged.
    the player's data folder (`%APPDATA%\ValTrainer`). Tests that need saving use `--dev --data-dir <temp folder>
    --write-data`. `tools\selftest.ps1` fails if a dev run writes anything.
 4. **Nothing leaves the PC** except the optional update check to `api.github.com` and the download of a newer
-   release from this project's GitHub Releases (players can turn both off). No analytics, no telemetry uploads, no
-   other network requests.
+   release from this project's GitHub Releases (players can turn both off), and a bug report the player sends with
+   SEND in Report a bug (exactly what its preview shows, redacted, through [`tools/bug-relay`](tools/bug-relay)). No
+   analytics, no telemetry uploads, no other network requests.
 5. **Stay compatible.** Settings and stats files from older versions must keep loading. If that's impossible, it's a
    MAJOR version (see [Versions](#versions-semver)).
 
@@ -96,6 +97,7 @@ players can never trigger them by accident.
 | `--quality 0-3` | Graphics preset (Low … Ultra) for this run. |
 | `--window WxH` | Dev window size, e.g. `1280x720` or `1720x720`, for layout tests. |
 | `--screen settings\|stats\|profile` | Opens that screen at start (`profile` is the coach). |
+| `--screen bugreport`, `--bugreport-demo`, `--bugreport-answer send\|cancel`, `--report-url <url>`, `--bugreport-test` | Report a bug testing: opens the panel over the menu, fills in a sample report, presses a button after 2 s. Plain `--dev` never sends: SEND prints the JSON to the log ("Dev: not sent"). `--report-url` sends to that URL instead (also `http://127.0.0.1…` for a local relay; `off` shows a build without a relay URL). `--bugreport-test`: redaction, JSON shape and size checks, prints `[bugreport-test] RESULT: PASS/FAIL` (works with `--headless`). |
 | `--simaim <profile>` | A simulated player plays the drill: `good`, `overshoot`, `undershoot`, `nomicro`, `premature`, `slow`, `jitter`, `lowxhair`, `hesitate`, `curved`, `spraylate`, `runngun`. Tweak it with `key=value`, e.g. `good:pref=40` prefers 40 cm/360. |
 | `--duration N` | Shortens timed drills to N seconds. |
 | `--autofire` | Holds the trigger 2.6 s, releases 1.2 s, repeats (spray tests). |
@@ -132,8 +134,8 @@ Useful Godot options (before `--`): `--headless`, `--fixed-fps 120`, `--quit-aft
 
 ## Test tools
 
-**`tools\selftest.ps1`** runs what CI runs: the coach self-test, the locale tests (invariant, `de-DE`, `tr-TR`), a 5-second
-headless run of every timed drill with the simulated player, a coach analysis of those runs, and a check that no dev run
+**`tools\selftest.ps1`** runs what CI runs: the coach self-test, the locale tests (invariant, `de-DE`, `tr-TR`), the bug report
+checks (redaction, JSON shape and size, a dry run from the panel), a 5-second headless run of every timed drill with the simulated player, a coach analysis of those runs, and a check that no dev run
 wrote any data. It takes about 30 seconds. Build first (`dotnet build`), then:
 
 ```powershell

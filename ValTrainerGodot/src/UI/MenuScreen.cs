@@ -138,6 +138,13 @@ public partial class MenuScreen : ScreenBase
         AddChild(new SupportPanel(K, false, () => { }));
     }
 
+    /// <summary>The menu's REPORT A BUG button.</summary>
+    void ShowBugReport()
+    {
+        if (GetChildren().Any(c => c is BugReportPanel)) return;
+        AddChild(new BugReportPanel(K, "menu", () => { }));
+    }
+
     // ---------------- update banner ----------------
 
     UpdateBanner? banner;
@@ -280,7 +287,10 @@ public partial class MenuScreen : ScreenBase
         var support = Btn("SUPPORT VALTRAINER", VButton.Look.Secondary, ShowSupport, 210, 32, 14);
         support.TooltipText = "Buy Me a Coffee or Ko-fi: ValTrainer stays free either way";
         foot.AddChild(support);
-        var discord = Btn("DISCORD", VButton.Look.Secondary, () => AppInfo.OpenSupport(AppInfo.DiscordUrl), 110, 32, 14);
+        var bug = Btn("REPORT A BUG", VButton.Look.Secondary, ShowBugReport, 150, 32, 14);
+        bug.TooltipText = "Something broken? Describe it and send it to #bug-reports on the ValTrainer Discord. You see everything before it's sent";
+        foot.AddChild(bug);
+        var discord =Btn("DISCORD", VButton.Look.Secondary, () => AppInfo.OpenSupport(AppInfo.DiscordUrl), 110, 32, 14);
         discord.TooltipText = "Join the ValTrainer Discord: release news, help, bug reports, suggestions and voice chats by rank";
         foot.AddChild(discord);
         right.AddChild(foot);
@@ -309,6 +319,9 @@ public partial class MenuScreen : ScreenBase
         int i = Array.IndexOf(a, "--screen");
         if (i >= 0 && i + 1 < a.Length && a[i + 1].Equals("profile", StringComparison.OrdinalIgnoreCase))
             Callable.From(Main.I.ShowProfile).CallDeferred();
+        // Dev-only: "--screen bugreport" opens the Report a bug panel over the menu (+ --bugreport-demo, --bugreport-answer).
+        if (i >= 0 && i + 1 < a.Length && a[i + 1].Equals("bugreport", StringComparison.OrdinalIgnoreCase))
+            GetTree().CreateTimer(0.5).Timeout += () => { if (IsInstanceValid(this) && IsInsideTree()) ShowBugReport(); };
         // Dev-only: "--map-picker" opens the map pop-up once the layout has settled (screenshots).
         if (a.Contains("--map-picker"))
             GetTree().CreateTimer(0.5).Timeout += () => { if (IsInstanceValid(this) && IsInsideTree()) mapSel?.Open(); };

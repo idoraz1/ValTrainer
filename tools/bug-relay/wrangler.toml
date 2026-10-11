@@ -1,0 +1,21 @@
+# Optional: only needed if you deploy with the Wrangler CLI instead of the dashboard.
+# The webhook is NOT configured here. Set it as a secret:
+#   wrangler secret put DISCORD_WEBHOOK_URL
+name = "valtrainer-bug-relay"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+# Keep plain variables (MAX_PER_HOUR, BUG_TAG_ID) that were set in the dashboard
+# instead of wiping them on every `wrangler deploy`.
+keep_vars = true
+
+[[kv_namespaces]]
+binding = "RATE"
+# Placeholder: create a namespace (dashboard: Storage & Databases -> Workers KV -> Create,
+# or `wrangler kv namespace create RATE`) and paste its ID here.
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# Optional plain variables (uncomment to manage them here instead of in the dashboard).
+# [vars]
+# MAX_PER_HOUR = "5"
+# BUG_TAG_ID = ""

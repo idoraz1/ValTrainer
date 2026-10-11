@@ -34,7 +34,7 @@ public partial class SettingsScreen : ScreenBase
     static readonly string[] WindowModes = { "Fullscreen", "Windowed Fullscreen", "Windowed" };
     static readonly int[] FpsCaps = { 0, 60, 144, 165, 240, 360 };
     static readonly int[] Dpis = { 400, 800, 1000, 1200, 1600, 2000, 3200 };
-    static readonly string[] Qualities = { "Competitive (Low)", "Medium", "High", "Ultra" };
+    internal static readonly string[] Qualities ={ "Competitive (Low)", "Medium", "High", "Ultra" };
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
     public static string AaName(int v) => v switch { -1 => "Default", 0 => "None", 1 => "MSAA 2x", 2 => "MSAA 4x", 3 => "FXAA", _ => v.ToString() };
@@ -664,12 +664,12 @@ public partial class SettingsScreen : ScreenBase
         discord.TooltipText = "Opens the ValTrainer Discord invite: help, bug reports, suggestions and voice chats";
         discord.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         help.AddChild(discord);
+        var bug = Btn("REPORT A BUG", VButton.Look.Secondary, ShowBugReport, 170, 40, 17);
+        bug.TooltipText = "Describe the problem and send it to #bug-reports on the ValTrainer Discord. You see everything before it's sent";
+        bug.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        help.AddChild(bug);
         if (AppInfo.HasRepo)
         {
-            var bug = Btn("REPORT A BUG", VButton.Look.Secondary, () => AppInfo.OpenGitHub(AppInfo.NewIssueUrl), 170, 40, 17);
-            bug.TooltipText = "Opens GitHub's issue form in your browser";
-            bug.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-            help.AddChild(bug);
             var site = Btn("GITHUB PAGE", VButton.Look.Secondary, () => AppInfo.OpenGitHub(AppInfo.RepoUrl), 160, 40, 17);
             site.SizeFlagsVertical = SizeFlags.ShrinkCenter;
             help.AddChild(site);
@@ -694,6 +694,13 @@ public partial class SettingsScreen : ScreenBase
         v.AddChild(help);
 
         BuildLicenses(cols);
+    }
+
+    /// <summary>HELP &amp; FEEDBACK → REPORT A BUG: the bug report form over this screen (it also offers GitHub).</summary>
+    void ShowBugReport()
+    {
+        if (GetChildren().Any(c => c is BugReportPanel)) return;
+        AddChild(new BugReportPanel(K, "settings", () => { }));
     }
 
     /// <summary>Settings → About note under "Download updates automatically": how this copy updates (or why it can't).</summary>

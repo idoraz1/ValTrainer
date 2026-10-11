@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Headless self-tests for ValTrainer: the coach self-test, the locale (culture) tests and a short smoke test of the
+  Headless self-tests for ValTrainer: the coach self-test, the locale (culture) tests, the bug report checks and a short smoke test of the
   drills with the simulated player.
 .DESCRIPTION
   Runs the same checks as CI (.github/workflows/ci.yml). Every run uses --dev with a throw-away --data-dir and an empty
@@ -129,7 +129,23 @@ foreach ($c in @("") + $Cultures) {
   Report "culture test: $name" ($why -eq "") $why $r
 }
 
-# ---- 3. Smoke test: each drill runs 5 s with the simulated player, then its telemetry must load in the coach ----
+# ---- 3. Bug report: redaction, JSON shape and size limits; then a dry run from the panel (dev runs never send) ----
+$r = Invoke-Godot "bugreport-test" (@("--headless", "--path", $Project, "--") + $sandbox + @("--bugreport-test"))
+$res = ($r.Text -split "`r?`n" | Where-Object { $_ -match '\[bugreport-test\] RESULT:' } | Select-Object -Last 1)
+$fail = @($r.Text -split "`r?`n" | Where-Object { $_ -match '\[bugreport-test\] FAIL ' })
+$why = if ($r.Code -ne 0) { "exit code $($r.Code) ($res) " + ($fail -join "; ") } elseif ($res -notmatch 'RESULT: PASS') { "no PASS result" } else { "" }
+Report "bug report test" ($why -eq "") $why $r
+$r = Invoke-Godot "bugreport-dryrun" (@("--headless", "--fixed-fps", "120", "--quit-after", "600", "--path", $Project, "--") + $sandbox +
+                                      @("--screen", "bugreport", "--bugreport-demo", "--bugreport-answer", "send"))
+$lines = $r.Text -split "`r?`n"
+$at = [array]::FindIndex($lines, [Predicate[string]]{ param($l) $l -match '\[bug-report\] dev dry run, not sent' })
+$body = if ($at -ge 0 -and $at + 1 -lt $lines.Count) { try { $lines[$at + 1] | ConvertFrom-Json } catch { $null } } else { $null }
+$ex = Get-Exceptions $r.Text
+$why = if ($r.Code -ne 0) { "exit code $($r.Code)" } elseif ($ex.Count -gt 0) { "exception: $($ex[0].Trim())" } elseif ($at -lt 0) { "no dry-run output" } `
+       elseif ($null -eq $body -or $body.schema -ne 1 -or -not $body.report.title -or $null -eq $body.app.ram_gb) { "the printed JSON doesn't match the contract" } else { "" }
+Report "bug report dry run (nothing sent)" ($why -eq "") $why $r
+
+# ---- 4. Smoke test: each drill runs 5 s with the simulated player, then its telemetry must load in the coach ----
 if (-not $SkipSmoke) {
   foreach ($m in $Modes) {
     # 3 s countdown + 5 s run = 8 s = 960 fixed frames; quit after 1500 frames (12.5 s of game time).
@@ -151,7 +167,7 @@ if (-not $SkipSmoke) {
   Report "coach analysis of $files smoke runs" ($why -eq "") $why $r
 }
 
-# ---- 4. Dev runs must never write user data ----
+# ---- 5. Dev runs must never write user data ----
 $written = @(Get-ChildItem $data -Recurse -File -ErrorAction SilentlyContinue)
 Report "dev runs wrote no data" ($written.Count -eq 0) ("wrote: " + (($written | ForEach-Object { $_.FullName.Substring($data.Length) }) -join ", ")) $null
 
