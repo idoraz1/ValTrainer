@@ -4,7 +4,6 @@ public static class ModeRegistry
 {
     public static readonly List<Func<TrainingMode>> All = new()
     {
-        () => new PeekMixMode(),
         () => new GridshotMode(),
         () => new FlickMode(),
         () => new SpidershotMode(),
@@ -30,6 +29,7 @@ public static class ModeRegistry
         () => new LongTapsMode(),
         () => new JumpPeekMode(),
         () => new JigglePeekMode(),
+        () => new PeekMixMode(),
         () => new PostPlantMode(),
         () => new RetakeMode(),
         () => new AnchorMode(),

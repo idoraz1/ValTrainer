@@ -10,7 +10,7 @@ static class RunSummary
     static readonly HashSet<string> CoachModes = new()
     {
         "flick", "spider", "gridshot", "tracking", "strafebots", "peek", "counterstrafe", "peekduel", "siteclear", "flashmap", "deathmatch",
-        "reaction", "spray_vandal", "spray_phantom", "microshot", "popup", "longtaps", "jumppeek", "jigglepeek",
+        "reaction", "spray_vandal", "spray_phantom", "microshot", "popup", "longtaps", "jumppeek", "jigglepeek", "peek_mix",
         "flashpeek", "recon", "smokeexec", "mobility", "chamber", "postplant", "retake", "anchor", "sound",
     };
 
@@ -23,7 +23,7 @@ static class RunSummary
         string need = mode switch
         {
             "flick" or "microshot" or "popup" => "hit at least 5 targets",
-            "longtaps" or "jumppeek" or "jigglepeek" or "chamber" or "sound" => "let a few enemies show up and shoot them",
+            "longtaps" or "jumppeek" or "jigglepeek" or "peek_mix" or "chamber" or "sound" => "let a few enemies show up and shoot them",
             "flashpeek" or "recon" or "smokeexec" or "mobility" or "postplant" or "retake" or "anchor" => "play a few rounds and take some duels",
             "spider" or "gridshot" => "play at least 15 seconds and hit a few targets",
             "tracking" => "hold fire on the target for at least a few seconds",

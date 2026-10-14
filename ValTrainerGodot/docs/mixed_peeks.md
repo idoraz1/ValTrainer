@@ -1,6 +1,6 @@
 # Mixed Peeks
 
-Select **Mixed Peeks: hold the angle** in the menu, or launch with `--mode peek_mix`.
+Select **Mixed Peeks** (Movement) in the menu, or launch with `--mode peek_mix`.
 The opponent approaches behind a wall, then uses one of eight randomized exits:
 short, wide, crouched, double, jiggle, shoulder bait, silent walking, or repeek.
 Running approaches give a positional audio cue; walking and crouching stay silent.

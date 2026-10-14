@@ -8,8 +8,9 @@ namespace ValTrainer.Modes;
 public sealed class PeekMixMode : BotMode
 {
     public override string Key => "peek_mix";
-    public override string Name => "Mixed Peeks: hold the angle";
-    public override string Description => "Unannounced short, wide, crouched, double, jiggle, shoulder-bait, silent-walk and repeek exits. Baits read your shots: fire at a poke and the peeker punishes through your recovery (wide or jump); hold fire and it commits anyway. Opponents approach audibly, counter-strafe and jump. Clear every opponent.";
+    public override string Name => "Mixed Peeks";
+    public override string Description => "Hold an angle against unpredictable peeks. Shoot a bait and it punishes you; hold fire and it commits.";
+    public override string Category => "Movement";
     public override string SimKind => "bot";
     public override float Duration => 120f;
     public override bool InfiniteAmmo => true;
@@ -28,6 +29,29 @@ public sealed class PeekMixMode : BotMode
     const int KShort = 0, KWide = 1, KCrouch = 2, KDouble = 3, KJiggle = 4, KShoulder = 5, KShift = 6, KRepeek = 7;
     static readonly string[] names = { "Short", "Wide", "Crouch", "Double", "Jiggle", "Shoulder", "Shift walk", "Repeek" };
     static readonly float[] timeouts = { 5f, 5f, 5f, 5f, 8f, 7f, 7f, 8f };
+
+    // Difficulty (tier 0 Rookie … 4 Pro). The duel itself (reaction, accuracy) is BotBrain's tier skill; these set
+    // which peeks appear, how fast and unpredictable they are, and how well baits read and punish your shots.
+    static readonly int[][] kindsByTier =
+    {
+        new[] { KShort, KWide, KCrouch, KShift },
+        new[] { KShort, KWide, KCrouch, KShift, KDouble, KRepeek },
+        new[] { KShort, KWide, KCrouch, KShift, KDouble, KRepeek, KJiggle },
+        new[] { KShort, KWide, KCrouch, KShift, KDouble, KRepeek, KJiggle, KShoulder },
+        new[] { KShort, KWide, KCrouch, KShift, KDouble, KRepeek, KJiggle, KShoulder },
+    };
+    float PeekSpeed => Difficulty.T(Tier, 2.97f, 4.2f, 5.4f, 5.4f, 5.4f);   // running exits (approach stays a run)
+    (float, float) StartDelay => Tier switch
+    {
+        0 => (1.6f, 2.2f), 1 => (1.3f, 2.3f), 2 => (1.0f, 2.5f), 3 => (0.8f, 2.8f), _ => (0.5f, 3.2f),
+    };
+    (float, float) DoubleGap => Tier switch
+    {
+        <= 1 => (0.45f, 0.7f), 2 => (0.25f, 0.45f), 3 => (0.1f, 0.25f), _ => (0f, 0.14f),
+    };
+    float PunishDelay => Difficulty.T(Tier, .45f, .35f, .25f, .15f, .08f); // shot → bait converts to the punish
+    float JumpOutChance => Difficulty.T(Tier, 0f, 0f, .2f, .3f, .35f);
+    float SpotChance => Difficulty.T(Tier, 0f, 0f, .4f, .6f, .75f);       // jiggle escalates to a jump-spot
 
     enum Phase { Approach, Wait, Out, Hold, Back, Hidden, JumpSpot, Duel }
     // What the bot does when the between-poke pause (Hidden) ends.
@@ -72,14 +96,17 @@ public sealed class PeekMixMode : BotMode
     void StartTrial()
     {
         opponents.Clear();
-        kind = forceKind is >= 0 and <= 7 ? forceKind : Rng.Next(8); attempts[kind]++; trial++; active = true;
+        var pool = kindsByTier[Math.Clamp(Tier, 0, kindsByTier.Length - 1)];
+        kind = forceKind is >= 0 and <= 7 ? forceKind : pool[Rng.Next(pool.Length)]; attempts[kind]++; trial++; active = true;
         lastKill = -1; expires = Now + timeouts[kind]; G.Player.Reset();
         trialShots.Clear();
         Event("peek_trial", trial, kind);
         float side = Rng.Next(2) == 0 ? -1 : 1;
         float waitZ = -R(11.6f, 12.4f);                    // small per-trial depth variation
-        Spawn(side, waitZ, Now + R(1.2f, 2.0f));
-        if (kind == KDouble) Spawn(-side, waitZ, opponents[0].StartAt + Rng.NextSingle() * .14f);
+        var (d0, d1) = StartDelay;
+        Spawn(side, waitZ, Now + R(d0, d1));
+        var (g0, g1) = DoubleGap;
+        if (kind == KDouble) Spawn(-side, waitZ, opponents[0].StartAt + R(g0, g1));
     }
     void Spawn(float side, float waitZ, float startAt)
     {
@@ -125,7 +152,7 @@ public sealed class PeekMixMode : BotMode
         return false;
     }
     float OutSpeed(Opponent x) => x.Body.Crouched ? CrouchSpeed : kind == KShift ? WalkSpeed
-        : x.Bait ? (kind == KShoulder ? 3.6f : 4.5f) : RunSpeed;
+        : x.Bait ? (kind == KShoulder ? 3.6f : 4.5f) : PeekSpeed;
     float BaitHold() => kind == KShoulder ? R(.10f, .20f) : kind == KRepeek ? R(.10f, .18f) : R(0f, .06f);
     float InterPoke() => kind == KRepeek ? R(.4f, 1.0f) : kind == KShoulder ? R(.25f, .6f) : R(.15f, .5f);
     bool BaitKind() => kind is KJiggle or KShoulder or KRepeek;
@@ -134,7 +161,7 @@ public sealed class PeekMixMode : BotMode
     // arc develops first.
     bool Bit(Opponent x) => x.PokeStart >= 0 && (forceBite
         ? x.Poke >= 1 || x.Phase == Phase.JumpSpot && x.JumpV < 0
-        : trialShots.Any(s => s >= x.PokeStart - 0.05f));
+        : trialShots.Any(s => s >= x.PokeStart - 0.05f && Now >= s + PunishDelay));   // lower tiers read it later
     // Plans the first action once the wait after the approach ends.
     void StartAct(Opponent x)
     {
@@ -175,7 +202,7 @@ public sealed class PeekMixMode : BotMode
         x.Converted = true;
         x.Bait = false;
         Event("peek_bite", trial, 1);
-        bool jumpOut = x.Body.Grounded && Rng.NextDouble() < 0.35;
+        bool jumpOut = x.Body.Grounded && Rng.NextDouble() < JumpOutChance;
         Event("peek_punish", trial, jumpOut ? 1 : 0);
         x.Destination = x.CommitSide * R(4.4f, 5.2f);
         if (jumpOut) StartJump(x, false);
@@ -247,7 +274,7 @@ public sealed class PeekMixMode : BotMode
             x.Phase = Phase.Hidden;
             return;
         }
-        if (kind == KJiggle && (forceBite ? x.FailedBaits == 1 : x.FailedBaits is >= 1 and <= 2 && Rng.NextDouble() < .75))
+        if (kind == KJiggle && (forceBite ? x.FailedBaits == 1 : x.FailedBaits is >= 1 and <= 2 && Rng.NextDouble() < SpotChance))
         {
             // Patient holder: change the stimulus once — the jump-spot (the classic bait against a big punish).
             x.HiddenUntil = Now + InterPoke();
@@ -403,9 +430,15 @@ public sealed class PeekMixMode : BotMode
     }
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        for (int i = 0; i < 8; i++) yield return (names[i], $"won {wins[i]}/{attempts[i]}, lost {losses[i]}, unfinished {attempts[i] - wins[i] - losses[i]}");
+        for (int i = 0; i < 8; i++)
+            if (attempts[i] > 0) yield return (names[i], $"won {wins[i]}/{attempts[i]}, lost {losses[i]}, unfinished {attempts[i] - wins[i] - losses[i]}");
         yield return ("Accuracy", $"{Hits}/{Shots} ({Accuracy * 100:0.0}%)");
         yield return ("Visible head to first hit", firstHitMs.Count > 0 ? $"{Median(firstHitMs):0} ms median ({firstHitMs.Count} hit targets only)" : "No hits");
         yield return ("Kill to next first hit", transferMs.Count > 0 ? $"{Median(transferMs):0} ms median ({transferMs.Count} transfers)" : "No transfers");
+    }
+    public override int Badge()
+    {
+        int won = wins.Sum(), finished = won + losses.Sum();
+        return finished == 0 ? -1 : Difficulty.BadgeWinRate(Tier, (float)won / finished);
     }
 }

@@ -14,7 +14,7 @@ static class RunAnalysis
     static readonly HashSet<string> SpawnBotModes = new() { "strafebots", "counterstrafe" };
     static readonly HashSet<string> SeenBotModes = new()
     {
-        "peek", "peekduel", "siteclear", "deathmatch", "longtaps", "jumppeek", "jigglepeek",
+        "peek", "peekduel", "siteclear", "deathmatch", "longtaps", "jumppeek", "jigglepeek", "peek_mix",
         "flashpeek", "recon", "smokeexec", "mobility", "chamber", "postplant", "retake", "anchor", "sound",
     };
     static readonly HashSet<string> MovementModes = new()
