@@ -8,6 +8,8 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-10-14
+
 ### Added
 - Mixed Peeks (Movement): hold an angle against short, wide, crouched, double, jiggle, shoulder, walking and repeat peeks with audible approaches and reactive baits. Difficulty sets which peeks appear, how fast and unpredictable they are, and how quickly baits punish; runs feed the aim coach. Contributed by @Widowrasko (#1).
 - Drills made by the community show a COMMUNITY tag on their card and credit their creator before the drill starts.
@@ -228,7 +230,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.9.0...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/idoraz1/ValTrainer/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/idoraz1/ValTrainer/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/idoraz1/ValTrainer/compare/v1.7.1...v1.8.0
 [1.7.1]: https://github.com/idoraz1/ValTrainer/compare/v1.7.0...v1.7.1
