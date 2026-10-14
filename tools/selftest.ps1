@@ -18,7 +18,7 @@ param(
   [string]$Godot = $env:GODOT,
   [string]$Project = (Join-Path $PSScriptRoot "..\ValTrainerGodot"),
   # Drills for the smoke test (keys from src\Modes). Reaction Test and Sens Finder need real input and are left out.
-  [string[]]$Modes = @("flick", "gridshot", "spider", "tracking", "strafebots", "peek", "operator", "spray_vandal",
+  [string[]]$Modes = @("peek_mix", "flick", "gridshot", "spider", "tracking", "strafebots", "peek", "operator", "spray_vandal",
                        "spray_phantom", "spray_transfer", "counterstrafe", "peekduel", "siteclear", "flashmap", "deathmatch",
                        "microshot", "switch", "popup", "longtaps", "jumppeek", "jigglepeek", "postplant", "retake",
                        "anchor", "sound", "flashpeek:phoenix", "recon:sova", "smokeexec:omen", "mobility:jett", "chamber:headhunter"),
