@@ -8,6 +8,13 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Added
+- Mixed Peeks: hold an angle against short, wide, crouched, double, jiggle, shoulder, walking and repeat peeks with audible approaches and reactive baits.
+
+### Fixed
+- Jump takeoffs are silent; landing cues distinguish standing jumps, crouch-jump techniques and high drops with a stable impact-speed threshold.
+- Bots stop playing footsteps while airborne during jump peeks.
+
 ## [1.9.0] - 2026-10-11
 
 ### Added

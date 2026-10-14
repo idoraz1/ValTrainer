@@ -51,7 +51,7 @@ public partial class GameSession
     void OnMoverJumped()
     {
         Event("jump", Mover.Speed);
-        Sfx.I.Play("footstep", 0.3f, 1.08f);
+        // No takeoff sound: the real game is silent at jump start (standing or crouched).
         PlayerJumped?.Invoke();
     }
 
@@ -59,7 +59,10 @@ public partial class GameSession
     {
         var a = Mover.LastAir;
         Event("land", a.AirTime * 1000f, a.Drop);
-        Sfx.I.Play("footstep", Mathf.Clamp(0.3f + 0.12f * a.Drop, 0.3f, 0.8f), 0.92f);
+        // Landing audio is a binary cue: high drops and regular jumps are audible, but low walk-offs and
+        // the released crouch-jump technique are silent.
+        if (Mover.AudibleLanding)
+            Sfx.I.Play("footstep", 0.8f, 0.92f);
         if (MovementScript.Log)
             GD.Print(string.Create(CultureInfo.InvariantCulture,
                 $"[move] land t={Now:0.000} {(a.FromJump ? "jump" : "fall/launch")}: air {a.AirTime:0.000} s, feet rise {a.FeetRise:0.000} m, " +

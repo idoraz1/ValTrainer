@@ -110,8 +110,28 @@ public static class MovementCheck
 
     // ------------------------------------------------------------------ physics battery
 
+    static void LandingAudioChecks()
+    {
+        var r = new Rig(new List<Box> { Floor() }, Vector3.Zero);
+        r.JumpAndLand();
+        Check("standing jump landing audible", r.M.AudibleLanding, F(r.M.LastLandingSpeed));
+        r = new Rig(new List<Box> { Floor() }, Vector3.Zero);
+        r.Hold(Key.Ctrl); r.Step(30);
+        r.JumpAndLand(each: g => { if (g.M.AirTime > 0.1f) g.Release(Key.Ctrl); });
+        Check("released crouch-jump landing silent", !r.M.AudibleLanding && r.M.LastJumpFromCrouch, F(r.M.LastLandingSpeed));
+        r.Feet = new Vector3(0, 3, 0);
+        r.M.Place(ref r.Feet, r.World);
+        r.Step(120);
+        Check("high drop audible after crouch jump", r.M.AudibleLanding && !r.M.LastJumpFromCrouch, F(r.M.LastLandingSpeed));
+        r = new Rig(new List<Box> { Floor() }, new Vector3(0, 0.8f, 0));
+        r.Step(120);
+        Check("low walk-off silent", !r.M.AudibleLanding, F(r.M.LastLandingSpeed));
+
+    }
+
     static void Physics()
     {
+        LandingAudioChecks();
         float apex = MovementTuning.JumpApex, air = MovementTuning.JumpAirTime, tuck = MovementTuning.CrouchTuck;
         GD.Print($"[movecheck] tuning: jump {F(MovementTuning.JumpSpeed, "0.00")} m/s, gravity {F(MovementTuning.Gravity, "0.0")} m/s² → apex {F(apex)} m, " +
                  $"air {F(air)} s; crouch-jump +{F(tuck, "0.00")} m (reach {F(MovementTuning.CrouchJumpReach, "0.00")} m); air control {F(MovementTuning.AirAccel, "0")} m/s²");

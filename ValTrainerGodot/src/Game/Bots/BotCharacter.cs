@@ -38,6 +38,8 @@ public partial class BotCharacter : Node3D
     /// <summary>Facing in the game's yaw convention (degrees; 0 = -Z, + = right).</summary>
     public float FacingYaw { get => facing; set { facing = value; Rotation = new Vector3(0, Mathf.DegToRad(-value) + Mathf.Pi, 0); } }
     public bool Crouched;
+    /// <summary>False while a mode owns <see cref="Feet"/>.Y (jump peeks), which suppresses running footsteps.</summary>
+    public bool Grounded = true;
     /// <summary>Optional world point the rifle should pitch toward (e.g. the player's eye while engaging); null = level.
     /// Yaw always follows <see cref="FacingYaw"/>. <see cref="ShootFx"/> also aims at its target for ~1 s.</summary>
     public Vector3? AimTarget;
@@ -590,7 +592,7 @@ public partial class BotCharacter : Node3D
 
     void Footsteps(float dt, float speed)
     {
-        if (deathT >= 0 || Crouched || QuietSteps || speed <= RunStepSpeed || stepPlayer == null) { stepT = 0.06f; return; }
+        if (deathT >= 0 || Crouched || QuietSteps || !Grounded || speed <= RunStepSpeed || stepPlayer == null) { stepT = 0.06f; return; }
         stepT -= dt;
         if (stepT > 0) return;
         stepT += StepInterval;

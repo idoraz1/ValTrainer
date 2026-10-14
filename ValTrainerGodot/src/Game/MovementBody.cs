@@ -33,6 +33,11 @@ public static class MovementTuning
     public const float LandingErr = 7f;
     /// <summary>… for this long (seconds).</summary>
     public const float LandingErrTime = 0.225f;
+    /// <summary>Impact speed (m/s) at or above which a landing plays its sound (in-game: binary cue). Midpoint
+    /// between the two calibrated jumps — crouch-jump 5.0 (the tuck shortens the fall, silent) and standing
+    /// jump 6.17 (audible) — with a real margin under the standing jump: live framerates quantize the impact
+    /// speed by ±0.1, so the threshold must not sit within 1% of it.</summary>
+    public const float LandingSoundSpeed = 5.8f;
     /// <summary>Falls shorter than this (highest point to landing, metres) never hurt. Wiki: ~15 damage at 8 m, ~100 at 17 m,
     /// to health only (shields don't absorb it).</summary>
     public const float FallDamageFrom = 8f;
@@ -79,6 +84,22 @@ public sealed partial class Mover
     public float AirTime => Grounded ? 0f : airT;
     /// <summary>The last finished airborne phase (for drills, HUD and dev logs).</summary>
     public AirInfo LastAir { get; private set; }
+    /// <summary>Downward speed (m/s) at the moment of the last landing contact — drives the landing-sound gate.</summary>
+    public float LastLandingSpeed { get; private set; }
+    /// <summary>The jump that started the current/last airborne phase was taken from a crouch (the silent-landing
+    /// technique: crouch at takeoff, release mid-air; the landing contact is then silent, per in-game testing).</summary>
+    public bool LastJumpFromCrouch { get; private set; }
+    /// <summary>Whether the last landing should play its surface cue.</summary>
+    public bool AudibleLanding
+    {
+        get
+        {
+            float netDrop = LastAir.Drop - LastAir.FeetRise;
+            bool quietTechnique = LastJumpFromCrouch && !Crouching && netDrop <= MovementTuning.JumpApex;
+            return netDrop > MovementTuning.JumpApex
+                || (LastLandingSpeed >= MovementTuning.LandingSoundSpeed && !quietTechnique);
+        }
+    }
     /// <summary>The head hit a ceiling during the current / last airborne phase.</summary>
     public bool HitCeiling { get; private set; }
     /// <summary>Within <see cref="MovementTuning.LandingErrTime"/> of landing: guns are inaccurate (patch 1.09).</summary>
@@ -114,6 +135,7 @@ public sealed partial class Mover
         {
             VelY = MovementTuning.JumpSpeed;
             Grounded = false;
+            LastJumpFromCrouch = Down(keys, GameAction.Crouch);
             BeginAir(feet, fromJump: true);
             Jumped?.Invoke();
         }
@@ -191,6 +213,7 @@ public sealed partial class Mover
 
     void BeginAir(Vector3 feet, bool fromJump)
     {
+        if (!fromJump) LastJumpFromCrouch = false;
         airT = 0;
         airFromJump = fromJump;
         airStart = feet;
@@ -202,6 +225,7 @@ public sealed partial class Mover
     void Land(Vector3 feet)
     {
         Grounded = true;
+        LastLandingSpeed = -VelY;   // downward m/s at contact (before the zero)
         VelY = 0;
         sinceLanded = 0f;
         LastAir = new AirInfo(airFromJump, airT, airTopY - airStartY, airTopEye - airStartEye, airTopY - feet.Y,
@@ -254,6 +278,8 @@ public sealed partial class Mover
     /// <summary>Respawn: standing body and camera (no leftover crouch-jump tuck).</summary>
     public void ResetBody()
     {
+        LastJumpFromCrouch = false;
+        LastLandingSpeed = 0;
         bodyCrouched = false;
         EyeHeight = StandEye;
         HitCeiling = false;
