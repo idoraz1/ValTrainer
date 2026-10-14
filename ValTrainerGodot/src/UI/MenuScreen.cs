@@ -722,7 +722,7 @@ public partial class CoachHint : BaseButton
 }
 
 /// <summary>
-/// One drill card: name (+ a NEW / SIGNATURE tag), PB at the current tier and best badge ever on the first line, the
+/// One drill card: name (+ a NEW / SIGNATURE tag, and COMMUNITY for drills made by a contributor), PB at the current tier and best badge ever on the first line, the
 /// description (one or two lines; the tooltip has all of it) below. The Agents screen overrides the title, the second
 /// line ("Uses Curveball (Q)") and the accent colour.
 /// </summary>
@@ -751,7 +751,7 @@ public partial class ModeCard : BaseButton
         this.info = info;
         FocusMode = FocusModeEnum.None;
         MouseDefaultCursorShape = CursorShape.PointingHand;
-        TooltipText = $"{info.Name} — {info.Description}";
+        TooltipText = $"{info.Name} — {info.Description}" + (info.MadeBy is { } by ? $"\nMade by the community: @{by}" : "");
     }
 
     public string Key => info.Key;
@@ -812,10 +812,14 @@ public partial class ModeCard : BaseButton
 
         // name + tag (the name gets the whole first line, so it's never cut)
         string? tag = Tag ?? (IsNew ? "NEW" : null);
+        string? community = Tag == null && info.MadeBy != null ? "COMMUNITY" : null;   // after NEW, outlined
         int ns = UiTheme.Fs(23, k), ts = UiTheme.Fs(10, k);
         float tagW = tag != null ? Gfx.TextW(UiTheme.HudWide, tag, ts) + 10 * k : 0;
+        float comW = community != null ? Gfx.TextW(UiTheme.HudWide, community, ts) + 10 * k : 0;
         string name = (Title ?? info.Name).ToUpperInvariant();
-        float nameMax = Mathf.Max(20 * k, right - pad - (tag != null ? tagW + 8 * k : 0));
+        // Narrow card: the name stays whole, and COMMUNITY outranks NEW.
+        if (community != null && tag != null && Gfx.TextW(UiTheme.Display, name, ns) > right - pad - tagW - comW - 14 * k) { tag = null; tagW = 0; }
+        float nameMax = Mathf.Max(20 * k, right - pad - (tag != null ? tagW + 8 * k : 0) - (community != null ? comW + 6 * k : 0));
         float nw = Mathf.Min(Gfx.TextW(UiTheme.Display, name, ns), nameMax);
         Gfx.TextFit(this, UiTheme.Display, name, pad, Gfx.Mid(cy, ns), ns, UiTheme.Text, nameMax);
         if (tag != null)
@@ -825,6 +829,13 @@ public partial class ModeCard : BaseButton
             DrawRect(tr, new Color(tc, Tag != null ? 0.12f : 0.85f));
             if (Tag != null) DrawRect(tr, new Color(tc, 0.7f), false, 1f);
             Gfx.Text(this, UiTheme.HudWide, tag, tr.Position.X + 5 * k, Gfx.Mid(cy, ts), ts, Tag != null ? tc : UiTheme.Text);
+        }
+        if (community != null)
+        {
+            var cr = new Rect2(pad + nw + 8 * k + (tag != null ? tagW + 6 * k : 0), cy - 8.5f * k, comW, 17 * k);
+            DrawRect(cr, new Color(UiTheme.Good, 0.12f));
+            DrawRect(cr, new Color(UiTheme.Good, 0.7f), false, 1f);
+            Gfx.Text(this, UiTheme.HudWide, community, cr.Position.X + 5 * k, Gfx.Mid(cy, ts), ts, UiTheme.Good);
         }
 
         // PB at this tier (bottom right, once there is one), then the description (or the agent page's "Uses …" line)

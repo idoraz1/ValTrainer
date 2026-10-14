@@ -11,6 +11,7 @@ public sealed class PeekMixMode : BotMode
     public override string Name => "Mixed Peeks";
     public override string Description => "Hold an angle against unpredictable peeks. Shoot a bait and it punishes you; hold fire and it commits.";
     public override string Category => "Movement";
+    public override string? MadeBy => "Widowrasko";
     public override string SimKind => "bot";
     public override float Duration => 120f;
     public override bool InfiniteAmmo => true;

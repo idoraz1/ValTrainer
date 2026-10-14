@@ -464,6 +464,7 @@ public partial class Hud : Control
         int ns = UiTheme.Fs(30, k), ds = UiTheme.Fs(16, k);
         TC(UiTheme.Display, nameUpper, c.X, c.Y + r + 54 * k, ns, UiTheme.Text);
         TC(UiTheme.Body, m.Description, c.X, c.Y + r + 82 * k, ds, UiTheme.Dim);
+        if (m.MadeBy is { } by) TC(UiTheme.HudWide, $"MADE BY THE COMMUNITY · @{by}", c.X, c.Y + r + 110 * k, ls, UiTheme.Good);
     }
 
     // ---- outlined text (readable over bright scenes, like VALORANT's shadowed HUD text) ----

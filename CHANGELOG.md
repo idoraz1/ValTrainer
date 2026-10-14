@@ -10,6 +10,7 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ### Added
 - Mixed Peeks (Movement): hold an angle against short, wide, crouched, double, jiggle, shoulder, walking and repeat peeks with audible approaches and reactive baits. Difficulty sets which peeks appear, how fast and unpredictable they are, and how quickly baits punish; runs feed the aim coach. Contributed by @Widowrasko (#1).
+- Drills made by the community show a COMMUNITY tag on their card and credit their creator before the drill starts.
 
 ### Fixed
 - Jump takeoffs are silent; landing cues distinguish standing jumps, crouch-jump techniques and high drops with a stable impact-speed threshold.

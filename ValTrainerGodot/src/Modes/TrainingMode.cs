@@ -15,6 +15,9 @@ public abstract class TrainingMode
     public abstract string Name { get; }
     public abstract string Description { get; }
     public virtual string Category => "Aim";
+    /// <summary>GitHub handle of the community member who made this drill: a COMMUNITY tag on its card and a credit
+    /// line on its countdown. Null = made by the ValTrainer team.</summary>
+    public virtual string? MadeBy => null;
 
     public virtual float Duration => 60f;
     public virtual bool Timed => true;
