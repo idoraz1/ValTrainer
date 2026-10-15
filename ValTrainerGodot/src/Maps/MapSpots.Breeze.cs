@@ -141,9 +141,9 @@ public static partial class MapSpots
             B(-15.7f, 1.5f, -32.35f, -11.9f, 4.1f, -31.85f, Surf.Trim), B(-16.2f, 1.5f, -31.85f, -12.4f, 4.1f, -31.35f, Surf.Trim),
             B(-16.25f, 1.5f, -31.35f, -12.85f, 4.1f, -30.9f, Surf.Trim), B(-15.8f, 1.5f, -30.9f, -13.35f, 4.1f, -30.4f, Surf.Trim),
             B(-15.3f, 1.5f, -30.4f, -13.85f, 4.1f, -29.9f, Surf.Trim), B(-14.8f, 1.5f, -29.9f, -14.3f, 4.1f, -29.4f, Surf.Trim),
-            B(3.05f, 1.5f, -31, 4.65f, 2.6f, -29.4f, Surf.Cover), // box in the Back Site cutout
+            B(3.05f, 1.5f, -31.55f, 4.65f, 3.7f, -29.95f, Surf.Cover), // double box in the Back Site cutout, against the end of the diagonal wall
             B(-12, 1.5f, -11.3f, -10.05f, 3.1f, -9.2f, Surf.Cover), // crate stack by the A Main exit
-            B(-10.05f, 1.5f, -10.2f, -9.05f, 2.3f, -9.2f, Surf.Cover), B(-9.9f, 1.5f, -9.05f, -8.1f, 2.6f, -7.4f, Surf.Cover),
+            B(-10.05f, 1.5f, -10.2f, -9.05f, 2.3f, -9.2f, Surf.Cover), B(-9.9f, 1.5f, -9.05f, -8.1f, 4.7f, -7.4f, Surf.Cover), // back crate: tall stack (2x the big crate)
             B(-10.6f, 1.5f, 6.3f, -8.65f, 2.7f, 10.2f, Surf.Cover), // the A Main box
             B(-26.95f, 0, 5.7f, -24.55f, 1.3f, 8.1f, Surf.Cover), // A Lobby crate
             B(-16.45f, 5.7f, 1.25f, 6.4f, 6, 10.2f, Surf.Elevated), // A Main (shop) ceiling

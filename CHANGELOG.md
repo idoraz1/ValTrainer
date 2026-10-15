@@ -8,6 +8,20 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Added
+- Type an exact sensitivity: in Settings › Sensitivity ("Type a sensitivity" + SET) or by clicking the number in the pause menu. "0.35" and "0,35" both work.
+
+### Fixed
+- Map fixes from a community bug report (thanks VDOW!):
+  - **Ascent:** the Heaven Pillar crate sits against the Heaven railing with a second crate on top, and the site's central stack is taller.
+  - **Bind:** a jumpable box was added in the back-site corner, and three low boxes are now full height.
+  - **Breeze:** the back-site box is flush with the wall and taller, and the A Main exit crate is raised.
+  - **Haven:** the Link-exit and Long-exit crates are double height, the C-site logs step up (crouch-jump onto the short pile, then onto the long one), and you can jump through C Window.
+  - **Icebox:** a barred tunnel at ground level under B Hall now lets you see and shoot between the site and back site (nobody can walk through), the Orange crates sit against the containers, the B Green hanging container that's gone from the real map was removed, and several crates were adjusted.
+  - **Split:** a see-through gap between two walls was closed, along with three more hairline gaps; Icebox had several as well.
+- Crates no longer look hollow from eye height. Their tops sat a few centimetres below the rim and read as an open tray.
+- Rewind: when a shot hits while the crosshair is still flying, that engagement's reaction / flick / settle / click split no longer comes out in the wrong order.
+
 ## [1.11.0] - 2026-10-15
 
 ### Added

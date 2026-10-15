@@ -336,3 +336,15 @@ jobs:
       version: ${{ needs.release.outputs.version }}
     secrets:
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+  # And mark the bug reports this release fixes (commits with "Fixes-Discord: <thread id>") as Fixed in #bug-reports:
+  # reply with the version, tag Fixed, close the post. Skipped while DISCORD_BOT_TOKEN isn't set. See discord-fixes.yml.
+  discord-fixes:
+    name: Mark fixed bug reports
+    needs: release
+    if: needs.release.outputs.prerelease != 'true'
+    uses: ./.github/workflows/discord-fixes.yml
+    with:
+      version: ${{ needs.release.outputs.version }}
+    secrets:
+      DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}

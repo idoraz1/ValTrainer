@@ -27,6 +27,7 @@ public partial class Hud : Control
     Vector2 overlaySize;
     readonly List<VButton> overlayButtons = new();
     VButton? resetSens;
+    LineEdit? sensEdit;
     float overlayAt;
     List<(string Label, string Value)> resultLines = new();
 
@@ -524,6 +525,7 @@ public partial class Hud : Control
         if (overlay != null) { RemoveChild(overlay); overlay.QueueFree(); overlay = null; }
         overlayButtons.Clear();
         resetSens = null;
+        sensEdit = null;
         insightsPending = false;
         if (s.State is not (GameSession.St.Paused or GameSession.St.Results)) return;
 
@@ -587,6 +589,28 @@ public partial class Hud : Control
             app.Settings.Save();
         }, 14);
         resetSens.TitleFont = UiTheme.HudWide;
+        // The value itself is a text box: click, type an exact sensitivity, Enter.
+        var sensRect = new Rect2(bx + ab + 8 * k, sensY, bw - 2 * ab - 16 * k, ab);
+        sensEdit = new LineEdit
+        {
+            Position = sensRect.Position, Size = sensRect.Size, CustomMinimumSize = sensRect.Size, MaxLength = 8,
+            Alignment = HorizontalAlignment.Center, SelectAllOnFocus = true, TooltipText = "Click and type a sensitivity, then Enter",
+        };
+        SettingsScreen.StyleEdit(sensEdit, k, 30, UiTheme.Display);
+        sensEdit.AddThemeStyleboxOverride("normal", new StyleBoxEmpty());
+        sensEdit.TextSubmitted += t =>
+        {
+            if (SensInput.TryParse(t, out var v))
+            {
+                app.Settings.UseSensOverride = true;
+                app.Settings.SensOverride = v;
+                app.Settings.Save();
+            }
+            sensEdit?.ReleaseFocus();
+        };
+        sensEdit.FocusExited += () => { if (sensEdit != null) sensEdit.Text = app.Sens.ToString("0.000", Inv); };
+        sensEdit.Text = app.Sens.ToString("0.000", Inv);
+        overlay!.AddChild(sensEdit);
         y += 118 * k;
         OverlayButton("BACK TO MENU", VButton.Look.Secondary, new Rect2(bx, y, bw, bh), k, Main.I.ShowMenu);
 
@@ -608,11 +632,17 @@ public partial class Hud : Control
             int vs = UiTheme.Fs(30, k), ls = UiTheme.Fs(11, k);
             Gfx.TextC(d, UiTheme.HudWide, "SENSITIVITY", cx, sensY - 12 * k, ls, UiTheme.Dim);
             d.DrawRect(new Rect2(bx + ab + 8 * k, sensY, bw - 2 * ab - 16 * k, ab), new Color(0.03f, 0.06f, 0.09f, 0.9f));
-            Gfx.TextC(d, UiTheme.Display, sens.ToString("0.000", Inv), cx, Gfx.Mid(sensY + ab / 2, vs), vs, app.Settings.UseSensOverride ? UiTheme.Warn : UiTheme.Text);
+            if (sensEdit != null && IsInstanceValid(sensEdit))
+            {
+                // the text box shows the value (kept in sync with the arrows / reset while it isn't being typed in)
+                if (!sensEdit.HasFocus() && sensEdit.Text != sens.ToString("0.000", Inv)) sensEdit.Text = sens.ToString("0.000", Inv);
+                sensEdit.AddThemeColorOverride("font_color", app.Settings.UseSensOverride ? UiTheme.Warn : UiTheme.Text);
+            }
+            else Gfx.TextC(d, UiTheme.Display, sens.ToString("0.000", Inv), cx, Gfx.Mid(sensY + ab / 2, vs), vs, app.Settings.UseSensOverride ? UiTheme.Warn : UiTheme.Text);
             int ns = UiTheme.Fs(12, k);
             string note = app.Settings.UseSensOverride
-                ? $"CUSTOM · {PlayerView.Cm360(sens, app.Settings.Dpi):0.0} CM/360 · SHIFT ±0.001"
-                : $"FROM VALORANT · {PlayerView.Cm360(sens, app.Settings.Dpi):0.0} CM/360";
+                ? $"CUSTOM · {PlayerView.Cm360(sens, app.Settings.Dpi):0.0} CM/360 · CLICK TO TYPE · SHIFT ±0.001"
+                : $"FROM VALORANT · {PlayerView.Cm360(sens, app.Settings.Dpi):0.0} CM/360 · CLICK TO TYPE";
             if (!app.Settings.UseSensOverride) Gfx.TextC(d, UiTheme.HudWide, note, cx, sensY + ab + 24 * k, ns, UiTheme.Faint);
             else Gfx.TextC(d, UiTheme.HudWide, note, cx, sensY + ab + 56 * k, ns, UiTheme.Faint);
 

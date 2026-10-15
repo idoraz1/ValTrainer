@@ -179,6 +179,7 @@ public partial class SettingsScreen : ScreenBase
             },
             enabled: () => St.UseSensOverride,
             note: () => St.UseSensOverride ? "±0.01 per click · Shift ±0.001" : "Switch the source to Custom to edit"));
+        v.AddChild(SensTypeRow());
         v.AddChild(Selector("Mouse DPI", () => St.Dpi.ToString(),
             d => St.Dpi = Dpis[Wrap(Array.IndexOf(Dpis, St.Dpi) + d, 0, Dpis.Length - 1)],
             note: () => "Only for showing eDPI and cm/360"));
@@ -779,6 +780,68 @@ public partial class SettingsScreen : ScreenBase
         open.TooltipText = path;
         row.AddChild(open);
         return row;
+    }
+
+    /// <summary>"Type a sensitivity": an exact value (switches the source to Custom). Enter or SET applies it.</summary>
+    Control SensTypeRow()
+    {
+        float k = K;
+        var row = HBox(12 * k);
+        row.CustomMinimumSize = new Vector2(0, 50 * k);
+        var txt = VBox(2 * k);
+        txt.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        txt.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        txt.AddChild(Lbl("Type a sensitivity", UiTheme.Body, 14, UiTheme.Dim));
+        var msg = Lbl("Sets a custom sensitivity exactly (e.g. 0.35)", UiTheme.Body, 12, UiTheme.Faint);
+        txt.AddChild(msg);
+        row.AddChild(Margins(txt, 10 * k, 0, 0, 0));
+        var edit = new LineEdit
+        {
+            PlaceholderText = "0.000", MaxLength = 8, CustomMinimumSize = new Vector2(140 * k, 36 * k),
+            SizeFlagsVertical = SizeFlags.ShrinkCenter, Alignment = HorizontalAlignment.Center, SelectAllOnFocus = true,
+        };
+        StyleEdit(edit, k);
+        row.AddChild(edit);
+        void Apply()
+        {
+            if (!SensInput.TryParse(edit.Text, out var sens))
+            {
+                msg.Text = SensInput.Hint;
+                msg.LabelSettings = UiTheme.Label(UiTheme.Body, 12, k, UiTheme.Warn);
+                return;
+            }
+            St.UseSensOverride = true;
+            St.SensOverride = sens;
+            edit.Text = "";
+            edit.ReleaseFocus();
+            msg.Text = $"Custom sensitivity set to {sens.ToString("0.###", Inv)}";
+            msg.LabelSettings = UiTheme.Label(UiTheme.Body, 12, k, UiTheme.Good);
+            Changed();
+        }
+        edit.TextSubmitted += _ => Apply();
+        var set = Btn("SET", VButton.Look.Secondary, Apply, 96, 36, 16);
+        set.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        row.AddChild(set);
+        return row;
+    }
+
+    /// <summary>Text box look shared with the rest of the settings (dark field, accent border while typing).</summary>
+    internal static void StyleEdit(LineEdit e, float k, int fontPx = 16, Font? font = null)
+    {
+        StyleBoxFlat Box(Color border, bool fill) => new()
+        {
+            BgColor = new Color(0.06f, 0.1f, 0.14f, 0.85f), DrawCenter = fill, BorderColor = border,
+            BorderWidthLeft = 1, BorderWidthTop = 1, BorderWidthRight = 1, BorderWidthBottom = 1,
+            ContentMarginLeft = 8 * k, ContentMarginRight = 8 * k, ContentMarginTop = 4 * k, ContentMarginBottom = 4 * k,
+        };
+        e.AddThemeStyleboxOverride("normal", Box(new Color(UiTheme.Text, 0.2f), true));
+        e.AddThemeStyleboxOverride("focus", Box(UiTheme.Accent, false));
+        e.AddThemeFontOverride("font", font ?? UiTheme.Body);
+        e.AddThemeFontSizeOverride("font_size", UiTheme.Fs(fontPx, k));
+        e.AddThemeColorOverride("font_color", UiTheme.Text);
+        e.AddThemeColorOverride("font_placeholder_color", UiTheme.Faint);
+        e.AddThemeColorOverride("caret_color", UiTheme.Accent);
+        e.AddThemeColorOverride("selection_color", new Color(UiTheme.Accent, 0.35f));
     }
 
     /// <summary>Rewind recordings: folder, size, what's kept automatically, OPEN and DELETE ALL (click twice).</summary>

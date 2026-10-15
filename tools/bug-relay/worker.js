@@ -9,7 +9,7 @@
 //   DISCORD_WEBHOOK_URL  secret, required
 //   RATE                 KV namespace, optional (falls back to per-isolate memory)
 //   MAX_PER_HOUR         plain var, optional, reports per IP per rolling hour (default 5)
-//   BUG_TAG_ID           plain var, optional, forum tag id applied to each new post
+//   BUG_TAG_ID           plain var, optional, forum tag id(s) applied to each new post (comma-separated, max 5)
 
 const MAX_BODY = 32 * 1024;          // bytes
 const HOUR_MS = 3600 * 1000;
@@ -184,7 +184,9 @@ function buildPayload(r, env) {
     allowed_mentions: { parse: [] },
     embeds: [{ title, color: EMBED_COLOR, fields: embedFields, timestamp: new Date().toISOString() }],
   };
-  if (/^\d{5,25}$/.test(String(env.BUG_TAG_ID || '').trim())) payload.applied_tags = [String(env.BUG_TAG_ID).trim()];
+  // One or more forum tag ids (comma-separated, max 5): e.g. the "Open" status tag plus a category.
+  const tagIds = String(env.BUG_TAG_ID || '').split(',').map(s => s.trim()).filter(s => /^\d{5,25}$/.test(s));
+  if (tagIds.length) payload.applied_tags = [...new Set(tagIds)].slice(0, 5);
   if (log) payload.attachments = [{ id: 0, filename: 'log.txt' }];
   return { payload, log };
 }

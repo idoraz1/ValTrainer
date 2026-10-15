@@ -264,6 +264,12 @@ public static class CultureCheck
             Check("no settings file -> IsNew", fresh.IsNew);
             Check("no stats file -> empty", StatsStore.Load().Runs.Count == 0);
 
+            // Typed sensitivity: '.' or ',' decimals in any culture, VALORANT's range, 3 decimals.
+            Check("typed sens '0.35' / '0,35' / ' .4 '", SensInput.TryParse("0.35", out var ts1) && Near(ts1, 0.35f)
+                && SensInput.TryParse("0,35", out var ts2) && Near(ts2, 0.35f) && SensInput.TryParse(" .4 ", out var ts3) && Near(ts3, 0.4f));
+            Check("typed sens rejects junk / 0 / > 10", !SensInput.TryParse("abc", out _) && !SensInput.TryParse("0", out _)
+                && !SensInput.TryParse("11", out _) && !SensInput.TryParse("", out _));
+
             var s = new AppSettings { SensOverride = 0.275f, UseSensOverride = true, Volume = 0.35f, ViewmodelFov = 68.5f, Quality = 2 };
             s.Save();
             string json = File.ReadAllText(Path.Combine(data, "settings.json"));

@@ -218,6 +218,9 @@ CHANGELOG.md             player-facing changes per version
 - **Commit messages:** a short imperative summary ("Add jiggle-peek drill"). Conventional Commit prefixes are optional
   but welcome: `feat:`, `fix:`, `perf:`, `refactor:`, `docs:`, `test:`, `ci:`, `build:`, `chore:`, and `release:` for
   version commits.
+- **Fixing a Discord bug report:** add `Fixes-Discord: <thread id>` on its own line in the commit message (the id is the
+  last number of the post's link). When the fix is released, the post gets a "Fixed in x.y.z" reply, the Fixed tag and
+  is closed automatically, like `Fixes #12` on GitHub (tools/bug-relay/README.md, "Marking reports fixed").
 
 ## Versions (SemVer)
 

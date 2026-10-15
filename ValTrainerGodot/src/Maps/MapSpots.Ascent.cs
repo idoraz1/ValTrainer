@@ -38,8 +38,11 @@ public static partial class MapSpots
             B(-8.46f, -0.1f, 2.93f, -7.16f, 0.5f, 9.91f, Surf.Floor),
             B(-7.16f, -0.1f, 2.93f, -5.86f, 0.25f, 9.91f, Surf.Floor),
             B(-18.69f, 1, 5.02f, -12.83f, 3.4f, 7.11f, Surf.Cover), // Generator
+            // Tetris: two double stacks (2.4 m above the site floor, like the real default boxes: they hide a standing player)
             B(-17.3f, 1, -4.88f, -15.35f, 2.2f, -2.79f, Surf.Cover), // Tetris, beige box
-            B(-17.86f, 1, -2.79f, -15.9f, 2.5f, -1.12f, Surf.Cover), // Tetris, green box
+            B(-17.3f, 2.2f, -4.88f, -15.35f, 3.4f, -2.79f, Surf.Cover), // Tetris, beige box, top crate
+            B(-17.86f, 1, -2.79f, -15.9f, 2.2f, -1.12f, Surf.Cover), // Tetris, green box
+            B(-17.86f, 2.2f, -2.79f, -15.9f, 3.4f, -1.12f, Surf.Cover), // Tetris, green box, top crate
             B(-12.83f, 1, -9.77f, -10.74f, 3.7f, -7.81f, Surf.Cover), // Pillar (tall crate)
             B(-22.74f, 1, -9.77f, -21.07f, 2.6f, -7.81f, Surf.Cover), // back-site crates
             B(-22.74f, 1, -7.81f, -22.04f, 2, -6.84f, Surf.Cover),
@@ -71,7 +74,8 @@ public static partial class MapSpots
             B(-22.74f, 0, 17.16f, -21.07f, 3.75f, 21.62f),
             B(-23.58f, 0, 18.55f, -22.74f, 3.75f, 20.37f),
             B(-23.23f, 4.05f, -9.77f, -23.02f, 4.9f, 2.93f, Surf.Trim), // Heaven railing
-            B(-25.81f, 4.05f, -9.77f, -23.72f, 6, -7.81f, Surf.Cover), // Heaven Pillar crate
+            B(-25.32f, 4.05f, -9.77f, -23.23f, 6, -7.81f, Surf.Cover), // Heaven Pillar crate (against the back wall and the railing)
+            B(-25.25f, 6, -9.7f, -23.3f, 7.2f, -7.88f, Surf.Cover), // Heaven Pillar crate (stacked)
             B(-21.07f, 4.05f, 17.16f, -20.79f, 7, 18.55f), // Window wall
             B(-21.07f, 4.05f, 19.95f, -20.79f, 7, 21.62f),
             B(-21.07f, 4.05f, 18.55f, -20.79f, 5, 19.95f), // window sill

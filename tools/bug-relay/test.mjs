@@ -72,7 +72,7 @@ check('PUT / 405', r.status === 405);
 
 // ---- valid report ----
 calls = [];
-const e1 = env({ BUG_TAG_ID: '1234567890123' });
+const e1 = env({ BUG_TAG_ID: '1234567890123, 9876543210987,junk' });
 r = await send(req(body()), e1);
 check('valid -> 200', r.status === 200 && r.j?.ok === true && r.j?.id === '222', r.txt);
 check('valid -> exact response keys', r.j && Object.keys(r.j).join() === 'ok,id');
@@ -83,7 +83,7 @@ let { p, file, fileText } = await sentPayload();
 check('thread_name', p.thread_name === 'v1.8.0: Crash on start');
 check('username', p.username === 'ValTrainer Bug Reports');
 check('allowed_mentions', JSON.stringify(p.allowed_mentions) === '{"parse":[]}');
-check('applied_tags', JSON.stringify(p.applied_tags) === '["1234567890123"]');
+check('applied_tags (comma list, junk dropped)', JSON.stringify(p.applied_tags) === '["1234567890123","9876543210987"]', JSON.stringify(p.applied_tags));
 check('content = what', p.content === 'The game crashes when I press play.');
 check('one embed, color', p.embeds.length === 1 && p.embeds[0].color === 16729685);
 const names = p.embeds[0].fields.map((f) => f.name);

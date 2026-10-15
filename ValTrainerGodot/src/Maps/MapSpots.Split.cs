@@ -42,7 +42,7 @@ public static partial class MapSpots
             B(-22.16f, 0f, -21.16f, -2.13f, 8.5f, -19.41f), B(-8.89f, 0f, -19.41f, -2.13f, 8.5f, -19.16f),
             B(-8.89f, 0f, -19.16f, -5.38f, 8.5f, -13.9f), B(-8.64f, 0f, -13.9f, -5.38f, 8.5f, -13.65f),
             B(-12.65f, 0f, 7.14f, -5.38f, 8.5f, 11.64f), B(-9.89f, 0f, 16.15f, -5.38f, 8.5f, 22.66f),
-            B(-11.39f, 0f, -2.88f, -7.14f, 8.5f, 3.63f), B(-7.89f, 0f, -28.17f, -7.39f, 8.5f, -25.42f),
+            B(-11.39f, 0f, -3.13f, -7.14f, 8.5f, 3.63f), B(-7.89f, 0f, -28.17f, -7.39f, 8.5f, -25.42f),
             B(-8.64f, 0f, -7.64f, -7.64f, 8.5f, -2.88f), B(-22.16f, 0f, -21.41f, -7.89f, 8.5f, -21.16f),
             B(-10.64f, 0f, -6.64f, -8.64f, 8.5f, -2.88f), B(-10.14f, 0f, 16.4f, -9.89f, 8.5f, 22.66f),
             B(-17.65f, 0f, 20.16f, -10.14f, 8.5f, 22.66f), B(-11.64f, 0f, -4.63f, -10.64f, 8.5f, -2.88f),
@@ -127,7 +127,7 @@ public static partial class MapSpots
             B(-10.89f, 0f, -13.65f, -5.38f, 4f, -3.38f),
             B(-7.64f, 0f, -3.38f, -5.38f, 4f, -3.13f),
             B(-10.89f, 0f, -13.9f, -8.64f, 4f, -13.65f),
-            B(-10.89f, 0f, -19.41f, -9.14f, 4f, -13.9f),
+            B(-10.89f, 0f, -19.41f, -8.89f, 4f, -13.9f), // meets the wall: no slot in the Heaven floor
             // floor top 4.20 m
             B(-11.39f, 0f, -19.41f, -10.89f, 4.2f, -4.63f, Surf.Elevated),
             // floor top 4.23 m
@@ -149,7 +149,7 @@ public static partial class MapSpots
             B(-22.16f, 0f, -0.63f, -13.15f, 4.8f, -0.38f, Surf.Elevated),
             // --- props, cover, Heaven window
             B(14.52f, 0f, -8.51f, 16.4f, 2.5f, -4.63f, Surf.Trim),  // Terminal (holo map box) - Default plant
-            B(10.02f, 0f, -12.77f, 12.02f, 2.4f, -10.64f),  // white ivy pillar by the K-building door
+            B(10.02f, 0f, -12.95f, 12.02f, 2.4f, -10.64f),  // white ivy pillar by the K-building door (overlaps the building wall: no crack)
             B(-5.13f, 1.35f, -5.63f, -3.13f, 3f, -3.63f),  // flowerpot under Rafters (raised in 6.0)
             B(-5.26f, 1.35f, 7.26f, -3.13f, 2.55f, 11.27f, Surf.Cover),  // A Main boost box (halved in 6.0)
             B(-21.28f, 3.3f, 6.39f, -18.78f, 5f, 8.39f, Surf.Cover),  // Ramps crate (tall)
@@ -157,6 +157,7 @@ public static partial class MapSpots
             B(-20.16f, 4.75f, -11.14f, -18.28f, 6.3f, -9.64f, Surf.Cover),  // Heaven crate
             B(-20.16f, 4.75f, -9.64f, -18.53f, 5.8f, -8.14f, Surf.Cover),  // Heaven crate (low)
             B(-9.27f, 0f, -13.65f, -8.76f, 8.5f, -12.27f),  // wall stub west of the Heaven window
+            B(-9.27f, 0f, -13.9f, -8.64f, 8.5f, -13.65f),  // closes the slot between the stub and the back wall
             B(-9.27f, 6.1f, -12.27f, -8.76f, 8.5f, -9.27f, Surf.Trim),  // lintel over the Heaven window
             B(7.76f, -0.1f, -23.04f, 22.41f, 0f, 5.26f, Surf.Floor),  // site floor slab (A Site / A Back level 0)
             B(-21.53f, 0f, -0.63f, -17.65f, 8.5f, -0.19f),  // thin wall between Heaven and the top of Ramps

@@ -663,15 +663,22 @@ public partial class GameSession : Node3D, IGame
         BannerTime = 1.4f;
     }
 
+    /// <summary>Dev-only "--campos x,y,z,yaw[,pitch]" (world metres, degrees): every respawn puts the player there instead —
+    /// screenshots of exact map spots (map fixes).</summary>
+    static readonly float[]? DevCamPos = ArgAfter("--campos")?.Split(',')
+        .Select(s => float.TryParse(s, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : float.NaN)
+        .ToArray() is { Length: >= 4 } cp && cp.All(float.IsFinite) ? cp : null;
+
     public void Respawn(Vector3 feet, float yaw)
     {
+        if (Main.I.Dev && DevCamPos is { } cp) { feet = new Vector3(cp[0], cp[1], cp[2]); yaw = cp[3]; }
         Mover.ResetMotion();
         Mover.ResetBody();         // standing, no crouch-jump tuck
         Mover.Place(ref feet, solid); // onto the floor under the spawn (or falling from rest if there's none)
         feetY = feet.Y;
         View.Eye = feet + new Vector3(0, Mover.EyeHeight, 0);
         View.Yaw = yaw;
-        View.Pitch = 0;
+        View.Pitch = Main.I.Dev && DevCamPos is { Length: >= 5 } cpp ? cpp[4] : 0;
         View.RecoilPitch = View.RecoilYaw = 0;
         Gun?.ResetRecoil();
         Player.Reset();

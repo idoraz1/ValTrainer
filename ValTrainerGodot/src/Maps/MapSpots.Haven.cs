@@ -34,8 +34,8 @@ public static partial class MapSpots
             B(21.55f, 0, -15.04f, 23.63f, 0.2f, -14.32f, Surf.Elevated), // C Window step
             B(33.85f, 0, -14.58f, 34.83f, 7, -10.09f), // C Window north cap
             B(30.34f, 0, -10.09f, 34.83f, 7, -9.64f), // Window wall N
-            B(25.91f, 0, -10.09f, 30.34f, 1.3f, -9.64f), // C Window sill
-            B(25.91f, 2.6f, -10.09f, 30.34f, 7, -9.64f), // C Window lintel
+            B(25.91f, 0, -10.09f, 30.34f, 1.2f, -9.64f, Surf.Trim), // C Window sill (jump through: 0.8 m above the corridor, via the counter from the Garage)
+            B(25.91f, 3.1f, -10.09f, 30.34f, 7, -9.64f), // C Window lintel (1.9 m opening: a standing player fits)
             B(20.51f, 0, -10.09f, 25.91f, 7, -9.64f), // Window wall S
             B(20.51f, 3.45f, -14.58f, 33.85f, 3.75f, -10.09f, Surf.Trim), // C Window ceiling
             B(33.85f, 0, -9.64f, 34.83f, 7, 5.99f), // Garage north wall
@@ -43,7 +43,7 @@ public static partial class MapSpots
             B(25.59f, 0, 5.08f, 30.79f, 3.6f, 5.99f, Surf.Trim), // Garage doors (closed, to Mid)
             B(25.59f, 3.6f, 5.08f, 30.79f, 7, 5.99f), // Garage door lintel
             B(22.53f, 0, 5.08f, 25.59f, 7, 5.99f), // Garage east wall S
-            B(26.11f, 0, -9.64f, 30.14f, 1, -8.2f, Surf.Trim), // counter under C Window
+            B(26.11f, 0, -9.64f, 30.14f, 0.9f, -8.2f, Surf.Trim), // counter under C Window (plain jump up)
             B(31.64f, 0, -1.43f, 33.79f, 2.2f, 0.2f, Surf.Cover), // Garage crate stack
             B(22.53f, 4.3f, -9.64f, 33.85f, 4.6f, 5.08f, Surf.Trim), // Garage ceiling
             B(12.76f, 0, -11.98f, 20.51f, 7, -7.1f), // block between Logs corner and Connector
@@ -84,11 +84,11 @@ public static partial class MapSpots
             B(-10.55f, 0, -19.99f, -9.37f, 0.5f, -18.16f, Surf.Cover), // step crate to Plat
             B(1.63f, 0, -16.08f, 9.51f, 2.5f, -14.13f, Surf.Cover), // big box (C Box)
             B(7.75f, 0, -14.13f, 9.51f, 1.25f, -12.04f, Surf.Cover), // single radianite crate
-            B(13.74f, 0, -18.1f, 15.69f, 1.3f, -16.02f, Surf.Trim), // Logs (pile 1)
-            B(13.74f, 0, -16.02f, 15.69f, 1.05f, -12.04f, Surf.Trim), // Logs (pile 2)
+            B(13.74f, 0, -18.1f, 15.69f, 1.1f, -16.02f, Surf.Trim), // Logs (pile 1): the low step (crouch-jump 1.1 m, then 1.1 m more onto pile 2)
+            B(13.74f, 0, -16.02f, 15.69f, 2.2f, -12.04f, Surf.Trim), // Logs (pile 2): the high pile
             B(-1.5f, 0, -26.3f, 0.52f, 2.5f, -24.22f, Surf.Cover), // back-site double crate
-            B(4.69f, 0, -1.95f, 6.58f, 1.25f, 0.13f, Surf.Cover), // crate right of the Long exit
-            B(9.57f, 0, -31.12f, 11.52f, 1.25f, -29.17f, Surf.Cover), // crate at Link exit
+            B(4.69f, 0, -1.95f, 6.58f, 2.5f, 0.13f, Surf.Cover), // double crate right of the Long exit
+            B(9.57f, 0, -31.12f, 11.52f, 2.5f, -29.17f, Surf.Cover), // double crate at Link exit
         },
         Enemies = new[]
         {

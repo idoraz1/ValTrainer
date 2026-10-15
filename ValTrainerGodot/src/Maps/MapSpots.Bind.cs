@@ -79,12 +79,15 @@ public static partial class MapSpots
             B(-33.4f, 0, 13.4f, -30.4f, 6.5f, 14.2f), B(-33.4f, 0, 9.6f, -32.9f, 6.5f, 13.4f),
             B(-32.9f, 0, 9.6f, -30.4f, 0.12f, 13.4f, Surf.Elevated), B(-30.4f, 0, 16.05f, -24.15f, 6.5f, 17), B(-25.2f, 0, 17, -24.15f, 6.5f, 27.8f),
             B(-25.2f, 0, 26.8f, -18.05f, 6.5f, 27.8f),
-            // B Site: Elevator (container) with its low box (south, plant side) and the north box
-            B(-9.15f, 0, -15.4f, 0.25f, 2.4f, -11.5f, Surf.Cover), B(-6.9f, 0, -11.5f, -2.1f, 1.1f, -9.6f, Surf.Cover),
-            B(-2.15f, 0, -17.45f, 0, 1.25f, -15.4f, Surf.Cover),
-            // Site corner box (Elbow side), box under Hookah window, box at the Garden wall
-            B(-13.9f, 0, -11.05f, -12, 1.1f, -8.95f, Surf.Cover), B(2.15f, 0, -2.15f, 4.15f, 1.05f, -0.35f, Surf.Cover),
-            B(-20.35f, 0, -4, -18.1f, 1.1f, 0, Surf.Cover),
+            // B Site: Elevator (container) with its box on the south (plant side) and the north box, both as tall as the
+            // Elevator (2.4 m: full-height cover that hides a standing player, and no crate top seen from eye height)
+            B(-9.15f, 0, -15.4f, 0.25f, 2.4f, -11.5f, Surf.Cover), B(-6.9f, 0, -11.5f, -2.1f, 2.4f, -9.6f, Surf.Cover),
+            B(-2.15f, 0, -17.45f, 0, 2.4f, -15.4f, Surf.Cover),
+            // Site corner box (Elbow side) and the box at the Garden wall: full height (2.4 m); box under Hookah window
+            B(-13.9f, 0, -11.05f, -12, 2.4f, -8.95f, Surf.Cover), B(2.15f, 0, -2.15f, 4.15f, 1.05f, -0.35f, Surf.Cover),
+            B(-20.35f, 0, -4, -18.1f, 2.4f, 0, Surf.Cover),
+            // Jumpable low box in the back-site corner (Elbow/Hall walls): 0.85 m, above the 0.7 m step, under the 0.9 m jump
+            B(-13.9f, 0, -23.2f, -12.8f, 0.85f, -22.1f, Surf.Cover),
         },
         Enemies = new[]
         {
@@ -114,7 +117,7 @@ public static partial class MapSpots
             new SmokeSpot("Hall", V(3.8f, 0, -21.6f)),
             new SmokeSpot("Garden", V(-12.2f, 0, 6.8f)),
         },
-        // Spike: default by the low box in front of Elevator, behind Elevator (Hall side), open under the Hookah window.
+        // Spike: default by the box in front of Elevator, behind Elevator (Hall side), open under the Hookah window.
         PlantSpots = new[] { V(-4.5f, 0, -8.6f), V(-6.5f, 0, -17.3f), V(-1f, 0, -6f) },
         // Retakes: the B Hall door from defender spawn, upper Elbow, and the top of B Long (via Garden).
         RetakeEntries = new[] { V(11.8f, 0, -25.6f), V(-26f, 0, -17f), V(-26.5f, 0, 12f) },

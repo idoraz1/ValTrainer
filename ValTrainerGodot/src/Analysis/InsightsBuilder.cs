@@ -106,7 +106,13 @@ static partial class InsightsBuilder
                 foreach (var s in t.Shots)
                     if (s.T > tr.T0 + 1e-5f && s.T <= tClick + 1e-5f) { ti.TShot = s.T; break; }
             if (tr.Hit && float.IsNaN(ti.TOnTarget)) ti.TOnTarget = RunAnalysis.EnterTime(p, tr, R);
-            // Keep the timeline ordered: settling can't start before the primary ends or after the hit.
+            // Keep the timeline ordered (appear ≤ onset ≤ flick end ≤ on target ≤ hit). A shot that hits while the
+            // crosshair is still flying ends the engagement mid-flick: its flick ends at the hit (no settle, no click delay).
+            if (tr.Hit)
+            {
+                if (!float.IsNaN(ti.TOnset) && ti.TOnset > ti.THit) ti.TOnset = ti.THit;
+                if (!float.IsNaN(ti.TPrimEnd) && ti.TPrimEnd > ti.THit) ti.TPrimEnd = ti.THit;
+            }
             if (tr.Hit && !float.IsNaN(ti.TOnTarget) && !float.IsNaN(ti.TPrimEnd))
                 ti.TOnTarget = Math.Clamp(ti.TOnTarget, Math.Min(ti.TPrimEnd, ti.THit), ti.THit);
             ins.Trials.Add(ti);

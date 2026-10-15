@@ -146,7 +146,9 @@ sealed class WorldBuilder
         var keep = Grounded(b) ? Faces.All & ~Faces.NegY : Faces.All;
         var col = Jitter(0.06f);
         var mn = b.Min; var mx = b.Max;
-        batch.Box(M(body), mn + new Vector3(ins, Grounded(b) ? 0 : ins, ins), mx - new Vector3(ins, ins, ins), keep, col);
+        // The body's top sits just under the frame rim (4 mm, avoids z-fighting with the rim's top faces): a 3 cm recess
+        // read as an open tray — a "hollow" crate — from eye height.
+        batch.Box(M(body), mn + new Vector3(ins, Grounded(b) ? 0 : ins, ins), mx - new Vector3(ins, 0.004f, ins), keep, col);
         var fm = M(frame);
         float[] xs = { mn.X, mx.X - t }, zs = { mn.Z, mx.Z - t };
         foreach (var x in xs)

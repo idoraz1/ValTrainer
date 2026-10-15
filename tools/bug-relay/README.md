@@ -101,10 +101,33 @@ so they are weaker. The free KV plan easily covers this: each accepted report co
 In the same **Variables and Secrets** screen, Type **Text**:
 
 - **`MAX_PER_HOUR`**: reports per IP per hour (default `5`, allowed 1–100).
-- **`BUG_TAG_ID`**: a forum tag ID to put on every post. **Optional; leave it unset.**
-  Discord doesn't let you right-click a forum tag to copy its ID (Developer Mode only
-  works for servers, channels, users and messages), and the only way to read tag IDs is
-  through the Discord API with a bot token. The relay works fine without it.
+- **`BUG_TAG_ID`**: forum tag ID(s) to put on every post, comma-separated (max 5), e.g. the
+  **Open** status tag. Optional. Discord doesn't let you right-click a forum tag to copy its ID
+  (Developer Mode only works for servers, channels, users and messages); read the IDs through
+  the Discord API with the bug-tracker bot's token (see "Marking reports fixed" below), or use
+  the Actions workflow "Discord bug reports - mark fixed", which logs the forum's tags.
+
+## Marking reports fixed (GitHub-issue style)
+
+`#bug-reports` has status tags **Open**, **In progress**, **Fixed**, **Won't fix** and
+**Can't reproduce**. When a release fixes a report, the release workflow
+(`.github/workflows/discord-fixes.yml`) replies in the thread with "Fixed in ValTrainer x.y.z" and a link
+to the release notes, swaps the status tag to **Fixed** and closes the post. Anyone replying reopens it.
+
+1. In the fixing commit, add a trailer line with the thread id (the last number of the post's link):
+   `Fixes-Discord: 1560414622480334859` (several ids may be comma-separated).
+2. Publish as usual. The job runs after the release.
+
+The job needs a Discord **bot**, because webhooks can't change tags or close posts:
+
+1. <https://discord.com/developers/applications> → **New Application** ("ValTrainer Bug Tracker") →
+   **Bot** → **Reset Token** → copy it. Paste it **only** into GitHub: repository → Settings →
+   Secrets and variables → Actions → New secret **`DISCORD_BOT_TOKEN`**.
+2. **OAuth2 → URL Generator**: scope `bot`; permissions View Channels, Send Messages,
+   Send Messages in Threads, Read Message History, Manage Threads. Open the URL and add the bot
+   to the ValTrainer server.
+3. To catch up on an earlier release: Actions → "Discord bug reports - mark fixed" → Run workflow
+   (version, and optionally extra thread ids).
 
 ### 6. Test it
 
