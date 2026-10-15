@@ -10,8 +10,10 @@ namespace ValTrainer.Analysis;
 /// </summary>
 static class RunAnalysis
 {
+    /// <summary>First sightings further off the crosshair than this aren't crosshair placement (= TrainingMode.SeenMaxDeg).</summary>
+    const float SeenMaxDeg = 60f;
     static readonly HashSet<string> StaticModes = new() { "flick", "spider", "gridshot", "microshot", "popup" };
-    static readonly HashSet<string> SpawnBotModes = new() { "strafebots", "counterstrafe" };
+    static readonly HashSet<string> SpawnBotModes = new() { "strafebots", "counterstrafe", "switch" };
     static readonly HashSet<string> SeenBotModes = new()
     {
         "peek", "peekduel", "siteclear", "deathmatch", "longtaps", "jumppeek", "jigglepeek", "peek_mix",
@@ -20,7 +22,7 @@ static class RunAnalysis
     static readonly HashSet<string> MovementModes = new()
     {
         "counterstrafe", "peekduel", "siteclear", "flashmap", "deathmatch", "jumppeek", "jigglepeek",
-        "flashpeek", "recon", "smokeexec", "mobility", "postplant", "retake", "anchor",
+        "flashpeek", "recon", "smokeexec", "mobility", "chamber", "postplant", "retake", "anchor", "sound",
     };
 
     /// <summary>Mode key without its argument: "flashpeek:skye" → "flashpeek" (lists above hold base keys).</summary>
@@ -45,7 +47,8 @@ static class RunAnalysis
         if (t.Mode == "tracking") Tracking(p, m);
         Crosshair(p, m);
         Movement(p, m);
-        if (t.Mode is "spray_vandal" or "spray_phantom") Spray(p, m);
+        if (t.Mode is "spray_vandal" or "spray_phantom" or "spray_transfer") Spray(p, m);
+        if (t.Mode == "spray_transfer") foreach (var k in new[] { "spray.h", "spray.delay_n", "spray.delay_ms" }) m.Remove(k); // the drag between agents isn't spray error: vertical only
         Reaction(t, m);
         Flash(t, m);
         Agg.Derive(m);
@@ -56,6 +59,48 @@ static class RunAnalysis
     /// Frame timestamps must be finite and ascending over a sane span (≤ 2 h): a corrupt file could otherwise ask the
     /// 240 Hz resampler for gigabytes. The game's own runs always pass (dt is clamped, pauses don't advance time).
     /// </summary>
+    // =====================================================================================================
+    // Per-instance access for RunInsights (the Rewind): the same trials / reversals / sprays the metrics use.
+    // =====================================================================================================
+
+    /// <summary>The run's prepared hand path, or null when the frames can't be analysed (same gate as <see cref="Run"/>).</summary>
+    internal static Prep? Prepare(RunTelemetry t) => t.Mode != "sensfinder" && t.Frames.Count >= 10 && FramesUsable(t) ? new Prep(t) : null;
+
+    /// <summary>Every engagement with its flick analysis (null = not a measurable flick), in <see cref="BuildTrials"/> order.</summary>
+    internal static List<(Trial Tr, TrialResult? R)> Trials(Prep p) => BuildTrials(p).Select(tr => (tr, AnalyzeTrial(p, tr))).ToList();
+
+    /// <summary>One target direction change in Strafe Tracking (time = start of the target's deceleration).</summary>
+    internal readonly record struct Reversal(float T, float ReacqMs, float OverrunDeg, float OverrunExcessDeg);
+
+    /// <summary>A stretch of steady target motion the crosshair trailed (mean lag, deg).</summary>
+    internal readonly record struct LagStretch(float T0, float T1, float LagDeg);
+
+    /// <summary>
+    /// Tracking's direction changes and trailing stretches (empty when the run isn't long enough);
+    /// <paramref name="rMean"/> = mean target radius.
+    /// </summary>
+    internal static List<Reversal> Reversals(Prep p, out float rMean, List<LagStretch>? behind = null)
+    {
+        var list = new List<Reversal>();
+        var tmp = new Dictionary<string, float>();
+        Tracking(p, tmp, list, behind);
+        rMean = tmp.TryGetValue("track.r_deg", out var r) ? r : float.NaN;
+        return list;
+    }
+
+    /// <summary>One analysed spray (≥ 10 bullets): V = mean vertical error of bullets 4–15 (+ = high), H = their RMS sideways error.</summary>
+    internal readonly record struct SprayInfo(float T0, float T1, int Bullets, float V, float H, float DelayMs);
+
+    internal static List<SprayInfo> Sprays(Prep p)
+    {
+        var list = new List<SprayInfo>();
+        Spray(p, new Dictionary<string, float>(), list);
+        return list;
+    }
+
+    /// <summary>bot_seen sightings count for the horizontal crosshair error in this mode (see <see cref="Crosshair"/>).</summary>
+    internal static bool HorizCounts(string mode) => !HorizExcluded(mode);
+
     static bool FramesUsable(RunTelemetry t)
     {
         var fr = t.Frames;
@@ -82,7 +127,7 @@ static class RunAnalysis
     // A1. Flicks
     // =====================================================================================================
 
-    sealed class Trial
+    internal sealed class Trial
     {
         public int Id;
         public float T0, TEnd, THit = -1;
@@ -97,8 +142,14 @@ static class RunAnalysis
         public float Peak, Dx, Dy, Along, Amp;
     }
 
-    sealed class TrialResult
+    internal sealed class TrialResult
     {
+        // Timeline for RunInsights (not used by the metrics): primary start/end, on-target entry before the hit, first shot.
+        public int TrialId;
+        public float Ux, Uy;                      // unit flick direction (deg space, +x right, +y up)
+        public double TsP = double.NaN, TeP = double.NaN;
+        public float TEnter = float.NaN, TShot = float.NaN;
+        public readonly List<float> PrematureT = new(), SnapT = new();
         public float A, R;
         public bool Predictable, Hit, Head, HasPrimary, Bot;
         public float Onset = float.NaN, Mt, PeakDps, PeakCms, EndErr, S, Perp, Gain, Curv, EndY, EtaP = float.NaN;
@@ -362,7 +413,7 @@ static class RunAnalysis
         int i0 = p.Gi(tr.T0), i1 = p.Gi(tClick);
         if (i1 - i0 < 6) return null;
 
-        var r = new TrialResult { A = A, R = R, Predictable = tr.Predictable, Hit = tr.Hit, Head = R <= 1.2f, Bot = tr.Bot };
+        var r = new TrialResult { A = A, R = R, Predictable = tr.Predictable, Hit = tr.Hit, Head = R <= 1.2f, Bot = tr.Bot, TrialId = tr.Id, Ux = ux, Uy = uy };
         if (tr.Hit) r.Ttk = (tr.THit - tr.T0) * 1000f;
 
         var subs = Segment(p, i0, i1, ux, uy);
@@ -380,6 +431,7 @@ static class RunAnalysis
             if (float.IsNaN(ex)) { r.HasPrimary = false; P = null; }
             else
             {
+                r.TsP = tsP; r.TeP = teP;
                 r.S = ex * ux + ey * uy;
                 float px = ex - r.S * ux, py = ey - r.S * uy;
                 r.Perp = MathF.Sqrt(px * px + py * py);
@@ -411,14 +463,8 @@ static class RunAnalysis
             r.CorrAmps.AddRange(before.Select(s => s.Amp));
             r.Tc = (float)Math.Max(0, tr.THit - teP) * 1000f;
             // Dwell: time on target (|e| ≤ r, continuously) before the click.
-            int fi = p.FrameAt(tr.THit);
-            float enter = tr.THit;
-            for (int k = fi; k >= 0 && p.Ft[k] > tr.T0; k--)
-            {
-                var (ex, ey) = Err(p, tr, p.Ft[k]);
-                if (float.IsNaN(ex) || ex * ex + ey * ey > R * R) break;
-                enter = p.Ft[k];
-            }
+            float enter = EnterTime(p, tr, R);
+            r.TEnter = enter;
             r.Dwell = (tr.THit - enter) * 1000f;
             float path = p.PathLength(tsP, tr.THit);
             r.Eta = path > 1e-3f ? Math.Min(1f, A / path) : float.NaN;
@@ -435,6 +481,7 @@ static class RunAnalysis
             {
                 firstDone = true;
                 r.HasFirstShot = true;
+                r.TShot = s.T;
                 r.FirstHit = tr.Bot ? s.Zone == 0 : s.Zone >= 0;
                 r.ShotErr = s.Err;
             }
@@ -443,16 +490,30 @@ static class RunAnalysis
             int fi = p.FrameAt(s.T);
             float w = p.RawSpeed(fi, 3);
             bool premature = w > Math.Max(30f, 0.25f * (P?.Peak ?? 0f));
-            if (premature) { r.Premature++; r.PrematureDps.Add(w); continue; }
+            if (premature) { r.Premature++; r.PrematureDps.Add(w); r.PrematureT.Add(s.T); continue; }
             if (P != null && s.T > tsP && s.T - teP < 0.08)
             {
                 var (ex, ey) = Err(p, tr, s.T);
                 bool corrected = corrections.Any(c => p.Gt(c.S) < s.T);
                 float e = MathF.Sqrt(ex * ex + ey * ey);
-                if (!corrected && !float.IsNaN(e) && e > R) { r.Snap++; r.SnapErr.Add(e); }
+                if (!corrected && !float.IsNaN(e) && e > R) { r.Snap++; r.SnapErr.Add(e); r.SnapT.Add(s.T); }
             }
         }
         return r;
+    }
+
+    /// <summary>Start of the continuous on-target stretch (|e| ≤ R) that ends at the hit (= THit if not on target then).</summary>
+    internal static float EnterTime(Prep p, Trial tr, float R)
+    {
+        int fi = p.FrameAt(tr.THit);
+        float enter = tr.THit;
+        for (int k = fi; k >= 0 && p.Ft[k] > tr.T0; k--)
+        {
+            var (ex, ey) = Err(p, tr, p.Ft[k]);
+            if (float.IsNaN(ex) || ex * ex + ey * ey > R * R) break;
+            enter = p.Ft[k];
+        }
+        return enter;
     }
 
     /// <summary>
@@ -551,7 +612,7 @@ static class RunAnalysis
     // A2. Tracking (frames with fire held)
     // =====================================================================================================
 
-    static void Tracking(Prep p, Dictionary<string, float> m)
+    static void Tracking(Prep p, Dictionary<string, float> m, List<Reversal>? revs = null, List<LagStretch>? behind = null)
     {
         var fr = p.T.Frames;
         int n = p.Gn;
@@ -670,6 +731,7 @@ static class RunAnalysis
                 else run = 0;
             }
             reacq.Add(found < 0 ? 1500f : (float)((found - j) * Dsp.Dt * 1000));
+            revs?.Add(new Reversal((float)p.Gt(j), reacq[^1], ov, overEx[^1]));
         }
         // Signed lag ℓ (positive = behind) while the target moves steadily: the 0.4 s after each direction change / stop
         // is left out (that's re-acquire / overrun territory), otherwise frequent reversals make everyone look "behind".
@@ -680,6 +742,18 @@ static class RunAnalysis
             float l = -ex[i] * MathF.Sign(vT[i]);
             lagAll += l; lagAllN++;
             if (!transient[i]) { lagSum += l; lagN++; }
+        }
+        if (behind != null)
+        {
+            // Insights only: ≥ 0.4 s stretches of steady motion trailing by more than 0.6 × the radius (TRACK_BEHIND's bar).
+            int s0 = -1; double ls = 0;
+            for (int i = 0; i <= n; i++)
+            {
+                float l = i < n ? -ex[i] * MathF.Sign(vT[i]) : 0;
+                if (i < n && fire[i] && MathF.Abs(vT[i]) > 1f && !transient[i] && l > 0.6f * rg[i]) { if (s0 < 0) { s0 = i; ls = 0; } ls += l; continue; }
+                if (s0 >= 0 && (i - s0) * Dsp.Dt >= 0.4) behind.Add(new LagStretch((float)p.Gt(s0), (float)p.Gt(i - 1), (float)(ls / (i - s0))));
+                s0 = -1;
+            }
         }
         if (lagN < 240) { lagSum = lagAll; lagN = lagAllN; }
         if (lagN > 0)
@@ -712,7 +786,9 @@ static class RunAnalysis
 
     static void Crosshair(Prep p, Dictionary<string, float> m)
     {
-        var ev = p.T.Events.Where(e => e.Kind == "bot_seen").ToList();
+        // Sightings further than 60° off the crosshair (beside / behind you) aren't placement (TrainingMode.SeenMaxDeg; older
+        // telemetry of some agent / map drills recorded them).
+        var ev = p.T.Events.Where(e => e.Kind == "bot_seen" && e.A <= SeenMaxDeg).ToList();
         if (ev.Count == 0) return;
         var fr = p.T.Frames;
         // Peek Practice swings bots out of a random pillar: only head height can be pre-aimed there, so its sightings
@@ -736,6 +812,7 @@ static class RunAnalysis
         // Typical size of the vertical error (the signed mean lets too-high and too-low sightings cancel out).
         m["xhair.pitch_abs_deg"] = Dsp.Median(b.Select(MathF.Abs));
         m["xhair.below"] = below;
+        m["xhair.gated"] = 1; // sightings ≤ SeenMaxDeg only (stored runs without it: see Normalize)
         if (horiz)
         {
             m["xhair.nh"] = ev.Count;
@@ -773,7 +850,7 @@ static class RunAnalysis
     // A5. Spray (sprays of ≥ 10 bullets; bullets 4–15)
     // =====================================================================================================
 
-    static void Spray(Prep p, Dictionary<string, float> m)
+    static void Spray(Prep p, Dictionary<string, float> m, List<SprayInfo>? info = null)
     {
         var t = p.T;
         var sprays = new List<List<ShotSample>>();
@@ -811,6 +888,7 @@ static class RunAnalysis
                 else run = 0;
             }
             delays.Add(found < 0 ? (s[^1].T - s[0].T) * 1000f : (float)(p.Gt(found) - s[0].T) * 1000f);
+            info?.Add(new SprayInfo(s[0].T, s[^1].T, s.Count, vs[^1], hs[^1], delays[^1]));
         }
         m["spray.n"] = used.Count;
         m["spray.v"] = Dsp.Mean(vs);
@@ -836,6 +914,9 @@ static class RunAnalysis
 
     static void Flash(RunTelemetry t, Dictionary<string, float> m)
     {
+        // Flash Dodge only: its outcome benchmark (Bench.DodgeTier) is for dodging an attacker's flash. A defender holding an
+        // angle (Site Anchor) gets flashed by design, which says nothing about this skill.
+        if (Base(t.Mode) != "flashmap") return;
         var f = t.Events.Where(e => e.Kind == "flash" && e.A >= 0).ToList();
         if (f.Count == 0) return;
         m["flash.n"] = f.Count;
@@ -846,25 +927,41 @@ static class RunAnalysis
         m["flash.dodge_tier"] = Bench.DodgeTier(m["flash.dodge_pct"], t.Tier);
     }
 
-    static bool HorizExcluded(string mode) => Base(mode) is "peek" or "flashmap" or "longtaps";
+    /// <summary>Drills whose bot_seen events (before v1.11) also counted enemies beside / behind the player.</summary>
+    static readonly HashSet<string> UngatedSightings = new()
+        { "siteclear", "smokeexec", "flashpeek", "recon", "mobility", "chamber", "anchor", "sound" };
+
+    static bool HorizExcluded(string mode) => Base(mode) is "peek" or "flashmap" or "longtaps" or "peek_mix" or "sound";
 
     /// <summary>
     /// A stored run's metrics as the profile uses them (runs saved by older versions are brought up to date without
     /// their telemetry): drops Flash Dodge's horizontal crosshair numbers, (re)computes the difficulty-normalised
     /// tracking and flash-outcome tiers, and puts Spidershot / Gridshot speed on Head Flicks' scale
-    /// (<see cref="Bench.ScoreSpeedOffset"/>). Returns a copy when anything changes; the stored record is never modified.
+    /// (<see cref="Bench.ScoreSpeedOffset"/>). Also removes what older versions fed wrongly: Site Anchor's flashes
+    /// (Utility is Flash Dodge only), Sound Lock's sight-to-hit time (it isn't a reaction test) and, for drills that
+    /// counted enemies beside or behind you, crosshair placement recorded before the 60° gate (no "xhair.gated").
+    /// Returns a copy when anything changes; the stored record is never modified.
     /// </summary>
     public static Dictionary<string, float> Normalize(string mode, int tier, Dictionary<string, float> m)
     {
+        string b = Base(mode);
         bool dropX = HorizExcluded(mode) && m.ContainsKey("xhair.nh");
         bool dodge = m.ContainsKey("flash.dodge_pct");
         bool track = m.ContainsKey("track.ontarget");
         bool speed = mode is "spider" or "gridshot" && m.ContainsKey("speed.tier");
-        if (!dropX && !dodge && !track && !speed) return m;
+        bool notFlash = b != "flashmap" && m.Keys.Any(k => k.StartsWith("flash.", StringComparison.Ordinal));
+        bool notReact = b == "sound" && m.ContainsKey("react.ms");
+        bool ungated = UngatedSightings.Contains(b) && m.ContainsKey("xhair.n") && !m.ContainsKey("xhair.gated");
+        if (!dropX && !dodge && !track && !speed && !notFlash && !notReact && !ungated) return m;
         var c = new Dictionary<string, float>(m);
         if (dropX)
             foreach (var k in new[] { "xhair.nh", "xhair.err_deg", "xhair.h_deg", "xhair.on_head", "xhair.on_head_pct" }) c.Remove(k);
-        if (dodge) c["flash.dodge_tier"] = Bench.DodgeTier(m["flash.dodge_pct"], tier);
+        if (ungated || notFlash || notReact)
+            foreach (var k in m.Keys)
+                if ((ungated && k.StartsWith("xhair.", StringComparison.Ordinal)) || (notFlash && k.StartsWith("flash.", StringComparison.Ordinal))
+                    || (notReact && k.StartsWith("react.", StringComparison.Ordinal)))
+                    c.Remove(k);
+        if (dodge && !notFlash) c["flash.dodge_tier"] = Bench.DodgeTier(m["flash.dodge_pct"], tier);
         if (track) c["track.ontarget_tier"] = Bench.TrackTier(m["track.ontarget"], tier);
         if (speed) c["speed.tier"] = Math.Max(-0.5f, m["speed.tier"] - Bench.ScoreSpeedOffset);
         return c;

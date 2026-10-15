@@ -541,7 +541,7 @@ public sealed class SoundLockMode : MapMode
             wk.Hit = true;
             float ms = (Now - wk.SeenAt) * 1000f;
             reacts.Add(ms);
-            Event("reaction", ms);
+            Event("sound_react", ms); // sight → first hit: not comparable with the Reaction Test benchmarks
             Score += (int)Mathf.Max(0, (700 - ms) / 5);
         }
         Score += zone == HitZone.Head ? 50 : 15;

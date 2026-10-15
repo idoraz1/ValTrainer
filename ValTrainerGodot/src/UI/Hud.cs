@@ -86,6 +86,13 @@ public partial class Hud : Control
             }
             RebuildOverlay(size);
         }
+        // Rewind insights finished building: re-lay the results once so the review can show its "Show me" links.
+        if (insightsPending && overlay != null && s.State == GameSession.St.Results && RewindData.Ready(s.Telemetry) is { } ri)
+        {
+            insightsPending = false;
+            var rv = CoachData.ReviewFor(s);
+            if (rv != null && rv.Issues.Any(i => ri.Moments.Any(m => m.Code == i.Id))) RebuildOverlay(size, keepTime: true);
+        }
         if (overlay != null)
         {
             overlay.QueueRedraw();
@@ -512,15 +519,16 @@ public partial class Hud : Control
     // Pause & results overlays (child controls with real buttons)
     // =====================================================================================
 
-    void RebuildOverlay(Vector2 size)
+    void RebuildOverlay(Vector2 size, bool keepTime = false)
     {
         if (overlay != null) { RemoveChild(overlay); overlay.QueueFree(); overlay = null; }
         overlayButtons.Clear();
         resetSens = null;
+        insightsPending = false;
         if (s.State is not (GameSession.St.Paused or GameSession.St.Results)) return;
 
         overlaySize = size;
-        overlayAt = RealNow;
+        if (!keepTime) overlayAt = RealNow;
         float k = UiTheme.S(size);
         overlay = new DrawBox { MouseFilter = MouseFilterEnum.Stop };
         overlay.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
@@ -642,6 +650,13 @@ public partial class Hud : Control
         if (hasReview) nextFocus = FocusFor(review!, m.Key);
         var extra = ExtraButtons(m);
         if (hasReview) k = Mathf.Min(k, size.X / 1764f); // both panels side by side must fit (4:3 / 5:4 windows)
+        // Rewind: any run with a target in its frames; its insights build on a worker (the review's "Show me" links
+        // appear when they're ready: _Process re-lays the overlay once).
+        var tel = s.Telemetry;
+        bool canRewind = RewindData.CanRewind(tel);
+        var rins = canRewind ? RewindData.Ready(tel) : null;
+        insightsPending = canRewind && rins == null && hasReview;
+        Func<string, bool>? showable = rins == null ? null : id => rins.Moments.Any(mo => mo.Code == id);
 
         bool twoCol = resultLines.Count > 5;
         int lineRows = twoCol ? (resultLines.Count + 1) / 2 : resultLines.Count;
@@ -649,14 +664,30 @@ public partial class Hud : Control
         float extraH = extra.Count > 0 ? 72 * k : 0;
         float maxH = size.Y - 60 * k;
         float ph = Mathf.Min(maxH, 120 * k + scoreH + lineRows * 40 * k + 40 * k + 104 * k + extraH);
-        var rl = hasReview ? LayoutReview(review!, rw, maxH, k) : null;
+        var rl = hasReview ? LayoutReview(review!, rw, maxH, k, showable, OpenRewind) : null;
         if (rl != null) ph = Mathf.Min(maxH, Mathf.Max(ph, rl.Height));
         float left = size.X / 2 - (pw + gap + rw) / 2;
         var panel = new Rect2(left, size.Y / 2 - ph / 2, pw, ph);
         var rpanel = new Rect2(panel.End.X + gap, panel.Position.Y, rw, ph);
         float btnY = panel.End.Y - 90 * k;
-        OverlayButton("PLAY AGAIN  (R)", VButton.Look.Primary, new Rect2(panel.GetCenter().X - 330 * k, btnY, 320 * k, 58 * k), k, s.Restart);
-        OverlayButton("MENU  (ESC)", VButton.Look.Secondary, new Rect2(panel.GetCenter().X + 10 * k, btnY, 320 * k, 58 * k), k, Main.I.ShowMenu);
+        if (canRewind)
+        {
+            // PLAY AGAIN · REWIND · MENU (the mode's own buttons keep the row above)
+            float bx0 = panel.GetCenter().X - 401 * k;
+            OverlayButton("PLAY AGAIN  (R)", VButton.Look.Primary, new Rect2(bx0, btnY, 280 * k, 58 * k), k, s.Restart);
+            OverlayButton("REWIND", VButton.Look.Secondary, new Rect2(bx0 + 296 * k, btnY, 210 * k, 58 * k), k, () => OpenRewind(null));
+            OverlayButton("MENU  (ESC)", VButton.Look.Secondary, new Rect2(bx0 + 522 * k, btnY, 280 * k, 58 * k), k, Main.I.ShowMenu);
+            if (Main.I.Dev && !devRewindShown && CmdLine.After("--rewind-at") != null)
+            {
+                devRewindShown = true; // dev screenshots: --rewind-at S [--rewind-code CODE]
+                Callable.From(() => OpenRewind(CmdLine.After("--rewind-code"))).CallDeferred();
+            }
+        }
+        else
+        {
+            OverlayButton("PLAY AGAIN  (R)", VButton.Look.Primary, new Rect2(panel.GetCenter().X - 330 * k, btnY, 320 * k, 58 * k), k, s.Restart);
+            OverlayButton("MENU  (ESC)", VButton.Look.Secondary, new Rect2(panel.GetCenter().X + 10 * k, btnY, 320 * k, 58 * k), k, Main.I.ShowMenu);
+        }
         if (extra.Count > 0)
         {
             float eg = 20 * k;
@@ -784,6 +815,19 @@ public partial class Hud : Control
 
     static readonly bool DevFakeButtons = OS.GetCmdlineUserArgs().Concat(OS.GetCmdlineArgs()).Contains("--fakebuttons");
 
+    /// <summary>The results are up and the run's insights are still building (see <see cref="_Process"/>).</summary>
+    bool insightsPending;
+    static bool devRewindShown;
+
+    /// <summary>Rewind of the run that just finished (in the session's world, so PLAY AGAIN frees it), optionally
+    /// focused on one moment code (a coach issue's "Show me").</summary>
+    void OpenRewind(string? code)
+    {
+        if (s.World == null || !IsInstanceValid(s.World) || !RewindData.CanRewind(s.Telemetry)) return;
+        if (s.World.GetNodeOrNull("Rewind") is { } old) old.Free();
+        RewindScreen.Open(s.World, s.Telemetry, null, code);
+    }
+
     static List<(string Label, Action Act)> ExtraButtons(TrainingMode m)
     {
         List<(string Label, Action Act)> list;
@@ -810,19 +854,20 @@ public partial class Hud : Control
     }
 
     /// <summary>Lays the review out, dropping detail (cues, issues, strengths, summary lines) until it fits <paramref name="maxH"/>.</summary>
-    static ReviewLayout LayoutReview(RunReview rv, float w, float maxH, float k)
+    static ReviewLayout LayoutReview(RunReview rv, float w, float maxH, float k, Func<string, bool>? showable = null, Action<string>? showMe = null)
     {
         (int Issues, int Cues, int Strengths, int SumLines)[] variants = { (3, 2, 3, 6), (3, 1, 2, 5), (2, 2, 2, 5), (2, 1, 1, 4), (1, 1, 1, 3), (1, 0, 0, 3) };
         ReviewLayout? l = null;
         foreach (var v in variants)
         {
-            l = TryLayoutReview(rv, w, k, v.Issues, v.Cues, v.Strengths, v.SumLines);
+            l = TryLayoutReview(rv, w, k, v.Issues, v.Cues, v.Strengths, v.SumLines, showable, showMe);
             if (l.Height <= maxH) break;
         }
         return l!;
     }
 
-    static ReviewLayout TryLayoutReview(RunReview rv, float w, float k, int maxIssues, int maxCues, int maxStrengths, int sumLines)
+    static ReviewLayout TryLayoutReview(RunReview rv, float w, float k, int maxIssues, int maxCues, int maxStrengths, int sumLines,
+        Func<string, bool>? showable = null, Action<string>? showMe = null)
     {
         var L = new ReviewLayout();
         var body = UiTheme.Body;
@@ -878,13 +923,22 @@ public partial class Hud : Control
                     var focusCue = CoachData.FocusFrom(iss);
                     L.Buttons.Add((new Rect2(x + tw - bw, iy, bw, 42 * k), "PRACTISE", CoachData.DrillName(drill), () => CoachData.StartDrill(drill, focusCue), VButton.Look.Secondary));
                 }
+                // "Show me": this run has moments for the issue → a rewind focused on them
+                float smw = 0;
+                if (showMe != null && showable != null && showable(iss.Id))
+                {
+                    smw = Gfx.TextW(UiTheme.HudWide, "SHOW ME ›", UiTheme.Fs(14, k)) + 44 * k;
+                    string id = iss.Id;
+                    L.Buttons.Add((new Rect2(x + tw - bw - (bw > 0 ? 10 * k : 0) - smw, iy + 5 * k, smw, 32 * k), "SHOW ME ›", null, () => showMe(id), VButton.Look.Ghost));
+                    smw += 10 * k;
+                }
                 L.Ops.Add((d, o) =>
                 {
                     float cy = o.Y + iy + 21 * k;
                     float cw = CoachDraw.Chip(d, sev, o.X + x, cy, k, sc, filled: iss.Severity == Severity.Major);
-                    float avail = tw - cw - 10 * k - (bw > 0 ? bw + 12 * k : 0);
+                    float avail = tw - cw - 10 * k - (bw > 0 ? bw + 12 * k : 0) - smw;
                     int fs = ts;
-                    while (fs > UiTheme.Fs(18, k) && Gfx.TextW(UiTheme.Display, iss.Title, fs) > avail) fs--;
+                    while (fs > UiTheme.Fs(16, k) && Gfx.TextW(UiTheme.Display, iss.Title, fs) > avail) fs--;
                     Gfx.TextFit(d, UiTheme.Display, iss.Title, o.X + x + cw + 10 * k, Gfx.Mid(cy, fs), fs, UiTheme.Text, avail);
                 });
                 y += 50 * k;

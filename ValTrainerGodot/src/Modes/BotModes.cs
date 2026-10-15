@@ -347,6 +347,7 @@ public sealed class OperatorMode : BotMode
             var b = bots[i];
             if (b.Dead) { bots.RemoveAt(i); continue; } // death anim then self-free
             b.Feet += b.Velocity * dt;
+            TrackSeen(b); // coach: crosshair placement on the gap when the agent comes into view
             if (Mathf.Abs(b.Feet.X) > 9.5f) { escaped++; Score -= 40; G.Despawn(b); bots.RemoveAt(i); }
         }
     }

@@ -33,6 +33,7 @@ public partial class ProfileScreen : ScreenBase
 
     protected override void Tick(float dt)
     {
+        PollShowMe();
         if (profile != null) return;
         spinT += dt;
         spinner?.QueueRedraw();
@@ -63,6 +64,7 @@ public partial class ProfileScreen : ScreenBase
         {
             expandInit = true;
             if (p.Problems.Count > 0) expanded.Add(p.Problems[0].Id);
+            if (Main.I.Dev && Core.CmdLine.After("--showme") is { } sc) expanded.Add(sc); // dev: open the card being shown
         }
 
         var body = HBox(24 * k);
@@ -342,10 +344,10 @@ public partial class ProfileScreen : ScreenBase
             foreach (var f in d.Fixes) v.AddChild(Bullet(f, UiTheme.Accent));
         }
         var drills = (d.Drills ?? Array.Empty<string>()).Where(CoachData.HasDrill).Distinct().Take(3).ToList();
+        v.AddChild(Spacer(0, 6 * k));
+        var row = HBox(10 * k);
         if (drills.Count > 0)
         {
-            v.AddChild(Spacer(0, 6 * k));
-            var row = HBox(10 * k);
             var cap = Lbl("PRACTISE", UiTheme.HudWide, 13, UiTheme.Dim);
             cap.SizeFlagsVertical = SizeFlags.ShrinkCenter;
             row.AddChild(cap);
@@ -358,9 +360,67 @@ public partial class ProfileScreen : ScreenBase
                 b.TooltipText = $"Start {CoachData.DrillName(key)} now";
                 row.AddChild(b);
             }
-            v.AddChild(row);
+            row.AddChild(Spacer(8 * k, 0));
+        }
+        // "Show me": replay a moment from a recent run where this happened (searched on a worker thread)
+        var status = Lbl("", UiTheme.Body, 14, UiTheme.Dim);
+        status.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        status.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        status.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        status.CustomMinimumSize = new Vector2(60 * k, 0);
+        VButton? sm = null;
+        sm = Btn("SHOW ME", VButton.Look.Ghost, () => ShowMe(d, sm!, status), 130, 42, 17);
+        sm.TitleFont = UiTheme.HudWide;
+        sm.TooltipText = "Replay a moment from your recent runs where this happened";
+        row.AddChild(sm);
+        row.AddChild(status);
+        v.AddChild(row);
+        if (Main.I.Dev && !devShowMeDone && Core.CmdLine.After("--showme") == d.Id)
+        {
+            devShowMeDone = true; // dev screenshots: --screen profile --showme CODE
+            Callable.From(() => { if (IsInstanceValid(sm)) ShowMe(d, sm, status); }).CallDeferred();
         }
         return v;
+    }
+
+    // ---------------- "Show me" ----------------
+
+    static bool devShowMeDone;
+    Task<(RunTelemetry Run, RunInsights Ins)?>? search;
+    /// <summary>The found run's 3D replay being read (after <see cref="search"/>; the button says "LOADING RUN…").</summary>
+    Task? loading;
+    (string Code, string Drill, VButton Btn, Label Status)? searchFor;
+
+    void ShowMe(Diagnosis d, VButton b, Label status)
+    {
+        if (search != null) return;
+        string drill = (d.Drills ?? Array.Empty<string>()).Where(CoachData.HasDrill).Select(CoachData.DrillName).FirstOrDefault() ?? "a few drills";
+        b.Disabled = true;
+        b.Label = "SEARCHING…";
+        b.QueueRedraw();
+        status.Text = "";
+        searchFor = (d.Id, drill, b, status);
+        search = RewindData.FindExample(d.Id);
+    }
+
+    void PollShowMe()
+    {
+        if (search is not { IsCompleted: true } task || searchFor is not { } sf) return;
+        var found = task.IsCompletedSuccessfully ? task.Result : null;
+        if (found is { } run && loading == null && run.Run.Replay == null && run.Run.SourceFile != null)
+        {
+            // Found: read its 3D replay (.vtr sidecar) on a worker too, so the Rewind opens ready to build the 3D view.
+            loading = Task.Run(() => { try { run.Run.Replay ??= Game.Replay.ReplayFile.For(run.Run); } catch { /* 2D only */ } });
+            if (IsInstanceValid(sf.Btn)) { sf.Btn.Label = "LOADING RUN…"; sf.Btn.QueueRedraw(); }
+            return;
+        }
+        if (loading is { IsCompleted: false }) return;
+        loading = null;
+        search = null;
+        searchFor = null;
+        if (IsInstanceValid(sf.Btn)) { sf.Btn.Disabled = false; sf.Btn.Label = "SHOW ME"; sf.Btn.QueueRedraw(); }
+        if (found is { } f) RewindScreen.Open(Main.I, f.Run, f.Ins, sf.Code); // not a child: a resize rebuilds this screen
+        else if (IsInstanceValid(sf.Status)) sf.Status.Text = $"No recorded example yet. Play {sf.Drill}.";
     }
 
     Control GetRated(SkillProfile p, bool partial)

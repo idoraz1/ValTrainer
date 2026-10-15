@@ -126,6 +126,13 @@ public partial class Main : Node
             DisplayServer.WindowSetMode(DisplayServer.WindowMode.Windowed);
             // Dev "--window WxH" (e.g. 1280x720, 1024x768, 1720x720) for layout tests at other resolutions / aspects.
             DisplayServer.WindowSetSize(DevWindowSize(CmdLine.After("--window")) ?? new Vector2I(1600, 900));
+            // Dev "--render-size WxH" (e.g. 2560x1440): lay out at that size, scaled into the window (layouts bigger than the monitor).
+            if (DevWindowSize(CmdLine.After("--render-size")) is { } rs)
+            {
+                GetTree().Root.ContentScaleMode = Window.ContentScaleModeEnum.Viewport;
+                GetTree().Root.ContentScaleAspect = Window.ContentScaleAspectEnum.Keep;
+                GetTree().Root.ContentScaleSize = rs;
+            }
             DisplayServer.WindowSetPosition(DisplayServer.ScreenGetPosition(Monitor) + new Vector2I(60, 60));
         }
         ApplyFps();
@@ -150,6 +157,8 @@ public partial class Main : Node
         // Dev-only: "--lockin short|standard|training" (or the older "--warmup") starts a Lock-In; "demo", "demo-details",
         // "demo-breath" show those screens with made-up data. See WarmupRunner for --wuquick, --lockin-checkin E,C, --wuquit.
         if (Dev && make == null && (CmdLine.After("--lockin") ?? CmdLine.After("--warmup")) is { } wu) Callable.From(() => Warmup.WarmupRunner.StartDev(wu)).CallDeferred();
+        // Dev-only: "--rewind-file run.vtt [--rewind-code CODE] [--rewind-at S]" opens the Rewind of a saved run.
+        if (Dev && make == null && CmdLine.After("--rewind-file") is { } rf) Callable.From(() => RewindScreen.OpenDevFile(rf)).CallDeferred();
         Analysis.CoachWarmUp.Start(); // JIT the coach off the main thread before the first results screen
     }
 

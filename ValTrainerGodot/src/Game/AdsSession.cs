@@ -65,6 +65,7 @@ public partial class GameSession
         View.RecoilPitch = View.RecoilYaw = 0;
         Telemetry.Weapon = kind.ToString();
         Telemetry.ZoomSensMult = ZoomSensMultFor(def);
+        replay?.WeaponSwitch(Now, kind); // 3D Rewind: the viewmodel follows the switch
     }
 
     /// <summary>Restart: the dev --force-ads switch (after the drill's Setup, which may set its own ForcedScope).</summary>

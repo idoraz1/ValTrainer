@@ -4,6 +4,7 @@ using ValTrainer.Audio;
 using ValTrainer.Core;
 using ValTrainer.Game.Bots;
 using ValTrainer.Game.Fx;
+using ValTrainer.Game.Replay;
 using ValTrainer.Game.Weapon;
 using ValTrainer.Modes;
 using ValTrainer.UI;
@@ -143,9 +144,11 @@ public partial class GameSession : Node3D, IGame
         View.Zoom = View.VisualZoom = 1;
         View.RecoilPitch = View.RecoilYaw = 0;
 
+        // The range's extra boxes are listed once: the Rewind records exactly what was built (some depend on the tier).
+        var extras = Mode.Map == null ? Mode.ExtraSolids.ToList() : new List<Box>();
         var built = Mode.Map != null
             ? Environments.BuildMap(Mode.Map, Main.I.Settings.Quality)
-            : Environments.BuildRange(Mode.ExtraSolids, Main.I.Settings.Quality);
+            : Environments.BuildRange(extras, Main.I.Settings.Quality);
         envRoot = built.Root;
         AddChild(envRoot);
         solid = built.Solid;
@@ -168,6 +171,7 @@ public partial class GameSession : Node3D, IGame
             Weapon = Mode.Weapon.ToString(), Map = Mode.Map?.Key ?? "range", When = DateTime.Now,
             ZoomSensMult = ZoomSensMultFor(Weapons.Get(Mode.Weapon)),
         };
+        replay = StartReplay(extras); // before Begin: it spawns the first bots / targets
         Mode.Begin(this);
         if (Main.I.Dev) DevAdsArgs(); // --force-ads (AdsSession.cs)
         Respawn(Mode.StartFeet, Mode.StartYaw);
@@ -427,6 +431,7 @@ public partial class GameSession : Node3D, IGame
         if (!Mover.Grounded) flags |= (byte)FrameFlags.Airborne;
         f.Flags = flags;
         Telemetry.Frames.Add(f);
+        replay?.Frame(this, Now, viewmodel != null && viewmodel.Visible); // 3D Rewind (60 Hz, never throws)
 
         // Stops (counter-strafe vs release) for the movement coach.
         if (Mover.StopTimesMs.Count > lastStopCount)
@@ -467,11 +472,14 @@ public partial class GameSession : Node3D, IGame
         var muzzle = viewmodel?.MuzzleWorld ?? eye + dir * 0.6f;
         Effects.Tracer(muzzle, eye + dir * end);
         if (hitMode < wall && hitMode < 80f && Mode is not BotMode) Effects.BodyHit(eye + dir * hitMode, Enemy, false);
+        var wallNormal = Vector3.Zero;
         if (wall < hitMode && wall < 80f)
         {
             var p = eye + dir * wall;
-            Effects.Impact(p, solid[wi].NormalAt(p), new Color(0.5f, 0.5f, 0.5f));
+            wallNormal = solid[wi].NormalAt(p);
+            Effects.Impact(p, wallNormal, new Color(0.5f, 0.5f, 0.5f));
         }
+        replay?.PlayerShot(Now, Telemetry.Shots.Count - 1, eye + dir * end, wallNormal);
     }
 
     void MovePlayer(float dt)
@@ -510,6 +518,8 @@ public partial class GameSession : Node3D, IGame
         Record.Warmup = OnFinished != null;
         // Aim coach: metrics for this run + a review of what went wrong and how to fix it.
         Telemetry.Duration = Now;
+        Telemetry.Replay = replay?.Finish(Now); // the 3D Rewind's data: in memory now, saved next to the .vtt below
+        replay = null;
         try
         {
             Record.Metrics = Coach.Summarize(Telemetry);
@@ -576,6 +586,7 @@ public partial class GameSession : Node3D, IGame
         var t = Target.Create(radius, Enemy);
         t.SpawnTime = Now;
         World.AddChild(t);
+        replay?.TrackTarget(t, Now);
         return t;
     }
 
@@ -586,7 +597,35 @@ public partial class GameSession : Node3D, IGame
         b.SpawnTime = Now;
         World.AddChild(b);
         b.Feet = feet;
+        replay?.TrackBot(b, Now);
         return b;
+    }
+
+    // ---------------- 3D Rewind recording (Game/Replay) ----------------
+
+    /// <summary>The current run's Rewind recorder; null when the run writes no telemetry or has no 3D replay.</summary>
+    ReplayRecorder? replay;
+
+    /// <summary>A recorder for every 3D run (kept in memory for the results-screen Rewind; saved next to the .vtt only when the
+    /// run saves telemetry), unless the drill has no 3D replay (2D drills, Sens / Crosshair Finder). <paramref name="extras"/>: the range boxes exactly as built.</summary>
+    ReplayRecorder? StartReplay(List<Box> extras)
+    {
+        try
+        {
+            var support = ReplayFile.SupportFor(Mode.Key);
+            if (Mode.Is2D || support == ReplaySupport.None) return null;
+            var st = Main.I.Settings;
+            var h = new ReplayHeader
+            {
+                Mode = Mode.Key, MapKey = Mode.Map?.Key ?? "range",
+                MapHash = Mode.Map != null ? ReplayFile.MapHashOf(Mode.Map) : ReplayFile.MapHashOf(extras),
+                ExtraSolids = extras.Select(b => new[] { b.Min.X, b.Min.Y, b.Min.Z, b.Max.X, b.Max.Y, b.Max.Z }).ToArray(),
+                Weapon = Mode.Weapon.ToString(), EnemyColor = Enemy.ToHtml(), Outlines = st.Outlines, TargetStyle = st.TargetStyle,
+                Viewmodel = st.ViewModel, LeftHanded = st.LeftHandedWeapon, Support = support, AppVersion = AppInfo.Version,
+            };
+            return new ReplayRecorder(h, () => Now);
+        }
+        catch (Exception e) { GD.PushWarning($"Rewind recording off: {e.Message}"); return null; }
     }
 
     public FlashOrb SpawnOrb(Color color)

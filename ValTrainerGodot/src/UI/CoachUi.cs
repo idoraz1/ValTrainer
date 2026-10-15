@@ -137,7 +137,7 @@ public static class CoachSkills
         Skill.Precision => new[] { "flick", "gridshot" },
         Skill.Tracking => new[] { "tracking", "strafebots" },
         Skill.Reaction => new[] { "reaction" },
-        Skill.CrosshairPlacement => new[] { "peek", "siteclear" },
+        Skill.CrosshairPlacement => new[] { "peek", "siteclear", "anchor" },
         Skill.SprayControl => new[] { "spray_vandal", "spray_phantom" },
         Skill.Movement => new[] { "counterstrafe", "peekduel" },
         Skill.Utility => new[] { "flashmap" },
@@ -201,6 +201,7 @@ public static class CoachData
         float sens = app.Sens;
         int dpi = app.Settings.Dpi;
         string? fake = FakeVariant;
+        bool saves = app.SavesData; // dev runs never touch the player's recordings
         task = Task.Run(() =>
         {
             try
@@ -211,7 +212,14 @@ public static class CoachData
                     return CoachFake.Profile(fake, sens, dpi);
                 }
                 LastError = null;
-                return Coach.BuildProfile(snapshot, sens, dpi) ?? new SkillProfile();
+                var profile = Coach.BuildProfile(snapshot, sens, dpi) ?? new SkillProfile();
+                // Rewind recordings: keep recent runs + examples of problems the coach still sees; delete the rest.
+                if (saves)
+                {
+                    var active = profile.Problems.Select(p => p.Id).ToList();
+                    Task.Run(() => Game.RecordingStore.Maintain(active));
+                }
+                return profile;
             }
             catch (Exception ex)
             {

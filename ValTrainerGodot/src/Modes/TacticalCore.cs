@@ -304,7 +304,7 @@ public abstract partial class TacticalMode : MapMode
             if (Now - b.SeenByPlayerAt > 2.5f)
             {
                 b.Body.SpawnTime = Now; // time-to-kill counts from first sight
-                if (AngleFromCrosshair(head) <= 60f) SeenEvent(head);
+                SeenEvent(head); // graded only within SeenMaxDeg (60°) of the crosshair
             }
             b.SeenByPlayerAt = Now;
         }

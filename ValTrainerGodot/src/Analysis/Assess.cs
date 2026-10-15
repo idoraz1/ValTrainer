@@ -557,7 +557,7 @@ static class Assess
                     "Clear one angle at a time, keeping the crosshair glued to the edge.",
                     "When you move, slide the crosshair along the wall edge with you.",
                 },
-                new[] { "peek", "peekduel", "peek_mix" },
+                new[] { "peekduel", "siteclear", "anchor" },
                 F($"enemies appeared {eh:0.0}° to the side of your crosshair"), unit: "sightings");
 
         // ---- movement ----

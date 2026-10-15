@@ -60,9 +60,15 @@ public abstract class TrainingMode
     /// <summary>Angular distance (deg) from the crosshair to a point.</summary>
     protected float AngleFromCrosshair(Vector3 p) => G.View.AngleTo(p);
 
-    /// <summary>Records that a bot became visible: crosshair placement error and its vertical part (+ = too high).</summary>
+    /// <summary>Largest angle (deg) between the crosshair and an enemy's head at first sight that still counts as crosshair
+    /// placement. Enemies further out (beside or behind you) are a positioning problem, not placement: not graded.</summary>
+    public const float SeenMaxDeg = 60f;
+
+    /// <summary>Records that a bot became visible: crosshair placement error and its vertical part (+ = too high).
+    /// Sightings beyond <see cref="SeenMaxDeg"/> are not recorded.</summary>
     protected void SeenEvent(Vector3 head)
     {
+        if (G.View.AngleTo(head) > SeenMaxDeg) return;
         var d = (head - G.View.Eye).Normalized();
         float pitchT = Mathf.RadToDeg(Mathf.Asin(Mathf.Clamp(d.Y, -1, 1)));
         Event("bot_seen", G.View.AngleTo(head), G.View.ViewPitch - pitchT);

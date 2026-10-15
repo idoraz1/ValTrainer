@@ -15,6 +15,17 @@ public partial class BlindOverlay : Control
 
     public bool Active => t < full + fade;
     public bool FullyBlind => t < full;
+    /// <summary>How white the screen is right now, 0..1 (the overlay's strength as drawn; Rewind recorder).</summary>
+    public float Strength
+    {
+        get
+        {
+            if (t < full) return 1f;
+            if (!Active) return 0f;
+            float a = Mathf.Clamp(1f - (t - full) / fade, 0f, 1f);
+            return a * a * (3f - 2f * a);
+        }
+    }
 
     const string Code = @"
 shader_type canvas_item;

@@ -29,6 +29,7 @@ public sealed class TargetSwitchMode : BotMode
 
     readonly Lane[] lanes = new Lane[AimPlusTiers.SwitchAlive];
     Lane? focus;
+    int lastFocusId; // the coach engagement (target_spawn) last recorded
     float switchStart;          // last kill (or the start): switch and per-kill times count from here
     bool switchOpen = true;     // waiting for the first hit after a kill
     // overflick tracking for the switch in progress
@@ -133,6 +134,12 @@ public sealed class TargetSwitchMode : BotMode
             b.Feet = p;
         }
         if (focus == null || !Alive(focus.B)) PickFocus();
+        // Coach: each new target is an engagement (flick from where the crosshair is now), like Strafe Bots' spawns.
+        if (focus?.B is { } fb && Alive(fb) && IdOf(fb) != lastFocusId)
+        {
+            lastFocusId = IdOf(fb);
+            Event("target_spawn", lastFocusId, AngleFromCrosshair(fb.Head));
+        }
 
         if (switchOpen && flickTo != null)
         {

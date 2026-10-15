@@ -66,6 +66,10 @@ public sealed class RunTelemetry
     public readonly List<FrameSample> Frames = new(16384);
     public readonly List<ShotSample> Shots = new(512);
     public readonly List<TelemetryEvent> Events = new(256);
+    /// <summary>3D Rewind recording of this run (in memory after a run; loaded from the .vtr sidecar on demand).</summary>
+    public Replay.ReplayRecording? Replay;
+    /// <summary>The .vtt this run was loaded from (null for the run just played), to find its .vtr sidecar.</summary>
+    public string? SourceFile;
 
     public static string Dir
     {
@@ -105,9 +109,25 @@ public sealed class RunTelemetry
             bw.Write(Events.Count);
             foreach (var e in Events) { bw.Write(e.T); bw.Write(e.Kind); bw.Write(e.A); bw.Write(e.B); }
         }
-        // Keep only the most recent files.
+        // The 3D Rewind sidecar (.vtr) next to it; a failure only costs the 3D view of this run.
+        if (Replay != null)
+        {
+            try { ValTrainer.Game.Replay.ReplayFile.Save(Replay, ValTrainer.Game.Replay.ReplayFile.SidecarOf(file)); }
+            catch (Exception e) { Log.Error($"Saving the Rewind sidecar failed: {e.Message}"); }
+        }
+        // Keep only the most recent files (and their sidecars); drop sidecars whose run is gone.
         foreach (var old in Directory.GetFiles(dir, "*.vtt").OrderByDescending(f => f).Skip(keep))
+        {
             try { File.Delete(old); } catch { }
+            try { File.Delete(ValTrainer.Game.Replay.ReplayFile.SidecarOf(old)); } catch { }
+        }
+        try
+        {
+            foreach (var vtr in Directory.GetFiles(dir, "*.vtr"))
+                if (Path.GetExtension(vtr).Equals(".vtr", StringComparison.OrdinalIgnoreCase) && !File.Exists(Path.ChangeExtension(vtr, ".vtt")))
+                    try { File.Delete(vtr); } catch { }
+        }
+        catch { }
         return file;
     }
 
@@ -131,6 +151,7 @@ public sealed class RunTelemetry
                 Duration = m.GetProperty("Duration").GetSingle(),
                 HFov = m.TryGetProperty("HFov", out var hf) ? hf.GetSingle() : PlayerView.HipHFov,
                 ZoomSensMult = m.TryGetProperty("ZoomSensMult", out var zm) ? zm.GetSingle() : 1f,
+                SourceFile = file, // its .vtr sidecar (3D Rewind) sits next to it
             };
             int n = br.ReadInt32();
             for (int i = 0; i < n; i++)

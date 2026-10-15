@@ -8,6 +8,26 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Added
+- Rewind: replay any run from the results screen in the real game graphics: the same map, the bots moving, crouching, shooting and dying as they did, your own camera, gun and crosshair. On top of that you get the aim analysis: a crosshair trail anchored in the world, a ring on the target, every shot, slow motion (0.25×/0.5×) and a 4× close-up. A timeline marks every engagement, kill, death and coach moment. Press V for the 2D aim view. The 3D replay is recorded for new runs (a small file next to each run); older runs open in 2D. A short loading bar shows while the replay world is built.
+- Utility (flashes, the spike, smokes, abilities) isn't shown in the 3D replay yet, and replays are silent.
+- Rewind recordings clean themselves up. ValTrainer keeps your last 20 runs plus up to 3 examples of each problem the coach still sees, so "Show me" keeps working. It deletes examples of problems you've fixed and anything older than 30 days.
+- Target Switch, Operator and Spray Transfer now feed the aim coach:
+  - Target Switch: flicks between targets.
+  - Operator: crosshair placement while holding the gap.
+  - Spray Transfer: vertical spray control; the drag between agents isn't counted as spray error.
+- Settings › About › Folders shows the recordings folder, how many runs it holds and their size. OPEN shows the folder; DELETE ALL (click twice) removes every recording. Your stats and coach results are kept.
+- The Rewind's side panel breaks each engagement into reaction, flick, settle and click time. It also shows your shot spread around the target, first-bullet accuracy, shots fired while moving, and over/undershoot by flick direction.
+- "Show me" on coach problems (results screen and coach profile): jumps straight to the moments of a recent run where the problem happened, e.g. each overshot flick or each time your crosshair was too low. Everything runs offline from your own runs.
+
+### Fixed
+- Aim coach accuracy. These fixes also apply to the runs you already played:
+  - Sound Lock's time from spotting an enemy to hitting it no longer counts as reaction time. It's a different skill, and one Sound Lock run could rate Reaction as Iron.
+  - Flashes in Site Anchor no longer rate the Utility skill. Holding an angle you get flashed by design; Utility is measured in Flash Dodge.
+  - Crosshair placement only counts enemies that appear within 60° of your crosshair, in every drill. Some agent and map drills also counted enemies beside or behind you.
+  - Mixed Peeks and Sound Lock count only the height of your crosshair, not its side-to-side position, because peeks can come from either side.
+- "Crosshair too wide" now recommends drills that measure it: Peek Duels, Site Clear and Site Anchor.
+
 ## [1.10.0] - 2026-10-14
 
 ### Added

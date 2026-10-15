@@ -66,6 +66,13 @@ public partial class BotCharacter : Node3D
         PLUL = 9, PLLL = 10, PLF = 11, PLT = 12, PRUL = 13, PRLL = 14, PRF = 15, PRT = 16, PCount = 17;
     readonly Vector3[] pts = new Vector3[PCount];
 
+    /// <summary>Visual events for the Rewind recorder (Game\Replay): Hit (Arg = zone), Die (P = from-direction),
+    /// Shoot (P = target point). Raised by <see cref="OnHit"/>, <see cref="Die"/> and <see cref="ShootFx"/>.</summary>
+    public enum BotFx : byte { Hit, Die, Shoot }
+    public event Action<BotCharacter, BotFx, Vector3, int>? Fx;
+    /// <summary>Driven by the Rewind (ReplayStage) instead of a brain: no footsteps, no tracers, never frees itself.</summary>
+    internal bool Puppet;
+
     float facing;
     Color enemy;
     bool outlines;
@@ -314,6 +321,7 @@ public partial class BotCharacter : Node3D
 
     public void OnHit(HitZone z)
     {
+        Fx?.Invoke(this, BotFx.Hit, Vector3.Zero, (int)z);
         flash = 1f;
         if (z != HitZone.Legs) flinchT = 0.4f;
         if (Dead || !IsInsideTree()) return;
@@ -324,6 +332,7 @@ public partial class BotCharacter : Node3D
     public void Die(Vector3 fromDir)
     {
         if (deathT >= 0) return;
+        Fx?.Invoke(this, BotFx.Die, fromDir, 0);
         deathT = 0;
         if (Hp > 0) Hp = 0;
         // Death01 falls backwards: turn the body so it falls along the bullet's direction.
@@ -339,8 +348,8 @@ public partial class BotCharacter : Node3D
     public void ShootFx(Vector3 target)
     {
         if (!IsInsideTree()) return;
-        var from = MuzzlePosition;
-        Effects.Tracer(from, target);
+        Fx?.Invoke(this, BotFx.Shoot, target, 0);
+        if (!Puppet) Effects.Tracer(MuzzlePosition, target); // the Rewind draws puppet tracers itself (ReplayFx)
         recoil = 1f;
         var to = target - Head;
         aimPitch = Mathf.Atan2(to.Y, new Vector2(to.X, to.Z).Length());
@@ -357,7 +366,13 @@ public partial class BotCharacter : Node3D
 
     public override void _Process(double delta)
     {
-        float dt = Mathf.Min((float)delta, 0.1f);
+        if (Puppet) return; // the Rewind steps puppets itself (PuppetStep, BotCharacter.Puppet.cs)
+        Step(Mathf.Min((float)delta, 0.1f));
+    }
+
+    /// <summary>One frame of animation and effects: every _Process for live bots, <c>PuppetStep</c> for Rewind puppets.</summary>
+    void Step(float dt)
+    {
         if (Dead && deathT < 0) Die(-GlobalBasis.Z); // fall backwards in place
 
         // --- locomotion state from velocity relative to facing (model space: +Z = forward, +X = character's left)
@@ -410,14 +425,14 @@ public partial class BotCharacter : Node3D
         flinchT = Mathf.Max(0f, flinchT - dt);
         if (deathT >= 0) fade = Mathf.Max(0f, 1f - deathT / 0.45f);
         UpdateHighlight();
-        Footsteps(dt, speed);
+        if (!Puppet) Footsteps(dt, speed);
 
         if (deathT >= 0)
         {
             deathT += dt;
             if (deathT > 1.5f) model.Position = new Vector3(0, -0.75f * Smooth(1.5f, 2.3f, deathT), 0);
             if (deathT > 2.3f) Visible = false;
-            if (deathT > 2.6f) QueueFree();
+            if (deathT > 2.6f && !Puppet) QueueFree(); // puppets go back to the Rewind's pool
         }
     }
 

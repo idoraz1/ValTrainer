@@ -93,6 +93,11 @@ public partial class Target : Node3D
 
     public void Hit() => flash = 0.08f;
 
+    /// <summary>Highlighted by <see cref="SetHot"/> (Rewind recorder).</summary>
+    public bool Hot => hot;
+    /// <summary>Showing the white hit flash right now (Rewind recorder).</summary>
+    public bool Flashing => flash > 0;
+
     /// <summary>Highlight while being tracked (tracking modes).</summary>
     public void SetHot(bool on)
     {

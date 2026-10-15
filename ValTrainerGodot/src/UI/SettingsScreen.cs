@@ -579,6 +579,7 @@ public partial class SettingsScreen : ScreenBase
         v.AddChild(new SectionLabel { Text = "FOLDERS", K = k });
         v.AddChild(FolderRow("Settings, stats & recordings", Paths.DataDir));
         if (Paths.DataDirProblem is { } problem) v.AddChild(Lbl(problem, UiTheme.Body, 13, UiTheme.Warn));
+        v.AddChild(RecordingsRow());
         v.AddChild(FolderRow("Logs (attach godot.log to bug reports)", Paths.LogDir));
 
         v.AddChild(Spacer(0, 6 * k));
@@ -777,6 +778,64 @@ public partial class SettingsScreen : ScreenBase
         open.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         open.TooltipText = path;
         row.AddChild(open);
+        return row;
+    }
+
+    /// <summary>Rewind recordings: folder, size, what's kept automatically, OPEN and DELETE ALL (click twice).</summary>
+    Control RecordingsRow()
+    {
+        float k = K;
+        string dir = RecordingStore.Dir;
+        var usage = RecordingStore.Usage(dir);
+        var row = HBox(12 * k);
+        row.CustomMinimumSize = new Vector2(0, 92 * k);
+        var txt = new DrawBox
+        {
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            OnDraw = d =>
+            {
+                float cy = d.Size.Y / 2;
+                int ls = UiTheme.Fs(14, k), ns = UiTheme.Fs(12, k);
+                string mb = (usage.Bytes / 1048576.0).ToString(usage.Bytes < 10 * 1048576L ? "0.0" : "0", System.Globalization.CultureInfo.InvariantCulture);
+                Gfx.TextFit(d, UiTheme.Body, $"Rewind recordings · {usage.Runs} run{(usage.Runs == 1 ? "" : "s")} · {mb} MB", 10 * k, Gfx.Mid(cy - 29 * k, ls), ls, UiTheme.Dim, d.Size.X - 10 * k);
+                Gfx.TextFit(d, UiTheme.Body, dir, 10 * k, Gfx.Mid(cy - 10 * k, ls), ls, UiTheme.Text, d.Size.X - 10 * k);
+                Gfx.TextFit(d, UiTheme.Body, $"Kept: your last {RecordingStore.KeepRecent} runs + examples of problems the coach still sees.", 10 * k, Gfx.Mid(cy + 9 * k, ns), ns, UiTheme.Faint, d.Size.X - 10 * k);
+                Gfx.TextFit(d, UiTheme.Body, $"Deleted automatically: problems you fixed, and runs older than {RecordingStore.MaxAgeDays} days.", 10 * k, Gfx.Mid(cy + 25 * k, ns), ns, UiTheme.Faint, d.Size.X - 10 * k);
+            },
+        };
+        row.AddChild(txt);
+        var open = Btn("OPEN", VButton.Look.Secondary, () => AppInfo.OpenFolder(dir), 96, 36, 16);
+        open.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        open.TooltipText = $"{dir}\nThese are ValTrainer recordings (.vtt run data + .vtr 3D replay), played back inside ValTrainer's Rewind — not video files.";
+        row.AddChild(open);
+        VButton? del = null;
+        ulong armedAt = 0;
+        del = Btn("DELETE ALL", VButton.Look.Ghost, () =>
+        {
+            ulong now = Time.GetTicksMsec();
+            if (armedAt == 0 || now - armedAt > 4000)
+            {
+                // first click arms it: "CONFIRM?" for 4 s
+                armedAt = now;
+                del!.Label = "CONFIRM?";
+                del.QueueRedraw();
+                GetTree().CreateTimer(4.0).Timeout += () =>
+                {
+                    if (!IsInstanceValid(del) || armedAt == 0 || Time.GetTicksMsec() - armedAt < 3900) return;
+                    armedAt = 0; del.Label = "DELETE ALL"; del.QueueRedraw();
+                };
+                return;
+            }
+            armedAt = 0;
+            if (!App.Dev) RecordingStore.DeleteAll(dir); // dev runs never touch the player's data
+            usage = RecordingStore.Usage(dir);
+            del!.Label = "DELETE ALL";
+            del.QueueRedraw();
+            txt.QueueRedraw();
+        }, 132, 36, 16);
+        del.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        del.TooltipText = "Deletes every Rewind recording. Your stats, scores and coach results are kept.";
+        row.AddChild(del);
         return row;
     }
 

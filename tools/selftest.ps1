@@ -1,7 +1,8 @@
 <#
 .SYNOPSIS
-  Headless self-tests for ValTrainer: the coach self-test, the locale (culture) tests, the bug report checks and a short smoke test of the
-  drills with the simulated player.
+  Headless self-tests for ValTrainer: the coach self-test (with the .vtr replay round trip), the locale (culture) tests, the bug report
+  checks, a short smoke test of the drills with the simulated player, the 3D Rewind sidecar check of those runs and the Rewind insights
+  check (flawed simulated players must show their own problem moments).
 .DESCRIPTION
   Runs the same checks as CI (.github/workflows/ci.yml). Every run uses --dev with a throw-away --data-dir and an empty
   --valorant-dir, so your real settings, stats, telemetry and VALORANT config are never read or written; the script
@@ -158,13 +159,71 @@ if (-not $SkipSmoke) {
            elseif ($ex.Count -gt 0) { "exception: $($ex[0].Trim())" } elseif ($vtt.Count -eq 0) { "no telemetry written (the run didn't finish)" } else { "" }
     Report "smoke: $m" ($why -eq "") $why $r
   }
-  $r = Invoke-Godot "coach-analyze-smoke" (@("--headless", "--path", $Project, "--") + $sandbox + @("--coach-analyze", $tel, "--brief"))
+  $r = Invoke-Godot "coach-analyze-smoke" (@("--headless", "--path", $Project, "--") + $sandbox + @("--coach-analyze", $tel, "--brief", "--insights"))
   $analysed = @($r.Text -split "`r?`n" | Where-Object { $_ -match '^=== .*\.vtt\s+mode=' }).Count
   $files = @(Get-ChildItem $tel -Filter "*.vtt").Count
   $ex = Get-Exceptions $r.Text
   $why = if ($r.Code -ne 0) { "exit code $($r.Code)" } elseif ($r.Text -match 'unreadable') { "a telemetry file was unreadable" } `
          elseif ($ex.Count -gt 0) { "exception: $($ex[0].Trim())" } elseif ($analysed -ne $files) { "analysed $analysed of $files runs" } else { "" }
   Report "coach analysis of $files smoke runs" ($why -eq "") $why $r
+
+  # 3D Rewind sidecars (.vtr) of the smoke runs: present for every 3D drill, 60 Hz player track, one PlayerShot per shot,
+  # BotDie >= kills, monotonic time, < 0.5 MB per 120 s.
+  $r = Invoke-Godot "replay-check-smoke" (@("--headless", "--path", $Project, "--") + $sandbox + @("--coach-analyze", $tel, "--brief", "--replay-check"))
+  $rl = @($r.Text -split "`r?`n" | Where-Object { $_ -match '^\s+replay-check: (PASS|FAIL|SKIP)' })
+  $rf = @($rl | Where-Object { $_ -match 'replay-check: FAIL' })
+  $vtr = @(Get-ChildItem $tel -Filter "*.vtr").Count
+  $ex = Get-Exceptions $r.Text
+  $why = if ($r.Code -ne 0) { "exit code $($r.Code)" } elseif ($ex.Count -gt 0) { "exception: $($ex[0].Trim())" } `
+         elseif ($rl.Count -ne $files) { "checked $($rl.Count) of $files runs" } elseif ($rf.Count -gt 0) { "$($rf.Count) run(s) failed: " + ($rf -join "; ").Trim() } else { "" }
+  Report "3D Rewind sidecars of $files smoke runs ($vtr .vtr)" ($why -eq "") $why $r
+}
+
+# ---- 4b. Rewind insights: each flawed simulated player must produce many moments of its own problem, the good one few ----
+if (-not $SkipSmoke) {
+  $insRuns = @(
+    @{ Mode = "flick"; Sim = "good" }, @{ Mode = "flick"; Sim = "overshoot"; Code = "OVERFLICK" }, @{ Mode = "flick"; Sim = "premature"; Code = "PREMATURE" },
+    @{ Mode = "flick"; Sim = "hesitate"; Code = "HESITATE" }, @{ Mode = "peek"; Sim = "good" }, @{ Mode = "peek"; Sim = "lowxhair"; Code = "XHAIR_LOW" }
+  )
+  $counts = @{}
+  foreach ($x in $insRuns) {
+    $key = "$($x.Mode)-$($x.Sim)"
+    $dir = Join-Path $work "insights\$key"
+    New-Item -ItemType Directory -Force $dir | Out-Null
+    # 3 s countdown + 16 s run = 2280 fixed frames; quit after 2900.
+    $r = Invoke-Godot "insights-run-$key" (@("--headless", "--fixed-fps", "120", "--quit-after", "2900", "--path", $Project, "--") + $sandbox +
+                                           @("--mode", $x.Mode, "--simaim", $x.Sim, "--duration", "16", "--telemetry-out", $dir))
+    $a = Invoke-Godot "insights-analyze-$key" (@("--headless", "--path", $Project, "--") + $sandbox + @("--coach-analyze", $dir, "--brief", "--insights"))
+    $c = @{}
+    $line = ($a.Text -split "`r?`n" | Where-Object { $_ -match '^\s+moment-counts:' } | Select-Object -First 1)
+    if ($line) { foreach ($m in [regex]::Matches($line, '([A-Z_]+)=(\d+)')) { $c[$m.Groups[1].Value] = [int]$m.Groups[2].Value } }
+    $trials = if ($a.Text -match 'insights \(\d+ ms\): trials=(\d+)') { [int]$Matches[1] } else { 0 }
+    $c["_trials"] = [math]::Max(1, $trials)
+    $counts[$key] = $c
+    $ttk = ($a.Text -split "`r?`n" | Where-Object { $_ -match '^\s+ttk: n=(\d+).* sum=([\d.]+) total=([\d.]+)' } | Select-Object -First 1)
+    $ex = Get-Exceptions ($r.Text + $a.Text)
+    $why = if ($r.Code -ne 0 -or $a.Code -ne 0) { "exit code $($r.Code)/$($a.Code)" } elseif ($ex.Count -gt 0) { "exception: $($ex[0].Trim())" } `
+           elseif (-not $line) { "no insights output" } else { "" }
+    if ($why -eq "" -and $x.Mode -eq "flick") {
+      # The time-to-hit split: every engagement's timestamps in order (appear ≤ onset ≤ flick end ≤ on target ≤ hit), and
+      # the sum of the part medians near the median total (medians of a mixed sample needn't add up exactly: ±40%).
+      if ($ttk -match 'ttk: n=(\d+).* sum=([\d.]+) total=([\d.]+) trials=(\d+) unordered=(\d+)') {
+        $sum = [double]$Matches[2]; $tot = [double]$Matches[3]
+        if ([int]$Matches[1] -lt 5) { $why = "too few hits for the ttk split: $($ttk.Trim())" }
+        elseif ([int]$Matches[5] -gt 0) { $why = "ttk split out of order in $($Matches[5]) engagements: $($ttk.Trim())" }
+        elseif ([math]::Abs($sum - $tot) -gt 0.4 * $tot) { $why = "ttk split far from the total: $($ttk.Trim())" }
+      } else { $why = "no ttk breakdown" }
+    }
+    if ($why -eq "" -and $x.Code) {
+      # Per engagement: the flaw shows in at least 40% of them, and at most half as often for the good player.
+      $g = $counts["$($x.Mode)-good"]
+      $n = [int]$c[$x.Code]; $good = [int]$g[$x.Code]
+      $rate = $n / $c["_trials"]; $goodRate = $good / $g["_trials"]
+      if ($n -lt 3 -or $rate -lt 0.4 -or $goodRate -gt 0.5 * $rate) { $why = "$($x.Code): $n moments in $($c["_trials"]) engagements vs $good in $($g["_trials"]) for the good player" }
+    }
+    $detail = if ($x.Code) { " ($($x.Code)=$([int]$c[$x.Code]), good=$([int]$counts["$($x.Mode)-good"][$x.Code]))" } else { "" }
+    Report "insights: $key$detail" ($why -eq "") $why $a
+  }
 }
 
 # ---- 5. Dev runs must never write user data ----

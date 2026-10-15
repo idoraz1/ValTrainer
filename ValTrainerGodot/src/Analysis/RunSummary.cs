@@ -12,6 +12,7 @@ static class RunSummary
         "flick", "spider", "gridshot", "tracking", "strafebots", "peek", "counterstrafe", "peekduel", "siteclear", "flashmap", "deathmatch",
         "reaction", "spray_vandal", "spray_phantom", "microshot", "popup", "longtaps", "jumppeek", "jigglepeek", "peek_mix",
         "flashpeek", "recon", "smokeexec", "mobility", "chamber", "postplant", "retake", "anchor", "sound",
+        "switch", "operator", "spray_transfer",
     };
 
     /// <summary>Summary for a run without enough data for any finding: what this mode needs, or that it doesn't feed the coach.</summary>
@@ -27,7 +28,8 @@ static class RunSummary
             "flashpeek" or "recon" or "smokeexec" or "mobility" or "postplant" or "retake" or "anchor" => "play a few rounds and take some duels",
             "spider" or "gridshot" => "play at least 15 seconds and hit a few targets",
             "tracking" => "hold fire on the target for at least a few seconds",
-            "strafebots" => "take on a few bots",
+            "strafebots" or "switch" => "take on a few bots",
+            "operator" => "let a few agents cross the gap while you hold it",
             "peek" => "let a few bots peek you",
             "counterstrafe" => "stop and shoot a few times",
             "peekduel" or "siteclear" or "deathmatch" => "get a few duels in",
