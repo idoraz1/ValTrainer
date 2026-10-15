@@ -8,6 +8,8 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-10-16
+
 ### Added
 - Type an exact sensitivity: in Settings › Sensitivity ("Type a sensitivity" + SET) or by clicking the number in the pause menu. "0.35" and "0,35" both work.
 
@@ -266,7 +268,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.11.0...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.12.0...HEAD
+[1.12.0]: https://github.com/idoraz1/ValTrainer/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/idoraz1/ValTrainer/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/idoraz1/ValTrainer/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/idoraz1/ValTrainer/compare/v1.8.0...v1.9.0
