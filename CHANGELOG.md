@@ -8,6 +8,8 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-10-15
+
 ### Added
 - Rewind: replay any run from the results screen in the real game graphics: the same map, the bots moving, crouching, shooting and dying as they did, your own camera, gun and crosshair. On top of that you get the aim analysis: a crosshair trail anchored in the world, a ring on the target, every shot, slow motion (0.25×/0.5×) and a 4× close-up. A timeline marks every engagement, kill, death and coach moment. Press V for the 2D aim view. The 3D replay is recorded for new runs (a small file next to each run); older runs open in 2D. A short loading bar shows while the replay world is built.
 - Utility (flashes, the spike, smokes, abilities) isn't shown in the 3D replay yet, and replays are silent.
@@ -250,7 +252,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/idoraz1/ValTrainer/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/idoraz1/ValTrainer/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/idoraz1/ValTrainer/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/idoraz1/ValTrainer/compare/v1.7.1...v1.8.0
