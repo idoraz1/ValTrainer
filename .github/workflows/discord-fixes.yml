@@ -64,14 +64,15 @@ jobs:
       - name: Mark the fixed threads
         if: steps.bot.outputs.ok == 'true'
         run: |
-          set -uo pipefail
+          # Not -e (GitHub's default): a grep without matches is normal here; errors are handled per thread below.
+          set +e -uo pipefail
           VERSION="${VERSION#v}"
           TAG="v$VERSION"
           URL="https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG"
           PREV=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)
           RANGE=$([ -n "$PREV" ] && echo "$PREV..$TAG" || echo "$TAG")
           IDS=$( { git log "$RANGE" --format=%B | grep -ioE 'fixes-discord:[0-9 ,]+' | grep -oE '[0-9]{15,25}'; \
-                   echo "${EXTRA:-}" | grep -oE '[0-9]{15,25}'; } | sort -u)
+                   echo "${EXTRA:-}" | grep -oE '[0-9]{15,25}'; } | sort -u || true)
           if [ -z "$IDS" ]; then echo "No Fixes-Discord lines in $RANGE: nothing to mark."; exit 0; fi
           API=https://discord.com/api/v10
           H=(-H "Authorization: Bot $DISCORD_BOT_TOKEN" -H "User-Agent: DiscordBot (https://github.com/$GITHUB_REPOSITORY, 1)" -H "Content-Type: application/json")
