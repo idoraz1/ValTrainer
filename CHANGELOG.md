@@ -8,6 +8,8 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-10-16
+
 ### Added
 - Suggest a feature: a new button in the menu and in Settings › About sends your idea (with an optional category: new drill, agent, map, coach, UI) to #suggestions on the ValTrainer Discord. Only the ValTrainer version goes with it, nothing about your PC. When an update adds it, your post is marked Added.
 
@@ -276,7 +278,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.12.0...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.13.0...HEAD
+[1.13.0]: https://github.com/idoraz1/ValTrainer/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/idoraz1/ValTrainer/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/idoraz1/ValTrainer/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/idoraz1/ValTrainer/compare/v1.9.0...v1.10.0
