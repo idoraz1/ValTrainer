@@ -104,7 +104,7 @@ public sealed partial class MobilityEntryMode : MapMode
         };
         DuelistSfx.Prewarm();
         G.Player.Absorb = (dmg, from) => Kit.Absorb(dmg, from) || TrackingMiss();
-        if (DuelistDev.Requested) dev = new DuelistDev(G, this);
+        if (DuelistDev.Requested || G.Demo) dev = new DuelistDev(G, this); // dev --autoability, or the drill preview
         NewRound();
     }
 

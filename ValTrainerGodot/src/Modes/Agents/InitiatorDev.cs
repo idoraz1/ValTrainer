@@ -14,7 +14,10 @@ namespace ValTrainer.Modes;
 /// </summary>
 public abstract partial class InitiatorDrill
 {
-    static readonly bool DevAuto = CmdLine.Dev && CmdLine.Has("--autothrow");
+    static readonly bool DevFlag = CmdLine.Dev && CmdLine.Has("--autothrow");
+    /// <summary>Dev --autothrow, or the drill preview.</summary>
+    bool DevAuto => DevFlag || G.Demo;
+    static void Trace(string line) { if (Main.I.Dev) GD.Print(line); }
     enum DevSt { Off, ToSpot, Throw, Wait, Push }
     DevSt devSt;
     List<Vector3> devPath = new();
@@ -102,7 +105,7 @@ public abstract partial class InitiatorDrill
                     devEffectAt = Now + p.EffectAfter;
                     devRecastAt = p.RecastAt >= 0 ? Now + p.RecastAt : -1f;
                     Kit.PutAway(Ability.GunBack);
-                    GD.Print($"[autothrow] {Ability.Agent} {Ability.Ability}: score {p.Score:0.00}, effect in {p.EffectAfter:0.00}s, " +
+                    Trace($"[autothrow] {Ability.Agent} {Ability.Ability}: score {p.Score:0.00}, effect in {p.EffectAfter:0.00}s, " +
                              $"primary={p.Primary} bars={p.Bars} bounces={p.Bounces} recast={p.RecastAt:0.00}");
                 }
                 devSt = DevSt.Wait;
@@ -133,7 +136,7 @@ public abstract partial class InitiatorDrill
         var target = defenders.Where(d => d.Alive).OrderBy(d => d.Body.Feet.DistanceTo(PlayerFeet)).FirstOrDefault();
         if (target == null) return;
         var path = Nav()?.FindPath(PlayerFeet, target.Body.Feet);
-        if (path == null) GD.Print($"[autothrow] no path from {PlayerFeet} to {target.Body.Feet}");
+        if (path == null) Trace($"[autothrow] no path from {PlayerFeet} to {target.Body.Feet}");
         devPath = path ?? new List<Vector3> { target.Body.Feet }; // walks until the defender is in sight
         devIdx = 0;
         devPushTargetT = Now + 3f;

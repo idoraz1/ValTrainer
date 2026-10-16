@@ -11,7 +11,9 @@ namespace ValTrainer.Modes;
 /// </summary>
 public abstract partial class TacticalMode
 {
-    protected static readonly bool DevAuto = CmdLine.Dev && CmdLine.Has("--autotac");
+    static readonly bool DevFlag = CmdLine.Dev && CmdLine.Has("--autotac");
+    /// <summary>Dev --autotac, or the drill preview.</summary>
+    protected bool DevAuto => DevFlag || G.Demo;
     /// <summary>Dev "--tacghost": the bots never see you (tests their full retake / defuse and the detonation).</summary>
     protected static readonly bool DevGhost = CmdLine.Dev && CmdLine.Has("--tacghost");
     protected bool DevDefuseHeld;

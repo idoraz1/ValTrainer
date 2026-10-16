@@ -8,6 +8,12 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Added
+- Drill previews: clicking a drill in the menu opens a preview instead of starting it right away. The drill plays live in it, run by the built-in simulated player (muted): it scopes in with the Operator, sprays the full length your difficulty asks for, counter-strafes, and turns flashes off-screen in Flash Dodge. Next to it: what the drill is, how long it runs, the weapon, which coach skills it trains, your best score, badge and recent runs at the chosen difficulty, and a difficulty picker. START (Space / Enter) plays it, BACK (Esc) goes back. Reaction Test, Sens Finder and Crosshair Finder run on your own reactions and picks, so they show a short note instead of a demo. Map drills (Site Clear, Deathmatch, Post-Plant, Retake, Site Anchor) and the Agents screen's drills still start right away.
+
+### Fixed
+- Icebox: the crates beside Yellow now sit against the container. A slit between them let defenders see and shoot through from across B.
+
 ## [1.13.0] - 2026-10-16
 
 ### Added

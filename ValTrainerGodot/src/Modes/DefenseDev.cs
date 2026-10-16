@@ -13,7 +13,9 @@ namespace ValTrainer.Modes;
 /// </summary>
 public sealed partial class AnchorMode
 {
-    static readonly bool DevAuto = CmdLine.Dev && CmdLine.Has("--autosetup");
+    static readonly bool DevFlag = CmdLine.Dev && CmdLine.Has("--autosetup");
+    /// <summary>Dev --autosetup, or the drill preview.</summary>
+    bool DevAuto => DevFlag || G.Demo;
     bool devSlowThrown;
 
     Vector3 Side => new(-toSite.Z, 0, toSite.X);

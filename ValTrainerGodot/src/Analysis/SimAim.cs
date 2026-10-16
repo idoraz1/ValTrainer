@@ -47,6 +47,8 @@ public sealed class SimAim
         public float Pull = 0.9f, PullDelay = 0.10f;
         public float IdlePitch = 0f;                      // where the crosshair rests between bot peeks (deg, 0 = head height)
         public bool NoMicro;                              // click right at the end of the primary
+        public float Burst = 1.3f;                        // spray drills: seconds per spray (the drill preview sets the tier's length)
+        public bool Hold;                                 // bot drills: hold the starting angle (no pre-aim at hidden enemies) and return to it (drill previews)
         public float Premature;                           // probability of clicking during the primary
         public float Bow, EndDrop;                        // curved flicks (fraction of A) / end below the head (deg)
         public float Pref;                                // preferred cm/360 (0 = none)
@@ -106,6 +108,8 @@ public sealed class SimAim
                     case "idlepitch": p.IdlePitch = f; break;
                     case "premature": p.Premature = f; break;
                     case "nomicro": p.NoMicro = f > 0; break;
+                    case "hold": p.Hold = f > 0; break;
+                    case "burst": p.Burst = f; break;
                     case "bow": p.Bow = f; break;
                     case "enddrop": p.EndDrop = f; break;
                     case "seed": p.Seed = (int)f; break;
@@ -194,6 +198,7 @@ public sealed class SimAim
     public (Vector2 Counts, bool FireHeld, bool FirePressed) Next(float dt, float now, PlayerView view, AimFocus? focus, float sens)
     {
         UpdatePref(sens);
+        home ??= view.ViewYaw;
         float k = PlayerView.DegPerCount * sens * (view.Zoom > 1f ? 1f / view.Zoom : 1f);
         float cy = view.ViewYaw, cp = view.ViewPitch;
         bool press = false;
@@ -254,8 +259,8 @@ public sealed class SimAim
                 if (!prefired && now >= reactUntil)
                 {
                     prefired = true;
-                    float gx = ex, gy = ey + p.IdlePitch;
-                    cur = new Move { T0 = now, Mt = 0.45f * slowMul, Dx = gx * Gauss(0.9f, 0.05f), Dy = gy };
+                    float gx = p.Hold ? Mathf.Wrap((home ?? cy) - cy, -180f, 180f) : ex, gy = p.Hold ? p.IdlePitch - cp : ey + p.IdlePitch;
+                    cur = new Move { T0 = now, Mt = (p.Hold ? 0.45f + MathF.Abs(gx) / 30f : 0.45f) * slowMul, Dx = p.Hold ? gx : gx * Gauss(0.9f, 0.05f), Dy = gy };
                 }
             }
             else if (now >= reactUntil)
@@ -297,7 +302,8 @@ public sealed class SimAim
         {
             // Between enemies: drift back to the resting height.
             float gy = p.IdlePitch - cp;
-            if (MathF.Abs(gy) > 0.4f) cur = new Move { T0 = now, Mt = 0.35f, Dx = 0, Dy = gy };
+            float gx = p.Hold ? Mathf.Wrap((home ?? view.ViewYaw) - view.ViewYaw, -180f, 180f) : 0;
+            if (MathF.Abs(gy) > 0.4f || MathF.Abs(gx) > 0.4f) cur = new Move { T0 = now, Mt = p.Hold ? 0.45f + MathF.Abs(gx) / 30f : 0.35f, Dx = gx, Dy = gy };
         }
 
         // ---- execute the current minimum-jerk submovement ----
@@ -357,7 +363,7 @@ public sealed class SimAim
         if (sprayMode)
         {
             if (!firing && locked && primaryDone && now >= restUntil && MathF.Sqrt(ex * ex + ey * ey) <= 1.5f * rDeg)
-            { firing = true; burstStart = now; burstUntil = now + Gauss(1.3f, 0.05f); }
+            { firing = true; burstStart = now; burstUntil = now + Gauss(p.Burst, 0.05f); }
             if (firing && now >= burstUntil) { firing = false; restUntil = now + Gauss(0.7f, 0.1f); }
             held = firing;
             press = firing && now - burstStart < 1e-4f;
@@ -379,6 +385,7 @@ public sealed class SimAim
     }
 
     float idleSince, visibleAt;
+    float? home;
     int sfLastId = int.MinValue;
     Vector3 sfLastPoint;
 

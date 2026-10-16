@@ -74,11 +74,131 @@ public partial class GameSession : Node3D, IGame
 
     public GameSession(Func<TrainingMode> factory) => this.factory = factory;
 
+    /// <summary>Drill preview (DrillPreview): the simulated player plays the drill in a sub-viewport. No input, no mouse
+    /// capture, no sound, no stats / telemetry / Rewind, and the run loops instead of showing results. Set before the
+    /// session enters the tree.</summary>
+    public bool Demo { get; init; }
+    /// <summary>The preview's simulated player: the coach's "good" player with the steady settings of the promo clips (less
+    /// tremor and jitter). In the peek drills it also holds its angle instead of pre-aiming at bots hidden behind cover;
+    /// elsewhere (deathmatch, map and agent drills) it has to turn to find them.</summary>
+    string DemoProfile => "good:tremor=0.4,jitter=2" + (DemoHoldDrills.Contains(Mode.Key) ? ",hold=1" : "")
+        // spray drills: hold each spray past the tier's minimum, so it counts and shows the hit banner
+        + (Mode is SprayControlMode spray && weaponDef is { Rps: > 0 } wd
+            ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $",burst={(spray.Required + 2) / wd.Rps:0.00}") : "");
+    static readonly HashSet<string> DemoHoldDrills = new() { "peek", "peek_mix", "peekduel", "operator", "jumppeek", "jigglepeek" };
+
+    /// <summary>Counter-Strafe preview: strafe A / D, and when the bot shows, tap the opposite key (the counter-strafe the
+    /// drill teaches) so the simulated player shoots standing still.</summary>
+    bool DemoStrafeKey(InputBinding k)
+    {
+        var v = Main.I.Valorant;
+        if (Mode.Focus == null)
+        {
+            demoSeenAt = -1;
+            demoRight = (int)(Now / 0.9f) % 2 == 0;
+            return k == (demoRight ? v.KeyRight : v.KeyLeft);
+        }
+        if (demoSeenAt < 0) demoSeenAt = Now;
+        return Now - demoSeenAt < 0.07f && k == (demoRight ? v.KeyLeft : v.KeyRight);
+    }
+    float demoSeenAt = -1;
+    bool demoRight;
+
+    /// <summary>Site Clear preview: walk the bot navigation path from the spawn through the choke towards the site (keys
+    /// steered relative to where the simulated player looks), and stand still to shoot while a defender is in sight.</summary>
+    bool DemoWalkKey(InputBinding k)
+    {
+        if (Mode.Map is not { } spot || Player.Dead || Mode.Focus != null) return false;
+        var feet = new Vector3(View.Eye.X, feetY, View.Eye.Z);
+        if (demoPath == null)
+        {
+            demoPathTask ??= Task.Run(() =>
+            {
+                var nav = BotNav.For($"{spot.Key}:{solid.Count}", solid, spot.StartFeet);
+                var site = spot.Enemies.Length > 0 ? spot.Enemies.Aggregate(Vector3.Zero, (a, e) => a + e.Feet) / spot.Enemies.Length : spot.Choke;
+                var path = nav.FindPath(spot.StartFeet, spot.Choke) ?? new List<Vector3> { spot.Choke };
+                path.AddRange(nav.FindPath(spot.Choke, site) ?? new List<Vector3> { site });
+                return path;
+            });
+            if (!demoPathTask.IsCompleted) return false;
+            demoPath = demoPathTask.Result;
+            demoIdx = 0;
+        }
+        while (demoIdx < demoPath.Count - 1 && Flat(demoPath[demoIdx] - feet) < 0.7f) demoIdx++;
+        var to = demoPath[demoIdx] - feet;
+        if (Flat(to) < 0.6f) return false; // arrived: hold the site
+        float rel = Mathf.DegToRad(Mathf.Wrap(Mathf.RadToDeg(Mathf.Atan2(to.X, -to.Z)) - View.Yaw, -180f, 180f));
+        float fwd = Mathf.Cos(rel), side = Mathf.Sin(rel);
+        var v = Main.I.Valorant;
+        return (k == v.KeyForward && fwd > 0.38f) || (k == v.KeyBack && fwd < -0.38f)
+            || (k == v.KeyRight && side > 0.38f) || (k == v.KeyLeft && side < -0.38f);
+    }
+    static float Flat(Vector3 d) => new Vector2(d.X, d.Z).Length();
+
+    /// <summary>Dev (map fixes): how wide the clear opening around a kill line is, probing parallel lines every 5 cm to
+    /// the sides and up / down. A real angle is open well beyond a head's width; a hairline gap between boxes is not.</summary>
+    string DevOpening(Vector3 a, Vector3 b)
+    {
+        var dir = (b - a).Normalized();
+        var side = dir.Cross(Vector3.Up).Normalized();
+        var up = side.Cross(dir).Normalized();
+        float Span(Vector3 axis)
+        {
+            float lo = 0, hi = 0;
+            for (float o = 0.05f; o <= 1.0f; o += 0.05f) { if (Collision.Blocked(a + axis * o, b + axis * o, solid)) break; hi = o; }
+            for (float o = 0.05f; o <= 1.0f; o += 0.05f) { if (Collision.Blocked(a - axis * o, b - axis * o, solid)) break; lo = o; }
+            return lo + hi;
+        }
+        float w = Span(side), h = Span(up);
+        string flag = w < 0.3f || h < 0.3f ? "  <<< NARROW GAP" : "";
+        return string.Create(System.Globalization.CultureInfo.InvariantCulture, $"| opening {w:0.00} m wide, {h:0.00} m tall{flag}");
+    }
+
+    /// <summary>Flash Dodge preview: on the flash cue, react, turn the pop well off-screen, wait for it to pop, turn back.
+    /// About one flash in five is left on purpose, so both outcomes show. True while it owns the view (no aiming).</summary>
+    bool DemoFlashTurn(FlashDodgeMode fd)
+    {
+        if (fd.FlashIncoming is { } pop)
+        {
+            if (demoFlashAt < 0)
+            {
+                demoFlashAt = Now;
+                demoDodge = Rng.NextDouble() < 0.8;
+                demoTurnFrom = View.Yaw;
+                var d = pop - View.Eye;
+                float popYaw = Mathf.RadToDeg(Mathf.Atan2(d.X, -d.Z));
+                float off = Mathf.Wrap(popYaw - View.Yaw, -180f, 180f);
+                demoTurnBy = (off >= 0 ? -1 : 1) * (115f + (float)Rng.NextDouble() * 25f); // away from the flash
+                demoBackAt = -1;
+            }
+        }
+        else if (demoFlashAt >= 0 && demoBackAt < 0) demoBackAt = Now + 0.15f; // popped: turn back shortly after
+        if (demoFlashAt < 0) return false;
+        if (!demoDodge)
+        {
+            if (demoBackAt >= 0 && Now > demoBackAt + 0.4f) demoFlashAt = -1; // this one was taken on purpose
+            return false;
+        }
+        if (demoBackAt >= 0 && Now >= demoBackAt + 0.28f) { demoFlashAt = -1; return false; } // back on the angle: the sim aims again
+        float t = Now - demoFlashAt - 0.24f; // reaction to the audio cue
+        float away = demoBackAt < 0 || Now < demoBackAt ? Mathf.Clamp(t / 0.16f, 0, 1) : 1 - Mathf.Clamp((Now - demoBackAt) / 0.28f, 0, 1);
+        float e = 1 - (1 - away) * (1 - away);
+        View.Yaw = demoTurnFrom + demoTurnBy * e;
+        UpdateCamera();
+        return true;
+    }
+    float demoFlashAt = -1, demoBackAt = -1, demoTurnFrom, demoTurnBy;
+    bool demoMagEmpty;
+    bool demoDodge;
+    List<Vector3>? demoPath;
+    Task<List<Vector3>>? demoPathTask;
+    int demoIdx;
+
     static GameSession? active;
 
     public override void _Ready()
     {
-        active = this;
+        if (!Demo) active = this; // a preview never owns the shared session state (3D toggle, time scale)
         // HUD layer (crosshair under the blind overlay, HUD on top)
         var layer = new CanvasLayer { Layer = 5 };
         AddChild(layer);
@@ -91,7 +211,7 @@ public partial class GameSession : Node3D, IGame
         hud = new Hud(this);
         layer.AddChild(hud);
 
-        if (Main.I.Dev && OnFinished == null) DevRoutineArgs();
+        if (Main.I.Dev && OnFinished == null && !Demo) DevRoutineArgs();
         Restart();
     }
 
@@ -120,7 +240,7 @@ public partial class GameSession : Node3D, IGame
         cam?.QueueFree();
 
         Mode = factory();
-        Main.I.LastModeKey = Mode.Key; // bug reports say which drill ran last
+        if (!Demo) Main.I.LastModeKey = Mode.Key; // bug reports say which drill ran last
         Mode.Attach(this); // ExtraSolids / Map below already follow the session tier
         if (Adaptive is { Trials: > 0 } stair) Adaptive = stair.Fresh(); // a restarted run adapts from the start level again
         TrialSens = SessionSens; // null unless a routine (warm-up sens shifter) set one
@@ -171,13 +291,15 @@ public partial class GameSession : Node3D, IGame
             Weapon = Mode.Weapon.ToString(), Map = Mode.Map?.Key ?? "range", When = DateTime.Now,
             ZoomSensMult = ZoomSensMultFor(Weapons.Get(Mode.Weapon)),
         };
-        replay = StartReplay(extras); // before Begin: it spawns the first bots / targets
+        replay = Demo ? null : StartReplay(extras); // before Begin: it spawns the first bots / targets
         Mode.Begin(this);
-        if (Main.I.Dev) DevAdsArgs(); // --force-ads (AdsSession.cs)
+        if (Main.I.Dev && !Demo) DevAdsArgs(); // --force-ads (AdsSession.cs)
+        if (Demo && Mode.Key == "counterstrafe") Mover.KeyOverride = DemoStrafeKey;
+        if (Demo && Mode.Key == "siteclear") { demoPath = null; demoPathTask = null; Mover.KeyOverride = DemoWalkKey; }
         Respawn(Mode.StartFeet, Mode.StartYaw);
         Blind.Reset();
-        Countdown = 3f;
-        State = St.Countdown;
+        Countdown = Demo ? 0f : 3f;
+        State = Demo ? St.Running : St.Countdown; // the preview gets straight to it (no countdown splash)
         LockMouse();
         UpdateCamera();
     }
@@ -187,7 +309,7 @@ public partial class GameSession : Node3D, IGame
     public void LockMouse()
     {
         // Captured mode reads raw device counts on Windows; there is no warp spike to skip.
-        if (!Main.I.Dev) Input.MouseMode = Input.MouseModeEnum.Captured;
+        if (!Main.I.Dev && !Demo) Input.MouseMode = Input.MouseModeEnum.Captured;
     }
 
     void ResetTransientInput() { fireHeld = firePressedEdge = fireTap = adsHeld = false; Keybinds.EndFrame(); }
@@ -200,6 +322,7 @@ public partial class GameSession : Node3D, IGame
 
     public override void _Input(InputEvent e)
     {
+        if (Demo) return; // the preview popup owns the keyboard and mouse
         Keybinds.Observe(e); // wheel notches count as "held" for one frame (wheel-bound jump / crouch / abilities)
         if (e is InputEventMouseMotion m)
         {
@@ -282,7 +405,7 @@ public partial class GameSession : Node3D, IGame
 
     public override void _Notification(int what)
     {
-        if (what == NotificationApplicationFocusOut && State is St.Countdown or St.Running && !Main.I.Dev) Pause();
+        if (what == NotificationApplicationFocusOut && State is St.Countdown or St.Running && !Main.I.Dev && !Demo) Pause();
     }
 
     public void Resume()
@@ -305,7 +428,7 @@ public partial class GameSession : Node3D, IGame
             case St.Countdown:
                 int before = (int)Mathf.Ceil(Countdown);
                 Countdown -= dt;
-                if ((int)Mathf.Ceil(Countdown) != before) Sfx.I.Play(Countdown <= 0 ? "go" : "tick");
+                if ((int)Mathf.Ceil(Countdown) != before) Play2D(Countdown <= 0 ? "go" : "tick");
                 if (Countdown <= 0) State = St.Running;
                 firePressedEdge = fireTap = false;
                 frameDx = frameDy = 0; // looking around during the countdown isn't part of the first recorded frame
@@ -314,7 +437,7 @@ public partial class GameSession : Node3D, IGame
                 RunFrame(dt);
                 break;
         }
-        if (Main.I.Dev) DevKeybindTick(); // --keybind-test (KeybindTest.cs)
+        if (Main.I.Dev && !Demo) DevKeybindTick(); // --keybind-test (KeybindTest.cs)
 
         UpdateCamera();
         UpdateAdsVisuals(); // crosshair mode, scope, sight outline, viewmodel aim pose (AdsSession.cs)
@@ -338,7 +461,8 @@ public partial class GameSession : Node3D, IGame
     static readonly string? SimProfile = ArgAfter("--simaim");
     /// <summary>Dev-only "--duration N" shortens timed runs for automated tests.</summary>
     float RunDuration => DurationOverride ?? (Main.I.Dev && float.TryParse(ArgAfter("--duration"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var d) ? d : Mode.Duration);
-    ValTrainer.Analysis.SimAim? Sim => Main.I.Dev && SimProfile != null ? sim ??= new ValTrainer.Analysis.SimAim(SimProfile, Mode.Key, Mode.SimKind) : null;
+    ValTrainer.Analysis.SimAim? Sim => Demo ? sim ??= new ValTrainer.Analysis.SimAim(DemoProfile, Mode.Key, Mode.SimKind)
+        : Main.I.Dev && SimProfile != null ? sim ??= new ValTrainer.Analysis.SimAim(SimProfile, Mode.Key, Mode.SimKind) : null;
     ValTrainer.Analysis.SimAim? sim;
 
     /// <summary>Dev-only "--pause-at N": opens the pause menu N seconds into the run (layout screenshots).</summary>
@@ -348,17 +472,33 @@ public partial class GameSession : Node3D, IGame
     void RunFrame(float dt)
     {
         Now += dt;
-        if (Main.I.Dev && DevPauseAt is { } pauseAt && Now >= pauseAt && !devPaused) { devPaused = true; Pause(); return; }
-        if (Main.I.Dev && Sim != null)
+        if (Main.I.Dev && !Demo && DevPauseAt is { } pauseAt && Now >= pauseAt && !devPaused) { devPaused = true; Pause(); return; }
+        if (Demo && Mode is FlashDodgeMode flashDrill && DemoFlashTurn(flashDrill)) { fireHeld = false; }
+        else if (Sim is { } simAim)
         {
-            // Dev-only simulated player (validation of the aim coach / sens finder without a human).
-            var (counts, held, pressed) = Sim.Next(dt, Now, View, Mode.Focus, CurrentSens);
+            // Simulated player: the drill preview, or dev runs (validation of the aim coach / sens finder without a human).
+            var (counts, held, pressed) = simAim.Next(dt, Now, View, Mode.Focus, CurrentSens);
             View.Look(counts, CurrentSens, ZoomSensMultFor(weaponDef));
             frameDx += counts.X; frameDy += counts.Y;
             if (pressed && !fireHeld) firePressedEdge = true;
             fireHeld = held;
+            if (Demo && weaponDef is { Sniper: true } && Gun != null)
+            {
+                // Operator preview: scope in whenever the gun is ready, and only fire scoped (like a player would)
+                adsHeld = !Gun.Reloading && Gun.EquipLeft <= 0;
+                if (!Gun.Scoped) { fireHeld = false; firePressedEdge = false; }
+            }
+            // Spray preview: every spray starts on a full magazine (the drill counts sprays of its tier's length only), and a
+            // spray that empties the magazine ends there (no auto-reload cutting into the next spray)
+            if (Demo && Mode is SprayControlMode && Gun != null)
+            {
+                if (Gun.Ammo <= 0) demoMagEmpty = true;
+                if (!held) demoMagEmpty = false; // the simulated player let go: the next spray may start
+                if (demoMagEmpty) { fireHeld = false; firePressedEdge = false; }
+                if (!fireHeld && !Gun.Reloading && Gun.Ammo < weaponDef!.Mag) Gun.Ammo = weaponDef.Mag;
+            }
         }
-        else if (Main.I.Dev && DevAutoFire)
+        else if (Main.I.Dev && DevAutoFire && !Demo)
         {
             bool hold = Now % 3.8f < 2.6f;
             if (hold && !fireHeld) firePressedEdge = true;
@@ -382,10 +522,10 @@ public partial class GameSession : Node3D, IGame
             if (shots.Count > 0)
             {
                 string snd = weaponDef!.Family switch { WeaponKind.Operator => "operator", WeaponKind.Phantom => "phantom", WeaponKind.Sheriff => "sheriff", _ => "vandal" };
-                Sfx.I.Play(snd, 0.55f, 1f + ((float)Rng.NextDouble() - 0.5f) * 0.05f);
-                if (weaponDef.Kind == WeaponKind.Operator) GetTree().CreateTimer(0.45).Timeout += () => Sfx.I.Play("bolt", 0.7f);
+                Play2D(snd, 0.55f, 1f + ((float)Rng.NextDouble() - 0.5f) * 0.05f);
+                if (weaponDef.Kind == WeaponKind.Operator) GetTree().CreateTimer(0.45).Timeout += () => Play2D("bolt", 0.7f);
             }
-            if (Gun.Reloading && !wasReloading) Sfx.I.Play(weaponDef!.Kind == WeaponKind.Sheriff ? "reload_pistol" : "reload_rifle", 0.6f, weaponDef.Kind == WeaponKind.Operator ? 0.75f : 1f);
+            if (Gun.Reloading && !wasReloading) Play2D(weaponDef!.Kind == WeaponKind.Sheriff ? "reload_pistol" : "reload_rifle", 0.6f, weaponDef.Kind == WeaponKind.Operator ? 0.75f : 1f);
             wasReloading = Gun.Reloading;
             if (wasScoped && !Gun.Scoped && weaponDef!.Sniper) adsHeld = false;
         }
@@ -508,6 +648,7 @@ public partial class GameSession : Node3D, IGame
 
     void Finish()
     {
+        if (Demo) { Restart(); return; } // the preview loops: no results, no stats, no telemetry
         State = St.Results;
         ResetTransientInput();
         SetWorldRunning(false);
@@ -637,21 +778,31 @@ public partial class GameSession : Node3D, IGame
 
     public void Despawn(Node node) { if (IsInstanceValid(node)) node.QueueFree(); }
 
-    public void Sound(string name, float vol = 1f, float pitch = 1f) => Sfx.I.Play(name, vol, pitch);
+    public void Sound(string name, float vol = 1f, float pitch = 1f) => Play2D(name, vol, pitch);
 
-    public void SoundAt(string name, Vector3 pos, float maxRange = 40f, float floor = 0.45f, float vol = 1f) =>
-        Sfx.I.PlayAt(name, pos, View.Eye, maxRange, floor, vol);
+    public void SoundAt(string name, Vector3 pos, float maxRange = 40f, float floor = 0.45f, float vol = 1f)
+    {
+        if (!Demo) Sfx.I.PlayAt(name, pos, View.Eye, maxRange, floor, vol);
+    }
+
+    /// <summary>Every game sound goes through here: a preview is silent (the menu's own clicks still play).</summary>
+    void Play2D(string name, float vol = 1f, float pitch = 1f)
+    {
+        if (!Demo) Sfx.I.Play(name, vol, pitch);
+    }
 
     public void DamagePlayer(float dmg, Vector3 from)
     {
         if (Player.Dead || Now < Player.ProtectedUntil) return;
         if (Player.Absorb?.Invoke(dmg, from) == true) return; // agent drills: a shield / dodge took this hit
         Player.Damage(dmg, from, Now);
-        Sfx.I.Play("damage", 0.8f);
+        Play2D("damage", 0.8f);
         if (Player.Dead)
         {
             Event("died");
-            Sfx.I.Play("death");
+            if (Main.I.Dev) Log.Info(string.Create(System.Globalization.CultureInfo.InvariantCulture,
+                $"[died] {Mode.Key} {Mode.Map?.Key} t={Now:0.0} eye=({View.Eye.X:0.00},{View.Eye.Y:0.00},{View.Eye.Z:0.00}) yaw={View.Yaw:0} shot from ({from.X:0.00},{from.Y:0.00},{from.Z:0.00}) {DevOpening(from, View.Eye)}"));
+            Play2D("death");
             Mode.OnPlayerDied();
         }
     }
@@ -671,14 +822,14 @@ public partial class GameSession : Node3D, IGame
 
     public void Respawn(Vector3 feet, float yaw)
     {
-        if (Main.I.Dev && DevCamPos is { } cp) { feet = new Vector3(cp[0], cp[1], cp[2]); yaw = cp[3]; }
+        if (Main.I.Dev && !Demo && DevCamPos is { } cp) { feet = new Vector3(cp[0], cp[1], cp[2]); yaw = cp[3]; }
         Mover.ResetMotion();
         Mover.ResetBody();         // standing, no crouch-jump tuck
         Mover.Place(ref feet, solid); // onto the floor under the spawn (or falling from rest if there's none)
         feetY = feet.Y;
         View.Eye = feet + new Vector3(0, Mover.EyeHeight, 0);
         View.Yaw = yaw;
-        View.Pitch = Main.I.Dev && DevCamPos is { Length: >= 5 } cpp ? cpp[4] : 0;
+        View.Pitch = Main.I.Dev && !Demo && DevCamPos is { Length: >= 5 } cpp ? cpp[4] : 0;
         View.RecoilPitch = View.RecoilYaw = 0;
         Gun?.ResetRecoil();
         Player.Reset();

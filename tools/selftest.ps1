@@ -146,6 +146,14 @@ $why = if ($r.Code -ne 0) { "exit code $($r.Code)" } elseif ($ex.Count -gt 0) { 
        elseif ($null -eq $body -or $body.schema -ne 1 -or -not $body.report.title -or $null -eq $body.app.ram_gb) { "the printed JSON doesn't match the contract" } else { "" }
 Report "bug report dry run (nothing sent)" ($why -eq "") $why $r
 
+# ---- 3b. Drill previews: every drill's live demo (menu + agent drills) plays a few seconds, nothing is saved ----
+$r = Invoke-Godot "preview-check" (@("--headless", "--fixed-fps", "60", "--path", $Project, "--") + $sandbox + @("--preview-check", "--preview-check-secs", "6"))
+$res = ($r.Text -split "`r?`n" | Where-Object { $_ -match '\[preview-check\] RESULT:' } | Select-Object -Last 1)
+$ex = Get-Exceptions $r.Text
+$why = if ($r.Code -ne 0) { "exit code $($r.Code) ($res)" } elseif ($ex.Count -gt 0) { "exception: $($ex[0].Trim())" } elseif ($res -notmatch 'RESULT: PASS') { "no PASS result" } else { "" }
+$detail = if ($res -match '\((.+)\)') { " ($($Matches[1]))" } else { "" }
+Report "drill previews$detail" ($why -eq "") $why $r
+
 # ---- 4. Smoke test: each drill runs 5 s with the simulated player, then its telemetry must load in the coach ----
 if (-not $SkipSmoke) {
   foreach ($m in $Modes) {

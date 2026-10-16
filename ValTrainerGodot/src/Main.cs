@@ -111,6 +111,11 @@ public partial class Main : Node
             GetTree().Quit(failures == 0 ? 0 : 1);
             return;
         }
+        if (Dev && args.Contains("--preview-check"))
+        {
+            // Dev self-test (works with --headless --fixed-fps 60): every drill's preview demo plays and saves nothing.
+            Callable.From(() => AddChild(new ValTrainer.UI.PreviewCheck())).CallDeferred();
+        }
         if (Dev && args.Contains("--throw-test")) throwTest = 61; // dev: prove callback/task exceptions reach the log
         WhatsNew.Prepare(Settings);  // "What's new" panel after an update (dev: --whats-new [fromVersion])
         UpdatesPrompt.Prepare(Settings); // opt-in "Check GitHub for new versions?" (dev: --updates-prompt, --updates-consent yes|no)

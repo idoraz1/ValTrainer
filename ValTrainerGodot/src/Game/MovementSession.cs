@@ -45,7 +45,7 @@ public partial class GameSession
         Mover.Landed += OnMoverLanded;
         Mover.JumpEnabled = !NoJumpDrills.Contains(Mode.Key);
         Mover.KeyOverride = null;
-        if (Main.I.Dev) DevMovementSetup();
+        if (Main.I.Dev && !Demo) DevMovementSetup(); // never in a drill preview (--movecheck quits the app)
     }
 
     void OnMoverJumped()
@@ -62,7 +62,7 @@ public partial class GameSession
         // Landing audio is a binary cue: high drops and regular jumps are audible, but low walk-offs and
         // the released crouch-jump technique are silent.
         if (Mover.AudibleLanding)
-            Sfx.I.Play("footstep", 0.8f, 0.92f);
+            Play2D("footstep", 0.8f, 0.92f);
         if (MovementScript.Log)
             GD.Print(string.Create(CultureInfo.InvariantCulture,
                 $"[move] land t={Now:0.000} {(a.FromJump ? "jump" : "fall/launch")}: air {a.AirTime:0.000} s, feet rise {a.FeetRise:0.000} m, " +
@@ -78,11 +78,11 @@ public partial class GameSession
     {
         if (Player.Dead || Now < Player.ProtectedUntil) return;
         Player.Hp -= dmg;
-        Sfx.I.Play("damage", 0.8f);
+        Play2D("damage", 0.8f);
         Event("fall_damage", dmg);
         if (!Player.Dead) return;
         Event("died");
-        Sfx.I.Play("death");
+        Play2D("death");
         Mode.OnPlayerDied();
     }
 

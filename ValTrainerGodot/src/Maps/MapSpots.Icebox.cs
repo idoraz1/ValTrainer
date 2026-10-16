@@ -223,8 +223,8 @@ public static partial class MapSpots
             B(26.11f, 3.55f, 2.17f, 31.6f, 3.8f, 4.95f, Surf.Elevated), // bridge (Hall -> Top Site)
             B(0.95f, 0, -11.94f, 10.92f, 0.45f, -7.93f, Surf.Elevated), // Yellow container plinth
             B(1.15f, 0.45f, -11.73f, 10.72f, 2.9f, -8.14f, Surf.Trim), // Yellow container
-            B(8.95f, 0, -7.87f, 10.92f, 1.15f, -5.7f, Surf.Cover), // crates beside Yellow
-            B(9.09f, 1.15f, -7.73f, 10.78f, 2.3f, -5.83f, Surf.Cover), // crates beside Yellow (stacked)
+            B(8.95f, 0, -8.2f, 10.92f, 1.15f, -5.7f, Surf.Cover), // crates beside Yellow (against the container: no see-through slit)
+            B(9.09f, 1.15f, -8.2f, 10.78f, 2.3f, -5.83f, Surf.Cover), // crates beside Yellow (stacked, against the container)
             B(-4.75f, 0, -18.17f, -3.12f, 1.2f, -15.94f, Surf.Cover), // crates in the Yellow corner
             B(-3.12f, 0, -18.17f, -1.76f, 1, -16.95f, Surf.Cover), // crate in the Yellow corner
             // (The container that hung from the crane over Green is gone: Riot moved it out of B Green in Episode 8.)

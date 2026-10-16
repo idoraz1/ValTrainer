@@ -336,6 +336,9 @@ public partial class MenuScreen : ScreenBase
         // Dev-only: "--screen bugreport" opens the Report a bug panel over the menu (+ --bugreport-demo, --bugreport-answer).
         if (i >= 0 && i + 1 < a.Length && a[i + 1].Equals("bugreport", StringComparison.OrdinalIgnoreCase))
             GetTree().CreateTimer(0.5).Timeout += () => { if (IsInstanceValid(this) && IsInsideTree()) ShowBugReport(); };
+        // Dev-only: "--preview <drill key>" opens that drill's preview popup (screenshots of the live demo).
+        if (CmdLine.DevAfter("--preview") is { } pk && ModeRegistry.Find(pk) is { } pmake)
+            GetTree().CreateTimer(0.5).Timeout += () => { if (IsInstanceValid(this) && IsInsideTree()) DrillPreview.Open(this, K, pmake, () => Main.I.StartMode(pmake)); };
         // Dev-only: "--screen suggest" opens the Suggest a feature panel (same --bugreport-* flags).
         if (i >= 0 && i + 1 < a.Length && a[i + 1].Equals("suggest", StringComparison.OrdinalIgnoreCase))
             GetTree().CreateTimer(0.5).Timeout += () => { if (IsInstanceValid(this) && IsInsideTree()) ShowSuggest(); };
@@ -524,7 +527,7 @@ public partial class MenuScreen : ScreenBase
                         K = k, TwoLines = two, IsNew = IsNew(info.Key),
                         CustomMinimumSize = new Vector2(0, cardH * k), SizeFlagsHorizontal = SizeFlags.ExpandFill,
                     };
-                    card.Pressed += () => Main.I.StartMode(make);
+                    card.Pressed += () => DrillPreview.Open(this, K, make, () => Main.I.StartMode(make)); // preview first, START plays
                     cards.Add(card);
                     box.AddChild(card);
                 }

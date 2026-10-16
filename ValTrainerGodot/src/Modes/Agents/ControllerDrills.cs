@@ -63,7 +63,7 @@ public sealed class SmokeExecuteMode : MapMode
     internal int Quality => Main.I.Settings.Quality;
 
     static readonly bool AutoFlag = CmdLine.Has("--autosmoke");
-    bool Auto => Main.I.Dev && AutoFlag;
+    bool Auto => (Main.I.Dev && AutoFlag) || G.Demo; // dev --autosmoke, or the drill preview
     static readonly float? DevDuration =
         float.TryParse(CmdLine.After("--duration"), NumberStyles.Float, CultureInfo.InvariantCulture, out var dd) ? dd : null;
 
@@ -675,7 +675,7 @@ public sealed class SmokeExecuteMode : MapMode
                 default: a.Auto(spots); break;
             }
         }
-        GD.Print($"[smokeexec] auto-placed {roundSmokes.Count} smoke(s) for {Kit.Agent} at {string.Join(", ", spots.Select(s => s.Name))}");
+        if (Main.I.Dev) GD.Print($"[smokeexec] auto-placed {roundSmokes.Count} smoke(s) for {Kit.Agent} at {string.Join(", ", spots.Select(s => s.Name))}");
     }
 
     void AutoWalk(float dt)

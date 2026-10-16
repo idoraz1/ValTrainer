@@ -17,9 +17,14 @@ namespace ValTrainer.Modes;
 public sealed class DuelistDev
 {
     public static bool Requested => CmdLine.Dev && CmdLine.Has("--autoability");
+    /// <summary>Trace lines only in dev runs (a drill preview runs this too, and must not fill the player's log).</summary>
+    static void Trace(string line) { if (Main.I.Dev) GD.Print(line); }
 
     static DuelistDev? current;
-    static bool installed;
+    /// <summary>The scripted keys (one delegate, reinstalled whenever the slot is free: each run's Restart clears it).</summary>
+    static readonly Func<InputBinding, bool> scripted = k => current != null && GodotObject.IsInstanceValid(current.G as GodotObject)
+        ? current.keys.Contains(k)
+        : k.RealHeld;
 
     readonly IGame G;
     readonly MobilityEntryMode M;
@@ -41,17 +46,12 @@ public sealed class DuelistDev
     {
         G = g;
         M = m;
-        if (!installed && Mover.KeyOverride == null)
-        {
-            // Only while that run's session exists: a later run in the same dev process gets the real keyboard back.
-            Mover.KeyOverride = k => current != null && GodotObject.IsInstanceValid(current.G as GodotObject)
-                ? current.keys.Contains(k)
-                : k.RealHeld;
-            installed = true;
-        }
+        // Only while that run's session exists: a later run gets the real keyboard back. A --movescript installed by the
+        // session keeps the keys (abilities only then).
+        if (Mover.KeyOverride == null || Mover.KeyOverride == scripted) Mover.KeyOverride = scripted;
         current = this;
-        walks = installed;
-        if (!walks) GD.Print("[duelist] --autoability: movement keys are scripted elsewhere (--movescript); abilities only");
+        walks = Mover.KeyOverride == scripted;
+        if (!walks) Trace("[duelist] --autoability: movement keys are scripted elsewhere (--movescript); abilities only");
     }
 
     BotNav? Nav() => nav ??= BotNav.For($"{M.Spot.Key}:{G.Solid.Count}", G.Solid, M.Spot.StartFeet);
@@ -115,7 +115,7 @@ public sealed class DuelistDev
         Step = 0;
         StepT = 0;
         traceAt = 0f;
-        GD.Print($"[duelist] round {M.RoundIndex} ({M.Spot.Map} {M.Spot.Name}, {M.LiveDefenders.Count()} defenders)");
+        Trace($"[duelist] round {M.RoundIndex} ({M.Spot.Map} {M.Spot.Name}, {M.LiveDefenders.Count()} defenders)");
         var path0 = Nav()?.FindPath(M.Spot.StartFeet, M.Spot.Choke) ?? new List<Vector3> { M.Spot.Choke };
         // Walk the path in 0.5 m steps and stop at the last spot no defender can see (head, chest, shoulders).
         var pts = new List<Vector3> { M.Spot.StartFeet };
@@ -141,7 +141,7 @@ public sealed class DuelistDev
             last = i;
         }
         path = pts.Take(Math.Max(1, last - 1) + 1).ToList();
-        GD.Print($"[duelist] auto: nav path to the choke {path0.Count} points, hidden spot {path[^1]} ({path.Count} steps)");
+        Trace($"[duelist] auto: nav path to the choke {path0.Count} points, hidden spot {path[^1]} ({path.Count} steps)");
         idx = 0;
         stuckCheckAt = -1f;
         M.Kit.DevRoundStart(this);
@@ -155,7 +155,7 @@ public sealed class DuelistDev
         if (CmdLine.Has("--duelisttrace") && M.RoundTimeNow >= traceAt)
         {
             traceAt = M.RoundTimeNow + 2f;
-            GD.Print($"[duelist] trace t={M.RoundTimeNow:0.0} st={st} feet={Feet} keys={string.Join('+', keys)} visible={M.AnyDefenderVisible} " +
+            Trace($"[duelist] trace t={M.RoundTimeNow:0.0} st={st} feet={Feet} keys={string.Join('+', keys)} visible={M.AnyDefenderVisible} " +
                      $"seen={M.AnyDefenderSeesPlayer} shots={M.Shots} hits={M.Hits} hp={G.Player.Hp:0} wp={idx}/{path.Count}");
         }
         switch (st)
@@ -187,7 +187,7 @@ public sealed class DuelistDev
         var target = M.LiveDefenders.OrderBy(b => b.Feet.DistanceTo(feet)).FirstOrDefault();
         if (target == null) return;
         var p = Nav()?.FindPath(feet, target.Feet);
-        if (p == null) GD.Print($"[duelist] auto: no path from {feet} to {target.Feet}");
+        if (p == null) Trace($"[duelist] auto: no path from {feet} to {target.Feet}");
         path = p ?? new List<Vector3> { target.Feet };
         idx = 0;
         pushReplanAt = M.RoundTimeNow + 3f;
@@ -210,7 +210,7 @@ public sealed class DuelistDev
         {
             if (feet.DistanceTo(stuckFrom) < 0.3f && !M.Kit.Dashing)
             {
-                GD.Print($"[duelist] auto-walk stuck at {feet}; skipping to the next waypoint");
+                Trace($"[duelist] auto-walk stuck at {feet}; skipping to the next waypoint");
                 G.TeleportPlayer(path[idx]);
                 idx++;
             }

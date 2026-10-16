@@ -38,6 +38,7 @@ public sealed partial class CrosshairFinderMode : TrainingMode
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
     public override string Key => "xhairfinder";
+    public override bool PreviewDemo => false; // your own picks between crosshairs: only a person can play it
     public override string Name => "Crosshair Finder";
     public override string Description => "Try dot, cross, plus, circle and box crosshairs in real drills (hip fire, ADS or the sniper scope); get the one you see and shoot best with as a VALORANT code.";
     public override string Category => "Coach";

@@ -351,7 +351,7 @@ public abstract class OpAngleMode : MovementMode
     protected override void Setup()
     {
         NewRound();
-        if (Main.I.Dev && MovementScript.Auto) Mover.KeyOverride = k => autoKeys.Contains(k);
+        if ((Main.I.Dev && MovementScript.Auto) || G.Demo) Mover.KeyOverride = k => autoKeys.Contains(k); // dev, or the drill preview
     }
 
     protected void NewRound()
@@ -541,7 +541,7 @@ public abstract class OpAngleMode : MovementMode
 
     void AutoPilot(float dt)
     {
-        if (!(Main.I.Dev && MovementScript.Auto)) return;
+        if (!((Main.I.Dev && MovementScript.Auto) || G.Demo)) return;
         AutoT += dt;
         Auto(dt, autoKeys);
     }

@@ -21,6 +21,7 @@ public sealed partial class SensFinderMode : TrainingMode
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
     public override string Key => "sensfinder";
+    public override bool PreviewDemo => false; // blind A/B choices: only a person can play it
     public override string Name => "Sens Finder";
     public override string Description => "Blind A/B test of sensitivities with flicks + tracking. Finds the sens you actually perform best with.";
     public override string Category => "Coach";

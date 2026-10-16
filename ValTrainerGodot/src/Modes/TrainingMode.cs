@@ -30,6 +30,10 @@ public abstract class TrainingMode
     public virtual bool Movement => false;
     /// <summary>2D-only drill (reaction test): no world, no weapon.</summary>
     public virtual bool Is2D => false;
+    /// <summary>The drill preview can show the simulated player playing it (false for drills that need a person).</summary>
+    public virtual bool PreviewDemo => !Is2D;
+    /// <summary>Clicking the card opens the drill preview first. Map drills (whole rounds on a VALORANT map) start right away.</summary>
+    public virtual bool HasPreview => Category != "Map";
     public virtual bool UsesHeadshots => false;
     /// <summary>null = the shooting range.</summary>
     public virtual MapSpot? Map => null;

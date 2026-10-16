@@ -42,7 +42,8 @@ public sealed class SprayControlMode : TrainingMode
     public override bool UsesHeadshots => true;
 
     float Dist => RecoilTiers.Distance(Tier);
-    int Required => kind == WeaponKind.Phantom ? Mathf.Min(30, (int)Mathf.Round(RecoilTiers.SprayLength(Tier) * 1.2f)) : RecoilTiers.SprayLength(Tier);
+    /// <summary>Bullets a spray needs to count (shorter sprays get a "short spray" hint instead of the hit banner).</summary>
+    public int Required => kind == WeaponKind.Phantom ? Mathf.Min(30, (int)Mathf.Round(RecoilTiers.SprayLength(Tier) * 1.2f)) : RecoilTiers.SprayLength(Tier);
 
     /// <summary>A backboard behind the dummy so misses leave visible bullet holes.</summary>
     public override IEnumerable<Box> ExtraSolids => new[] { new Box(new Vector3(-3f, 0f, -Dist - 2.2f), new Vector3(3f, 4f, -Dist - 2f)) };

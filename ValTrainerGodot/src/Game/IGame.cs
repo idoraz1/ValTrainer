@@ -35,6 +35,9 @@ public sealed class PlayerState
 /// <summary>Everything a training mode can ask the game for. Implemented by <see cref="GameSession"/>.</summary>
 public interface IGame
 {
+    /// <summary>A drill preview: the simulated player plays it muted inside the preview popup (no input, nothing saved).
+    /// Drills with scripted helpers (agent abilities, defense setup, jump / jiggle peeks) let them play too.</summary>
+    bool Demo => false;
     PlayerView View { get; }
     Mover Mover { get; }
     PlayerState Player { get; }

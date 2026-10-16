@@ -254,6 +254,9 @@ public sealed class FlashDodgeMode : MapMode
         return u * u * from + 2 * u * t * ctrl + t * t * pop;
     }
 
+    /// <summary>Where the flash in the air will pop (null when none is in flight): the drill preview turns it off-screen.</summary>
+    public Vector3? FlashIncoming => st == St.Thrown ? pop : null;
+
     bool AtPop => agent.Path is FlashPath.ThroughWall or FlashPath.Placed || (agent.Path == FlashPath.Bounce && stateT > 0.3f);
 
     void Pop()
