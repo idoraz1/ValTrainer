@@ -4,7 +4,9 @@
     "type": 1,
     "description": "Close this bug report or suggestion: reply, set its status tag, close the post",
     "default_member_permissions": "17179869184",
-    "contexts": [0],
+    "contexts": [
+      0
+    ],
     "options": [
       {
         "type": 3,
@@ -12,17 +14,40 @@
         "description": "The new status",
         "required": true,
         "choices": [
-          { "name": "Fixed (bug report)", "value": "fixed" },
-          { "name": "Won't fix (bug report)", "value": "wontfix" },
-          { "name": "Can't reproduce (bug report)", "value": "cantrepro" },
-          { "name": "Added (suggestion)", "value": "added" },
-          { "name": "Not planned (suggestion)", "value": "notplanned" }
+          {
+            "name": "Fixed (bug report)",
+            "value": "fixed"
+          },
+          {
+            "name": "Won't fix (bug report)",
+            "value": "wontfix"
+          },
+          {
+            "name": "Can't reproduce (bug report)",
+            "value": "cantrepro"
+          },
+          {
+            "name": "Added (suggestion)",
+            "value": "added"
+          },
+          {
+            "name": "Not planned (suggestion)",
+            "value": "notplanned"
+          },
+          {
+            "name": "Duplicate (either)",
+            "value": "duplicate"
+          },
+          {
+            "name": "Custom: write the reason below",
+            "value": "custom"
+          }
         ]
       },
       {
         "type": 3,
-        "name": "note",
-        "description": "Optional line for the reply, e.g. the version or the reason",
+        "name": "reason",
+        "description": "Shown in the reply: the version, why, a link... Required for Custom",
         "required": false,
         "max_length": 500
       }
@@ -33,11 +58,13 @@
     "type": 1,
     "description": "Reopen this bug report or suggestion and set it back to Open",
     "default_member_permissions": "17179869184",
-    "contexts": [0],
+    "contexts": [
+      0
+    ],
     "options": [
       {
         "type": 3,
-        "name": "note",
+        "name": "reason",
         "description": "Optional line for the reply",
         "required": false,
         "max_length": 500
