@@ -8,6 +8,8 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-10-16
+
 ### Added
 - Drill previews: clicking a drill in the menu opens a preview instead of starting it right away. The drill plays live in it, run by the built-in simulated player (muted): it scopes in with the Operator, sprays the full length your difficulty asks for, counter-strafes, and turns flashes off-screen in Flash Dodge. Next to it: what the drill is, how long it runs, the weapon, which coach skills it trains, your best score, badge and recent runs at the chosen difficulty, and a difficulty picker. START (Space / Enter) plays it, BACK (Esc) goes back. Reaction Test, Sens Finder and Crosshair Finder run on your own reactions and picks, so they show a short note instead of a demo. Map drills (Site Clear, Deathmatch, Post-Plant, Retake, Site Anchor) and the Agents screen's drills still start right away.
 
@@ -284,7 +286,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.13.0...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.14.0...HEAD
+[1.14.0]: https://github.com/idoraz1/ValTrainer/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/idoraz1/ValTrainer/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/idoraz1/ValTrainer/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/idoraz1/ValTrainer/compare/v1.10.0...v1.11.0
