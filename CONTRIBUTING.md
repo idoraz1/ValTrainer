@@ -221,6 +221,8 @@ CHANGELOG.md             player-facing changes per version
 - **Fixing a Discord bug report:** add `Fixes-Discord: <thread id>` on its own line in the commit message (the id is the
   last number of the post's link). When the fix is released, the post gets a "Fixed in x.y.z" reply, the Fixed tag and
   is closed automatically, like `Fixes #12` on GitHub (tools/bug-relay/README.md, "Marking reports fixed").
+- **Adding a Discord suggestion:** the same with `Adds-Discord: <thread id>` for a post in #suggestions. The release
+  replies "Added in x.y.z", tags it Done and closes it.
 
 ## Versions (SemVer)
 

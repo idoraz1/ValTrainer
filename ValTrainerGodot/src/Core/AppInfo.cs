@@ -64,6 +64,18 @@ public static class AppInfo
     /// can't send reports: the panel copies the report and opens the Discord invite instead.</summary>
     public const string BugReportUrl = "https://valtrainer-bug-relay.idoraz2008.workers.dev/report";
 
+    /// <summary>The ValTrainer Discord server (guild) id: links to a post in it (the player's own bug report).</summary>
+    public const string DiscordServerId = "1558100125794967603";
+
+    /// <summary>Opens the player's bug-report post on the ValTrainer Discord (a numeric thread id from the relay's answer,
+    /// nothing else). Only server members can see it: <see cref="DiscordUrl"/> is the invite.</summary>
+    public static bool OpenDiscordPost(string threadId)
+    {
+        if (threadId.Length is < 15 or > 25 || !threadId.All(char.IsAsciiDigit)) return false;
+        try { return OS.ShellOpen($"https://discord.com/channels/{DiscordServerId}/{threadId}") == Error.Ok; }
+        catch (Exception e) { Log.Error($"Couldn't open the report post: {e.Message}"); return false; }
+    }
+
     /// <summary>Opens one of the support pages or the Discord invite in the browser (nothing else; nothing is sent by
     /// ValTrainer itself).</summary>
     public static bool OpenSupport(string url)

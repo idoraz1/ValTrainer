@@ -92,7 +92,7 @@ public static class BugReport
 
     /// <summary>"installer" (Setup, also older Setups without install.ini), "portable" (the single-file exe) or "dev"
     /// (--dev runs and the Godot editor), from the updater's detection (<see cref="Updater.Kind"/>).</summary>
-    static string InstallType() =>
+    internal static string InstallType() =>
         CmdLine.Dev || Updater.Kind == InstallKind.Source ? "dev" : Updater.Kind == InstallKind.Portable ? "portable" : "installer";
 
     static string Display()
@@ -293,6 +293,60 @@ public static class BugReport
         };
     }
 
+    // ---------------- feature suggestions (POST /suggest → #suggestions) ----------------
+
+    /// <summary>Suggestion categories: relay key and button label (the relay maps each key to a #suggestions tag).</summary>
+    public static readonly (string Key, string Label)[] IdeaCategories =
+        { ("drill", "NEW DRILL"), ("agent", "AGENT"), ("map", "MAP"), ("coach", "COACH"), ("ui", "UI / SETTINGS"), ("other", "OTHER") };
+
+    /// <summary>The relay's suggestion endpoint: the bug-report URL with /report → /suggest.</summary>
+    public static string SuggestUrl(string reportUrl) =>
+        reportUrl.EndsWith("/report", StringComparison.Ordinal) ? reportUrl[..^"/report".Length] + "/suggest" : reportUrl;
+
+    /// <summary>Suggestion JSON (schema 1): app {version, install} and idea {title, what, why, category, contact}. Nothing
+    /// about the PC, no settings, no log.</summary>
+    public static string IdeaJson(string title, string what, string why, string category, string contact)
+    {
+        var r = Redactor.Default;
+        return new JsonObject
+        {
+            ["schema"] = 1,
+            ["app"] = new JsonObject { ["version"] = AppInfo.Version, ["install"] = InstallType() },
+            ["idea"] = new JsonObject
+            {
+                ["title"] = Clip(r.Paths(title.Trim()), TitleMax),
+                ["what"] = Clip(r.Paths(what.Trim()), WhatMax),
+                ["why"] = Clip(r.Paths(why.Trim()), StepsMax),
+                ["category"] = IdeaCategories.Any(c => c.Key == category) ? category : "",
+                ["contact"] = Clip(contact.Trim(), ContactMax),
+            },
+        }.ToJsonString(JsonOpts);
+    }
+
+    /// <summary>Why the suggestion can't be sent yet (null = it can). Same limits as a bug report's title / "what".</summary>
+    public static string? IdeaProblem(string title, string what)
+    {
+        int t = title.Trim().Length, w = what.Trim().Length;
+        if (t < TitleMin && w < WhatMin) return $"Add a title ({TitleMin}+ characters) and describe your idea ({WhatMin}+ characters)";
+        if (t < TitleMin) return $"The title needs at least {TitleMin} characters";
+        if (t > TitleMax) return $"The title can have at most {TitleMax} characters";
+        if (w < WhatMin) return $"Describe your idea in at least {WhatMin} characters";
+        if (w > WhatMax) return $"The idea can have at most {WhatMax} characters";
+        return null;
+    }
+
+    /// <summary>A suggestion as plain text (COPY IDEA, or pasting it in #suggestions by hand).</summary>
+    public static string IdeaText(string title, string what, string why, string category, string contact)
+    {
+        var sb = new StringBuilder();
+        sb.Append($"**{title.Trim()}**\n\n{what.Trim()}\n");
+        if (why.Trim().Length > 0) sb.Append($"\nWhy: {why.Trim()}\n");
+        if (IdeaCategories.FirstOrDefault(c => c.Key == category).Label is { } cat) sb.Append($"\nCategory: {cat}\n");
+        if (contact.Trim().Length > 0) sb.Append($"Discord: {contact.Trim()}\n");
+        sb.Append($"ValTrainer {AppInfo.Version} ({InstallType()})\n");
+        return sb.ToString();
+    }
+
     /// <summary>The "What gets sent" preview: everything collected automatically, exactly as it's sent.</summary>
     public static string PreviewText(Snapshot s)
     {
@@ -350,10 +404,24 @@ public static class BugReport
         {
             RedactionChecks();
             JsonChecks();
+            IdeaChecks();
         }
         catch (Exception e) { Check("unexpected exception", false, e.ToString()); }
         Say($"RESULT: {(fail == 0 ? "PASS" : "FAIL")} ({pass} passed, {fail} failed)");
         return fail;
+    }
+
+    static void IdeaChecks()
+    {
+        Check("idea: suggest URL", SuggestUrl("https://x.workers.dev/report") == "https://x.workers.dev/suggest" && SuggestUrl("") == "");
+        Check("idea: needs title + idea", IdeaProblem("ab", "short") != null && IdeaProblem("Crouch drill", "too short") != null && IdeaProblem("Crouch drill", "Bots that crouch-spam.") == null);
+        using var doc = JsonDocument.Parse(IdeaJson(" Crouch drill ", "Bots that crouch-spam.", "", "cheats", "zoe"));
+        var idea = doc.RootElement.GetProperty("idea");
+        Check("idea: trimmed title", idea.GetProperty("title").GetString() == "Crouch drill");
+        Check("idea: unknown category dropped", idea.GetProperty("category").GetString() == "");
+        Check("idea: no PC info / log", !doc.RootElement.TryGetProperty("log_tail", out _) && !doc.RootElement.GetProperty("app").TryGetProperty("gpu", out _));
+        string text = IdeaText("Crouch drill", "Bots that crouch-spam.", "", "drill", "");
+        Check("idea: text has category, no empty fields", text.Contains("Category: NEW DRILL") && !text.Contains("Why:") && !text.Contains("Discord:"), text);
     }
 
     static void RedactionChecks()
@@ -531,7 +599,8 @@ public sealed class Redactor
 }
 
 /// <summary>
-/// Modal "REPORT A BUG" form (menu header, Settings → About): title, what happened, steps, expected, Discord name, and
+/// Modal "REPORT A BUG" form (menu header, Settings → About), or with <c>idea</c> the "SUGGEST A FEATURE" form (title,
+/// idea, why, category, Discord name → POST /suggest → #suggestions; <c>--screen suggest</c> in dev). Bug report: title, what happened, steps, expected, Discord name, and
 /// on the right the "What gets sent" preview. SEND posts the report (see <see cref="BugReport"/>); COPY REPORT copies it
 /// as text; OPEN ON GITHUB opens the issue chooser. Without a relay URL in this build SEND becomes COPY REPORT &amp; OPEN
 /// DISCORD. One report per minute per session. Esc closes.
@@ -545,13 +614,17 @@ public partial class BugReportPanel : Control
     const double TimeoutSec = 15, MinGapSec = 60;
 
     /// <summary>When this session last got an answer from the relay (one report per <see cref="MinGapSec"/>).</summary>
-    static DateTime lastSend = DateTime.MinValue;
+    static DateTime lastSend = DateTime.MinValue, lastIdea = DateTime.MinValue;
 
     enum State { Editing, Sending, Sent, Failed, DryRun }
 
     readonly float k;
     readonly string screen;
     readonly Action onClose;
+    /// <summary>"SUGGEST A FEATURE" instead of "REPORT A BUG": posts to #suggestions (POST /suggest), no PC info / log.</summary>
+    readonly bool idea;
+    string category = "";
+    readonly List<VButton> categoryButtons = new();
     BugReport.Snapshot snap = null!;
     State state = State.Editing;
     string? message;
@@ -560,17 +633,20 @@ public partial class BugReportPanel : Control
 
     LineEdit titleEdit = null!, contactEdit = null!;
     TextEdit whatEdit = null!, stepsEdit = null!, expectedEdit = null!, preview = null!;
-    VButton send = null!, discord = null!, cancel = null!;
+    VButton send = null!, discord = null!, cancel = null!, myPost = null!;
+    string? postId;
+    VButton? copyBtn, ghBtn;
     Label status = null!;
     readonly List<DrawBox> counters = new();
     HttpRequest? http;
 
     /// <param name="screen">Where it was opened, for the report's context ("menu", "settings").</param>
-    public BugReportPanel(float k, string screen, Action onClose)
+    public BugReportPanel(float k, string screen, Action onClose, bool idea = false)
     {
         this.k = k;
         this.screen = screen;
         this.onClose = onClose;
+        this.idea = idea;
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         MouseFilter = MouseFilterEnum.Stop; // the screen underneath doesn't get clicks
     }
@@ -578,12 +654,16 @@ public partial class BugReportPanel : Control
     static string? DevUrl => CmdLine.DevAfter("--report-url");
     /// <summary>Plain --dev: SEND only prints the JSON.</summary>
     static bool DryRun => CmdLine.Dev && DevUrl == null;
-    static string Url => CmdLine.Dev ? (DevUrl is { } u && u != "off" ? u : "") : AppInfo.BugReportUrl;
+    static string ReportUrl => CmdLine.Dev ? (DevUrl is { } u && u != "off" ? u : "") : AppInfo.BugReportUrl;
+    string Url => idea ? BugReport.SuggestUrl(ReportUrl) : ReportUrl;
     /// <summary>HTTPS only (dev: also plain http to this PC, for a local relay).</summary>
-    static bool HasRelay => Url.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+    bool HasRelay => Url.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
         || (CmdLine.Dev && (Url.StartsWith("http://127.0.0.1", StringComparison.OrdinalIgnoreCase) || Url.StartsWith("http://localhost", StringComparison.OrdinalIgnoreCase)));
 
-    BugReport.Fields Fields => new(titleEdit.Text, whatEdit.Text, stepsEdit.Text, expectedEdit.Text, contactEdit.Text);
+    BugReport.Fields Fields => new(titleEdit.Text, whatEdit.Text, stepsEdit.Text, idea ? "" : expectedEdit.Text, contactEdit.Text);
+    string? Problem() => idea ? BugReport.IdeaProblem(titleEdit.Text, whatEdit.Text) : BugReport.Problem(Fields);
+    string CopyText() => idea ? BugReport.IdeaText(titleEdit.Text, whatEdit.Text, stepsEdit.Text, category, contactEdit.Text) : BugReport.CopyText(snap, Fields);
+    string Channel => idea ? "#suggestions" : "#bug-reports";
 
     public override void _Ready()
     {
@@ -596,15 +676,18 @@ public partial class BugReportPanel : Control
         var vs = GetViewportRect().Size;
         var panel = new VPanel
         {
-            Title = "REPORT A BUG", Caption = "posted in #bug-reports on Discord", K = k, Fill = new Color(0.07f, 0.11f, 0.15f, 0.97f),
-            CustomMinimumSize = new Vector2(Mathf.Min(1400 * k, vs.X - 80 * k), 0),
+            Title = idea ? "SUGGEST A FEATURE" : "REPORT A BUG", Caption = idea ? "posted in #suggestions on Discord" : "posted in #bug-reports on Discord",
+            K = k, Fill = new Color(0.07f, 0.11f, 0.15f, 0.97f),
+            CustomMinimumSize = new Vector2(Mathf.Min((idea ? 1000 : 1400) * k, vs.X - 80 * k), 0),
         };
         center.AddChild(panel);
         var col = new VBoxContainer();
         col.AddThemeConstantOverride("separation", (int)(10 * k));
         panel.AddChild(col);
 
-        col.AddChild(Text("Your report is posted in #bug-reports on the ValTrainer Discord, where server members can see it. Personal details like your Windows user name are removed.", 15, UiTheme.Dim));
+        col.AddChild(Text(idea
+            ? "Your idea is posted in #suggestions on the ValTrainer Discord, where other players can see it and react. Join the server to follow it: we reply in your post and mark it Added when an update adds it."
+            : "Your report is posted in #bug-reports on the ValTrainer Discord, where server members can see it. Join the server to follow it: we reply in your post and mark it Fixed when an update fixes it. Personal details like your Windows user name are removed.", 15, UiTheme.Dim));
 
         var body = new HBoxContainer();
         body.AddThemeConstantOverride("separation", (int)(22 * k));
@@ -613,6 +696,137 @@ public partial class BugReportPanel : Control
         form.AddThemeConstantOverride("separation", (int)(4 * k));
         body.AddChild(form);
 
+        if (idea) BuildIdeaForm(form);
+        else BuildBugForm(form, body);
+
+        status = Text("", 15, UiTheme.Dim);
+        status.CustomMinimumSize = new Vector2(40 * k, 24 * k);
+        col.AddChild(status);
+
+        var foot = new HBoxContainer();
+        foot.AddThemeConstantOverride("separation", (int)(12 * k));
+        send = Button("SEND", VButton.Look.Primary, 170, Send);
+        if (!DryRun && !HasRelay)
+        {
+            send.Label = "COPY REPORT & OPEN DISCORD";
+            send.CustomMinimumSize = new Vector2(310 * k, 48 * k);
+        }
+        if (!DryRun && !HasRelay && idea) send.Label = "COPY IDEA & OPEN DISCORD";
+        send.TooltipText = DryRun ? "Dev run: prints the JSON to the log instead of sending it"
+            : idea ? (HasRelay ? "Posts your idea to #suggestions on the ValTrainer Discord"
+                : "This build can't send ideas itself: copies it, then opens the Discord invite so you can paste it in #suggestions")
+            : HasRelay ? "Posts the report and the info on the right to #bug-reports on the ValTrainer Discord"
+            : "This build can't send reports itself: copies the report, then opens the Discord invite so you can paste it in #bug-reports";
+        foot.AddChild(send);
+        var copy = copyBtn = Button(idea ? "COPY IDEA" : "COPY REPORT", VButton.Look.Secondary, 170, Copy);
+        copy.TooltipText = idea ? "Copies your idea as text, to paste anywhere" : "Copies the report and the info on the right as text, to paste anywhere";
+        foot.AddChild(copy);
+        discord = Button("OPEN DISCORD", VButton.Look.Secondary, 170, () => OpenDiscord());
+        discord.TooltipText = "Opens the ValTrainer Discord invite in your browser";
+        discord.Visible = false;
+        foot.AddChild(discord);
+        // After SEND: the player's own post (they need to be in the server to see it).
+        myPost = Button(idea ? "VIEW MY IDEA" : "VIEW MY REPORT", VButton.Look.Secondary, 190, () =>
+        {
+            if (postId == null) return;
+            if (Main.I.Dev) Log.Info($"Bug report: dev run, would open the post {postId}");
+            else AppInfo.OpenDiscordPost(postId);
+        });
+        myPost.TooltipText = $"Opens your {(idea ? "idea" : "report")} on the ValTrainer Discord (join the server first to see it)";
+        myPost.Visible = false;
+        foot.AddChild(myPost);
+        if (AppInfo.HasRepo && !idea)
+        {
+            var gh = ghBtn = Button("OPEN ON GITHUB", VButton.Look.Secondary, 190, () =>
+            {
+                if (Main.I.Dev) Log.Info($"Bug report: dev run, would open {AppInfo.NewIssueUrl}");
+                else AppInfo.OpenGitHub(AppInfo.NewIssueUrl);
+            });
+            gh.TooltipText = "Opens GitHub's issue form in your browser instead (needs a GitHub account; attach godot.log there)";
+            foot.AddChild(gh);
+        }
+        foot.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
+        cancel = Button("CANCEL", VButton.Look.Secondary, 150, Close);
+        foot.AddChild(cancel);
+        col.AddChild(foot);
+
+        if (CmdLine.Dev && CmdLine.Has("--bugreport-demo") && idea)
+        {
+            titleEdit.Text = "Crouch-spam strafe drill";
+            whatEdit.Text = "A drill where bots crouch-spam while strafing, like low-elo duels, so I can practice not over-flicking.";
+            stepsEdit.Text = "I keep whiffing on players who crouch mid-fight.";
+            contactEdit.Text = "zoe_aims";
+            PickCategory("drill");
+        }
+        else if (CmdLine.Dev && CmdLine.Has("--bugreport-demo"))
+        {
+            titleEdit.Text = "Crosshair disappears after pausing";
+            whatEdit.Text = "After I pause Gridshot with Esc and resume, the crosshair is gone until I restart the drill.";
+            stepsEdit.Text = "1. Start Gridshot\n2. Press Esc, then Resume";
+            expectedEdit.Text = "The crosshair stays visible.";
+            contactEdit.Text = "zoe_aims";
+        }
+        Refresh();
+        Callable.From(() => { if (IsInstanceValid(titleEdit)) titleEdit.GrabFocus(); }).CallDeferred();
+
+        // Dev: "--bugreport-answer send|cancel" presses that button after 2 s (automated tests)
+        if (CmdLine.DevAfter("--bugreport-answer")?.ToLowerInvariant() is { } ans)
+            GetTree().CreateTimer(2.0).Timeout += () =>
+            {
+                if (!IsInstanceValid(this) || !IsInsideTree()) return;
+                Log.Info($"Bug report: --bugreport-answer {ans}");
+                if (ans == "send") Send();
+                else Close();
+            };
+    }
+
+    /// <summary>Feature suggestion: title, idea, why, a category and the Discord name. Nothing about the PC is sent.</summary>
+    void BuildIdeaForm(VBoxContainer form)
+    {
+        titleEdit = Line("Short title, e.g. \"Drill with crouch-spamming bots\"", BugReport.TitleMax);
+        Head(form, "SHORT TITLE", true, null, () => titleEdit.Text.Trim().Length, BugReport.TitleMin, BugReport.TitleMax);
+        form.AddChild(titleEdit);
+        whatEdit = Area("What should ValTrainer have? A drill, a setting, a map spot…", BugReport.WhatMax, 124);
+        Head(form, "WHAT'S YOUR IDEA?", true, null, () => whatEdit.Text.Trim().Length, BugReport.WhatMin, BugReport.WhatMax);
+        form.AddChild(whatEdit);
+        stepsEdit = Area("What would it help you practice or fix?", BugReport.StepsMax, 88);
+        Head(form, "WHY WOULD IT HELP?", false, "optional", () => stepsEdit.Text.Trim().Length, 0, BugReport.StepsMax);
+        form.AddChild(stepsEdit);
+
+        form.AddChild(new SectionLabel { Text = "CATEGORY", Note = "optional", K = k, CustomMinimumSize = new Vector2(0, 26 * k) });
+        var cats = new HFlowContainer();
+        cats.AddThemeConstantOverride("h_separation", (int)(8 * k));
+        cats.AddThemeConstantOverride("v_separation", (int)(8 * k));
+        foreach (var (key, label) in BugReport.IdeaCategories)
+        {
+            var b = new VButton { Label = label, Kind = VButton.Look.Secondary, K = k, FontPx = 15, CustomMinimumSize = new Vector2(128 * k, 40 * k) };
+            b.Pressed += () => PickCategory(category == key ? "" : key);
+            categoryButtons.Add(b);
+            cats.AddChild(b);
+        }
+        form.AddChild(cats);
+
+        contactEdit = Line("Your Discord username", BugReport.ContactMax);
+        Head(form, "DISCORD USERNAME", false, "optional, so we can reply", () => contactEdit.Text.Trim().Length, 0, BugReport.ContactMax);
+        form.AddChild(contactEdit);
+        form.AddChild(Text($"Sent with it: ValTrainer {AppInfo.Version} ({BugReport.InstallType()}). Nothing about your PC.", 13, UiTheme.Faint));
+    }
+
+    /// <summary>Selects one category ("" = none); the picked button turns Primary.</summary>
+    void PickCategory(string key)
+    {
+        category = key;
+        for (int i = 0; i < categoryButtons.Count; i++)
+        {
+            categoryButtons[i].Kind = BugReport.IdeaCategories[i].Key == key ? VButton.Look.Primary : VButton.Look.Secondary;
+            categoryButtons[i].QueueRedraw();
+        }
+        Edited();
+    }
+
+    /// <summary>Bug report: the player's fields on the left, everything sent automatically on the right.</summary>
+    void BuildBugForm(VBoxContainer form, HBoxContainer body)
+    {
         titleEdit = Line("Short title, e.g. \"Crosshair is missing in Gridshot\"", BugReport.TitleMax);
         Head(form, "SHORT TITLE", true, null, () => titleEdit.Text.Trim().Length, BugReport.TitleMin, BugReport.TitleMax);
         form.AddChild(titleEdit);
@@ -643,65 +857,6 @@ public partial class BugReportPanel : Control
         Style(preview, 12.5f);
         preview.AddThemeColorOverride("font_readonly_color", new Color(0.8f, 0.79f, 0.76f));
         side.AddChild(preview);
-
-        status = Text("", 15, UiTheme.Dim);
-        status.CustomMinimumSize = new Vector2(40 * k, 24 * k);
-        col.AddChild(status);
-
-        var foot = new HBoxContainer();
-        foot.AddThemeConstantOverride("separation", (int)(12 * k));
-        send = Button("SEND", VButton.Look.Primary, 170, Send);
-        if (!DryRun && !HasRelay)
-        {
-            send.Label = "COPY REPORT & OPEN DISCORD";
-            send.CustomMinimumSize = new Vector2(310 * k, 48 * k);
-        }
-        send.TooltipText = DryRun ? "Dev run: prints the JSON to the log instead of sending it"
-            : HasRelay ? "Posts the report and the info on the right to #bug-reports on the ValTrainer Discord"
-            : "This build can't send reports itself: copies the report, then opens the Discord invite so you can paste it in #bug-reports";
-        foot.AddChild(send);
-        var copy = Button("COPY REPORT", VButton.Look.Secondary, 170, Copy);
-        copy.TooltipText = "Copies the report and the info on the right as text, to paste anywhere";
-        foot.AddChild(copy);
-        discord = Button("OPEN DISCORD", VButton.Look.Secondary, 170, () => OpenDiscord());
-        discord.TooltipText = "Opens the ValTrainer Discord invite in your browser";
-        discord.Visible = false;
-        foot.AddChild(discord);
-        if (AppInfo.HasRepo)
-        {
-            var gh = Button("OPEN ON GITHUB", VButton.Look.Secondary, 190, () =>
-            {
-                if (Main.I.Dev) Log.Info($"Bug report: dev run, would open {AppInfo.NewIssueUrl}");
-                else AppInfo.OpenGitHub(AppInfo.NewIssueUrl);
-            });
-            gh.TooltipText = "Opens GitHub's issue form in your browser instead (needs a GitHub account; attach godot.log there)";
-            foot.AddChild(gh);
-        }
-        foot.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
-        cancel = Button("CANCEL", VButton.Look.Secondary, 150, Close);
-        foot.AddChild(cancel);
-        col.AddChild(foot);
-
-        if (CmdLine.Dev && CmdLine.Has("--bugreport-demo"))
-        {
-            titleEdit.Text = "Crosshair disappears after pausing";
-            whatEdit.Text = "After I pause Gridshot with Esc and resume, the crosshair is gone until I restart the drill.";
-            stepsEdit.Text = "1. Start Gridshot\n2. Press Esc, then Resume";
-            expectedEdit.Text = "The crosshair stays visible.";
-            contactEdit.Text = "zoe_aims";
-        }
-        Refresh();
-        Callable.From(() => { if (IsInstanceValid(titleEdit)) titleEdit.GrabFocus(); }).CallDeferred();
-
-        // Dev: "--bugreport-answer send|cancel" presses that button after 2 s (automated tests)
-        if (CmdLine.DevAfter("--bugreport-answer")?.ToLowerInvariant() is { } ans)
-            GetTree().CreateTimer(2.0).Timeout += () =>
-            {
-                if (!IsInstanceValid(this) || !IsInsideTree()) return;
-                Log.Info($"Bug report: --bugreport-answer {ans}");
-                if (ans == "send") Send();
-                else Close();
-            };
     }
 
     public override void _Process(double delta)
@@ -714,23 +869,25 @@ public partial class BugReportPanel : Control
     void Send()
     {
         if (state == State.Sending) return;
-        if (BugReport.Problem(Fields) is { } problem) { Say(problem, UiTheme.Warn); return; }
+        if (Problem() is { } problem) { Say(problem, UiTheme.Warn); return; }
         if (!DryRun && !HasRelay)
         {
-            DisplayServer.ClipboardSet(BugReport.CopyText(snap, Fields));
+            DisplayServer.ClipboardSet(CopyText());
             OpenDiscord();
-            Say("Copied. Paste it in #bug-reports on the ValTrainer Discord (Ctrl+V).", UiTheme.Good);
+            Say($"Copied. Paste it in {Channel} on the ValTrainer Discord (Ctrl+V).", UiTheme.Good);
             discord.Visible = true;
             return;
         }
-        double wait = MinGapSec - (DateTime.UtcNow - lastSend).TotalSeconds;
-        if (wait > 0) { Say($"You just sent a report. You can send another in {Math.Ceiling(wait):0} s.", UiTheme.Warn); return; }
-        string json = BugReport.ToJson(snap, Fields);
+        double wait = MinGapSec - (DateTime.UtcNow - (idea ? lastIdea : lastSend)).TotalSeconds;
+        if (wait > 0) { Say($"You just sent {(idea ? "a suggestion" : "a report")}. You can send another in {Math.Ceiling(wait):0} s.", UiTheme.Warn); return; }
+        string json = idea ? BugReport.IdeaJson(titleEdit.Text, whatEdit.Text, stepsEdit.Text, category, contactEdit.Text) : BugReport.ToJson(snap, Fields);
         if (DryRun)
         {
             GD.Print("[bug-report] dev dry run, not sent (" + Encoding.UTF8.GetByteCount(json) + " bytes):\n" + json);
             state = State.DryRun;
             Say("Dev: not sent. The JSON is in the log (add --report-url <url> to send it).", UiTheme.Warn);
+            // dev screenshots of the "sent" state without posting anything
+            if (CmdLine.Has("--bugreport-fake-sent")) Sent(Encoding.UTF8.GetBytes("{\"ok\":true,\"id\":\"1560414622480334859\"}"));
             return;
         }
         http = new HttpRequest { Timeout = TimeoutSec };
@@ -765,22 +922,46 @@ public partial class BugReportPanel : Control
             });
             return;
         }
-        lastSend = DateTime.UtcNow; // the relay answered: counts as a send either way
+        if (idea) lastIdea = DateTime.UtcNow; else lastSend = DateTime.UtcNow; // the relay answered: counts as a send either way
         Log.Info($"Bug report: relay answered HTTP {code}");
-        if (code is >= 200 and < 300)
-        {
-            state = State.Sent;
-            Say("Sent! Thanks — you'll find it in #bug-reports.", UiTheme.Good);
-            return;
-        }
+        if (code is >= 200 and < 300) { Sent(body); return; }
         if (code == 429)
         {
             state = State.Failed;
             int min = RetryMinutes(headers, body);
-            Say($"Too many reports, try again in {min} min. You can also COPY REPORT and post it in #bug-reports.", UiTheme.Warn);
+            Say(idea ? $"Too many ideas, try again in {min} min. You can also COPY IDEA and post it in #suggestions."
+                : $"Too many reports, try again in {min} min. You can also COPY REPORT and post it in #bug-reports.", UiTheme.Warn);
             return;
         }
         Fail($"HTTP {code}");
+    }
+
+    /// <summary>The relay posted it: invite the player to the Discord to follow their report (and link the post itself).</summary>
+    void Sent(byte[] body)
+    {
+        state = State.Sent;
+        postId = PostId(body);
+        discord.Label = "JOIN DISCORD";
+        discord.Kind = VButton.Look.Primary;
+        discord.Visible = true;
+        myPost.Visible = postId != null;
+        if (copyBtn != null) copyBtn.Visible = false; // sent: what matters now is following it on Discord
+        if (ghBtn != null) ghBtn.Visible = false;
+        Say(idea ? "Sent, thanks! Join the ValTrainer Discord to follow it: we reply in your post, and it's marked Added when an update adds it."
+            : "Sent, thanks! Join the ValTrainer Discord to follow it: we reply in your post, and it's marked Fixed when an update fixes it.", UiTheme.Good);
+    }
+
+    /// <summary>The new post's thread id from the relay's {"ok":true,"id":"..."}; null if missing or not numeric.</summary>
+    static string? PostId(byte[] body)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String
+                && id.GetString() is { Length: >= 15 and <= 25 } s && s.All(char.IsAsciiDigit)) return s;
+        }
+        catch { }
+        return null;
     }
 
     /// <summary>Retry-After (seconds) or {"retry_after": seconds} from the relay, in whole minutes (at least 1).</summary>
@@ -803,14 +984,14 @@ public partial class BugReportPanel : Control
     {
         Log.Error($"Bug report: couldn't send ({why})");
         state = State.Failed;
-        Say($"Couldn't send ({why}). COPY REPORT and post it in #bug-reports on Discord instead.", UiTheme.Warn);
+        Say($"Couldn't send ({why}). {(idea ? "COPY IDEA" : "COPY REPORT")} and post it in {Channel} on Discord instead.", UiTheme.Warn);
     }
 
     void Copy()
     {
-        DisplayServer.ClipboardSet(BugReport.CopyText(snap, Fields));
+        DisplayServer.ClipboardSet(CopyText());
         copiedFlash = 4f;
-        Say(state is State.Failed ? "Copied. Paste it in #bug-reports on the ValTrainer Discord (Ctrl+V)." : "Copied. Paste it anywhere (Ctrl+V).", UiTheme.Good);
+        Say(state is State.Failed ? $"Copied. Paste it in {Channel} on the ValTrainer Discord (Ctrl+V)." : "Copied. Paste it anywhere (Ctrl+V).", UiTheme.Good);
     }
 
     void OpenDiscord()
@@ -829,14 +1010,14 @@ public partial class BugReportPanel : Control
     /// <summary>Buttons, counters and the status line for the current state.</summary>
     void Refresh()
     {
-        var problem = BugReport.Problem(Fields);
+        var problem = Problem();
         send.Disabled = state is State.Sending or State.Sent || problem != null;
         if (state == State.Sending) send.Label = "SENDING…";
         else if (state == State.Sent) send.Label = "SENT";
         else if (DryRun || HasRelay) send.Label = "SEND";
         discord.Visible = discord.Visible || state is State.Sent or State.Failed;
         cancel.Label = state == State.Sent ? "CLOSE" : "CANCEL";
-        status.Text = message ?? problem ?? (DryRun ? "Dev run: SEND prints the report to the log instead of sending it." : "");
+        status.Text = message ?? problem ?? (DryRun ? $"Dev run: SEND prints the {(idea ? "idea" : "report")} to the log instead of sending it." : "");
         status.LabelSettings = UiTheme.Label(UiTheme.Body, 15, k, message != null ? messageColor : UiTheme.Faint);
         foreach (var c in counters) c.QueueRedraw();
         send.QueueRedraw();

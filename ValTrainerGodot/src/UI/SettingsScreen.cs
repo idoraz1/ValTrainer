@@ -171,15 +171,7 @@ public partial class SettingsScreen : ScreenBase
             if (custom && !St.UseSensOverride) St.SensOverride = App.Valorant.Sensitivity;
             St.UseSensOverride = custom;
         }));
-        v.AddChild(Selector("Custom sensitivity", () => St.UseSensOverride ? St.SensOverride.ToString("0.000", Inv) : $"{App.Valorant.Sensitivity.ToString("0.###", Inv)} (Valorant)",
-            d =>
-            {
-                float step = Input.IsKeyPressed(Key.Shift) ? 0.001f : 0.01f;
-                St.SensOverride = MathF.Max(0.001f, MathF.Round((St.SensOverride + d * step) * 1000f) / 1000f);
-            },
-            enabled: () => St.UseSensOverride,
-            note: () => St.UseSensOverride ? "±0.01 per click · Shift ±0.001" : "Switch the source to Custom to edit"));
-        v.AddChild(SensTypeRow());
+        v.AddChild(SensRow());
         v.AddChild(Selector("Mouse DPI", () => St.Dpi.ToString(),
             d => St.Dpi = Dpis[Wrap(Array.IndexOf(Dpis, St.Dpi) + d, 0, Dpis.Length - 1)],
             note: () => "Only for showing eDPI and cm/360"));
@@ -659,17 +651,23 @@ public partial class SettingsScreen : ScreenBase
 
         v.AddChild(Spacer(0, 6 * k));
         v.AddChild(new SectionLabel { Text = "HELP & FEEDBACK", K = k });
-        var help = HBox(10 * k);
+        // flows onto a second row when the column is too narrow for all five buttons
+        var help = new HFlowContainer();
+        help.AddThemeConstantOverride("h_separation", (int)(10 * k));
+        help.AddThemeConstantOverride("v_separation", (int)(8 * k));
         help.CustomMinimumSize = new Vector2(0, 52 * k);
-        help.AddChild(Spacer(4 * k, 0));
         var discord = Btn("DISCORD", VButton.Look.Secondary, () => AppInfo.OpenSupport(AppInfo.DiscordUrl), 130, 40, 17);
         discord.TooltipText = "Opens the ValTrainer Discord invite: help, bug reports, suggestions and voice chats";
         discord.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         help.AddChild(discord);
-        var bug = Btn("REPORT A BUG", VButton.Look.Secondary, ShowBugReport, 170, 40, 17);
+        var bug = Btn("REPORT A BUG", VButton.Look.Secondary, () => ShowBugReport(), 170, 40, 17);
         bug.TooltipText = "Describe the problem and send it to #bug-reports on the ValTrainer Discord. You see everything before it's sent";
         bug.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         help.AddChild(bug);
+        var idea = Btn("SUGGEST A FEATURE", VButton.Look.Secondary, () => ShowBugReport(true), 210, 40, 17);
+        idea.TooltipText = "Send an idea for a drill, an agent, a map or a setting to #suggestions on the ValTrainer Discord";
+        idea.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        help.AddChild(idea);
         if (AppInfo.HasRepo)
         {
             var site = Btn("GITHUB PAGE", VButton.Look.Secondary, () => AppInfo.OpenGitHub(AppInfo.RepoUrl), 160, 40, 17);
@@ -684,7 +682,7 @@ public partial class SettingsScreen : ScreenBase
         copy.TooltipText = "Version, renderer, GPU and folders, for a bug report";
         copy.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         help.AddChild(copy);
-        var copied = new DrawBox { SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        var copied = new DrawBox { SizeFlagsHorizontal = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(80 * k, 40 * k) };
         copied.OnDraw = d =>
         {
             if (copyFlash <= 0) return;
@@ -693,16 +691,19 @@ public partial class SettingsScreen : ScreenBase
         };
         refreshers.Add(copied.QueueRedraw);
         help.AddChild(copied);
-        v.AddChild(help);
+        v.AddChild(Margins(help, 16 * k, 0, 0, 0)); // lines up with BUY ME A COFFEE
+        // Dev-only: "--about-bottom" scrolls the About column down to HELP & FEEDBACK (screenshots).
+        if (CmdLine.Dev && CmdLine.Has("--about-bottom") && v.GetParent() is ScrollContainer sc)
+            GetTree().CreateTimer(0.5).Timeout += () => { if (IsInstanceValid(sc)) sc.ScrollVertical = (int)sc.GetVScrollBar().MaxValue; };
 
         BuildLicenses(cols);
     }
 
-    /// <summary>HELP &amp; FEEDBACK → REPORT A BUG: the bug report form over this screen (it also offers GitHub).</summary>
-    void ShowBugReport()
+    /// <summary>HELP &amp; FEEDBACK → REPORT A BUG (it also offers GitHub) or SUGGEST A FEATURE: the form over this screen.</summary>
+    void ShowBugReport(bool idea = false)
     {
         if (GetChildren().Any(c => c is BugReportPanel)) return;
-        AddChild(new BugReportPanel(K, "settings", () => { }));
+        AddChild(new BugReportPanel(K, "settings", () => { }, idea));
     }
 
     /// <summary>Settings → About note under "Download updates automatically": how this copy updates (or why it can't).</summary>
@@ -782,46 +783,60 @@ public partial class SettingsScreen : ScreenBase
         return row;
     }
 
-    /// <summary>"Type a sensitivity": an exact value (switches the source to Custom). Enter or SET applies it.</summary>
-    Control SensTypeRow()
+    /// <summary>"Sensitivity": arrows (±0.01, Shift ±0.001) around a box you click and type an exact value into (Enter).
+    /// Typing or an arrow switches the source to Custom, starting from VALORANT's sensitivity.</summary>
+    SettingRow SensRow()
     {
         float k = K;
-        var row = HBox(12 * k);
-        row.CustomMinimumSize = new Vector2(0, 50 * k);
-        var txt = VBox(2 * k);
-        txt.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        txt.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-        txt.AddChild(Lbl("Type a sensitivity", UiTheme.Body, 14, UiTheme.Dim));
-        var msg = Lbl("Sets a custom sensitivity exactly (e.g. 0.35)", UiTheme.Body, 12, UiTheme.Faint);
-        txt.AddChild(msg);
-        row.AddChild(Margins(txt, 10 * k, 0, 0, 0));
+        var row = new SettingRow
+        {
+            K = k, Label = "Sensitivity", Stacked = stacked,
+            Note = () => St.UseSensOverride ? "Custom · type a value or use the arrows (Shift ±0.001)" : "From VALORANT · type a value or use the arrows to set your own",
+        };
+        var sel = HBox(6 * k);
+        sel.CustomMinimumSize = new Vector2(stacked ? 0 : 250 * k, 0);
+        sel.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        sel.SizeFlagsStretchRatio = 1.15f;
+        var l = new VButton { Kind = VButton.Look.Arrow, Dir = -1, K = k, CustomMinimumSize = new Vector2(36 * k, 36 * k), SizeFlagsVertical = SizeFlags.ShrinkCenter };
+        var r = new VButton { Kind = VButton.Look.Arrow, Dir = 1, K = k, CustomMinimumSize = new Vector2(36 * k, 36 * k), SizeFlagsVertical = SizeFlags.ShrinkCenter };
         var edit = new LineEdit
         {
-            PlaceholderText = "0.000", MaxLength = 8, CustomMinimumSize = new Vector2(140 * k, 36 * k),
-            SizeFlagsVertical = SizeFlags.ShrinkCenter, Alignment = HorizontalAlignment.Center, SelectAllOnFocus = true,
+            MaxLength = 8, Alignment = HorizontalAlignment.Center, SelectAllOnFocus = true, CustomMinimumSize = new Vector2(0, 36 * k),
+            SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.ShrinkCenter,
+            TooltipText = "Click, type your sensitivity (e.g. 0.35), press Enter",
         };
-        StyleEdit(edit, k);
-        row.AddChild(edit);
-        void Apply()
+        StyleEdit(edit, k, 18);
+        string Shown() => App.Sens.ToString("0.000", Inv);
+        edit.Text = Shown();
+        void Step(int d)
         {
-            if (!SensInput.TryParse(edit.Text, out var sens))
-            {
-                msg.Text = SensInput.Hint;
-                msg.LabelSettings = UiTheme.Label(UiTheme.Body, 12, k, UiTheme.Warn);
-                return;
-            }
-            St.UseSensOverride = true;
-            St.SensOverride = sens;
-            edit.Text = "";
-            edit.ReleaseFocus();
-            msg.Text = $"Custom sensitivity set to {sens.ToString("0.###", Inv)}";
-            msg.LabelSettings = UiTheme.Label(UiTheme.Body, 12, k, UiTheme.Good);
+            if (!St.UseSensOverride) { St.UseSensOverride = true; St.SensOverride = App.Valorant.Sensitivity; }
+            float step = Input.IsKeyPressed(Key.Shift) ? 0.001f : 0.01f;
+            St.SensOverride = Math.Clamp(MathF.Round((St.SensOverride + d * step) * 1000f) / 1000f, SensInput.Min, SensInput.Max);
             Changed();
         }
-        edit.TextSubmitted += _ => Apply();
-        var set = Btn("SET", VButton.Look.Secondary, Apply, 96, 36, 16);
-        set.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-        row.AddChild(set);
+        void Apply()
+        {
+            if (SensInput.TryParse(edit.Text, out var sens))
+            {
+                St.UseSensOverride = true;
+                St.SensOverride = sens;
+                Changed();
+            }
+            edit.Text = Shown(); // invalid input: back to the current value
+        }
+        l.Pressed += () => Step(-1);
+        r.Pressed += () => Step(1);
+        edit.TextSubmitted += _ => { Apply(); edit.ReleaseFocus(); };
+        edit.FocusExited += Apply;
+        sel.AddChild(l); sel.AddChild(edit); sel.AddChild(r);
+        row.AddChild(sel);
+        refreshers.Add(() =>
+        {
+            if (!edit.HasFocus() && edit.Text != Shown()) edit.Text = Shown();
+            edit.AddThemeColorOverride("font_color", St.UseSensOverride ? UiTheme.Warn : UiTheme.Text);
+            row.Refresh();
+        });
         return row;
     }
 

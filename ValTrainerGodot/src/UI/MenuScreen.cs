@@ -145,6 +145,13 @@ public partial class MenuScreen : ScreenBase
         AddChild(new BugReportPanel(K, "menu", () => { }));
     }
 
+    /// <summary>The menu's SUGGEST A FEATURE button: the same form, posting to #suggestions.</summary>
+    void ShowSuggest()
+    {
+        if (GetChildren().Any(c => c is BugReportPanel)) return;
+        AddChild(new BugReportPanel(K, "menu", () => { }, idea: true));
+    }
+
     // ---------------- update banner ----------------
 
     UpdateBanner? banner;
@@ -283,6 +290,10 @@ public partial class MenuScreen : ScreenBase
         foot.Alignment = BoxContainer.AlignmentMode.End;
         var fan = Lbl("Fan-made trainer · not endorsed by or affiliated with Riot Games", UiTheme.Body, 13, UiTheme.Faint, HorizontalAlignment.Right);
         fan.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        // wraps onto two lines when the buttons leave too little room (small windows) instead of running under the tagline
+        fan.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        fan.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        fan.CustomMinimumSize = new Vector2(230 * k, 0);
         foot.AddChild(fan);
         var support = Btn("SUPPORT VALTRAINER", VButton.Look.Secondary, ShowSupport, 210, 32, 14);
         support.TooltipText = "Buy Me a Coffee or Ko-fi: ValTrainer stays free either way";
@@ -290,6 +301,9 @@ public partial class MenuScreen : ScreenBase
         var bug = Btn("REPORT A BUG", VButton.Look.Secondary, ShowBugReport, 150, 32, 14);
         bug.TooltipText = "Something broken? Describe it and send it to #bug-reports on the ValTrainer Discord. You see everything before it's sent";
         foot.AddChild(bug);
+        var idea = Btn("SUGGEST A FEATURE", VButton.Look.Secondary, ShowSuggest, 180, 32, 14);
+        idea.TooltipText = "Missing a drill, an agent or a setting? Send your idea to #suggestions on the ValTrainer Discord";
+        foot.AddChild(idea);
         var discord =Btn("DISCORD", VButton.Look.Secondary, () => AppInfo.OpenSupport(AppInfo.DiscordUrl), 110, 32, 14);
         discord.TooltipText = "Join the ValTrainer Discord: release news, help, bug reports, suggestions and voice chats by rank";
         foot.AddChild(discord);
@@ -322,6 +336,9 @@ public partial class MenuScreen : ScreenBase
         // Dev-only: "--screen bugreport" opens the Report a bug panel over the menu (+ --bugreport-demo, --bugreport-answer).
         if (i >= 0 && i + 1 < a.Length && a[i + 1].Equals("bugreport", StringComparison.OrdinalIgnoreCase))
             GetTree().CreateTimer(0.5).Timeout += () => { if (IsInstanceValid(this) && IsInsideTree()) ShowBugReport(); };
+        // Dev-only: "--screen suggest" opens the Suggest a feature panel (same --bugreport-* flags).
+        if (i >= 0 && i + 1 < a.Length && a[i + 1].Equals("suggest", StringComparison.OrdinalIgnoreCase))
+            GetTree().CreateTimer(0.5).Timeout += () => { if (IsInstanceValid(this) && IsInsideTree()) ShowSuggest(); };
         // Dev-only: "--map-picker" opens the map pop-up once the layout has settled (screenshots).
         if (a.Contains("--map-picker"))
             GetTree().CreateTimer(0.5).Timeout += () => { if (IsInstanceValid(this) && IsInsideTree()) mapSel?.Open(); };

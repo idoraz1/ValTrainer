@@ -107,6 +107,22 @@ In the same **Variables and Secrets** screen, Type **Text**:
   the Discord API with the bug-tracker bot's token (see "Marking reports fixed" below), or use
   the Actions workflow "Discord bug reports - mark fixed", which logs the forum's tags.
 
+### 5b. Feature suggestions (`/suggest` → #suggestions)
+
+The in-app **Suggest a feature** form posts to `/suggest` on the same Worker (title, idea, why, an
+optional category, Discord name, and only the app version and install type; nothing about the PC
+and no log). It has its own hourly limit per IP, separate from bug reports.
+
+1. In Discord: **#suggestions** → Edit Channel → **Integrations → Webhooks → New Webhook**, name
+   it "ValTrainer Suggestions", **Copy Webhook URL**.
+2. Cloudflare: Worker → **Settings → Variables and Secrets** → add a **Secret**
+   **`DISCORD_SUGGEST_WEBHOOK_URL`** with that URL. Without it `/suggest` answers 500
+   ("relay not configured") and the game tells the player to copy the idea instead.
+3. Plain **Text** variables (optional, but #suggestions has "Require tags" on, so set at least the first):
+   - **`SUGGEST_TAG_ID`**: tag id(s) for every suggestion, e.g. the **Open** tag.
+   - **`SUGGEST_CATEGORY_TAGS`**: `drill:<id>,agent:<id>,map:<id>,coach:<id>,ui:<id>`. The category
+     the player picked adds that tag ("other" adds none).
+
 ## Marking reports fixed (GitHub-issue style)
 
 `#bug-reports` has status tags **Open**, **In progress**, **Fixed**, **Won't fix** and
@@ -128,6 +144,41 @@ The job needs a Discord **bot**, because webhooks can't change tags or close pos
    to the ValTrainer server.
 3. To catch up on an earlier release: Actions → "Discord bug reports - mark fixed" → Run workflow
    (version, and optionally extra thread ids).
+4. Give the bot the same permissions on **#suggestions**. A commit line
+   `Adds-Discord: <thread id>` marks a suggestion the same way: "Added in ValTrainer x.y.z", the
+   **Done** (or **Added**) tag replaces Open / Planned / In progress / Not planned, and the post closes.
+
+## Moderator commands: /close and /reopen
+
+Inside a #bug-reports or #suggestions post, moderators (Manage Posts) and admins can type:
+
+- `/close status:<Fixed | Won't fix | Can't reproduce | Added | Not planned | Duplicate | Custom> [reason]`:
+  replies in the post ("✅ Fixed · by @mod" + the reason), swaps the status tag (category tags stay) and closes
+  the post. **Custom** is for anything else: the reason is required and is the message. Duplicate and Custom
+  use a "Duplicate" / "Closed" tag if the forum has one (make them mod-only), else the tags stay as they are.
+  With `lock:True` it's a permanent close: the post is locked, so replies can't reopen it, only a moderator.
+- `/reopen [reason]`: replies "🔄 Reopened", sets the tag back to **Open**, unlocks and reopens the post.
+
+`worker.js` is kept ASCII-only (emoji as `\u` escapes; `node test.mjs` checks it): Windows PowerShell 5.1 reads
+UTF-8 files without a BOM as ANSI, which once turned the emoji into mojibake on the way to the Cloudflare editor.
+
+Nobody else sees the commands, and the Worker checks the permission again. Discord sends each command,
+signed, to the Worker's `/interactions`; the Worker uses the bot to read and change the post.
+
+Setup (once):
+
+1. Cloudflare → Worker → **Settings → Variables and Secrets**:
+   - **Secret** `DISCORD_BOT_TOKEN`: the bug-tracker bot's token (same as the GitHub secret).
+   - **Text** `DISCORD_PUBLIC_KEY`: Developer Portal → your app → **General Information → Public Key**.
+2. Deploy this `worker.js`.
+3. Developer Portal → **General Information → Interactions Endpoint URL**:
+   `https://valtrainer-bug-relay.<subdomain>.workers.dev/interactions` → **Save Changes**. Discord tests it
+   right away; "interactions_endpoint_url could not be verified" means step 1 or 2 isn't done.
+4. GitHub → Actions → **Discord - register mod commands** → Run workflow. It registers
+   `commands.json` in the server. If it fails with 403 "Missing Access", re-add the bot with the
+   scopes `bot` **and** `applications.commands` (OAuth2 → URL Generator).
+5. Moderators need **Manage Posts** in the two forums (admins always can). Server Settings →
+   Integrations → the bot → can limit the commands to roles or channels further.
 
 ### 6. Test it
 

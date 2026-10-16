@@ -8,6 +8,14 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Added
+- Suggest a feature: a new button in the menu and in Settings › About sends your idea (with an optional category: new drill, agent, map, coach, UI) to #suggestions on the ValTrainer Discord. Only the ValTrainer version goes with it, nothing about your PC. When an update adds it, your post is marked Added.
+
+### Changed
+- Settings › Sensitivity: the value between the arrows is now a box you click and type into (Enter). The arrows still step ±0.01 (Shift ±0.001). Typing or an arrow switches to your own sensitivity; "VALORANT" brings back the imported one.
+- Pause menu: the sensitivity box can be clicked and typed into during a drill (in 1.12.0 it ignored clicks). Clicking away applies the value, and Esc just stops typing.
+- Report a bug: after sending, you're invited to the ValTrainer Discord to follow your report (JOIN DISCORD), and VIEW MY REPORT opens your post. We reply there and mark it Fixed when an update fixes it.
+
 ## [1.12.0] - 2026-10-16
 
 ### Added

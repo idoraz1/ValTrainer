@@ -1,10 +1,11 @@
 name: Discord bug reports - mark fixed
 
-# GitHub-issue style closing for the ValTrainer Discord's #bug-reports forum. For every bug-report thread named in a
-# commit of this release with a "Fixes-Discord: <thread id>" line (several ids may be comma-separated), the bot:
-#   1. replies "Fixed in ValTrainer x.y.z" with a link to the release notes,
-#   2. replaces the Open / In progress tag with Fixed (the forum's tags are found by name),
-#   3. closes the post (archives it; anyone replying reopens it, like reopening an issue).
+# GitHub-issue style closing for the ValTrainer Discord's #bug-reports and #suggestions forums. For every thread named in
+# a commit of this release with a "Fixes-Discord: <thread id>" line (bug reports) or an "Adds-Discord: <thread id>" line
+# (suggestions; several ids may be comma-separated), the bot:
+#   1. replies "Fixed in ValTrainer x.y.z" / "Added in ValTrainer x.y.z" with a link to the release notes,
+#   2. replaces the Open / In progress (/ Planned) tag with Fixed / Added (or Done); the forum's tags are found by name,
+#   3. closes the post (archives it, never locked: anyone replying reopens it, like reopening an issue).
 # The thread id is the last number in the post's link (right-click the post → Copy Link).
 # Runs after every release (called by release.yml) and by hand (Actions → this workflow → Run workflow) to catch up
 # on a release that went out before the bot existed.
@@ -29,7 +30,11 @@ on:
         type: string
         required: true
       threads:
-        description: Extra thread ids to mark fixed (comma-separated, optional)
+        description: Extra bug-report thread ids to mark fixed (comma-separated, optional)
+        type: string
+        required: false
+      added:
+        description: Extra suggestion thread ids to mark added (comma-separated, optional)
         type: string
         required: false
 
@@ -44,6 +49,7 @@ jobs:
     env:
       VERSION: ${{ inputs.version }}
       EXTRA: ${{ inputs.threads }}
+      EXTRA_ADDED: ${{ inputs.added }}
       DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
     steps:
       - name: Check the bot token
@@ -71,9 +77,13 @@ jobs:
           URL="https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG"
           PREV=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)
           RANGE=$([ -n "$PREV" ] && echo "$PREV..$TAG" || echo "$TAG")
-          IDS=$( { git log "$RANGE" --format=%B | grep -ioE 'fixes-discord:[0-9 ,]+' | grep -oE '[0-9]{15,25}'; \
-                   echo "${EXTRA:-}" | grep -oE '[0-9]{15,25}'; } | sort -u || true)
-          if [ -z "$IDS" ]; then echo "No Fixes-Discord lines in $RANGE: nothing to mark."; exit 0; fi
+          # "fix:<id>" for bug reports (Fixes-Discord), "add:<id>" for suggestions (Adds-Discord).
+          MSGS=$(git log "$RANGE" --format=%B)
+          ITEMS=$( { echo "$MSGS" | grep -ioE 'fixes-discord:[0-9 ,]+' | grep -oE '[0-9]{15,25}' | sed 's/^/fix:/'
+                     echo "$MSGS" | grep -ioE 'adds-discord:[0-9 ,]+' | grep -oE '[0-9]{15,25}' | sed 's/^/add:/'
+                     echo "${EXTRA:-}" | grep -oE '[0-9]{15,25}' | sed 's/^/fix:/'
+                     echo "${EXTRA_ADDED:-}" | grep -oE '[0-9]{15,25}' | sed 's/^/add:/'; } | sort -u || true)
+          if [ -z "$ITEMS" ]; then echo "No Fixes-Discord / Adds-Discord lines in $RANGE: nothing to mark."; exit 0; fi
           API=https://discord.com/api/v10
           H=(-H "Authorization: Bot $DISCORD_BOT_TOKEN" -H "User-Agent: DiscordBot (https://github.com/$GITHUB_REPOSITORY, 1)" -H "Content-Type: application/json")
           call() { # method path [json] -> body in out.json, prints the HTTP code
@@ -81,24 +91,39 @@ jobs:
             else curl -sS -o out.json -w '%{http_code}' -X "$1" "${H[@]}" "$API$2"; fi
           }
           fails=0
-          for ID in $IDS; do
+          for ITEM in $ITEMS; do
+            KIND=${ITEM%%:*}; ID=${ITEM#*:}
             code=$(call GET "/channels/$ID")
             if [ "$code" != "200" ]; then echo "::warning::thread $ID: can't read it (HTTP $code)"; fails=$((fails+1)); continue; fi
             PARENT=$(jq -r .parent_id out.json); NAME=$(jq -r .name out.json); CUR=$(jq -c '.applied_tags // []' out.json)
             code=$(call GET "/channels/$PARENT")
             if [ "$code" != "200" ]; then echo "::warning::thread $ID: can't read its forum (HTTP $code)"; fails=$((fails+1)); continue; fi
             TAGS=$(jq -c '.available_tags // []' out.json)
-            FIXED=$(echo "$TAGS" | jq -r '[.[] | select(.name|ascii_downcase=="fixed")][0].id // empty')
-            DROP=$(echo "$TAGS" | jq -c '[.[] | select(.name|ascii_downcase|IN("open","in progress","won'"'"'t fix","can'"'"'t reproduce")) | .id]')
+            if [ "$KIND" = add ]; then
+              # Suggestions: the "Added" (or "Done") tag replaces Open / Planned / In progress / Not planned.
+              FIXED=$(echo "$TAGS" | jq -r '[.[] | select(.name|ascii_downcase|IN("added","done"))][0].id // empty')
+              DROP=$(echo "$TAGS" | jq -c '[.[] | select(.name|ascii_downcase|IN("open","planned","in progress","not planned")) | .id]')
+            else
+              FIXED=$(echo "$TAGS" | jq -r '[.[] | select(.name|ascii_downcase=="fixed")][0].id // empty')
+              DROP=$(echo "$TAGS" | jq -c '[.[] | select(.name|ascii_downcase|IN("open","in progress","won'"'"'t fix","can'"'"'t reproduce")) | .id]')
+            fi
             NEW=$(jq -cn --argjson cur "$CUR" --argjson drop "$DROP" --arg fixed "$FIXED" \
               '([$cur[] | select(. as $t | $drop | index($t) | not)] + (if $fixed == "" then [] else [$fixed] end)) | unique | .[:5]')
             # Reply first (a message reopens an archived thread), then tag and close.
-            MSG=$(jq -cn --arg v "$VERSION" --arg url "$URL" \
-              '{content: ("✅ **Fixed in ValTrainer " + $v + "** · [release notes](" + $url + ")\nWith updates turned on, ValTrainer installs it by itself. Still happening? Reply here and this post reopens."), allowed_mentions: {parse: []}}')
+            if [ "$KIND" = add ]; then
+              HEAD="✨ **Added in ValTrainer $VERSION**"
+              TAIL="Thanks for the idea! With updates turned on, ValTrainer installs it by itself. Not quite what you meant? Reply here and this post reopens."
+            else
+              HEAD="✅ **Fixed in ValTrainer $VERSION**"
+              TAIL="With updates turned on, ValTrainer installs it by itself. Still happening? Reply here and this post reopens."
+            fi
+            MSG=$(jq -cn --arg head "$HEAD" --arg url "$URL" --arg tail "$TAIL" \
+              '{content: ($head + " · [release notes](" + $url + ")\n" + $tail), allowed_mentions: {parse: []}}')
             code=$(call POST "/channels/$ID/messages" "$MSG")
             if [ "$code" != "200" ]; then echo "::warning::thread $ID ($NAME): reply failed (HTTP $code)"; fails=$((fails+1)); continue; fi
-            code=$(call PATCH "/channels/$ID" "$(jq -cn --argjson t "$NEW" '{applied_tags: $t, archived: true}')")
+            # Closed but never locked (a /close lock:True from before is lifted): a reply still reopens it.
+            code=$(call PATCH "/channels/$ID" "$(jq -cn --argjson t "$NEW" '{applied_tags: $t, archived: true, locked: false}')")
             if [ "$code" != "200" ]; then echo "::warning::thread $ID ($NAME): tagging / closing failed (HTTP $code)"; fails=$((fails+1)); continue; fi
-            echo "Marked fixed in $VERSION: $NAME ($ID)"
+            echo "Marked $([ "$KIND" = add ] && echo added || echo fixed) in $VERSION: $NAME ($ID)"
           done
           if [ "$fails" -gt 0 ]; then echo "::warning::$fails thread(s) couldn't be marked; see above. The release itself is fine."; fi

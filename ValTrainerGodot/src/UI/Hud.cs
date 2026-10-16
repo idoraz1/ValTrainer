@@ -109,10 +109,26 @@ public partial class Hud : Control
     public override void _Input(InputEvent e)
     {
         if (overlay == null) return;
+        bool typing = sensEdit != null && IsInstanceValid(sensEdit) && sensEdit.HasFocus();
+        // Esc while typing a sensitivity: stop typing (don't resume the drill).
+        if (typing && e is InputEventKey { Pressed: true, Echo: false, Keycode: Key.Escape })
+        {
+            GetViewport().SetInputAsHandled();
+            sensEdit!.Text = Main.I.Sens.ToString("0.000", Inv);
+            sensEdit.ReleaseFocus();
+            return;
+        }
         if (e is InputEventMouseButton { Pressed: true } mb && mb.ButtonIndex is MouseButton.Left or MouseButton.Right)
         {
             GetViewport().SetInputAsHandled();
             if (mb.ButtonIndex != MouseButton.Left) return;
+            // The sensitivity box: clicks are swallowed above (no fire edge on resume), so focus it by hand.
+            if (sensEdit != null && IsInstanceValid(sensEdit) && sensEdit.IsVisibleInTree() && sensEdit.GetGlobalRect().HasPoint(mb.Position))
+            {
+                if (!sensEdit.HasFocus()) { sensEdit.GrabFocus(); sensEdit.SelectAll(); sensEdit.CaretColumn = sensEdit.Text.Length; }
+                return;
+            }
+            if (typing) sensEdit!.ReleaseFocus(); // clicking anywhere else applies what was typed
             foreach (var b in overlayButtons)
                 if (b.IsVisibleInTree() && !b.Disabled && b.GetGlobalRect().HasPoint(mb.Position)) { b.Click(); break; }
         }
@@ -598,19 +614,38 @@ public partial class Hud : Control
         };
         SettingsScreen.StyleEdit(sensEdit, k, 30, UiTheme.Display);
         sensEdit.AddThemeStyleboxOverride("normal", new StyleBoxEmpty());
-        sensEdit.TextSubmitted += t =>
+        // Enter or clicking away applies a valid value; anything else snaps back to the current sensitivity.
+        void ApplySens()
         {
-            if (SensInput.TryParse(t, out var v))
+            if (sensEdit == null || !IsInstanceValid(sensEdit)) return;
+            if (SensInput.TryParse(sensEdit.Text, out var v) && (!app.Settings.UseSensOverride || v != app.Settings.SensOverride))
             {
                 app.Settings.UseSensOverride = true;
                 app.Settings.SensOverride = v;
                 app.Settings.Save();
             }
-            sensEdit?.ReleaseFocus();
-        };
-        sensEdit.FocusExited += () => { if (sensEdit != null) sensEdit.Text = app.Sens.ToString("0.000", Inv); };
+            sensEdit.Text = app.Sens.ToString("0.000", Inv);
+        }
+        sensEdit.TextSubmitted += _ => sensEdit?.ReleaseFocus();
+        sensEdit.FocusExited += ApplySens;
         sensEdit.Text = app.Sens.ToString("0.000", Inv);
         overlay!.AddChild(sensEdit);
+        // Dev self-check "--pause-type <value>" (with --pause-at): click the box, type, Enter, through the real input path.
+        if (Main.I.Dev && CmdLine.DevAfter("--pause-type") is { } typed)
+            GetTree().CreateTimer(1.0).Timeout += () =>
+            {
+                if (sensEdit == null || !IsInstanceValid(sensEdit)) return;
+                var at = sensEdit.GetGlobalRect().GetCenter();
+                Input.ParseInputEvent(new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = true, Position = at, GlobalPosition = at });
+                Input.ParseInputEvent(new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = false, Position = at, GlobalPosition = at });
+                foreach (char c in typed + "\n")
+                {
+                    var key = c == '\n' ? Key.Enter : c == '.' ? Key.Period : Key.Key0 + (c - '0');
+                    Input.ParseInputEvent(new InputEventKey { Keycode = key, PhysicalKeycode = key, Unicode = c == '\n' ? 0 : c, Pressed = true });
+                    Input.ParseInputEvent(new InputEventKey { Keycode = key, PhysicalKeycode = key, Pressed = false });
+                }
+                GetTree().CreateTimer(0.5).Timeout += () => Log.Info($"[pause-type] typed {typed}: sens now {Main.I.Sens.ToString("0.000", Inv)} (custom {Main.I.Settings.UseSensOverride}), state {s.State}");
+            };
         y += 118 * k;
         OverlayButton("BACK TO MENU", VButton.Look.Secondary, new Rect2(bx, y, bw, bh), k, Main.I.ShowMenu);
 
