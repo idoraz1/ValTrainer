@@ -1,0 +1,41 @@
+name: Discord - register mod commands
+
+# Registers the moderator slash commands /close and /reopen (tools/bug-relay/commands.json) in the ValTrainer Discord
+# server, as the bug-tracker bot's application. Run it by hand once, and again after changing commands.json
+# (Actions → this workflow → Run workflow). Discord itself sends the commands to the Cloudflare Worker
+# (tools/bug-relay, POST /interactions: set as the app's "Interactions Endpoint URL"), which does the work.
+# Needs the repository secret DISCORD_BOT_TOKEN (the same one discord-fixes.yml uses). Never echo it.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  register:
+    name: Register /close and /reopen
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+      GUILD_ID: '1558100125794967603'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Register the commands
+        run: |
+          set -uo pipefail
+          if [ -z "$DISCORD_BOT_TOKEN" ]; then echo "::error::The DISCORD_BOT_TOKEN secret isn't set."; exit 1; fi
+          API=https://discord.com/api/v10
+          H=(-H "Authorization: Bot $DISCORD_BOT_TOKEN" -H "User-Agent: DiscordBot (https://github.com/$GITHUB_REPOSITORY, 1)" -H "Content-Type: application/json")
+          code=$(curl -sS -o app.json -w '%{http_code}' "${H[@]}" "$API/applications/@me")
+          if [ "$code" != "200" ]; then echo "::error::Couldn't read the bot's application (HTTP $code)."; exit 1; fi
+          APP=$(jq -r .id app.json)
+          # Server commands (not global): they show up at once and only in the ValTrainer server.
+          code=$(curl -sS -o out.json -w '%{http_code}' -X PUT "${H[@]}" --data @tools/bug-relay/commands.json "$API/applications/$APP/guilds/$GUILD_ID/commands")
+          if [ "$code" != "200" ]; then
+            echo "::error::Registering failed (HTTP $code): $(head -c 400 out.json)"
+            echo "A 403 'Missing Access' means the bot was added without the applications.commands scope: re-add it (README)."
+            exit 1
+          fi
+          echo "Registered in the ValTrainer server: $(jq -r '[.[] | "/" + .name] | join(", ")' out.json)"

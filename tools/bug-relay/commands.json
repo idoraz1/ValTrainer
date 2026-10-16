@@ -1,0 +1,47 @@
+[
+  {
+    "name": "close",
+    "type": 1,
+    "description": "Close this bug report or suggestion: reply, set its status tag, close the post",
+    "default_member_permissions": "17179869184",
+    "contexts": [0],
+    "options": [
+      {
+        "type": 3,
+        "name": "status",
+        "description": "The new status",
+        "required": true,
+        "choices": [
+          { "name": "Fixed (bug report)", "value": "fixed" },
+          { "name": "Won't fix (bug report)", "value": "wontfix" },
+          { "name": "Can't reproduce (bug report)", "value": "cantrepro" },
+          { "name": "Added (suggestion)", "value": "added" },
+          { "name": "Not planned (suggestion)", "value": "notplanned" }
+        ]
+      },
+      {
+        "type": 3,
+        "name": "note",
+        "description": "Optional line for the reply, e.g. the version or the reason",
+        "required": false,
+        "max_length": 500
+      }
+    ]
+  },
+  {
+    "name": "reopen",
+    "type": 1,
+    "description": "Reopen this bug report or suggestion and set it back to Open",
+    "default_member_permissions": "17179869184",
+    "contexts": [0],
+    "options": [
+      {
+        "type": 3,
+        "name": "note",
+        "description": "Optional line for the reply",
+        "required": false,
+        "max_length": 500
+      }
+    ]
+  }
+]
