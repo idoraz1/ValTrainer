@@ -50,13 +50,19 @@
         "description": "Shown in the reply: the version, why, a link... Required for Custom",
         "required": false,
         "max_length": 500
+      },
+      {
+        "type": 5,
+        "name": "lock",
+        "required": false,
+        "description": "Permanent close: replies can't reopen it, only a moderator with /reopen"
       }
     ]
   },
   {
     "name": "reopen",
     "type": 1,
-    "description": "Reopen this bug report or suggestion and set it back to Open",
+    "description": "Reopen this bug report or suggestion (also unlocks it) and set it back to Open",
     "default_member_permissions": "17179869184",
     "contexts": [
       0
