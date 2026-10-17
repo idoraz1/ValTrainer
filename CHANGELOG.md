@@ -8,6 +8,12 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Changed
+- Flash Dodge and Sound Lock start right away again, like the other drills on a VALORANT map. Their preview had to load the whole map a second time, which could be too much for some PCs (a player reported a crash when choosing Flash Dodge).
+
+### Fixed
+- Report a bug after a crash: the report now includes the end of the log from the session that crashed (it was only sending the log of the session you restarted into, so the crash itself was missing).
+
 ## [1.14.0] - 2026-10-16
 
 ### Added

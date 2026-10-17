@@ -11,7 +11,8 @@ namespace ValTrainer.UI;
 
 /// <summary>
 /// "Report a bug": what the in-app form sends. The player's text plus a snapshot of system info, context, the settings
-/// that matter for bugs and the end of the current godot.log, all passed through <see cref="Redactor"/> (Windows user
+/// that matter for bugs and the end of the current godot.log (plus the end of the previous session's log when that
+/// session crashed, see <see cref="ReadLogs"/>), all passed through <see cref="Redactor"/> (Windows user
 /// name, profile and AppData paths, PC name, account ids, e-mail addresses). Nothing is sent until the player presses
 /// SEND, and then exactly what the panel's "What gets sent" preview shows: one HTTPS POST of <see cref="ToJson"/> to
 /// <see cref="AppInfo.BugReportUrl"/> (the relay in tools/bug-relay posts it to #bug-reports on the ValTrainer Discord).
@@ -41,6 +42,8 @@ public static class BugReport
         public List<KeyValuePair<string, string>> Settings = new();
         public string LogTail = "";
         public int LogLineCount;
+        /// <summary>The log tail starts with the end of the previous session's log (it didn't close normally).</summary>
+        public bool LogHasCrash;
     }
 
     /// <summary>Why the report can't be sent yet (null = it can).</summary>
@@ -86,7 +89,7 @@ public static class BugReport
         App("fps_cap", Engine.MaxFps <= 0 ? "unlimited" : Engine.MaxFps.ToString(Inv));
         App("graphics", Main.I is { } m ? SettingsScreen.Qualities[Math.Clamp(m.Settings.Quality, 0, 3)] : "unknown");
         if (Main.I != null) s.Settings = CapSettings(SettingsPairs(), r);
-        (s.LogTail, s.LogLineCount) = ReadLogTail(Paths.LogFile, r);
+        (s.LogTail, s.LogLineCount, s.LogHasCrash) = ReadLogs(Paths.LogDir, r);
         return s;
     }
 
@@ -212,34 +215,62 @@ public static class BugReport
     static List<KeyValuePair<string, string>> CapSettings(IEnumerable<KeyValuePair<string, string>> pairs, Redactor r) =>
         pairs.Take(MaxSettings).Select(p => new KeyValuePair<string, string>(Clip(p.Key, MaxKey), Clip(r.Text(p.Value), MaxValue))).ToList();
 
-    /// <summary>The last <see cref="LogLines"/> lines of the log (at most <see cref="LogMaxChars"/>, cut at a line
-    /// start), redacted. Opened shared: Godot keeps writing to it.</summary>
-    public static (string Text, int Lines) ReadLogTail(string path, Redactor r)
+    /// <summary>What <see cref="Main"/> logs as its last line on a normal exit (a crash never logs it).</summary>
+    public const string CleanExit = "Closed normally";
+    const string CleanExitLine = "[ValTrainer] " + CleanExit;
+    /// <summary>Share of the log budget for the crashed session when both logs are sent.</summary>
+    const int PrevLines = 60, PrevChars = 6500;
+
+    /// <summary>The log part of the report, redacted: the last <see cref="LogLines"/> lines of godot.log (at most
+    /// <see cref="LogMaxChars"/>). After a crash Godot renames the crashed session's log to godot&lt;date&gt;.log when the
+    /// game starts again, so if the newest of those doesn't end with the <see cref="CleanExit"/> line, its last
+    /// <see cref="PrevLines"/> lines go first (under a header line) and this session's get the rest of the budget.</summary>
+    public static (string Text, int Lines, bool Crash) ReadLogs(string dir, Redactor r)
     {
-        string raw;
+        var (cur, curErr) = ReadEnd(Path.Combine(dir, "godot.log"));
+        if (cur == null) return ($"(couldn't read the log: {r.Text(curErr!)})", 1, false);
+        string? prevPath = null;
+        try
+        {
+            prevPath = new DirectoryInfo(dir).GetFiles("godot*.log")
+                .Where(f => !f.Name.Equals("godot.log", StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(f => f.LastWriteTimeUtc).FirstOrDefault()?.FullName;
+        }
+        catch { }
+        string? prev = prevPath != null ? ReadEnd(prevPath).Text : null;
+        if (prev == null || prev.Contains(CleanExitLine, StringComparison.Ordinal)) { var (t, n) = TailOf(cur, r); return (t, n, false); }
+        var (pt, pn) = TailOf(prev, r, PrevLines, PrevChars);
+        string head = $"--- previous session ({Path.GetFileName(prevPath)}): it didn't close normally, its last {pn} lines ---";
+        const string mid = "--- this session (godot.log) ---";
+        var (ct, cn) = TailOf(cur, r, LogLines - pn - 2, LogMaxChars - pt.Length - head.Length - mid.Length - 3);
+        return ($"{head}\n{pt}\n{mid}\n{ct}", pn + cn + 2, true);
+    }
+
+    /// <summary>The last 256 KB of a log file. Opened shared: Godot keeps writing to the current one.</summary>
+    static (string? Text, string? Error) ReadEnd(string path)
+    {
         try
         {
             using var fs = new FileStream(path, FileMode.Open, System.IO.FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
             const int window = 256 * 1024;
             if (fs.Length > window) fs.Seek(-window, SeekOrigin.End);
             using var rd = new StreamReader(fs, Encoding.UTF8);
-            raw = rd.ReadToEnd();
+            return (rd.ReadToEnd(), null);
         }
-        catch (Exception e) { return ($"(couldn't read the log: {r.Text(Log.Describe(e))})", 1); }
-        return TailOf(raw, r);
+        catch (Exception e) { return (null, Log.Describe(e)); }
     }
 
-    static (string, int) TailOf(string raw, Redactor r)
+    static (string, int) TailOf(string raw, Redactor r, int maxLines = LogLines, int maxChars = LogMaxChars)
     {
         var lines = raw.Replace("\r\n", "\n").TrimEnd('\n').Split('\n');
-        var tail = lines.Skip(Math.Max(0, lines.Length - LogLines)).Select(l => r.Text(l.TrimEnd())).ToList();
+        var tail = lines.Skip(Math.Max(0, lines.Length - maxLines)).Select(l => r.Text(l.TrimEnd())).ToList();
         // keep the newest lines: drop the oldest until it fits
         int total = tail.Sum(l => l.Length + 1);
         int skip = 0;
-        while (skip < tail.Count - 1 && total > LogMaxChars) total -= tail[skip++].Length + 1;
+        while (skip < tail.Count - 1 && total > maxChars) total -= tail[skip++].Length + 1;
         tail = tail.Skip(skip).ToList();
         string text = string.Join('\n', tail);
-        if (text.Length > LogMaxChars) text = text[^LogMaxChars..]; // one giant line
+        if (text.Length > maxChars) text = text[^maxChars..]; // one giant line
         return (text, tail.Count);
     }
 
@@ -360,7 +391,8 @@ public static class BugReport
         sb.Append($"\nCONTEXT\n  screen: {s.Screen}\n  mode: {s.Mode}\n  uptime_s: {s.UptimeS}\n");
         sb.Append("\nSETTINGS\n");
         foreach (var (k, v) in s.Settings) sb.Append($"  {k}: {v}\n");
-        sb.Append($"\nLOG (last {s.LogLineCount} lines of godot.log)\n");
+        sb.Append(s.LogHasCrash ? $"\nLOG ({s.LogLineCount} lines: the end of the previous session, which didn't close normally, then godot.log)\n"
+            : $"\nLOG (last {s.LogLineCount} lines of godot.log)\n");
         sb.Append(s.LogTail);
         return sb.ToString();
     }
@@ -405,10 +437,39 @@ public static class BugReport
             RedactionChecks();
             JsonChecks();
             IdeaChecks();
+            CrashLogChecks();
         }
         catch (Exception e) { Check("unexpected exception", false, e.ToString()); }
         Say($"RESULT: {(fail == 0 ? "PASS" : "FAIL")} ({pass} passed, {fail} failed)");
         return fail;
+    }
+
+    /// <summary>The crashed session's log is attached only when it lacks the clean-exit line; limits still hold.</summary>
+    static void CrashLogChecks()
+    {
+        string dir = Path.Combine(Path.GetTempPath(), "vt_bugreport_test_" + System.Environment.ProcessId);
+        Directory.CreateDirectory(dir);
+        try
+        {
+            string Lines(string tag, int n) => string.Join('\n', Enumerable.Range(0, n).Select(i => $"{tag} line {i} " + new string('x', 80)));
+            File.WriteAllText(Path.Combine(dir, "godot.log"), Lines("NOW", 400) + "\nNOW NEWEST");
+            var old = Path.Combine(dir, "godot2026-10-01T10.00.00.log");
+            File.WriteAllText(old, Lines("OLD", 50) + "\nOLD CRASH");
+            File.SetLastWriteTimeUtc(old, DateTime.UtcNow.AddDays(-3));
+            var prev = Path.Combine(dir, "godot2026-10-17T20.00.00.log");
+            File.WriteAllText(prev, Lines("PREV", 300) + "\n[ValTrainer] Unhandled exception (fatal): boom");
+            File.SetLastWriteTimeUtc(prev, DateTime.UtcNow.AddMinutes(-5));
+            var (t, n, crash) = ReadLogs(dir, Redactor.Default);
+            Check("crash log: previous session attached", crash && t.Contains("boom") && t.Contains("didn't close normally") && !t.Contains("OLD"), t[..Math.Min(300, t.Length)]);
+            Check("crash log: this session's newest line kept", t.EndsWith("NOW NEWEST") && t.IndexOf("boom") < t.IndexOf("--- this session"));
+            Check($"crash log: within limits ({n} lines, {t.Length} chars)", n <= LogLines && t.Length <= LogMaxChars && t.Split('\n').Length == n);
+            File.AppendAllText(prev, "\n" + CleanExitLine + "\n");
+            var (t2, n2, crash2) = ReadLogs(dir, Redactor.Default);
+            Check("crash log: clean exit -> godot.log only", !crash2 && !t2.Contains("PREV") && t2.EndsWith("NOW NEWEST") && n2 <= LogLines);
+            File.Delete(prev); File.Delete(old);
+            Check("crash log: first session ever", ReadLogs(dir, Redactor.Default) is { Crash: false } first && first.Text.EndsWith("NOW NEWEST"));
+        }
+        finally { try { Directory.Delete(dir, true); } catch { } }
     }
 
     static void IdeaChecks()

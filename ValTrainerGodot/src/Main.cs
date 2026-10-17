@@ -303,6 +303,13 @@ public partial class Main : Node
         }
     }
 
+    /// <summary>The log's last line on a normal exit (quit, window closed, update restart). A crash never gets here, so a
+    /// bug report treats the previous session's log without it as a crash and attaches its end too.</summary>
+    public override void _ExitTree()
+    {
+        if (I == this) Log.Info(BugReport.CleanExit);
+    }
+
     public override void _Notification(int what)
     {
         if (what == NotificationWMCloseRequest && !singleInstanceExit) Settings.Save();

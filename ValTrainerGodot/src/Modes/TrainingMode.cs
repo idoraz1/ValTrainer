@@ -32,8 +32,9 @@ public abstract class TrainingMode
     public virtual bool Is2D => false;
     /// <summary>The drill preview can show the simulated player playing it (false for drills that need a person).</summary>
     public virtual bool PreviewDemo => !Is2D;
-    /// <summary>Clicking the card opens the drill preview first. Map drills (whole rounds on a VALORANT map) start right away.</summary>
-    public virtual bool HasPreview => Category != "Map";
+    /// <summary>Clicking the card opens the drill preview first. Drills on a VALORANT map (the Map category, Flash Dodge,
+    /// Sound Lock) start right away: a preview would build the whole map twice (popup + START), about double the video memory.</summary>
+    public virtual bool HasPreview => Map == null;
     public virtual bool UsesHeadshots => false;
     /// <summary>null = the shooting range.</summary>
     public virtual MapSpot? Map => null;

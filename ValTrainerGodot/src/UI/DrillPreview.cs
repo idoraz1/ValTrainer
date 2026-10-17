@@ -8,7 +8,7 @@ using ValTrainer.Modes;
 namespace ValTrainer.UI;
 
 /// <summary>
-/// Popup shown when a drill card in the menu is clicked, instead of starting the drill right away (map drills and the
+/// Popup shown when a drill card in the menu is clicked, instead of starting the drill right away (drills on a VALORANT map and the
 /// Agents screen's drills still start directly). Left: a live
 /// demo — the drill itself, played by the simulated player in a sub-viewport (<see cref="GameSession.Demo"/>: muted, no
 /// input, nothing saved, loops). Right: what the drill is, how long it runs, the weapon and map, which coach skills it
@@ -60,7 +60,7 @@ public partial class DrillPreview : Control
         TrainingMode info;
         try { info = make(); }
         catch (Exception e) { Log.Error($"[preview] can't build the drill: {e.Message}"); start(); return; }
-        if (!info.HasPreview) { start(); return; } // map drills go straight in
+        if (!info.HasPreview) { start(); return; } // drills on a VALORANT map go straight in
         parent.AddChild(new DrillPreview(k, make, info, start, () => { }, title, sub));
     }
 
@@ -409,7 +409,7 @@ public partial class PreviewCheck : Node
 
     public override void _Ready()
     {
-        // the menu's drills that open a preview with a demo (map drills and the Agents screen's drills have none)
+        // the menu's drills that open a preview with a demo (drills on a VALORANT map and the Agents screen's drills have none)
         keys = ModeRegistry.All.Select(f => f()).Where(m => m.HasPreview && m.PreviewDemo && m.Category != "Agents").Select(m => m.Key).Distinct().ToList();
         if (CmdLine.DevAfter("--preview-check-only")?.Split(',') is { } only) keys = only.ToList(); // any drill key (agent drills too)
         runsBefore = Main.I.Stats.Runs.Count;
