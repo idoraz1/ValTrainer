@@ -8,6 +8,8 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-10-18
+
 ### Added
 - Free play (suggested on Discord): a FREE PLAY button (or F) next to START in the drill preview. The drill runs with no clock and no score on screen, saves nothing, and starts over by itself when its time is up, so you can just keep shooting. Esc → menu ends it. It's there for every drill the preview can demo (not the map drills, Reaction Test, Sens Finder or Crosshair Finder).
 - Gekko's Dizzy in Flash Dodge works like in VALORANT now: she's thrown through the air, forms, hovers for a second, and spits one plasma blast at you if she sees you. Turning away doesn't help: shoot her first (20 HP, any bullet) or get out of her sight. Her blind is a blue goo blob that leaves the edges of your screen visible (1 s, then a 1 s fade).
@@ -309,7 +311,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.14.1...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.15.0...HEAD
+[1.15.0]: https://github.com/idoraz1/ValTrainer/compare/v1.14.1...v1.15.0
 [1.14.1]: https://github.com/idoraz1/ValTrainer/compare/v1.14.0...v1.14.1
 [1.14.0]: https://github.com/idoraz1/ValTrainer/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/idoraz1/ValTrainer/compare/v1.12.0...v1.13.0
