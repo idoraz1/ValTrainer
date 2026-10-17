@@ -43,6 +43,7 @@ The character `.gltf` files in `assets/characters/` are derivative merges of the
 - **Impact Sounds** (impacts and footsteps) by Kenney: <https://kenney.nl/assets/impact-sounds>
 - **Interface Sounds** by Kenney: <https://kenney.nl/assets/interface-sounds>
 - The sentinel-setup cues of Site Anchor (alarm, turret, wire, sensor, barriers, vines…) are synthesized in code (`src/Game/Fx/SentinelSfx.cs`); no samples.
+- The agent flash sounds in `assets/audio/flash` (throw, flight, windup and pop per agent, Gekko's Dizzy set, and the "flashed" ring) are synthesized by ValTrainer's own generator `tools/sfx/flash_sfx.py`. They are our own work, released as CC0, with no samples and no third-party or Riot audio.
 
 ## Engine
 Built with the Godot Engine (MIT license): <https://godotengine.org/license>

@@ -299,7 +299,7 @@ public sealed class Dizzy : OrbFlash
     bool hovering;
 
     public Dizzy(IGame g, Vector3 from, Vector3 dir, bool visual)
-        : base(g, visual, Color.Color8(200, 80, 220), from)
+        : base(g, visual, Color.Color8(29, 199, 254), from)
     {
         vel = dir.Normalized() * Speed;
         Hp = Health;
@@ -361,7 +361,7 @@ public sealed class PlasmaShot : PlayerUtility
         Events.Add(new UtilEvent(UtilEventKind.Plasma, to, BlindFull));
         if (Visual)
         {
-            var o = G.SpawnOrb(Color.Color8(200, 80, 220));
+            var o = G.SpawnOrb(Color.Color8(29, 199, 254));
             o.GlobalPosition = to;
             o.Pop();
         }

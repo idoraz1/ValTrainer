@@ -8,6 +8,21 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Added
+- Free play (suggested on Discord): a FREE PLAY button (or F) next to START in the drill preview. The drill runs with no clock and no score on screen, saves nothing, and starts over by itself when its time is up, so you can just keep shooting. Esc → menu ends it. It's there for every drill the preview can demo (not the map drills, Reaction Test, Sens Finder or Crosshair Finder).
+- Gekko's Dizzy in Flash Dodge works like in VALORANT now: she's thrown through the air, forms, hovers for a second, and spits one plasma blast at you if she sees you. Turning away doesn't help: shoot her first (20 HP, any bullet) or get out of her sight. Her blind is a blue goo blob that leaves the edges of your screen visible (1 s, then a 1 s fade).
+- Vyse's Arc Rose can be shot during its windup (it breaks without flashing anyone), as in VALORANT.
+
+### Changed
+- Flashes look and sound much closer to VALORANT (suggested on Discord). Each agent's blind is now a tinted screen with light rays coming from where the flash popped (so a flash that pops to your side streams in from that side), not a plain white-out. It shrinks as the full blind runs out, and visibility comes back fastest at the start of the fade.
+- New sounds for every flash: a throw, a flight sound, a windup that ends exactly on the pop (so you can time your turn by ear, like in VALORANT), a pop of its own per agent, and the "flashed" ring. Gekko's Dizzy has her own set (throw, charge, plasma blast, splat, and a sound when you shoot her).
+- Flash timings checked against VALORANT patch 13.08. KAY/O's FLASH/drive flies faster when thrown overhand (18 m/s) and slower underhand (6.3 m/s), and the overhand one pops 0.8 s after it bounces (never later than 1.6 s). Yoru's Blindside flies faster (29 m/s) and stays invisible until it bounces. Skye's Guiding Light pops by itself at the end of its 2 s flight.
+
+### Not done (and why)
+- The flashes aren't 1:1 copies of VALORANT. Riot's sounds, images and effects can't be used, so everything is made from scratch to sound and look close. Agent voice lines aren't included at all.
+- Some numbers aren't published by Riot, so they're estimates: how fast Phoenix's Curveball flies, how much shorter a flash gets with angle and distance, the short blind when a flash pops behind you, and how fast Dizzy drifts while she hovers.
+- Gekko can't pick Dizzy back up as a globule in the drill (she simply disappears), and Reyna's Leer and Fade's Prowler aren't in Flash Dodge: they're nearsights, not flashes.
+
 ## [1.14.1] - 2026-10-17
 
 ### Changed

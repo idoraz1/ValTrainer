@@ -205,12 +205,13 @@ public abstract partial class InitiatorDrill : MapMode
         casts++;
         castThisRun = true;
         Event("flash_throw", (int)Ability.Kind, Kit.Charges - 1);
+        if (FlashSlug is { } throwSlug) G.Sound(throwSlug + "_throw", 0.6f);
         string cue = Ability.Kind switch
         {
             UtilKind.Curveball => "phoenix_wind", UtilKind.GuidingLight => "skye_wind", UtilKind.Blindside => "yoru_wind",
             UtilKind.FlashDrive => "kayo_wind", UtilKind.Flashpoint => "breach_wind", UtilKind.Dizzy => "gekko_wind", _ => "",
         };
-        if (cue != "") G.Sound(cue, 0.55f);
+        if (cue != "" && FlashSlug == null) G.Sound(cue, 0.55f); // the older cue only where there is no per-agent set
         switch (Ability.Kind)
         {
             case UtilKind.ReconBolt: AbilitySfx.Play(G, "bow_release", 0.8f); break;
@@ -347,14 +348,14 @@ public abstract partial class InitiatorDrill : MapMode
         }
         // Your own flash follows the same rule from your view.
         var (ps, pg) = BlindModel.Evaluate(blindMax, G.View, pop, G.LineOfSight(G.View.Eye, pop), ScreenAspect());
-        if (ps > 0f) G.Blind.Apply(ps);
+        if (ps > 0f) G.Blind.Apply(ps, FlashLook, BlindModel.ScreenUv(G.View, pop, ScreenAspect()));
         if (pg is BlindGrade.Flashed or BlindGrade.Partial)
         {
             selfFlashes++;
             Score -= 40;
             Event("self_flash", ps);
         }
-        G.SoundAt("flashpop", pop, maxRange: 50f, floor: 0.6f);
+        G.SoundAt(FlashSlug is { } slug ? slug + "_pop" : "flashpop", pop, maxRange: 50f, floor: 0.6f);
         string who = full + part == 0 ? "Nobody flashed" : $"{full + part} FLASHED" + (part > 0 ? $" ({part} partial)" : "");
         G.Banner(pg is BlindGrade.Flashed or BlindGrade.Partial ? $"{who} · you flashed yourself" : who,
             pg is BlindGrade.Flashed or BlindGrade.Partial ? UiTheme.Accent : full + part > 0 ? UiTheme.Good : UiTheme.Dim);
@@ -749,4 +750,16 @@ public abstract partial class InitiatorDrill : MapMode
         if (u != null) ((Node)G).GetTree().CreateTimer(0.6).Timeout += () => u.FreeVisual();
         if (Ability.IsRecon) ScanWave.Spawn(G, at, 0.5f, Ability.Color);
     }
+
+    /// <summary>This agent's blind screen and sound set (see FlashAgent.Slug / BlindLook), for your own flash.</summary>
+    BlindLook FlashLook => Ability.Kind switch
+    {
+        UtilKind.Curveball => BlindLook.Phoenix, UtilKind.GuidingLight => BlindLook.Skye, UtilKind.Blindside => BlindLook.Yoru,
+        UtilKind.FlashDrive => BlindLook.KayO, UtilKind.Flashpoint => BlindLook.Breach, _ => BlindLook.White,
+    };
+    string? FlashSlug => Ability.Kind switch
+    {
+        UtilKind.Curveball => "phoenix", UtilKind.GuidingLight => "skye", UtilKind.Blindside => "yoru",
+        UtilKind.FlashDrive => "kayo", UtilKind.Flashpoint => "breach", UtilKind.Dizzy => "dizzy", _ => null,
+    };
 }

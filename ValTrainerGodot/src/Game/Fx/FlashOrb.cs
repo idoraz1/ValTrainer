@@ -159,7 +159,7 @@ void fragment() {
         {
             Kind.Yoru => new SphereMesh { Radius = 0.07f, Height = 0.14f, RadialSegments = 4, Rings = 2 },       // shard
             Kind.Kayo => new SphereMesh { Radius = 0.075f, Height = 0.15f, RadialSegments = 6, Rings = 3 },       // grenade
-            Kind.Gekko => new SphereMesh { Radius = 0.11f, Height = 0.2f, RadialSegments = 12, Rings = 6 },        // Dizzy blob
+            Kind.Gekko => new SphereMesh { Radius = 0.2f, Height = 0.4f, RadialSegments = 16, Rings = 8 },         // Dizzy: ~0.5 m blue sphere with her halo
             _ => new SphereMesh { Radius = 0.075f, Height = 0.15f, RadialSegments = 12, Rings = 6 },
         };
         var core = new MeshInstance3D { Mesh = coreMesh, MaterialOverride = coreMat, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
@@ -180,16 +180,16 @@ void fragment() {
         if (kind == Kind.Gekko)
         {
             var eyeMat = new StandardMaterial3D { ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded, AlbedoColor = new Color(0.1f, 0.05f, 0.12f) };
-            foreach (var x in new[] { -0.045f, 0.045f })
+            foreach (var x in new[] { -0.075f, 0.075f })
                 body.AddChild(new MeshInstance3D
                 {
-                    Mesh = new SphereMesh { Radius = 0.022f, Height = 0.044f, RadialSegments = 8, Rings = 4 }, MaterialOverride = eyeMat,
-                    Position = new Vector3(x, 0.04f, -0.09f), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
+                    Mesh = new SphereMesh { Radius = 0.035f, Height = 0.07f, RadialSegments = 8, Rings = 4 }, MaterialOverride = eyeMat,
+                    Position = new Vector3(x, 0.06f, -0.17f), CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
                 });
         }
 
         // ---- halo + charge ring ----
-        float haloSize = kind switch { Kind.Breach => 1.3f, Kind.Phoenix => 1.1f, Kind.Gekko => 1.0f, _ => 0.9f };
+        float haloSize = kind switch { Kind.Breach => 1.3f, Kind.Phoenix => 1.1f, Kind.Gekko => 1.7f, _ => 0.9f };
         haloMat = Sprite(glowTex!, color, 2.2f);
         halo = SpriteNode(haloMat, haloSize);
         ringMat = Sprite(ringTex!, color, 3f, 0f);
@@ -392,9 +392,11 @@ void fragment() {
                 body.RotateObjectLocal(Vector3.Up, dt * 6f);
                 break;
             case Kind.Gekko:
-                float hop = Mathf.Abs(Mathf.Sin(age * 9f));
-                body.Position = new Vector3(0, hop * 0.18f, 0);
-                if (windT < 0) body.Scale = new Vector3(1f + 0.25f * (1f - hop), 1f - 0.2f * (1f - hop), 1f + 0.25f * (1f - hop));
+                // Dizzy hovers: a slow bob and a gloopy squash-and-stretch
+                float bob = Mathf.Sin(age * 6f);
+                body.Position = new Vector3(0, bob * 0.05f, 0);
+                if (windT < 0) body.Scale = new Vector3(1f + 0.06f * bob, 1f - 0.06f * bob, 1f + 0.06f * bob);
+                body.RotateObjectLocal(Vector3.Up, dt * 1.5f);
                 break;
         }
         if (windT < 0 && kind != Kind.Phoenix) haloMat.SetShaderParameter("energy", 2.2f + 0.4f * Mathf.Sin(age * 12f));

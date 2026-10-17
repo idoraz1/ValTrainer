@@ -224,7 +224,8 @@ public partial class Main : Node
     /// <summary>Shows any screen node (Lock-In check-in and step cards, sessions prepared with routine hooks, the hand-off).</summary>
     public void ShowScreen(Node n) => SetScreen(n);
 
-    public void StartMode(Func<TrainingMode> make) => SetScreen(new GameSession(make));
+    /// <param name="freePlay">No clock, no score, nothing saved; the drill starts over when its time is up (<see cref="GameSession.FreePlay"/>).</param>
+    public void StartMode(Func<TrainingMode> make, bool freePlay = false) => SetScreen(new GameSession(make) { FreePlay = freePlay });
 
     public void Quit()
     {

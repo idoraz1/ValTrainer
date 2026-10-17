@@ -36,7 +36,7 @@ public sealed record InitiatorAbility(
         new("breach", "Breach", "Flashpoint", AbilitySlot.Q, UtilKind.Flashpoint, 2, 1.1f, 0.8f, Color.Color8(255, 190, 60),
             "LMB: fire into a wall", null,
             "Aim at a wall up to 35 m away and up to 10 m thick, then fire. The charge bursts out of the far side 0.5 s later."),
-        new("gekko", "Gekko", "Dizzy", AbilitySlot.E, UtilKind.Dizzy, 1, 0.9f, 1.15f, Color.Color8(200, 80, 220),
+        new("gekko", "Gekko", "Dizzy", AbilitySlot.E, UtilKind.Dizzy, 1, 0.9f, 1.15f, Color.Color8(29, 199, 254),
             "LMB: send Dizzy", null,
             "Dizzy flies forward, charges, then spits plasma at every enemy she can see within 45 m. A hit blinds them. Enemies can shoot her first."),
         new("reyna", "Reyna", "Leer", AbilitySlot.C, UtilKind.Leer, 2, 0.77f, 0.5f, Color.Color8(200, 90, 255),

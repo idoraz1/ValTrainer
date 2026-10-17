@@ -78,6 +78,11 @@ public partial class GameSession : Node3D, IGame
     /// capture, no sound, no stats / telemetry / Rewind, and the run loops instead of showing results. Set before the
     /// session enters the tree.</summary>
     public bool Demo { get; init; }
+    /// <summary>Free play (the drill preview's FREE PLAY): no clock and no score on the HUD, nothing saved (stats, telemetry,
+    /// Rewind), and when the drill's time is up it starts over at once (no countdown, no results). Esc → pause → menu ends it.</summary>
+    public bool FreePlay { get; init; }
+    /// <summary>Free play: the next Restart is the automatic one at the end of the drill (skips the countdown).</summary>
+    bool freePlayLoop;
     /// <summary>The preview's simulated player: the coach's "good" player with the steady settings of the promo clips (less
     /// tremor and jitter). In the peek drills it also holds its angle instead of pre-aiming at bots hidden behind cover;
     /// elsewhere (deathmatch, map and agent drills) it has to turn to find them.</summary>
@@ -291,15 +296,17 @@ public partial class GameSession : Node3D, IGame
             Weapon = Mode.Weapon.ToString(), Map = Mode.Map?.Key ?? "range", When = DateTime.Now,
             ZoomSensMult = ZoomSensMultFor(Weapons.Get(Mode.Weapon)),
         };
-        replay = Demo ? null : StartReplay(extras); // before Begin: it spawns the first bots / targets
+        replay = Demo || FreePlay ? null : StartReplay(extras); // before Begin: it spawns the first bots / targets
         Mode.Begin(this);
         if (Main.I.Dev && !Demo) DevAdsArgs(); // --force-ads (AdsSession.cs)
         if (Demo && Mode.Key == "counterstrafe") Mover.KeyOverride = DemoStrafeKey;
         if (Demo && Mode.Key == "siteclear") { demoPath = null; demoPathTask = null; Mover.KeyOverride = DemoWalkKey; }
         Respawn(Mode.StartFeet, Mode.StartYaw);
         Blind.Reset();
-        Countdown = Demo ? 0f : 3f;
-        State = Demo ? St.Running : St.Countdown; // the preview gets straight to it (no countdown splash)
+        bool straightIn = Demo || freePlayLoop; // the preview and free play's own loop get straight to it (no countdown splash)
+        freePlayLoop = false;
+        Countdown = straightIn ? 0f : 3f;
+        State = straightIn ? St.Running : St.Countdown;
         LockMouse();
         UpdateCamera();
     }
@@ -649,6 +656,7 @@ public partial class GameSession : Node3D, IGame
     void Finish()
     {
         if (Demo) { Restart(); return; } // the preview loops: no results, no stats, no telemetry
+        if (FreePlay) { freePlayLoop = true; Restart(); return; } // free play keeps going: no results, nothing saved
         State = St.Results;
         ResetTransientInput();
         SetWorldRunning(false);

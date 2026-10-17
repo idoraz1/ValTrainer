@@ -53,6 +53,23 @@ public partial class Sfx : Node
         Rec("reload_pistol", W + "pistol_reload.wav");
         const string F = "res://assets/audio/footsteps/";
         Rec("footstep", Enumerable.Range(0, 5).Select(i => $"{F}footstep_concrete_00{i}.ogg").ToArray());
+
+        // Agent flash cues, rendered offline by our own tools/sfx/flash_sfx.py (pure synthesis, no samples).
+        // <agent>_windup lasts exactly the windup and peaks at its end, so start it at (pop - windup).
+        // The old synthesized "<agent>_wind", "flashpop" and "shatter" keys below in Build() stay as they were.
+        const string FL = "res://assets/audio/flash/";
+        foreach (var key in new[]
+        {
+            "phoenix_throw", "phoenix_flight", "phoenix_windup", "phoenix_pop",
+            "breach_throw", "breach_flight", "breach_windup", "breach_pop",
+            "kayo_throw", "kayo_flight", "kayo_windup", "kayo_windup_bounce", "kayo_pop",
+            "skye_throw", "skye_flight", "skye_windup", "skye_pop",
+            "yoru_throw", "yoru_flight", "yoru_windup", "yoru_pop",
+            "vyse_throw", "vyse_flight", "vyse_windup", "vyse_pop",
+            "dizzy_throw", "dizzy_form", "dizzy_active", "dizzy_spit", "dizzy_incoming", "dizzy_splat", "dizzy_down", "dizzy_bubble",
+            "flash_ring",
+        })
+            Rec(key, FL + key + ".wav");
     }
 
     AudioStream? Pick(string name) =>

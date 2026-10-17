@@ -13,8 +13,8 @@ namespace ValTrainer.UI;
 /// demo — the drill itself, played by the simulated player in a sub-viewport (<see cref="GameSession.Demo"/>: muted, no
 /// input, nothing saved, loops). Right: what the drill is, how long it runs, the weapon and map, which coach skills it
 /// feeds, your record at the chosen tier (best, badge, runs, recent scores) and the tier picker. START (Space / Enter) plays
-/// it, BACK (Esc) closes. Drills that need a person (Reaction Test, Sens Finder) show a note instead of a demo.
-/// <para>Dev: <c>--preview &lt;drill key&gt;</c> opens it over the menu (screenshots; <c>--preview-answer start|back</c> presses
+/// it, FREE PLAY (F) plays it without a clock or score (drills the simulated player can play), BACK (Esc) closes. Drills that need a person (Reaction Test, Sens Finder) show a note instead of a demo.
+/// <para>Dev: <c>--preview &lt;drill key&gt;</c> opens it over the menu (screenshots; <c>--preview-answer start|free|back</c> presses
 /// that button after 3 s); <c>--preview-check</c> runs every
 /// drill's demo headless for a few seconds and checks the simulated player plays it and nothing is saved.</para>
 /// </summary>
@@ -28,6 +28,7 @@ public partial class DrillPreview : Control
     readonly TrainingMode info;
     readonly string? title, sub;
     readonly Action onStart, onClose;
+    readonly Action? onFreePlay;
 
     SubViewport? vp;
     GameSession? demo;
@@ -40,8 +41,11 @@ public partial class DrillPreview : Control
 
     /// <param name="title">Card title instead of the drill's name (Agents screen); <paramref name="sub"/>: its second line.</param>
     /// <param name="onStart">Starts the drill (after the popup and its demo are gone).</param>
-    public DrillPreview(float k, Func<TrainingMode> make, TrainingMode info, Action onStart, Action onClose, string? title = null, string? sub = null)
+    /// <param name="onFreePlay">Starts it in free play (no FREE PLAY button when null or the drill needs a person).</param>
+    public DrillPreview(float k, Func<TrainingMode> make, TrainingMode info, Action onStart, Action onClose, string? title = null, string? sub = null,
+        Action? onFreePlay = null)
     {
+        this.onFreePlay = CanDemo(info) ? onFreePlay : null;
         this.k = k;
         this.make = make;
         this.info = info;
@@ -54,14 +58,14 @@ public partial class DrillPreview : Control
     }
 
     /// <summary>Opens the preview over <paramref name="parent"/> (one at a time).</summary>
-    public static void Open(Control parent, float k, Func<TrainingMode> make, Action start, string? title = null, string? sub = null)
+    public static void Open(Control parent, float k, Func<TrainingMode> make, Action start, string? title = null, string? sub = null, Action? freePlay = null)
     {
         if (parent.GetChildren().Any(c => c is DrillPreview)) return;
         TrainingMode info;
         try { info = make(); }
         catch (Exception e) { Log.Error($"[preview] can't build the drill: {e.Message}"); start(); return; }
         if (!info.HasPreview) { start(); return; } // drills on a VALORANT map go straight in
-        parent.AddChild(new DrillPreview(k, make, info, start, () => { }, title, sub));
+        parent.AddChild(new DrillPreview(k, make, info, start, () => { }, title, sub, freePlay));
     }
 
     /// <summary>Whether a drill can be demoed by the simulated player (2D drills and the Sens Finder need a person).</summary>
@@ -160,14 +164,21 @@ public partial class DrillPreview : Control
         var foot = new HBoxContainer();
         foot.AddThemeConstantOverride("separation", (int)(12 * k));
         col.AddChild(foot);
-        var hint = Text(CanDemo(info) ? "Preview: the built-in simulated player, muted. Space / Enter starts, Esc goes back." : "Space / Enter starts, Esc goes back.", 14, UiTheme.Faint);
+        var hint = Text(CanDemo(info) ? $"Preview: the built-in simulated player, muted. Space / Enter starts,{(onFreePlay != null ? " F free play," : "")} Esc goes back." : "Space / Enter starts, Esc goes back.", 14, UiTheme.Faint);
         hint.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         foot.AddChild(hint);
         var back = new VButton { Label = "BACK", Kind = VButton.Look.Secondary, K = k, FontPx = 18, CustomMinimumSize = new Vector2(160 * k, 54 * k) };
         back.Pressed += Close;
         foot.AddChild(back);
+        if (onFreePlay != null)
+        {
+            var free = new VButton { Label = "FREE PLAY", Kind = VButton.Look.Secondary, K = k, FontPx = 18, CustomMinimumSize = new Vector2(190 * k, 54 * k) };
+            free.TooltipText = "Play it with no clock and no score, and nothing saved. It starts over when the time is up; Esc → menu to stop.";
+            free.Pressed += () => Start(true);
+            foot.AddChild(free);
+        }
         var start = new VButton { Label = "START", Kind = VButton.Look.Primary, K = k, FontPx = 22, CustomMinimumSize = new Vector2(260 * k, 54 * k) };
-        start.Pressed += Start;
+        start.Pressed += () => Start();
         foot.AddChild(start);
 
         // Dev: "--preview-answer start|back" presses that button after 3 s (flow tests)
@@ -176,7 +187,7 @@ public partial class DrillPreview : Control
             {
                 if (!IsInstanceValid(this) || done) return;
                 Log.Info($"[preview] --preview-answer {ans}");
-                if (ans == "start") Start(); else Close();
+                if (ans == "start") Start(); else if (ans == "free" && onFreePlay != null) Start(true); else Close();
             };
     }
 
@@ -355,13 +366,13 @@ public partial class DrillPreview : Control
 
     // ---------------- actions ----------------
 
-    void Start()
+    void Start(bool free = false)
     {
         if (done) return;
         done = true;
         StopDemo(true);
         QueueFree();
-        onStart();
+        if (free && onFreePlay != null) onFreePlay(); else onStart();
     }
 
     void Close()
@@ -379,6 +390,7 @@ public partial class DrillPreview : Control
         if (e is not InputEventKey { Pressed: true, Echo: false } key) return;
         if (key.Keycode == Key.Escape) { GetViewport().SetInputAsHandled(); Close(); }
         else if (key.Keycode is Key.Space or Key.Enter or Key.KpEnter) { GetViewport().SetInputAsHandled(); UiTheme.ClickSound(); Start(); }
+        else if (key.Keycode == Key.F && onFreePlay != null) { GetViewport().SetInputAsHandled(); UiTheme.ClickSound(); Start(true); }
     }
 
     public override void _ExitTree() => StopDemo(true);

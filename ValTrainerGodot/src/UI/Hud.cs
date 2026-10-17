@@ -198,6 +198,19 @@ public partial class Hud : Control
     {
         float cx = size.X / 2, top = 14 * k, bh = 56 * k, tw = 128 * k, sw = 168 * k, gap = 6 * k;
 
+        if (s.FreePlay)
+        {
+            // free play: no clock and no score (the drill starts over by itself when its time is up)
+            float fw = 210 * k;
+            var fr = new Rect2(cx - fw / 2, top, fw, bh);
+            DrawRect(fr, UiTheme.Plate);
+            DrawRect(new Rect2(fr.Position.X, fr.End.Y - 2 * k, fw, 2 * k), new Color(UiTheme.Teal, 0.7f));
+            int ffs = UiTheme.Fs(24, k), fls = UiTheme.Fs(12, k);
+            TC(UiTheme.HudWide, "FREE PLAY", cx, Gfx.Mid(top + bh / 2, ffs), ffs, UiTheme.Text);
+            TC(UiTheme.HudWide, "NO SCORE · ESC TO STOP", cx, top + bh + 18 * k, fls, UiTheme.Dim);
+            return;
+        }
+
         // timer
         float remain = m.Timed ? Mathf.Max(0, m.Duration - s.Now) : s.Now;
         int secs = m.Timed ? Mathf.CeilToInt(remain) : (int)remain;

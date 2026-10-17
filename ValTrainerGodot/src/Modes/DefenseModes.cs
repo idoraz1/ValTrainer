@@ -72,6 +72,7 @@ public sealed partial class AnchorMode : MapMode
     float executeAt;
     FlashOrb? orb;
     FlashAgent? flashAgent;
+    bool flashWindup;
     Vector3 flashFrom, flashCtrl, flashPop;
     float flashT, flashFlight;
     bool planted;
@@ -357,7 +358,9 @@ public sealed partial class AnchorMode : MapMode
         flashT = 0;
         orb = G.SpawnOrb(flashAgent.Color);
         orb.GlobalPosition = flashFrom;
-        G.SoundAt(flashAgent.Cue, flashFrom, maxRange: 50f, floor: 0.6f);
+        G.SoundAt(flashAgent.Slug + "_throw", flashFrom, maxRange: 50f, floor: 0.6f);
+        G.SoundAt(flashAgent.Slug + "_flight", flashFrom, maxRange: 50f, floor: 0.5f);
+        flashWindup = false;
         flashesThrown++;
         DevFlashThrown();
     }
@@ -388,17 +391,23 @@ public sealed partial class AnchorMode : MapMode
             Log("flash intercepted");
             return;
         }
+        if (!flashWindup && flashT >= flashFlight - flashAgent!.WindupSeconds)
+        {
+            flashWindup = true; // the riser ends on the pop
+            G.SoundAt(flashAgent.Slug + "_windup", flashAgent.Path == FlashPath.Curve ? flashFrom : flashPop, maxRange: 50f, floor: 0.6f);
+        }
         if (flashT < flashFlight) return;
         float aspect = ScreenAspect();
         var (sec, grade) = BlindModel.Evaluate(flashAgent!.BlindMax, G.View, flashPop, G.LineOfSight(G.View.Eye, flashPop), aspect);
-        G.Blind.Apply(sec);
+        G.Blind.Apply(sec, BlindOverlay.LookOf(flashAgent), BlindModel.ScreenUv(G.View, flashPop, aspect));
+        if (sec >= 0.5f) G.Sound("flash_ring", 0.6f * Mathf.Clamp(sec / 2.25f, 0.35f, 1f));
         Event("flash", grade switch { BlindGrade.Flashed => 2, BlindGrade.Partial => 1, BlindGrade.NoLineOfSight => -1, _ => 0 }, -1);
         if (grade == BlindGrade.Flashed) { flashedFull++; Note($"FLASHED {sec:0.0}s · {flashAgent.Agent}", UiTheme.Accent); }
         else if (grade == BlindGrade.Dodged) Note($"Flash dodged · {flashAgent.Agent}", UiTheme.Good);
         orb.Pop();
         orb = null;
         Log($"flash popped: {grade} {sec:0.0}s");
-        G.SoundAt("flashpop", flashPop, maxRange: 50f, floor: 0.6f);
+        G.SoundAt(flashAgent.Slug + "_pop", flashPop, maxRange: 50f, floor: 0.6f);
     }
 
     float ScreenAspect()
