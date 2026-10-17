@@ -8,6 +8,8 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.14.1] - 2026-10-17
+
 ### Changed
 - Flash Dodge and Sound Lock start right away again, like the other drills on a VALORANT map. Their preview had to load the whole map a second time, which could be too much for some PCs (a player reported a crash when choosing Flash Dodge).
 
@@ -292,7 +294,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.14.0...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.14.1...HEAD
+[1.14.1]: https://github.com/idoraz1/ValTrainer/compare/v1.14.0...v1.14.1
 [1.14.0]: https://github.com/idoraz1/ValTrainer/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/idoraz1/ValTrainer/compare/v1.12.0...v1.13.0
 [1.12.0]: https://github.com/idoraz1/ValTrainer/compare/v1.11.0...v1.12.0
