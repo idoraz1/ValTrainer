@@ -13,10 +13,13 @@ namespace ValTrainer.Game;
 /// </summary>
 public static class MovementTuning
 {
-    /// <summary>Gravity for jumps and falls (m/s²). The trainer's tuned fall speed, kept as it was.</summary>
-    public const float Gravity = 20f;
-    /// <summary>Take-off speed of a jump (m/s): apex = JumpSpeed² / 2g = 0.90 m, time in the air = 2·JumpSpeed / g = 0.60 s.</summary>
-    public const float JumpSpeed = 6.0f;
+    /// <summary>Gravity for jumps and falls (m/s²). With <see cref="JumpSpeed"/> it gives VALORANT's 0.71 s jump, frame-counted
+    /// from a Range recording (2026-10-18: 10 jumps, 0.71 ± 0.01 s in the air, rise and fall equally long, so constant
+    /// gravity; research\jump-measure.md). Until 1.16: 20 m/s² and 6.0 m/s (the same apex in 0.60 s: too snappy).</summary>
+    public const float Gravity = 14.3f;
+    /// <summary>Take-off speed of a jump (m/s): apex = JumpSpeed² / 2g = 0.90 m (unchanged: the 0.95 m / 1.25 m ledge reach
+    /// stays), time in the air = 2·JumpSpeed / g = 0.71 s.</summary>
+    public const float JumpSpeed = 5.07f;
     /// <summary>Air control (m/s²): the movement keys steer you while airborne (turning keeps your speed) and can brake,
     /// but never add speed beyond your take-off speed or the run speed: no bunny-hop gain.</summary>
     public const float AirAccel = 20f;
@@ -34,10 +37,11 @@ public static class MovementTuning
     /// <summary>… for this long (seconds).</summary>
     public const float LandingErrTime = 0.225f;
     /// <summary>Impact speed (m/s) at or above which a landing plays its sound (in-game: binary cue). Midpoint
-    /// between the two calibrated jumps — crouch-jump 5.0 (the tuck shortens the fall, silent) and standing
-    /// jump 6.17 (audible) — with a real margin under the standing jump: live framerates quantize the impact
-    /// speed by ±0.1, so the threshold must not sit within 1% of it.</summary>
-    public const float LandingSoundSpeed = 5.8f;
+    /// between the two calibrated jumps — crouch-jump ≈4.23 (the tuck shortens the fall, silent) and standing
+    /// jump ≈5.22 (audible) — with a real margin under the standing jump: live framerates quantize the impact
+    /// speed by ±0.1, so the threshold must not sit within 1% of it. (At g = 20 these were 5.0 / 6.17 → 5.8; impact
+    /// speeds from the same heights scale with √g.)</summary>
+    public const float LandingSoundSpeed = 4.9f;
     /// <summary>Falls shorter than this (highest point to landing, metres) never hurt. Wiki: ~15 damage at 8 m, ~100 at 17 m,
     /// to health only (shields don't absorb it).</summary>
     public const float FallDamageFrom = 8f;

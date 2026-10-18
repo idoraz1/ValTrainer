@@ -636,6 +636,7 @@ public partial class GameSession : Node3D, IGame
         Mover.Step(dt, View.Yaw, Main.I.Valorant, ref feet, solid);
         feetY = feet.Y;
         View.Eye = new Vector3(feet.X, feetY + Mover.EyeHeight, feet.Z);
+        OwnFootsteps(dt); // running footsteps (MovementSession.cs)
     }
 
     void UpdateCamera()

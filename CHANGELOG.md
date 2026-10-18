@@ -8,6 +8,15 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Changed
+- Movement feels heavier, closer to VALORANT (a player said on Discord that it felt too light and too fast). Your run speed now depends on the gun in hand, using VALORANT's numbers: 5.40 m/s with the Vandal, Phantom or Sheriff, and 5.13 m/s with the Operator (3.69 m/s scoped). Walking, crouching and aiming are slower in proportion, and you're accurate below 27.5% of the gun's run speed, as in VALORANT. Before, every gun ran at the rifle's 5.40 m/s.
+- You speed up like in VALORANT: about 0.3 s from standing to full run speed (it was 0.15 s, twice as fast). Stopping and counter-strafing are unchanged (they already matched Riot's own numbers). The Mixed Peeks bots strafe with the same acceleration.
+- Jumps last as long as in VALORANT: 0.71 s in the air (it was 0.60 s), with the same height, so the ledges you can reach by jumping and crouch-jumping don't change. Riot doesn't publish these numbers; both were frame-counted from a VALORANT recording.
+- The gun bob while running matches your steps: one sway left and right every two steps and one small dip per step, like VALORANT's gun sway. It used to bob more than twice as fast as a footstep, which made running look light and twitchy. The idle sway is unchanged.
+
+### Added
+- You hear your own footsteps when you run, quieter than an enemy's. Walking (shift), crouching and jumping are silent, as in VALORANT. Previously the only sound was the landing.
+
 ## [1.15.0] - 2026-10-18
 
 ### Added

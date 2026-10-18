@@ -124,7 +124,7 @@ public sealed class JettKit : DuelistKit
         HideGun();
         DuelistSfx.Play(G, "wind_dash", 0.8f);
         DuelistBurst.Spawn(G, Feet + Vector3.Up * 0.6f, new Color(0.85f, 0.95f, 1f), 1.2f, 0.35f, 0f);
-        StartDash(dir, DashDist, DashTime, Mover.RunSpeed, "jett tailwind", DashDist, holdAltitude: true, () => GunBack(0f, DashGunDraw));
+        StartDash(dir, DashDist, DashTime, G.Mover.RunMax, "jett tailwind", DashDist, holdAltitude: true, () => GunBack(0f, DashGunDraw));
         D.OnAbilityUsed("dash");
     }
 
@@ -260,7 +260,7 @@ public sealed class NeonKit : DuelistKit
         if (active)
         {
             // Sprint on the ground; airborne speed = the knife's (patch 12.09: jumping gives no sprint bonus).
-            G.MoveSpeedScale = (G.PlayerGrounded ? SprintSpeed : AirSpeed) / Mover.RunSpeed;
+            G.MoveSpeedScale = (G.PlayerGrounded ? SprintSpeed : AirSpeed) / G.Mover.RunMax; // absolute speeds whatever the gun
             if (!G.PlayerGrounded && G.Mover.Speed > AirSpeed + 0.05f)
             {
                 var v = G.Mover.Vel; v.Y = 0;
@@ -310,7 +310,7 @@ public sealed class NeonKit : DuelistKit
         sliding = true;
         GunBack(0.2f, 0f);
         DuelistSfx.Play(G, "slide", 0.8f);
-        StartDash(dir, SlideDist, SlideTime, Mover.RunSpeed, "neon slide", SlideDist, holdAltitude: false, () => sliding = false);
+        StartDash(dir, SlideDist, SlideTime, G.Mover.RunMax, "neon slide", SlideDist, holdAltitude: false, () => sliding = false);
         D.OnAbilityUsed("slide");
     }
 
@@ -642,7 +642,7 @@ public sealed class ReynaKit : DuelistKit
         dismissFrom = Feet;
         dismissTop = 0f;
         G.Player.ProtectedUntil = dismissUntil;
-        G.MoveSpeedScale = DismissSpeed / Mover.RunSpeed;
+        G.MoveSpeedScale = DismissSpeed / G.Mover.RunMax;
         HideGun();
         DuelistSfx.Play(G, "dismiss", 0.8f);
         MarkUse("dismiss");
@@ -1084,7 +1084,7 @@ public sealed class WaylayKit : DuelistKit
         if (G.PlayerGrounded) dir.Y = Mathf.Max(dir.Y, 0f);    // not into the floor
         DuelistSfx.Play(G, "light_dash", 0.7f);
         DuelistBurst.Spawn(G, Feet + Vector3.Up * 0.9f, Color, 1.2f, 0.3f, 2f);
-        StartDash(dir, LsDist, LsTime, Mover.RunSpeed, $"waylay lightspeed #{dashNo}", LsDist, holdAltitude: true, () =>
+        StartDash(dir, LsDist, LsTime, G.Mover.RunMax, $"waylay lightspeed #{dashNo}", LsDist, holdAltitude: true, () =>
         {
             if (dashesLeft > 0) { NextDash(); return; }
             ls = Ls.Ready;

@@ -44,7 +44,7 @@ public partial class GameSession
         viewmodel = null;
         weaponDef = def;
         Gun = def != null ? new WeaponController(def) : null;
-        Mover.AdsSpeedMul = def?.AdsMoveMul ?? Mover.AdsMultiplier;
+        Mover.Hold(def); // the gun sets the run / walk / crouch / aimed speeds and the accuracy deadzone
         if (def != null && !Mode.Is2D && Main.I.Settings.ViewModel)
         {
             viewmodel = Viewmodel.Create(def.Kind, Main.I.Settings.LeftHandedWeapon);

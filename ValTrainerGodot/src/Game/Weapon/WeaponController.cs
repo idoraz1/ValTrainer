@@ -117,7 +117,7 @@ public sealed class WeaponController
 
         // Camera follows the recoil (and drifts back as heat recovers).
         float crouchMul = mover.Crouching && mover.Speed < 0.5f ? 0.85f : 1f;
-        float runMul = movementMode && mover.Speed > Mover.WalkSpeed ? 1.8f : 1f;
+        float runMul = movementMode && mover.Speed > mover.WalkMax ? 1.8f : 1f;
         view.RecoilPitch = WeaponDef.Lerp(Def.Pitch, heat) * crouchMul * runMul;
         view.RecoilYaw = sideBlend * WeaponDef.Lerp(Def.Yaw, yawHeat) * crouchMul;
 

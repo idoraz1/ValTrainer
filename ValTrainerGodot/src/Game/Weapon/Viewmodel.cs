@@ -278,14 +278,17 @@ public partial class Viewmodel : Node3D
         pos += new Vector3(Mathf.Sin(time * 0.83f) * 0.0011f, Mathf.Sin(time * 1.7f) * 0.0016f, 0f) * br;
         rot += new Vector3(Mathf.Sin(time * 1.7f + 0.6f) * 0.22f, Mathf.Sin(time * 0.71f) * 0.12f, Mathf.Sin(time * 0.6f) * 0.25f) * br;
 
-        // Movement bob (distance-driven, none when still).
-        float targetAmp = Mathf.Clamp(speed / 5.4f, 0f, 1.3f);
+        // Movement bob, paced by the footsteps like VALORANT's calm gun sway: bobPhase runs π per step
+        // (FootstepFx.StepInterval: 0.33 s at 5.4 m/s), so the side-to-side swing (sin φ) is one cycle per two steps
+        // (≈1.5 Hz at full run) and the dip (1 − cos 2φ) is one per step (≈3 Hz), lowest as each foot lands. The old bob
+        // ran at 3.6 / 7.2 Hz, twice a footstep's pace, which made running look light and twitchy. None when still.
+        float targetAmp = Mathf.Clamp(speed / Mover.RunSpeed, 0f, 1.3f);
         bobAmp = Mathf.Lerp(bobAmp, targetAmp, 1f - Mathf.Exp(-8f * dt));
-        bobPhase += dt * speed * 4.2f;
+        if (speed > 0.05f) bobPhase += dt * Mathf.Pi / Fx.FootstepFx.StepInterval(speed);
         float ba = bobAmp * (1f - 0.75f * adsK);
         float sp = Mathf.Sin(bobPhase);
-        pos += new Vector3(sp * 0.0075f, -(1f - Mathf.Cos(2f * bobPhase)) * 0.5f * 0.0055f - 0.004f, 0.006f) * ba;
-        rot += new Vector3(Mathf.Sin(2f * bobPhase + 0.4f) * 0.5f, sp * 0.5f, sp * 1.1f) * ba;
+        pos += new Vector3(sp * 0.0055f, -(1f - Mathf.Cos(2f * bobPhase)) * 0.5f * 0.004f - 0.004f, 0.006f) * ba;
+        rot += new Vector3(Mathf.Sin(2f * bobPhase + 0.4f) * 0.4f, sp * 0.4f, sp * 0.8f) * ba;
 
         // Mouse-look lag.
         UpdateLookSway(dt);

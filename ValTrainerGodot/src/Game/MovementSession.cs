@@ -1,6 +1,7 @@
 using System.Globalization;
 using Godot;
 using ValTrainer.Audio;
+using ValTrainer.Game.Fx;
 
 namespace ValTrainer.Game;
 
@@ -45,7 +46,27 @@ public partial class GameSession
         Mover.Landed += OnMoverLanded;
         Mover.JumpEnabled = !NoJumpDrills.Contains(Mode.Key);
         Mover.KeyOverride = null;
+        ownStepT = 0.06f;
         if (Main.I.Dev && !Demo) DevMovementSetup(); // never in a drill preview (--movecheck quits the app)
+    }
+
+    /// <summary>Seconds to the player's next own running footstep.</summary>
+    float ownStepT;
+
+    /// <summary>
+    /// Your own footsteps, as in VALORANT: running on the ground is audible (quieter than an enemy's steps, 2D), walking
+    /// (shift), crouching and the air are silent. Same cadence as the enemies' (<see cref="FootstepFx.StepInterval"/>);
+    /// a landing counts as a footfall, so the next step comes a full step after it. Muted in previews (Play2D).
+    /// </summary>
+    void OwnFootsteps(float dt)
+    {
+        var m = Mover;
+        if (!m.Grounded) { ownStepT = FootstepFx.StepInterval(m.Speed); return; }
+        if (m.Walking || m.Crouching || m.SteerLockLeft > 0 || m.Speed <= m.WalkMax + 0.05f) { ownStepT = 0.06f; return; }
+        ownStepT -= dt;
+        if (ownStepT > 0) return;
+        ownStepT += FootstepFx.StepInterval(m.Speed);
+        Play2D("footstep", 0.35f, 0.92f + 0.16f * Random.Shared.NextSingle());
     }
 
     void OnMoverJumped()

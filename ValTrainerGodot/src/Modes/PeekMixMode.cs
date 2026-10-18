@@ -18,9 +18,9 @@ public sealed class PeekMixMode : BotMode
     public override IEnumerable<Box> ExtraSolids => new[] {
         new Box(new Vector3(-1.8f, 0, -10), new Vector3(1.8f, 3.2f, -9)) };
 
-    // Player-consistent horizontal profile (Mover.cs): 5.4 run / 2.97 walk / 2.43 crouch, 40 m/s² accel,
+    // Player-consistent horizontal profile (Mover.cs): 5.4 run / 2.97 walk / 2.43 crouch, the player's acceleration,
     // two-phase brake ≈160–190 ms from full run. Bots faster than 3.2 m/s are audible (BotCharacter.RunStepSpeed).
-    const float Accel = 40f, BrakeHigh = 38f, BrakeLow = 24f;
+    const float Accel = Mover.GroundAccel, BrakeHigh = 38f, BrakeLow = 24f;
     const float RunSpeed = 5.4f, WalkSpeed = 2.97f, CrouchSpeed = 2.43f;
     // Jump project parameters (community height estimate ≈1.1–1.2 m; knowledge/Valorant Movement §5): apex v0²/2g,
     // airtime 2·v0/g — tune these, not the physics.

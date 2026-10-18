@@ -4,21 +4,41 @@ using ValTrainer.Valorant;
 namespace ValTrainer.Game;
 
 /// <summary>
-/// Valorant rifle movement (ported unchanged from the tuned raylib build). Braking matches Riot-measured
-/// Phantom stop times (≈105 ms to the accuracy threshold, ≈160 ms to full stop); releasing the keys and
-/// counter-strafing stop almost equally fast (counter ≈6% quicker).
+/// Valorant movement (ported from the tuned raylib build). Braking matches Riot-measured Phantom stop times (≈105 ms to
+/// the accuracy threshold, ≈160 ms to full stop); releasing the keys and counter-strafing stop almost equally fast
+/// (counter ≈6% quicker). The max speeds follow the gun in hand (<see cref="Hold"/>): run = the gun's VALORANT run speed,
+/// walk / crouch / aimed are fractions of it, and the accuracy deadzone is 27.5% of it.
 /// <para>This file is the horizontal model (ground, air control, dash lock). Jumping, crouch-jumps, falling, landing,
 /// ability impulses and the collision step are in MovementBody.cs; the numbers are in <see cref="MovementTuning"/>.</para>
 /// </summary>
 public sealed partial class Mover
 {
+    /// <summary>Run speed with a rifle in hand (Vandal / Phantom / Sheriff: 5.40 m/s, 80% of knife speed). Bots and drill
+    /// numbers written in rifle terms use these constants; the player's own limits follow the gun (<see cref="RunMax"/>).</summary>
     public const float RunSpeed = 5.4f;
-    public const float WalkSpeed = RunSpeed * 0.55f;
-    public const float CrouchSpeed = RunSpeed * 0.45f;
+    /// <summary>Walk (shift) and crouch max speed as fractions of the run speed (Riot publishes neither).</summary>
+    public const float WalkMul = 0.55f, CrouchMul = 0.45f;
+    /// <summary>Patch 3.0 deadzone: shots are fully accurate at or below 27.5% of the weapon's max speed.</summary>
+    public const float DeadzoneMul = 0.275f;
+    public const float WalkSpeed = RunSpeed * WalkMul;
+    public const float CrouchSpeed = RunSpeed * CrouchMul;
     public const float AdsMultiplier = 0.76f;
-    public const float AccurateSpeed = RunSpeed * 0.275f; // ≈1.49 m/s (patch 3.0)
+    public const float AccurateSpeed = RunSpeed * DeadzoneMul; // ≈1.49 m/s with a rifle
 
-    const float Accel = 40f, BrakeHigh = 38f, BrakeLow = 24f, CounterBonus = 1.06f;
+    /// <summary>Run speed of the gun in hand (<see cref="Core.WeaponDef.RunSpeed"/>: rifles 5.40, Operator 5.13 m/s);
+    /// <see cref="RunSpeed"/> with no gun.</summary>
+    public float RunMax { get; private set; } = RunSpeed;
+    public float WalkMax => RunMax * WalkMul;
+    public float CrouchMax => RunMax * CrouchMul;
+    /// <summary>The deadzone with the gun in hand (rifles ≈1.49 m/s, Operator ≈1.41 m/s).</summary>
+    public float AccurateMax => RunMax * DeadzoneMul;
+
+    /// <summary>Ground acceleration (m/s²): standstill → run speed in ≈0.3 s. Riot publishes no acceleration; this is
+    /// frame-counted from a VALORANT Range recording (2026-10-18: strafes reach full speed in 0.27–0.39 s, see the
+    /// support folder's research\jump-measure.md). Until 1.16 it was 40 (full speed in 0.135 s), which made running
+    /// feel light. Braking (below) is Riot's own measurement and stays.</summary>
+    public const float GroundAccel = 18f;
+    const float Accel = GroundAccel, BrakeHigh = 38f, BrakeLow = 24f, CounterBonus = 1.06f;
 
     public const float StandEye = PlayerView.EyeHeight;
     public const float CrouchEye = 1.15f;
@@ -32,12 +52,19 @@ public sealed partial class Mover
     /// Operator 0.72), <see cref="AdsMultiplier"/> by default.</summary>
     public float AdsSpeedMul = AdsMultiplier;
 
+    /// <summary>The gun in hand sets the max speeds: its run speed and its aimed / scoped fraction (null = no gun: rifle).</summary>
+    public void Hold(Core.WeaponDef? w)
+    {
+        RunMax = w?.RunSpeed ?? RunSpeed;
+        AdsSpeedMul = w?.AdsMoveMul ?? AdsMultiplier;
+    }
+
     /// <summary>Horizontal (ground) speed in m/s.</summary>
     public float Speed => new Vector2(Vel.X, Vel.Z).Length();
-    /// <summary>Standing on something, past the landing penalty and at most <see cref="AccurateSpeed"/>: first shots go where you aim.</summary>
-    public bool Accurate => Grounded && !LandingPenalty && Speed <= AccurateSpeed + 0.001f;
+    /// <summary>Standing on something, past the landing penalty and at most <see cref="AccurateMax"/>: first shots go where you aim.</summary>
+    public bool Accurate => Grounded && !LandingPenalty && Speed <= AccurateMax + 0.001f;
     /// <summary>0 = accurate … 1 = running speed, airborne or just landed (crosshair movement-error display).</summary>
-    public float MoveError => Grounded && !LandingPenalty ? Mathf.Clamp((Speed - AccurateSpeed) / (RunSpeed - AccurateSpeed), 0, 1) : 1f;
+    public float MoveError => Grounded && !LandingPenalty ? Mathf.Clamp((Speed - AccurateMax) / (RunMax - AccurateMax), 0, 1) : 1f;
 
     public readonly List<float> StopTimesMs = new();
     public readonly List<float> CounterStopTimesMs = new();
@@ -80,8 +107,8 @@ public sealed partial class Mover
         float target = Crouching ? CrouchEye : StandEye;
         EyeHeight += (target - EyeHeight) * (1f - Mathf.Exp(-14f * dt));
 
-        float max = (Crouching ? CrouchSpeed : Walking ? WalkSpeed : RunSpeed) * SpeedScale;
-        if (Ads) max = Mathf.Min(max, RunSpeed * AdsSpeedMul * SpeedScale);
+        float max = (Crouching ? CrouchMax : Walking ? WalkMax : RunMax) * SpeedScale;
+        if (Ads) max = Mathf.Min(max, RunMax * AdsSpeedMul * SpeedScale);
 
         // Ability dash: no steering and no friction until the lock runs out (gravity still applies in the air).
         if (SteerLockLeft > 0)
@@ -106,7 +133,7 @@ public sealed partial class Mover
         }
         boosting = false;
 
-        float brake = (speedBefore > RunSpeed * 0.25f ? BrakeHigh : BrakeLow) * dt;
+        float brake = (speedBefore > RunMax * 0.25f ? BrakeHigh : BrakeLow) * dt;
         bool reversing = false;
 
         if (!wants)
@@ -160,7 +187,7 @@ public sealed partial class Mover
 
     void TrackStop(float dt, bool wants, Vector3 wish, bool reversing, float speedBefore)
     {
-        if (!stopping && speedBefore > RunSpeed * 0.8f && (!wants || reversing || opposedKeys))
+        if (!stopping && speedBefore > RunMax * 0.8f && (!wants || reversing || opposedKeys))
         {
             stopping = true;
             stoppingCounter = reversing;
@@ -196,10 +223,10 @@ public sealed partial class Mover
     float GroundErrorDeg(Core.WeaponDef w)
     {
         float s = Speed;
-        if (s <= AccurateSpeed) return 0f;
+        if (s <= AccurateMax) return 0f;
         if (Crouching) return w.CrouchWalkErr;
-        if (s <= WalkSpeed) return w.WalkErr * (s - AccurateSpeed) / (WalkSpeed - AccurateSpeed);
-        return w.WalkErr + (w.RunErr - w.WalkErr) * Mathf.Clamp((s - WalkSpeed) / (RunSpeed - WalkSpeed), 0, 1);
+        if (s <= WalkMax) return w.WalkErr * (s - AccurateMax) / (WalkMax - AccurateMax);
+        return w.WalkErr + (w.RunErr - w.WalkErr) * Mathf.Clamp((s - WalkMax) / (RunMax - WalkMax), 0, 1);
     }
 
     public void ResetStops()

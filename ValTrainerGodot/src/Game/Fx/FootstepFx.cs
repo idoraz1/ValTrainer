@@ -30,6 +30,11 @@ public static class FootstepFx
     const float Floor = 0.35f;
     const string MuffledBus = "VT_FootstepsMuffled";
 
+    /// <summary>Seconds per step at <paramref name="speed"/> m/s: ~0.33 s at rifle run speed (5.4 m/s, a 1.78 m stride),
+    /// quicker legs when faster, slower when slowed (0.28–0.5 s). Shared by enemy steps, the player's own steps and the
+    /// viewmodel's bob.</summary>
+    public static float StepInterval(float speed) => Mathf.Clamp(0.33f * 5.4f / Mathf.Max(speed, 0.1f), 0.28f, 0.5f);
+
     static readonly Dictionary<string, AudioStream[]> sets = new();
     static Node3D? root;
     static readonly List<AudioStreamPlayer3D> pool = new();
@@ -151,8 +156,7 @@ public sealed class FootstepEmitter
         if (crouched || speed <= FootstepFx.AudibleSpeed) { t = 0.05f; return; }
         t -= dt;
         if (t > 0) return;
-        // Cadence: ~0.33 s per step at full run speed (5.4 m/s), a little slower when slowed.
-        t += Mathf.Clamp(0.33f * 5.4f / Mathf.Max(speed, 0.1f), 0.28f, 0.5f);
+        t += FootstepFx.StepInterval(speed); // ~0.33 s per step at full run speed (5.4 m/s), a little slower when slowed
         if (FootstepFx.Step(g, feet, FootstepFx.SurfaceAt(map, feet), vol)) Steps++;
     }
 }

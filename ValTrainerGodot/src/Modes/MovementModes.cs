@@ -56,7 +56,7 @@ public sealed class CounterStrafeMode : MovementMode
         if (bot == null)
         {
             cooldown -= dt;
-            movingFor = m.Speed > Mover.RunSpeed * 0.8f ? movingFor + dt : Mathf.Max(0, movingFor - dt * 2);
+            movingFor = m.Speed > m.RunMax * 0.8f ? movingFor + dt : Mathf.Max(0, movingFor - dt * 2);
             if (cooldown <= 0 && movingFor >= needMoving)
             {
                 bot = G.SpawnBot(new Vector3(Mathf.Clamp(G.View.Eye.X + R(-6, 6), -9, 9), 0, -R(10, 18)));
@@ -95,7 +95,7 @@ public sealed class CounterStrafeMode : MovementMode
         return dist;
     }
 
-    public override string? Prompt => bot == null && G.Mover.Speed < Mover.RunSpeed * 0.8f ? "Keep strafing A / D — a bot appears while you're running" : null;
+    public override string? Prompt => bot == null && G.Mover.Speed < G.Mover.RunMax * 0.8f ? "Keep strafing A / D — a bot appears while you're running" : null;
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {

@@ -358,8 +358,8 @@ public partial class Hud : Control
             mv.Accurate ? UiTheme.Good : UiTheme.Text);
         float barY = r.Position.Y + 20 * k, bh = 8 * k;
         DrawRect(new Rect2(r.Position.X, barY, r.Size.X, bh), new Color(0, 0, 0, 0.5f));
-        DrawRect(new Rect2(r.Position.X, barY, r.Size.X * Mathf.Clamp(mv.Speed / Mover.RunSpeed, 0, 1), bh), mv.Accurate ? UiTheme.Good : UiTheme.Accent);
-        float tx = r.Position.X + r.Size.X * (Mover.AccurateSpeed / Mover.RunSpeed);
+        DrawRect(new Rect2(r.Position.X, barY, r.Size.X * Mathf.Clamp(mv.Speed / mv.RunMax, 0, 1), bh), mv.Accurate ? UiTheme.Good : UiTheme.Accent);
+        float tx = r.Position.X + r.Size.X * (mv.AccurateMax / mv.RunMax);
         DrawRect(new Rect2(tx - 1 * k, barY - 4 * k, 2 * k, bh + 8 * k), UiTheme.Text);
 
         // last stop feedback (pops when a new stop is measured)

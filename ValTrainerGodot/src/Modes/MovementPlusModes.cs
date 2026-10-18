@@ -183,7 +183,7 @@ public sealed class JumpPeekMode : OpAngleMode
                 break;
             case 3: // swing during the bolt
                 if (PlayerX < 2.2f && AutoT < 0.8f) keys.Add(k.KeyRight);
-                else if (AutoT < 0.9f || G.Mover.Speed > Mover.AccurateSpeed) { if (G.Mover.Vel.X > 0.3f) keys.Add(k.KeyLeft); }
+                else if (AutoT < 0.9f || G.Mover.Speed > G.Mover.AccurateMax) { if (G.Mover.Vel.X > 0.3f) keys.Add(k.KeyLeft); }
                 if (AutoT > 2.4f || Bot == null) { AutoPhase = 2; AutoT = 0; }
                 break;
         }

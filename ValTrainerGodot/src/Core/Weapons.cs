@@ -9,6 +9,10 @@ public enum WeaponKind { None, Vandal, Phantom, Sheriff, Operator, Headhunter, T
 /// spread tables are RECONSTRUCTED from Riot's documented recoil rules (deterministic first bullets, vertical
 /// climb that plateaus, side-locked horizontal drift with 10% swap chance after the protected bullets) —
 /// Riot never published per-bullet numbers. All angles in degrees, cumulative from the original aim point.
+/// <para>RunSpeed (m/s) is the in-game "Run Speed" stat with the gun in hand, which the player's movement uses (Mover.Hold).
+/// VALORANT's tiers: knife 6.75; Classic / Ghost / Frenzy / Stinger / Spectre 5.73; Vandal / Phantom / Sheriff / Shorty /
+/// Bulldog / Guardian / Marshal / Outlaw 5.40; Operator / Odin / Ares 5.13; Bucky / Judge 5.06. Chamber's guns have no
+/// published number: Headhunter uses the Sheriff's, Tour De Force the Operator's.</para>
 /// </summary>
 public sealed record WeaponDef(
     WeaponKind Kind, string Name,
@@ -28,7 +32,8 @@ public sealed record WeaponDef(
     /// <summary>Bolt action (Operator only): the scope drops after every shot and the bolt cycles.</summary>
     public bool Bolt => Kind == WeaponKind.Operator;
     /// <summary>Max move speed while aimed / scoped, as a fraction of the run speed (valorant-api adsStats
-    /// runSpeedMultiplier; Operator "decreased scoped movement speed 76% >>> 72%"). Chamber's guns: no number, 0.76.</summary>
+    /// runSpeedMultiplier; Operator "decreased scoped movement speed 76% >>> 72%" = 3.69 m/s). Chamber's guns: no number,
+    /// 0.76. Once added: Outlaw 0.80, Marshal 0.90 (patch 2.03).</summary>
     public float AdsMoveMul => Kind == WeaponKind.Operator ? 0.72f : 0.76f;
 
     /// <summary>Damage for a hit zone at a distance (meters).</summary>

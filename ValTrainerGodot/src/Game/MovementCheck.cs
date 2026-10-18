@@ -262,6 +262,15 @@ public static class MovementCheck
         r.M.SpeedScale = 0.5f; r.Step(120);
         float slow = r.M.Speed;
         Check("speed scale 1.25 / 0.5", Mathf.Abs(fast - 6.75f) < 0.01f && Mathf.Abs(slow - 2.7f) < 0.01f, $"{F(fast, "0.00")} / {F(slow, "0.00")} m/s");
+
+        // The gun in hand sets the speeds: Operator run 5.13, scoped 72% = 3.69, deadzone 27.5% of 5.13 = 1.41.
+        r = new Rig(new List<Box> { Floor() }, Vector3.Zero);
+        r.M.Hold(Weapons.Operator); r.Hold(Key.D); r.Step(120);
+        float opRun = r.M.Speed;
+        r.M.Ads = true; r.Step(120);
+        float opScoped = r.M.Speed;
+        Check("Operator in hand: run / scoped / deadzone", Mathf.Abs(opRun - 5.13f) < 0.01f && Mathf.Abs(opScoped - 5.13f * 0.72f) < 0.01f
+            && Mathf.Abs(r.M.AccurateMax - 5.13f * 0.275f) < 1e-4f, $"{F(opRun, "0.00")} / {F(opScoped, "0.00")} m/s, accurate ≤ {F(r.M.AccurateMax)} m/s");
         r = new Rig(new List<Box> { Floor() }, Vector3.Zero) { };
         r.M.JumpEnabled = false;
         r.JumpAndLand(0.5f);
@@ -288,11 +297,12 @@ public static class MovementCheck
 
     // ------------------------------------------------------------------ ground model regression (v1.3)
 
-    /// <summary>The v1.3 ground model, verbatim, as the reference for frame-by-frame comparison.</summary>
+    /// <summary>The v1.3 ground model, verbatim except the acceleration (1.16: <see cref="Mover.GroundAccel"/>, measured from
+    /// VALORANT), as the reference for frame-by-frame comparison.</summary>
     sealed class RefMover
     {
         const float RunSpeed = 5.4f, WalkSpeed = RunSpeed * 0.55f, CrouchSpeed = RunSpeed * 0.45f, AdsMultiplier = 0.76f, AccurateSpeed = RunSpeed * 0.275f;
-        const float Accel = 40f, BrakeHigh = 38f, BrakeLow = 24f, CounterBonus = 1.06f;
+        const float Accel = Mover.GroundAccel, BrakeHigh = 38f, BrakeLow = 24f, CounterBonus = 1.06f;
         public Vector3 Vel;
         public bool Crouching, Walking, Ads;
         public float EyeHeight = Mover.StandEye;
