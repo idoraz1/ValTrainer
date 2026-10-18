@@ -8,6 +8,8 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-10-18
+
 ### Changed
 - Movement feels heavier, closer to VALORANT (a player said on Discord that it felt too light and too fast). Your run speed now depends on the gun in hand, using VALORANT's numbers: 5.40 m/s with the Vandal, Phantom or Sheriff, and 5.13 m/s with the Operator (3.69 m/s scoped). Walking, crouching and aiming are slower in proportion, and you're accurate below 27.5% of the gun's run speed, as in VALORANT. Before, every gun ran at the rifle's 5.40 m/s.
 - You speed up like in VALORANT: about 0.3 s from standing to full run speed (it was 0.15 s, twice as fast). Stopping and counter-strafing are unchanged (they already matched Riot's own numbers). The Mixed Peeks bots strafe with the same acceleration.
@@ -320,7 +322,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.15.0...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.16.0...HEAD
+[1.16.0]: https://github.com/idoraz1/ValTrainer/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/idoraz1/ValTrainer/compare/v1.14.1...v1.15.0
 [1.14.1]: https://github.com/idoraz1/ValTrainer/compare/v1.14.0...v1.14.1
 [1.14.0]: https://github.com/idoraz1/ValTrainer/compare/v1.13.0...v1.14.0
