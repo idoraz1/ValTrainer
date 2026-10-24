@@ -8,6 +8,8 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-10-24
+
 ### Added
 - Sheriff One-Taps (suggested on Discord): a Sheriff drill. Enemies appear at close, mid and long range, some peeking from pillars. A headshot kills in one tap up to 30 m; past 30 m it does 145 damage to a 150 HP enemy, so you need a second tap, and the drill tells you so. Shots fired before the Sheriff has recovered count as spammed and score nothing. A ring around the crosshair shows the recovery. Results show your one-tap %, headshot %, time to kill and spammed shots. It uses VALORANT's Sheriff numbers (damage by range, fire rate, spread).
 - Strafe Duels (suggested on Discord): like Counter-Strafe, but the enemy moves like a real player. Bots switch between long strafes, short ADAD micro-strafes, crouch-strafes, A-crouch-D-crouch, and jiggles, accelerating and braking like you do. They only shoot when they stop, as in VALORANT. You counter-strafe and win the duel. Higher difficulties strafe faster, mix patterns more and shoot sooner after stopping. Results show duels won, time to kill, first-shot accuracy, aim error against a moving enemy, and shots you fired while still moving.
@@ -328,7 +330,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.16.0...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.17.0...HEAD
+[1.17.0]: https://github.com/idoraz1/ValTrainer/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/idoraz1/ValTrainer/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/idoraz1/ValTrainer/compare/v1.14.1...v1.15.0
 [1.14.1]: https://github.com/idoraz1/ValTrainer/compare/v1.14.0...v1.14.1
