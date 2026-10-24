@@ -21,7 +21,7 @@ param(
   # Drills for the smoke test (keys from src\Modes). Reaction Test and Sens Finder need real input and are left out.
   [string[]]$Modes = @("peek_mix", "flick", "gridshot", "spider", "tracking", "strafebots", "peek", "operator", "spray_vandal",
                        "spray_phantom", "spray_transfer", "counterstrafe", "peekduel", "siteclear", "flashmap", "deathmatch",
-                       "microshot", "switch", "popup", "longtaps", "jumppeek", "jigglepeek", "postplant", "retake",
+                       "microshot", "switch", "popup", "longtaps", "sheriff", "strafeduel", "jumppeek", "jigglepeek", "postplant", "retake",
                        "anchor", "sound", "flashpeek:phoenix", "recon:sova", "smokeexec:omen", "mobility:jett", "chamber:headhunter"),
   # Extra cultures for the locale test (the invariant culture always runs).
   [string[]]$Cultures = @("de-DE", "tr-TR"),

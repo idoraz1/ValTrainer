@@ -61,9 +61,31 @@ public partial class GameSession
     IEnumerable<int> KeybindSteps()
     {
         var binds = Main.I.Valorant.Binds;
-        foreach (var line in binds.Dump().Split('\n')) GD.Print("[keybind-test] bind " + line);
+        var imported = Main.I.Valorant.Imported;
+        foreach (var line in binds.Dump(imported).Split('\n')) GD.Print("[keybind-test] bind " + line);
         string F(float v) => v.ToString("0.00", CultureInfo.InvariantCulture);
         yield return 5;
+
+        // ---- ValTrainer custom binds (settings.json, Settings → Keybinds) are what the session uses ----
+        var custom = Main.I.Settings.CustomBinds;
+        if (custom is not { Count: > 0 }) KTSkip("custom binds", "settings.json has none (--data-dir with a settings.json holding CustomBinds tests them)");
+        else
+        {
+            foreach (var (key, value) in custom)
+            {
+                if (CustomBinds.ParseKey(key) is not { } s || InputBinding.Parse(value) is not { } want)
+                {
+                    KT($"custom {key}={value} ignored (not a valid action / bind)", CustomBinds.ParseKey(key) is not { } s2 || imported[s2.A, s2.Slot] == binds[s2.A, s2.Slot]);
+                    continue;
+                }
+                KT($"custom {s.A}[{s.Slot}] = {want} in effect", binds[s.A, s.Slot] == want, $"effective {binds[s.A, s.Slot]}, VALORANT {imported[s.A, s.Slot]}");
+            }
+            // Slots without an override follow VALORANT.
+            var follow = Keybinds.All.SelectMany(a => Enumerable.Range(0, Keybinds.Slots).Select(sl => (a, sl)))
+                .Where(x => !CustomBinds.IsCustom(custom, x.a, x.sl)).ToList();
+            var bad = follow.Where(x => binds[x.a, x.sl] != imported[x.a, x.sl]).Select(x => $"{x.a}[{x.sl}]").ToList();
+            KT($"{follow.Count} slots without a custom bind follow VALORANT", bad.Count == 0, string.Join(", ", bad));
+        }
 
         // ---- movement, walk, crouch, jump (every bound slot) ----
         if (!Mode.Movement) KTSkip("movement / crouch / jump", $"{Mode.Key} has no movement");

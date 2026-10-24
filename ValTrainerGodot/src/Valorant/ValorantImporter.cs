@@ -43,7 +43,21 @@ public sealed class ValorantProfile
     public bool LeftHanded;            // first-person weapon on the left
 
     /// <summary>All keybinds (both slots per action): VALORANT's defaults with BackupKeybinds.json's overrides applied.</summary>
+    /// <remarks>After <see cref="ApplyCustomBinds"/> these are the binds in EFFECT: VALORANT's plus ValTrainer's custom
+    /// overrides (Settings → Keybinds). Every input check and hint reads this; <see cref="Imported"/> is VALORANT's alone.</remarks>
     public Keybinds Binds = Keybinds.Defaults();
+
+    Keybinds? imported;
+    /// <summary>The binds exactly as imported from VALORANT (defaults + BackupKeybinds.json), without ValTrainer's overrides.</summary>
+    public Keybinds Imported => imported ?? Binds;
+
+    /// <summary>Puts ValTrainer's custom binds (settings.json) on top of the imported ones, in place (the same
+    /// <see cref="Binds"/> object, so code holding it sees the change). Null / empty = VALORANT's binds only.</summary>
+    public int ApplyCustomBinds(IReadOnlyDictionary<string, string>? custom)
+    {
+        imported ??= Binds.Clone();
+        return CustomBinds.Apply(imported, custom, Binds);
+    }
 
     // Shortcuts to the bind of an action (primary slot, else the secondary): for display and dev scripts. Input checks go
     // through Binds.IsDown / Binds.Match, which honour both slots, mouse buttons and the wheel.

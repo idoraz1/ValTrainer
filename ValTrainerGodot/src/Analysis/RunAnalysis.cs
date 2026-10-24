@@ -13,15 +13,15 @@ static class RunAnalysis
     /// <summary>First sightings further off the crosshair than this aren't crosshair placement (= TrainingMode.SeenMaxDeg).</summary>
     const float SeenMaxDeg = 60f;
     static readonly HashSet<string> StaticModes = new() { "flick", "spider", "gridshot", "microshot", "popup" };
-    static readonly HashSet<string> SpawnBotModes = new() { "strafebots", "counterstrafe", "switch" };
+    static readonly HashSet<string> SpawnBotModes = new() { "strafebots", "counterstrafe", "switch", "strafeduel" };
     static readonly HashSet<string> SeenBotModes = new()
     {
-        "peek", "peekduel", "siteclear", "deathmatch", "longtaps", "jumppeek", "jigglepeek", "peek_mix",
+        "peek", "peekduel", "siteclear", "deathmatch", "longtaps", "sheriff", "jumppeek", "jigglepeek", "peek_mix",
         "flashpeek", "recon", "smokeexec", "mobility", "chamber", "postplant", "retake", "anchor", "sound",
     };
     static readonly HashSet<string> MovementModes = new()
     {
-        "counterstrafe", "peekduel", "siteclear", "flashmap", "deathmatch", "jumppeek", "jigglepeek",
+        "counterstrafe", "strafeduel", "peekduel","siteclear", "flashmap", "deathmatch", "jumppeek", "jigglepeek",
         "flashpeek", "recon", "smokeexec", "mobility", "chamber", "postplant", "retake", "anchor", "sound",
     };
 
@@ -931,7 +931,7 @@ static class RunAnalysis
     static readonly HashSet<string> UngatedSightings = new()
         { "siteclear", "smokeexec", "flashpeek", "recon", "mobility", "chamber", "anchor", "sound" };
 
-    static bool HorizExcluded(string mode) => Base(mode) is "peek" or "flashmap" or "longtaps" or "peek_mix" or "sound";
+    static bool HorizExcluded(string mode) => Base(mode) is "peek" or "flashmap" or "longtaps" or "sheriff" or "peek_mix" or "sound";
 
     /// <summary>
     /// A stored run's metrics as the profile uses them (runs saved by older versions are brought up to date without

@@ -15,9 +15,9 @@ namespace ValTrainer.UI;
 /// </summary>
 public partial class SettingsScreen : ScreenBase
 {
-    public enum Page { General, About }
+    public enum Page { General, Keybinds, About }
 
-    /// <summary>Page the next settings screen opens on (dev: --screen about).</summary>
+    /// <summary>Page the next settings screen opens on (dev: --screen about / --screen keybinds).</summary>
     public static Page StartPage = Page.General;
 
     Page page;
@@ -66,15 +66,19 @@ public partial class SettingsScreen : ScreenBase
         var title = VBox(2 * k);
         title.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         title.AddChild(Lbl("SETTINGS", UiTheme.Display, 64, UiTheme.Text));
-        var sub = Lbl(page == Page.General ? "CHANGES APPLY IMMEDIATELY AND ARE SAVED · ANYTHING LEFT ON \"VALORANT\" FOLLOWS YOUR GAME"
-            : "VERSION · UPDATES · FOLDERS · OPEN-SOURCE LICENSES", UiTheme.HudWide, 15, UiTheme.Dim);
+        var sub = Lbl(page switch
+            {
+                Page.General => "CHANGES APPLY IMMEDIATELY AND ARE SAVED · ANYTHING LEFT ON \"VALORANT\" FOLLOWS YOUR GAME",
+                Page.Keybinds => "IMPORTED FROM VALORANT · CHANGE ANY BIND FOR VALTRAINER · BINDS YOU DON'T CHANGE FOLLOW YOUR GAME",
+                _ => "VERSION · UPDATES · FOLDERS · OPEN-SOURCE LICENSES",
+            }, UiTheme.HudWide, 15, UiTheme.Dim);
         sub.TextOverrunBehavior = TextServer.OverrunBehavior.TrimEllipsis; // never pushes the tabs / BACK off screen
         sub.ClipText = true;
         title.AddChild(sub);
         head.AddChild(title);
         var tabs = HBox(6 * k);
         tabs.SizeFlagsVertical = SizeFlags.ShrinkCenter;
-        foreach (var (pg, name) in new[] { (Page.General, "GENERAL"), (Page.About, "ABOUT") })
+        foreach (var (pg, name) in new[] { (Page.General, "GENERAL"), (Page.Keybinds, "KEYBINDS"), (Page.About, "ABOUT") })
         {
             var b = new VButton { Kind = VButton.Look.Select, K = k, Label = name, FontPx = 18, Selected = page == pg, CustomMinimumSize = new Vector2(150 * k, 46 * k) };
             b.Pressed += () => { if (page != pg) { page = pg; Rebuild(); } };
@@ -97,6 +101,12 @@ public partial class SettingsScreen : ScreenBase
             col.AddChild(Lbl("Esc — back to menu   ·   ValTrainer is free software (GPL-3.0)   ·   fan-made, not affiliated with or endorsed by Riot Games",
                 UiTheme.Body, 13, UiTheme.Faint));
         }
+        else if (page == Page.Keybinds)
+        {
+            BuildKeybinds(cols); // SettingsKeybinds.cs
+            col.AddChild(Lbl("Click a bind, then press a key or mouse button   ·   Esc cancels   ·   Backspace / Delete — back to VALORANT's   ·   right-click — unbind",
+                UiTheme.Body, 13, UiTheme.Faint));
+        }
         else
         {
             BuildAim(Column(cols, "AIM & ACCOUNT", null, 1f));
@@ -114,6 +124,7 @@ public partial class SettingsScreen : ScreenBase
         if (reimportFlash > 0) { reimportFlash -= dt; reimportNote?.QueueRedraw(); }
         if (copyFlash > 0) { copyFlash -= dt; RefreshAll(); }
         if (updateRev != UpdateCheck.Revision) { updateRev = UpdateCheck.Revision; RefreshAll(); }
+        TickKeybinds(dt);
     }
 
     VBoxContainer Column(HBoxContainer cols, string title, string? caption, float ratio)
@@ -473,12 +484,14 @@ public partial class SettingsScreen : ScreenBase
             v.AddChild(row);
             return row;
         }
-        // Keybind rows: hovering one shows every imported bind (both slots) in a tooltip.
+        // Keybind rows (VALORANT's binds, without ValTrainer's custom ones): hovering one shows every imported bind (both
+        // slots) in a tooltip. Settings → KEYBINDS changes them for ValTrainer.
         void Keys(string label, Func<string> value)
         {
             var row = Info(label, value);
             row.MouseFilter = MouseFilterEnum.Pass;
-            string Tip() => "VALORANT keybinds (primary · secondary)\n" + vp().Binds.ListText();
+            string Tip() => "VALORANT keybinds (primary · secondary)\n" + vp().Imported.ListText() +
+                            (CustomBinds.Count(St.CustomBinds) > 0 ? "\n\nValTrainer uses your custom binds on top of these (KEYBINDS tab)" : "");
             row.TooltipText = Tip();
             refreshers.Add(() => row.TooltipText = Tip());
         }
@@ -487,11 +500,12 @@ public partial class SettingsScreen : ScreenBase
         Info("Sensitivity", () => vp().SensFromFile ? vp().Sensitivity.ToString("0.####", Inv) : $"{vp().Sensitivity.ToString(Inv)} (default)");
         Info("Scoped / ADS multiplier", () => $"{vp().ZoomedSensMult.ToString("0.###", Inv)} / {vp().AdsSensMult.ToString("0.###", Inv)}");
         Info("Sniper scope input", () => vp().HoldToScope ? "Hold" : "Toggle");
-        Keys("Move (forward left back right)", () => string.Join(" ", new[] { GameAction.MoveForward, GameAction.StrafeLeft, GameAction.MoveBack, GameAction.StrafeRight }.Select(a => vp().Binds.Short(a))));
-        Keys("Walk / crouch / jump", () => $"{vp().Binds.Text(GameAction.Walk)} / {vp().Binds.Text(GameAction.Crouch)} / {vp().Binds.Text(GameAction.Jump)}");
-        Keys("Fire / alt fire", () => $"{vp().Binds.Text(GameAction.Fire)} / {vp().Binds.Text(GameAction.AltFire)}");
-        Keys("Reload / use / plant-defuse", () => $"{vp().Binds.Text(GameAction.Reload)} / {vp().Binds.Text(GameAction.Use)} / {vp().Binds.Text(GameAction.UseSpike)}");
-        Keys("Abilities C Q E X", () => string.Join(" ", Enumerable.Range(0, 4).Select(i => vp().AbilityBindText(i))));
+        Keys("Move (forward left back right)", () => string.Join(" ", new[] { GameAction.MoveForward, GameAction.StrafeLeft, GameAction.MoveBack, GameAction.StrafeRight }.Select(a => vp().Imported.Short(a))));
+        Keys("Walk / crouch / jump", () => $"{vp().Imported.Text(GameAction.Walk)} / {vp().Imported.Text(GameAction.Crouch)} / {vp().Imported.Text(GameAction.Jump)}");
+        Keys("Fire / alt fire", () => $"{vp().Imported.Text(GameAction.Fire)} / {vp().Imported.Text(GameAction.AltFire)}");
+        Keys("Reload / use / plant-defuse", () => $"{vp().Imported.Text(GameAction.Reload)} / {vp().Imported.Text(GameAction.Use)} / {vp().Imported.Text(GameAction.UseSpike)}");
+        Keys("Abilities C Q E X", () => string.Join(" ", Enumerable.Range(0, 4).Select(i => vp().Imported.Short(Keybinds.AbilityAction(i)))));
+        Info("ValTrainer custom keybinds", () => CustomBinds.Count(St.CustomBinds) is var n && n > 0 ? $"{n} (KEYBINDS tab)" : "None", () => CustomBinds.Count(St.CustomBinds) > 0 ? UiTheme.Warn : UiTheme.Text);
         Info("Resolution", () => $"{vp().ResX} × {vp().ResY}{(vp().Letterbox ? " (letterbox)" : "")}");
         Info("Display mode / monitor", () => $"{WindowModes[Math.Clamp(vp().WindowMode, 0, 2)]} / #{vp().MonitorIndex + 1}");
         Info("VSync / FPS limit", () => $"{(vp().VSync ? "On" : "Off")} / {(vp().FrameRateLimit <= 0 ? "Unlimited" : vp().FrameRateLimit.ToString("0", Inv))}");

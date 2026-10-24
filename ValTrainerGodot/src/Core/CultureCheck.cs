@@ -270,13 +270,16 @@ public static class CultureCheck
             Check("typed sens rejects junk / 0 / > 10", !SensInput.TryParse("abc", out _) && !SensInput.TryParse("0", out _)
                 && !SensInput.TryParse("11", out _) && !SensInput.TryParse("", out _));
 
-            var s = new AppSettings { SensOverride = 0.275f, UseSensOverride = true, Volume = 0.35f, ViewmodelFov = 68.5f, Quality = 2 };
+            var s = new AppSettings { SensOverride = 0.275f, UseSensOverride = true, Volume = 0.35f, ViewmodelFov = 68.5f, Quality = 2,
+                CustomBinds = new() { ["AltFire.primary"] = "mouse:Xbutton1", ["Jump.secondary"] = "mouse:WheelDown" } };
             s.Save();
             string json = File.ReadAllText(Path.Combine(data, "settings.json"));
             Check("settings.json uses '.' decimals", json.Contains("0.275") && !json.Contains("0,275"), Snip(json, "SensOverride"));
             var s2 = AppSettings.Load();
             Check("settings round trip", !s2.IsNew && Near(s2.SensOverride, 0.275f) && Near(s2.Volume, 0.35f) && Near(s2.ViewmodelFov, 68.5f) && s2.Quality == 2,
                 $"{F(s2.SensOverride)} {F(s2.Volume)} {F(s2.ViewmodelFov)} q{s2.Quality}");
+            Check("settings round trip: custom keybinds", s2.CustomBinds is { Count: 2 } cb && cb["AltFire.primary"] == "mouse:Xbutton1"
+                && CustomBinds.Get(cb, GameAction.Jump, 1) == InputBinding.Button(Godot.MouseButton.WheelDown), Snip(json, "CustomBinds"));
 
             // A settings file written by hand on a comma-decimal PC isn't valid JSON for numbers: must not crash.
             File.WriteAllText(Path.Combine(data, "settings.json"), "{ \"SensOverride\": 0,5, \"Quality\": 3 }");
@@ -414,6 +417,67 @@ public static class CultureCheck
         var broken = ValorantImporter.Load(ValorantImporter.FindAccounts().FirstOrDefault());
         Check("keybinds: corrupt file -> defaults", broken.Found && broken.Binds.Text(GameAction.Jump) == "Space",broken.Binds.Text(GameAction.Jump));
         File.Delete(Path.Combine(accDir, "WindowsClient", "BackupKeybinds.json"));
+        CustomBindChecks();
+    }
+
+    /// <summary>Settings → Keybinds: ValTrainer's own overrides (settings.json) on top of the VALORANT import; every key and
+    /// mouse button (thumb buttons, wheel) round-trips; clearing one goes back to VALORANT's bind.</summary>
+    static void CustomBindChecks()
+    {
+        var all = new List<InputBinding>
+        {
+            Godot.Key.Q, Godot.Key.Space, Godot.Key.Shift, Godot.Key.Ctrl, Godot.Key.Key4, Godot.Key.Kp7, Godot.Key.F5, Godot.Key.Quoteleft,
+            new(Godot.Key.Q, Shift: true), new(Godot.Key.E, Ctrl: true, Alt: true), InputBinding.None,
+        };
+        foreach (var mb in new[] { Godot.MouseButton.Left, Godot.MouseButton.Right, Godot.MouseButton.Middle, Godot.MouseButton.Xbutton1,
+                     Godot.MouseButton.Xbutton2, Godot.MouseButton.WheelUp, Godot.MouseButton.WheelDown, Godot.MouseButton.WheelLeft, Godot.MouseButton.WheelRight })
+            all.Add(InputBinding.Button(mb));
+        var broken = all.Where(b => InputBinding.Parse(b.Serialize()) != b).Select(b => $"{b.Text}→{b.Serialize()}").ToList();
+        Check($"custom binds: {all.Count} keys / mouse buttons / wheel round-trip", broken.Count == 0, string.Join(", ", broken));
+        Check("custom binds: junk / Escape / numbers rejected", InputBinding.Parse("key:Escape") == null && InputBinding.Parse("key:4194305") == null
+            && InputBinding.Parse("mouse:7") == null && InputBinding.Parse("joy:A") == null && InputBinding.Parse("") == null && InputBinding.Parse("key:Nope") == null);
+        Check("custom binds: capture of a thumb button / wheel / key", InputBinding.FromEvent(new Godot.InputEventMouseButton { ButtonIndex = Godot.MouseButton.Xbutton2, Pressed = true }) == InputBinding.Button(Godot.MouseButton.Xbutton2)
+            && InputBinding.FromEvent(new Godot.InputEventMouseButton { ButtonIndex = Godot.MouseButton.WheelDown, Pressed = true }) == InputBinding.Button(Godot.MouseButton.WheelDown)
+            && InputBinding.FromEvent(new Godot.InputEventKey { Keycode = Godot.Key.V, Pressed = true }) == (InputBinding)Godot.Key.V
+            && InputBinding.FromEvent(new Godot.InputEventKey { Keycode = Godot.Key.Escape, Pressed = true }) == null
+            && InputBinding.FromEvent(new Godot.InputEventKey { Keycode = Godot.Key.V, Pressed = true, Echo = true }) == null
+            && InputBinding.FromEvent(new Godot.InputEventMouseButton { ButtonIndex = Godot.MouseButton.Xbutton1, Pressed = false }) == null);
+
+        // A profile as imported (VALORANT: crouch secondary on Space), then the player's ValTrainer overrides.
+        var p = new ValorantProfile();
+        p.Binds.Set(GameAction.Crouch, 1, Godot.Key.Space);
+        Dictionary<string, string>? custom = null;
+        CustomBinds.Set(ref custom, p.Imported, GameAction.AltFire, 0, InputBinding.Button(Godot.MouseButton.Xbutton1));
+        CustomBinds.Set(ref custom, p.Imported, GameAction.Ability1, 0, InputBinding.Button(Godot.MouseButton.Xbutton2));
+        CustomBinds.Set(ref custom, p.Imported, GameAction.Jump, 1, InputBinding.Button(Godot.MouseButton.WheelDown));
+        CustomBinds.Set(ref custom, p.Imported, GameAction.Crouch, 1, InputBinding.None);       // unbind VALORANT's secondary
+        CustomBinds.Set(ref custom, p.Imported, GameAction.Reload, 0, Godot.Key.R);               // same as VALORANT: no override
+        custom!["Bogus.primary"] = "key:K";                                                        // hand edits / renamed actions
+        custom["Fire.tertiary"] = "key:K";
+        custom["Drop.primary"] = "key:Escape";
+        var held = p.Binds;
+        int applied = p.ApplyCustomBinds(custom);
+        var b = p.Binds;
+        Check("custom binds: applied on top of VALORANT", applied == 4 && ReferenceEquals(b, held) && b.Text(GameAction.AltFire) == "Mouse 4"
+            && b.Text(GameAction.Ability1) == "Mouse 5" && b.Text(GameAction.Jump) == "Space · Wheel down" && b.Text(GameAction.Crouch) == "Ctrl"
+            && p.AbilityBindText(1) == "Mouse 5", $"{applied} {b.ListText().Replace('\n', ';')}");
+        Check("custom binds: VALORANT's binds kept apart", p.Imported.Text(GameAction.AltFire) == "Mouse 2" && p.Imported.Text(GameAction.Crouch) == "Ctrl · Space"
+            && !ReferenceEquals(p.Imported, b), p.Imported.ListText().Replace('\n', ';'));
+        Check("custom binds: same as VALORANT = no override; invalid entries ignored", !CustomBinds.IsCustom(custom, GameAction.Reload, 0)
+            && CustomBinds.Count(custom) == 4 && b.Text(GameAction.Drop) == "G" && b.Text(GameAction.Fire) == "Mouse 1", $"{CustomBinds.Count(custom)} {b.Text(GameAction.Drop)}");
+        Check("custom binds: hint words follow a moved alt fire", b.Hint("RMB to recall") == "Mouse 4 to recall" && b.Hint("LMB to throw") == "LMB to throw", b.Hint("RMB to recall"));
+        Check("custom binds: event match on a thumb button", b.Pressed(new Godot.InputEventMouseButton { ButtonIndex = Godot.MouseButton.Xbutton1, Pressed = true }, GameAction.AltFire)
+            && !b.Pressed(new Godot.InputEventMouseButton { ButtonIndex = Godot.MouseButton.Right, Pressed = true }, GameAction.AltFire)
+            && b.Released(new Godot.InputEventMouseButton { ButtonIndex = Godot.MouseButton.Xbutton1, Pressed = false }, GameAction.AltFire));
+        CustomBinds.Clear(ref custom, GameAction.AltFire, 0);
+        p.ApplyCustomBinds(custom);
+        Check("custom binds: clearing one goes back to VALORANT's", b.Text(GameAction.AltFire) == "Mouse 2" && b.Text(GameAction.Ability1) == "Mouse 5", b.Text(GameAction.AltFire));
+        p.ApplyCustomBinds(null);
+        Check("custom binds: reset all = VALORANT's binds", b.Dump() == p.Imported.Dump(), b.ListText().Replace('\n', ';'));
+        var conflict = Keybinds.Defaults();
+        conflict.Set(GameAction.Ability2, 0, InputBinding.Button(Godot.MouseButton.Right));
+        Check("custom binds: conflicts listed", conflict.Others(InputBinding.Button(Godot.MouseButton.Right), GameAction.Ability2).SequenceEqual(new[] { GameAction.AltFire }),
+            string.Join(",", conflict.Others(InputBinding.Button(Godot.MouseButton.Right), GameAction.Ability2)));
     }
 
     // ---------------- helpers ----------------

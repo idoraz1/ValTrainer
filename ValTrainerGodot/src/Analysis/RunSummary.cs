@@ -10,9 +10,9 @@ static class RunSummary
     static readonly HashSet<string> CoachModes = new()
     {
         "flick", "spider", "gridshot", "tracking", "strafebots", "peek", "counterstrafe", "peekduel", "siteclear", "flashmap", "deathmatch",
-        "reaction", "spray_vandal", "spray_phantom", "microshot", "popup", "longtaps", "jumppeek", "jigglepeek", "peek_mix",
+        "reaction", "spray_vandal", "spray_phantom", "microshot", "popup", "longtaps", "sheriff", "jumppeek", "jigglepeek", "peek_mix",
         "flashpeek", "recon", "smokeexec", "mobility", "chamber", "postplant", "retake", "anchor", "sound",
-        "switch", "operator", "spray_transfer",
+        "switch", "operator", "spray_transfer", "strafeduel",
     };
 
     /// <summary>Summary for a run without enough data for any finding: what this mode needs, or that it doesn't feed the coach.</summary>
@@ -24,7 +24,7 @@ static class RunSummary
         string need = mode switch
         {
             "flick" or "microshot" or "popup" => "hit at least 5 targets",
-            "longtaps" or "jumppeek" or "jigglepeek" or "peek_mix" or "chamber" or "sound" => "let a few enemies show up and shoot them",
+            "longtaps" or "sheriff" or "jumppeek" or "jigglepeek" or "peek_mix" or "chamber" or "sound" => "let a few enemies show up and shoot them",
             "flashpeek" or "recon" or "smokeexec" or "mobility" or "postplant" or "retake" or "anchor" => "play a few rounds and take some duels",
             "spider" or "gridshot" => "play at least 15 seconds and hit a few targets",
             "tracking" => "hold fire on the target for at least a few seconds",
@@ -32,7 +32,7 @@ static class RunSummary
             "operator" => "let a few agents cross the gap while you hold it",
             "peek" => "let a few bots peek you",
             "counterstrafe" => "stop and shoot a few times",
-            "peekduel" or "siteclear" or "deathmatch" => "get a few duels in",
+            "peekduel" or "siteclear" or "deathmatch" or "strafeduel" => "get a few duels in",
             "flashmap" => "face a few flashes",
             "reaction" => "finish the trials",
             _ => "fire at least 10 bullets per spray a few times", // spray_vandal / spray_phantom

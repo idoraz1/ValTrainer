@@ -91,9 +91,10 @@ public partial class Main : Node
                  $"VALORANT {(Valorant.Found ? "imported" : Valorant.Status.ToString())}; logs {Paths.LogDir}");
         if (Dev && args.Contains("--keybind-dump"))
         {
-            // Dev tool (works with --headless): the resolved VALORANT keybinds (defaults + BackupKeybinds.json overrides).
+            // Dev tool (works with --headless): the keybinds in effect (VALORANT defaults + BackupKeybinds.json overrides +
+            // ValTrainer's custom binds from settings.json, marked "*").
             GD.Print($"[keybinds] {(Valorant.Found ? "imported account" : "no account: VALORANT defaults")}");
-            foreach (var line in Valorant.Binds.Dump().Split('\n')) GD.Print("[keybinds] " + line);
+            foreach (var line in Valorant.Binds.Dump(Valorant.Imported).Split('\n')) GD.Print("[keybinds] " + line);
             GetTree().Quit();
             return;
         }
@@ -150,11 +151,12 @@ public partial class Main : Node
         else if (updating) SetScreen(new UpdatingScreen());
         else ShowMenu();
         if (updating) return;
-        // Dev-only: "--screen settings|about|stats" opens that screen directly (MenuScreen handles "profile").
+        // Dev-only: "--screen settings|keybinds|about|stats" opens that screen directly (MenuScreen handles "profile").
         switch (Dev ? CmdLine.After("--screen")?.ToLowerInvariant() : null)
         {
             case "settings": Callable.From(ShowSettings).CallDeferred(); break;
             case "about": SettingsScreen.StartPage = SettingsScreen.Page.About; Callable.From(ShowSettings).CallDeferred(); break;
+            case "keybinds": SettingsScreen.StartPage = SettingsScreen.Page.Keybinds; Callable.From(ShowSettings).CallDeferred(); break;
             case "stats": Callable.From(ShowStats).CallDeferred(); break;
             case "warmup" or "lockin": Callable.From(ShowLockIn).CallDeferred(); break;
             case "agents": Callable.From(ShowAgents).CallDeferred(); break; // + --agent jett, --agent-go routine|<drill> (AgentsScreen)
@@ -189,7 +191,12 @@ public partial class Main : Node
         Accounts = ValorantImporter.FindAccounts();
         var acc = Accounts.FirstOrDefault(a => a.Id == Settings.AccountId) ?? Accounts.FirstOrDefault();
         Valorant = ValorantImporter.Load(acc);
+        ApplyBinds();
     }
+
+    /// <summary>Settings → Keybinds: puts the custom binds (settings.json) on top of the VALORANT import. Call after
+    /// changing <see cref="AppSettings.CustomBinds"/>.</summary>
+    public void ApplyBinds() => Valorant.ApplyCustomBinds(Settings.CustomBinds);
 
     void SetScreen(Node n)
     {

@@ -36,7 +36,7 @@ public static partial class ReplayFile
     static readonly HashSet<string> Full = new(StringComparer.OrdinalIgnoreCase)
     {
         "gridshot", "flick", "spider", "tracking", "microshot", "popup", "strafebots", "peek", "operator", "spray_vandal",
-        "spray_phantom", "spray_transfer", "longtaps", "switch", "counterstrafe", "peekduel", "jumppeek", "jigglepeek",
+        "spray_phantom", "spray_transfer", "longtaps", "sheriff", "switch", "counterstrafe", "peekduel", "jumppeek", "jigglepeek",
         "peek_mix", "siteclear", "deathmatch",
     };
     static readonly HashSet<string> None = new(StringComparer.OrdinalIgnoreCase)

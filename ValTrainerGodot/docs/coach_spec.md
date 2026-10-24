@@ -270,19 +270,28 @@ This is a blind, performance-scored version of the PSA method that bisects in lo
 
 - **Order:** 4 blocks per step, ABBA or BAAB at random.
 - **Blinding:** the player only sees "Setting A / B".
-- **Block (40 s):** 12 flicks + 10 s of strafe tracking, with a 5 s rest between blocks. A step takes about 3 min.
+- **Block (≈ 47 s):** 12 flicks + 8 micro-adjustments + 10 s of strafe tracking, with a 5 s rest between blocks. A step takes about 3.5 min.
 - **Flick set:** 12 flicks per step:
-  - 4 micro (3–8°), 4 medium (8–20°), 4 large (20–45°), with mixed yaw/pitch.
+  - 4 small (3–8°), 4 medium (8–20°), 4 large (20–45°), with mixed yaw/pitch.
   - Head size r = 0.5° at 16 m. Timeout 2.0 s.
   - Both conditions get the same set, mirrored and shuffled.
+- **Micro-adjustment set** (optional, on by default: M on the intro screen, saved as AppSettings.SensFinderMicro):
+  - 8 per step, 0.6–3° from wherever the crosshair is (stratified), in any direction (mirrored), after the flicks.
+  - Head size r = 0.35° at 18 m. Timeout 1.5 s. 0.25 s blank gap between targets.
+  - Both conditions get the same set, mirrored and shuffled.
 - **Tracking:** the same seeded Veteran-tier strafe script in both conditions.
-- **Unscored warm-up:** the first 2 flicks and first 2 s of tracking after each switch.
+- **Unscored warm-up:** the first 2 flicks, the first micro-adjustment and the first 2 s of tracking after each switch.
 
 ### Scoring
 
 - **Flick:** z = ln(ID / MT′), with ID = log₂(A/2r + 1) and MT′ = t_hit − t_onset + 0.15 s per miss (a timeout counts as 2.0 s).
+- **Micro-adjustment:** z = ln(ID / MT′) − 0.3·e, with MT′ as for flicks (onset: movement ≥ 3°/s that carries the
+  crosshair max(0.15°, 25% of A); a timeout counts as 1.5 s) and e = crosshair-to-centre distance at the click in head
+  radii (1 for a timeout). Also measured, for the result screen: settle time (onset → start of the on-head stretch that
+  ends in the click), overshoot (crosshair passed the far edge of the head along the move), slide-offs, hit rate.
 - **Tracking:** logit(on-target %), clamped to [.02, .98].
-- **Block score:** standardise both within the step, then 0.65·z_flick + 0.35·z_track.
+- **Block score:** standardise each within the step, then 0.45·z_flick + 0.30·z_micro + 0.25·z_track
+  (without the micro test: 0.65·z_flick + 0.35·z_track).
 
 ### Decision
 
@@ -299,6 +308,9 @@ This is a blind, performance-scored version of the PSA method that bisects in lo
 ### Presenting the result
 
 - Show "Set VALORANT Sensitivity to 0.xxx (was 0.yyy)", with eDPI, cm/360 and the pro median.
+- Micro vs flicks: for each of the two, the winner of the narrowest comparison (steps and the check) where that part
+  alone was clear (|d/SE| ≥ 1), e.g. "micro-adjustments cleaner at 0.320 · flicks faster at 0.360", with the micro
+  numbers (settle, overshoot, click error, hits) of the two sens it compared.
 - A "Use in ValTrainer" button sets AppSettings.UseSensOverride = true and SensOverride = S′.
 
 ## Sources

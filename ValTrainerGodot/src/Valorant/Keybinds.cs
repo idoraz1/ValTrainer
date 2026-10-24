@@ -99,6 +99,72 @@ public readonly record struct InputBinding(Key Key, MouseButton Mouse = MouseBut
 
     public override string ToString() => Text;
 
+    /// <summary>
+    /// Stable text for ValTrainer's settings.json (custom binds): "key:Q", "key:Space", "mouse:Xbutton1", "mouse:WheelDown",
+    /// modifiers first ("shift+key:Q"); "none" = unbound. Godot enum names, so it never depends on the keyboard layout's labels.
+    /// </summary>
+    public string Serialize()
+    {
+        if (IsNone) return "none";
+        var sb = new StringBuilder();
+        if (Ctrl) sb.Append("ctrl+");
+        if (Shift) sb.Append("shift+");
+        if (Alt) sb.Append("alt+");
+        sb.Append(Key != Key.None ? "key:" + Key : "mouse:" + Mouse);
+        return sb.ToString();
+    }
+
+    /// <summary>The inverse of <see cref="Serialize"/>; null = not a bind (unknown name, Escape — Esc always pauses).</summary>
+    public static InputBinding? Parse(string? s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return null;
+        s = s.Trim();
+        if (s.Equals("none", StringComparison.OrdinalIgnoreCase)) return None;
+        bool shift = false, ctrl = false, alt = false;
+        while (true)
+        {
+            if (s.StartsWith("shift+", StringComparison.OrdinalIgnoreCase)) { shift = true; s = s[6..]; }
+            else if (s.StartsWith("ctrl+", StringComparison.OrdinalIgnoreCase)) { ctrl = true; s = s[5..]; }
+            else if (s.StartsWith("alt+", StringComparison.OrdinalIgnoreCase)) { alt = true; s = s[4..]; }
+            else break;
+        }
+        if (s.StartsWith("key:", StringComparison.OrdinalIgnoreCase))
+        {
+            // Names only: a number would accept any int as a Key.
+            string name = s[4..];
+            if (name.Length == 0 || char.IsDigit(name[0]) || name[0] == '-') return null;
+            if (!Enum.TryParse<Key>(name, true, out var k) || k is Key.None or Key.Escape || !Enum.IsDefined(k)) return null;
+            return new InputBinding(k, MouseButton.None, shift, ctrl, alt);
+        }
+        if (s.StartsWith("mouse:", StringComparison.OrdinalIgnoreCase))
+        {
+            string name = s[6..];
+            if (name.Length == 0 || char.IsDigit(name[0]) || name[0] == '-') return null;
+            if (!Enum.TryParse<MouseButton>(name, true, out var m) || m == MouseButton.None || !Enum.IsDefined(m)) return null;
+            return new InputBinding(Key.None, m, shift, ctrl, alt);
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// The bind a key / mouse-button press would make (Settings → Keybinds capture): any key but Escape (it always pauses),
+    /// any mouse button incl. the thumb buttons and the wheel. Releases, key repeats and mouse motion give null.
+    /// Modifier keys pressed on their own bind as themselves (Shift = walk, Ctrl = crouch).
+    /// </summary>
+    public static InputBinding? FromEvent(InputEvent e)
+    {
+        switch (e)
+        {
+            case InputEventKey { Pressed: true, Echo: false } k:
+                var key = k.Keycode != Key.None ? k.Keycode : k.PhysicalKeycode;
+                if (key is Key.None or Key.Escape or Key.Unknown) return null;
+                return new InputBinding(key);
+            case InputEventMouseButton { Pressed: true } mb when mb.ButtonIndex != MouseButton.None:
+                return Button(mb.ButtonIndex);
+        }
+        return null;
+    }
+
     /// <summary>A bind name squeezed onto a small HUD key cap (at most 4 characters, upper case): "Q", "M4", "WD", "SPC".</summary>
     public static string Cap(string text)
     {
@@ -171,6 +237,33 @@ public sealed class Keybinds
     public InputBinding Get(GameAction a, int slot) => slot is >= 0 and < Slots ? binds[(int)a * Slots + slot] : InputBinding.None;
     public void Set(GameAction a, int slot, InputBinding b) { if (slot is >= 0 and < Slots) binds[(int)a * Slots + slot] = b; }
     public InputBinding this[GameAction a, int slot] => Get(a, slot);
+
+    /// <summary>A copy (binds and the import notes).</summary>
+    public Keybinds Clone()
+    {
+        var k = new Keybinds();
+        k.CopyFrom(this);
+        return k;
+    }
+
+    /// <summary>Takes every bind and import note of <paramref name="o"/> (keeps this instance: code may hold on to it).</summary>
+    public void CopyFrom(Keybinds o)
+    {
+        if (ReferenceEquals(o, this)) return;
+        Array.Copy(o.binds, binds, binds.Length);
+        FromFile.Clear(); FromFile.AddRange(o.FromFile);
+        Skipped.Clear(); Skipped.AddRange(o.Skipped);
+    }
+
+    /// <summary>Actions other than <paramref name="a"/> that use bind <paramref name="b"/> in either slot (conflicts).</summary>
+    public List<GameAction> Others(InputBinding b, GameAction a)
+    {
+        var l = new List<GameAction>();
+        if (b.IsNone) return l;
+        foreach (var x in All)
+            if (x != a && (Get(x, 0) == b || Get(x, 1) == b)) l.Add(x);
+        return l;
+    }
 
     /// <summary>The bind to show / script for an action: the primary slot, else the secondary, else unbound.</summary>
     public InputBinding Primary(GameAction a) => !Get(a, 0).IsNone ? Get(a, 0) : Get(a, 1);
@@ -288,11 +381,20 @@ public sealed class Keybinds
     public string ListText() => string.Join("\n", All.Select(a => $"{Label(a)}: {Text(a)}"));
 
     /// <summary>Every action with both slots and where they came from, for --keybind-dump.</summary>
-    public string Dump()
+    /// <param name="imported">VALORANT's binds when these are the effective ones: slots that differ (ValTrainer custom
+    /// binds) get a "*" and a "custom:" line lists them.</param>
+    public string Dump(Keybinds? imported = null)
     {
         var sb = new StringBuilder();
+        string Slot(GameAction a, int s) => Get(a, s).Text + (imported != null && imported.Get(a, s) != Get(a, s) ? "*" : "");
         foreach (var a in All)
-            sb.Append($"{Label(a),-30} {Get(a, 0).Text,-12} {Get(a, 1).Text}\n");
+            sb.Append($"{Label(a),-30} {Slot(a, 0),-12} {Slot(a, 1)}\n");
+        if (imported != null && !ReferenceEquals(imported, this))
+        {
+            var custom = All.SelectMany(a => Enumerable.Range(0, Slots).Where(s => imported.Get(a, s) != Get(a, s))
+                .Select(s => $"{a}[{s}]={Get(a, s).Text} (VALORANT {imported.Get(a, s).Text})")).ToList();
+            sb.Append("custom: ").Append(custom.Count == 0 ? "none" : string.Join(", ", custom)).Append('\n');
+        }
         var shared = SharedBinds();
         if (shared.Count > 0) sb.Append("shared: ").Append(string.Join("; ", shared)).Append('\n');
         sb.Append("from file: ").Append(FromFile.Count == 0 ? "nothing (all defaults)" : string.Join(", ", FromFile)).Append('\n');

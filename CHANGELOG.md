@@ -8,6 +8,12 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Added
+- Sheriff One-Taps (suggested on Discord): a Sheriff drill. Enemies appear at close, mid and long range, some peeking from pillars. A headshot kills in one tap up to 30 m; past 30 m it does 145 damage to a 150 HP enemy, so you need a second tap, and the drill tells you so. Shots fired before the Sheriff has recovered count as spammed and score nothing. A ring around the crosshair shows the recovery. Results show your one-tap %, headshot %, time to kill and spammed shots. It uses VALORANT's Sheriff numbers (damage by range, fire rate, spread).
+- Strafe Duels (suggested on Discord): like Counter-Strafe, but the enemy moves like a real player. Bots switch between long strafes, short ADAD micro-strafes, crouch-strafes, A-crouch-D-crouch, and jiggles, accelerating and braking like you do. They only shoot when they stop, as in VALORANT. You counter-strafe and win the duel. Higher difficulties strafe faster, mix patterns more and shoot sooner after stopping. Results show duels won, time to kill, first-shot accuracy, aim error against a moving enemy, and shots you fired while still moving.
+- Keybinds in Settings (suggested on Discord): a new KEYBINDS tab lets you change every bind ValTrainer uses, with a primary and a secondary key per action, including mouse buttons (Mouse 4/5, middle click, wheel). Click a bind and press any key or mouse button; Backspace returns that slot to your VALORANT bind, and RESET ALL TO VALORANT clears every change. Your binds still come from VALORANT by default, and VALORANT itself is never changed. This helps when VALORANT's saved binds on your PC are out of date or don't match what you use.
+- Sens Finder micro-adjustments (suggested on Discord): each round now includes tiny targets just off your crosshair, as well as the flicks and tracking. The recommendation weighs all three, and the results say which sensitivity was better for small corrections and which for flicks (for example "your micro-adjustments were cleaner at 0.350, your flicks were faster at 0.386"). Press M on the intro screen to skip it. A full run takes about 16 minutes instead of 13.
+
 ## [1.16.0] - 2026-10-18
 
 ### Changed

@@ -49,8 +49,12 @@ public sealed partial class SensFinderMode
         string[] lines =
         {
             "Finds the sensitivity you actually aim best with, not the one that feels best.",
-            $"You'll play short rounds with two hidden settings, A and B. Each round: {cfg.FlicksPerBlock} head flicks",
-            $"(click the head), then {cfg.TrackSec:0} s of tracking (keep your crosshair on the strafing target).",
+            cfg.Micro
+                ? $"You'll play short rounds with two hidden settings, A and B. Each round: {cfg.FlicksPerBlock} head flicks, then"
+                : $"You'll play short rounds with two hidden settings, A and B. Each round: {cfg.FlicksPerBlock} head flicks",
+            cfg.Micro
+                ? $"{cfg.MicroPerBlock} micro-adjustments (tiny heads next to your crosshair), then {cfg.TrackSec:0} s of strafe tracking."
+                : $"(click the head), then {cfg.TrackSec:0} s of tracking (keep your crosshair on the strafing target).",
             "Don't try to work out which setting is which. Just aim as well as you can.",
             $"{cfg.Steps} steps of {cfg.BlocksPerStage} rounds narrow it down, then a final check against your current sens.",
             "The numbers are revealed at the end. Esc pauses; the current round is then replayed.",
@@ -62,6 +66,9 @@ public sealed partial class SensFinderMode
         }
         y += 14 * k;
         Gfx.Text(c, UiTheme.Body, $"Starting from your current sens {current:0.000} ({Cm(current):0.0} cm/360 at {dpi} DPI).", x, y, UiTheme.Fs(17, k), UiTheme.Dim);
+        y += 34 * k;
+        Gfx.TextFit(c, UiTheme.Body, cfg.Micro ? "Micro-adjustment test: ON  ·  press M to skip it" : "Micro-adjustment test: OFF  ·  press M to include it",
+            x, y, UiTheme.Fs(17, k), cfg.Micro ? UiTheme.Good : UiTheme.Warn, w);
         if (phaseT > 2f)
         {
             float a = 0.55f + 0.45f * Mathf.Sin(RealNow * 4f);
@@ -81,7 +88,9 @@ public sealed partial class SensFinderMode
         string sub = st.Confirm ? $"FINAL CHECK · ROUND {blockIdx + 1} / {st.Order.Length}"
             : $"STEP {st.Step + 1} / {cfg.Steps} · ROUND {blockIdx + 1} / {st.Order.Length}";
         Gfx.TextC(c, UiTheme.HudWide, sub, cx, cy + 100 * k, UiTheme.Fs(18, k), UiTheme.Text);
-        Gfx.TextC(c, UiTheme.Body, $"{cfg.FlicksPerBlock} flicks, then {cfg.TrackSec:0} s tracking. Move your mouse to get a feel for it.", cx, cy + 140 * k, UiTheme.Fs(19, k), UiTheme.Dim);
+        string what = cfg.Micro ? $"{cfg.FlicksPerBlock} flicks, {cfg.MicroPerBlock} micro-adjustments, then {cfg.TrackSec:0} s tracking"
+            : $"{cfg.FlicksPerBlock} flicks, then {cfg.TrackSec:0} s tracking";
+        Gfx.TextC(c, UiTheme.Body, $"{what}. Move your mouse to get a feel for it.", cx, cy + 140 * k, UiTheme.Fs(19, k), UiTheme.Dim);
         float left = Mathf.Max(0, cfg.RestSec - phaseT);
         float bw = 360 * k, by = cy + 178 * k;
         c.DrawRect(new Rect2(cx - bw / 2, by, bw, 4 * k), new Color(1, 1, 1, 0.12f));
@@ -144,12 +153,15 @@ public sealed partial class SensFinderMode
     {
         float x = r.Position.X, y = r.Position.Y + 10 * k, w = r.Size.X;
         int ls = UiTheme.Fs(12, k), vs = UiTheme.Fs(34, k), ss = UiTheme.Fs(16, k);
+        int rows = cfg.Micro ? 6 : 5;
+        float step = Mathf.Min(92 * k, (r.Size.Y - (cfg.Micro ? 30 : 10) * k) / rows); // the micro row has a second sub-line
         void Row(string label, string value, string sub, Color vc)
         {
             Gfx.Text(c, UiTheme.HudWide, label, x, y + 12 * k, ls, UiTheme.Dim);
-            Gfx.Text(c, UiTheme.Display, value, x, y + 50 * k, vs, vc);
-            Gfx.TextFit(c, UiTheme.Body, sub, x, y + 74 * k, ss, UiTheme.Dim, w);
-            y += 92 * k;
+            Gfx.TextFit(c, UiTheme.Display, value, x, y + 50 * k, vs, vc, w);
+            var subs = sub.Split('\n');
+            for (int i = 0; i < subs.Length; i++) Gfx.TextFit(c, UiTheme.Body, subs[i], x, y + (74 + 21 * i) * k, ss, UiTheme.Dim, w);
+            y += step;
         }
         Row("VALORANT SENSITIVITY", rec.ToString("0.000", Inv), $"was {current.ToString("0.000", Inv)}", aborted ? UiTheme.Warn : UiTheme.Text);
         Row("EDPI · CM/360", $"{rec * dpi:0} · {Cm(rec):0.0} cm", $"was {current * dpi:0} · {Cm(current):0.0} cm  ({dpi} DPI)", UiTheme.Text);
@@ -160,6 +172,28 @@ public sealed partial class SensFinderMode
         float proCm = SfUnits.Cm360(240f / dpi, dpi);
         string cmp = rec * dpi > 240 * 1.05f ? "faster than the pro median" : rec * dpi < 240 / 1.05f ? "slower than the pro median" : "right at the pro median";
         Row("PRO MEDIAN", $"eDPI 240 · {proCm:0} cm", $"yours is {cmp} (pros: 150–400 eDPI)", UiTheme.Text);
+        if (cfg.Micro) MicroRow(Row);
+    }
+
+    /// <summary>"MICRO VS FLICKS": the sens each one preferred on its own, with the micro-adjustment numbers behind it.</summary>
+    void MicroRow(Action<string, string, string, Color> row)
+    {
+        string F(float s) => s.ToString("0.000", Inv);
+        bool same = microBest != null && flickBest != null && Mathf.Abs(BestSens(microBest) - BestSens(flickBest)) < 0.0005f;
+        string value = microBest == null && flickBest == null ? "NO CLEAR SPLIT"
+            : same ? $"BOTH BEST AT {F(BestSens(microBest))}"
+            : $"MICRO {(microBest != null ? F(BestSens(microBest)) : "—")} · FLICKS {(flickBest != null ? F(BestSens(flickBest)) : "—")}";
+        string sub;
+        if (microBest is { } mb)
+        {
+            var a = SfStats.MicroStats(mb.Stage, mb.Cond);
+            var b = SfStats.MicroStats(mb.Stage, 1 - mb.Cond);
+            sub = $"micro {F(mb.Stage.Sens[mb.Cond])} vs {F(mb.Stage.Sens[1 - mb.Cond])}: settle {a.SettleMs:0} vs {b.SettleMs:0} ms · overshoot {a.OverPct:0} vs {b.OverPct:0}%\n"
+                + $"click error {a.ErrR:0.00} vs {b.ErrR:0.00} head radii · hits {a.HitPct:0} vs {b.HitPct:0}%";
+        }
+        else sub = microBest == null && flickBest == null ? "flicks and micro-adjustments were close at every step"
+            : "micro-adjustments were close at every step";
+        row("MICRO-ADJUSTMENTS VS FLICKS", value, sub, same ? UiTheme.Good : UiTheme.Text);
     }
 
     void DrawFunnel(CanvasItem c, Rect2 r, float k)
@@ -172,7 +206,7 @@ public sealed partial class SensFinderMode
         // log-sens axis over everything tested
         var all = rows.SelectMany(s => s.Sens).Append(current).Append(rec).ToList();
         float lo = Mathf.Log(all.Min()) - 0.08f, hi = Mathf.Log(all.Max()) + 0.08f;
-        float labelW = 120 * k, verdictW = 170 * k;
+        float labelW = 120 * k, verdictW = (rows.Any(s => s.Result!.HasMicro) ? 230 : 170) * k; // room for "flicks · micro · tracking"
         float ax0 = r.Position.X + labelW, ax1 = r.End.X - verdictW;
         float X(float sens) => ax0 + (Mathf.Log(sens) - lo) / (hi - lo) * (ax1 - ax0);
         float top = r.Position.Y + 56 * k;
@@ -223,7 +257,9 @@ public sealed partial class SensFinderMode
             var vc = win < 0 || (s.Confirm && win == 1) ? UiTheme.Warn : UiTheme.Good;
             Gfx.TextR(c, UiTheme.HudWide, verdict, r.End.X - 8 * k, Gfx.Mid(cy - 8 * k, ts), ts, vc);
             var res = s.Result;
-            Gfx.TextR(c, UiTheme.Body, $"flicks {res.DFlick:+0.00;-0.00} · tracking {res.DTrack:+0.00;-0.00}", r.End.X - 8 * k, Gfx.Mid(cy + 12 * k, UiTheme.Fs(12, k)),
+            string parts = res.HasMicro ? $"flicks {res.DFlick:+0.00;-0.00} · micro {res.DMicro:+0.00;-0.00} · tracking {res.DTrack:+0.00;-0.00}"
+                : $"flicks {res.DFlick:+0.00;-0.00} · tracking {res.DTrack:+0.00;-0.00}";
+            Gfx.TextR(c, UiTheme.Body, parts, r.End.X - 8 * k, Gfx.Mid(cy + 12 * k, UiTheme.Fs(12, k)),
                 UiTheme.Fs(12, k), UiTheme.Faint);
         }
 

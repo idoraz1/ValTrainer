@@ -10,6 +10,7 @@ public sealed class AppSettings
     public bool UseSensOverride;
     public float SensOverride = 0.4f;
     public int Dpi = 800;              // only used to show eDPI and cm/360
+    public bool SensFinderMicro = true; // Sens Finder: include the micro-adjustment test in every round (toggled with M on its intro screen)
     public int EnemyColorOverride = -1;
     public int WindowModeOverride = -1;
     public int MonitorOverride = -1;   // -1 = same monitor as Valorant
@@ -29,6 +30,9 @@ public sealed class AppSettings
     public string? FinderCrosshairCode; // VALORANT profile code from the Crosshair Finder ("Use in ValTrainer") or pasted (Settings → Crosshair); VALORANT itself is never changed
     public string? FinderCrosshairTab;  // "primary" / "ads" / "sniper": only that tab of FinderCrosshairCode is used, on top of the live VALORANT import (Crosshair Finder); null = the whole code (a pasted code, results from before 1.6)
     public string? LastFinderCrosshairCode; // the latest Crosshair Finder result, kept so it can be copied any time (Settings → Crosshair)
+    /// <summary>Settings → Keybinds: ValTrainer-only overrides on top of the VALORANT import, "Action.primary|secondary" →
+    /// "key:Q" / "mouse:Xbutton1" / "none" (see Valorant.CustomBinds). Null = every bind follows VALORANT. VALORANT is never changed.</summary>
+    public Dictionary<string, string>? CustomBinds;
 
     // ---- updates / version (see UpdateCheck, WhatsNew, UpdatesPrompt) ----
     public bool? UpdatesConsent;       // the "Check GitHub for new versions?" answer: null = not asked yet, true = ENABLE UPDATES, false = NOT NOW (or turned off)

@@ -107,13 +107,16 @@ players can never trigger them by accident.
 | `--valorant-dir <dir>` | Reads VALORANT's settings from this `Saved\Config` folder instead of the real one. |
 | `--keybind-dump` | Prints the resolved VALORANT keybinds (defaults + `BackupKeybinds.json` overrides, both slots, shared binds, skipped entries) as `[keybinds] …` lines, then quits. Works with `--headless`; use it with `--valorant-dir`. |
 | `--keybind-test` | With `--mode <drill>`: feeds every imported bind (keys, mouse buttons, wheel notches, both slots) into the game as real input events and checks movement, crouch, walk, jump, fire, alt fire / scope, reload and the polled actions (abilities, use spike, use). Prints `[keybind-test] RESULT: PASS/FAIL`; the exit code is the number of failures. Works with `--headless`. |
+| `--screen keybinds` | Opens Settings on the KEYBINDS tab (custom binds on top of the VALORANT import). |
+| `--bind-capture <Action.primary\|secondary>` | With `--screen keybinds`: opens that slot's "press a key" capture (screenshots). |
+| `--keybind-ui-test` | With `--screen keybinds` (needs a window, not `--headless`: it clicks the laid-out buttons): drives the bind capture with real input events (set, clear, reset, mouse buttons) and checks the saved custom binds. Prints `[keybind-ui-test] RESULT: PASS/FAIL`; the exit code is the number of failures. |
 | `--culture <name>` | Runs in that culture (e.g. `de-DE`) instead of the invariant one, to prove parsing doesn't depend on it. |
 | `--culture-test` | Locale self-test: settings, stats, telemetry and VALORANT ini parsing and number formatting. Prints `[culture-test] RESULT: PASS/FAIL`; the exit code is the number of failures. |
 | `--coach-analyze [dir]` | Prints the coach's analysis (metrics, problems, run review, skill profile, sens advice) of the `.vtt` files in `dir`, then quits. Add `--brief`, `--out <file>`, `--fake-sessions N`. Works with `--headless`. Without `dir` it reads your real telemetry (read-only). |
 | `--coach-selftest` | With `--coach-analyze`: synthetic cases for the rules and sens guardrails the simulated player can't reach. Prints `PASS`/`FAIL` lines. |
 | `--fakecoach [full\|partial\|empty]` | Coach screen with sample data. |
 | `--fakebuttons` | Shows every extra results-screen button (layout tests). |
-| `--sfquick`, `--sfseed N`, `--sfsens S`, `--sfcm C`, `--sftimescale X`, `--sfexit`, `--sfshot <dir>` | Sens Finder testing: short run, fixed seed, start sens or cm/360, game speed, quit at the end, screenshots. |
+| `--sfquick`, `--sfnomicro`, `--sfseed N`, `--sfsens S`, `--sfcm C`, `--sftimescale X`, `--sfexit`, `--sfshot <dir>` | Sens Finder testing: short run, no micro-adjustment test, fixed seed, start sens or cm/360, game speed, quit at the end, screenshots. |
 | `--update-test <version>` | Pretends that version is the latest GitHub release (no network, nothing to download). |
 | `--update-source <url>` | Asks this URL instead of GitHub's API for the latest release (a local fake release, see [Automatic updates](#automatic-updates)). |
 | `--update-allow-dev` | Lets the updater download and install in a dev run. Needs `--data-dir` (downloads go to `<data-dir>\updates`). |

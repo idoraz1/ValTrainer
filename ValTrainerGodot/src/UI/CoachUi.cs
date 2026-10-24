@@ -133,13 +133,13 @@ public static class CoachSkills
     /// <summary>Drills that produce data for the skill (first = best).</summary>
     public static string[] Drills(Skill s) => s switch
     {
-        Skill.Flicking => new[] { "flick", "spider", "gridshot" },
-        Skill.Precision => new[] { "flick", "gridshot" },
+        Skill.Flicking => new[] { "flick", "spider", "gridshot", "sheriff" },
+        Skill.Precision => new[] { "flick", "gridshot", "sheriff" },
         Skill.Tracking => new[] { "tracking", "strafebots" },
         Skill.Reaction => new[] { "reaction" },
         Skill.CrosshairPlacement => new[] { "peek", "siteclear", "anchor" },
         Skill.SprayControl => new[] { "spray_vandal", "spray_phantom" },
-        Skill.Movement => new[] { "counterstrafe", "peekduel" },
+        Skill.Movement => new[] { "counterstrafe", "peekduel", "strafeduel" },
         Skill.Utility => new[] { "flashmap" },
         _ => Array.Empty<string>(),
     };

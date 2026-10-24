@@ -7,12 +7,15 @@ namespace ValTrainer.Modes;
 
 /// <summary>
 /// Sensitivity finder: a blind, performance-scored PSA method that bisects in log space (docs/coach_spec.md §E).
-/// Each step plays 4 blocks (ABBA / BAAB) of L = C/hw and H = C·hw; a block is a standard set of head flicks plus
-/// 10 s of seeded Veteran strafe tracking. Trials are scored (flicks: ln(ID/MT'), tracking: logit of on-target),
-/// standardized within the step, blended 0.65/0.35 and compared with Welch's SE; the centre moves half a step toward
-/// a clear winner. Ends with a blind confirmation of the final C against the player's current sens.
+/// Each step plays 4 blocks (ABBA / BAAB) of L = C/hw and H = C·hw; a block is a standard set of head flicks, a set of
+/// micro-adjustments (tiny heads 0.6–3° from the crosshair; optional, on by default) and 10 s of seeded Veteran strafe
+/// tracking. Trials are scored (flicks: ln(ID/MT'), micro: ln(ID/MT') − 0.3·click error in head radii, tracking: logit
+/// of on-target), standardized within the step, blended 0.45/0.30/0.25 (0.65/0.35 without micro) and compared with
+/// Welch's SE; the centre moves half a step toward a clear winner. Ends with a blind confirmation of the final C
+/// against the player's current sens. The results also say which tested sens the flicks and the micro-adjustments
+/// preferred on their own (<see cref="SfStats.ComponentBest"/>).
 /// No gun: clicks are read from the trigger's rising edge, so there is no spread, recoil or fire-rate limit.
-/// Dev flags (with --dev): --sfquick (short protocol), --sfsens X / --sfcm X (pretend current sens),
+/// Dev flags (with --dev): --sfquick (short protocol), --sfnomicro (skip the micro test), --sfsens X / --sfcm X (pretend current sens),
 /// --sfseed N (reproducible), --sfexit (quit when the result is computed), --sftimescale N (fast-forward screenshots),
 /// --sfshot DIR (save PNGs of the game's own viewport at key moments, then of the results screen; quits after).
 /// </summary>
@@ -23,7 +26,7 @@ public sealed partial class SensFinderMode : TrainingMode
     public override string Key => "sensfinder";
     public override bool PreviewDemo => false; // blind A/B choices: only a person can play it
     public override string Name => "Sens Finder";
-    public override string Description => "Blind A/B test of sensitivities with flicks + tracking. Finds the sens you actually perform best with.";
+    public override string Description => "Blind A/B test of sensitivities with flicks, micro-adjustments and tracking. Finds the sens you actually perform best with.";
     public override string Category => "Coach";
     public override WeaponKind Weapon => WeaponKind.None;
     public override bool Timed => false;
@@ -31,10 +34,10 @@ public sealed partial class SensFinderMode : TrainingMode
     public override bool Done => done;
     public override string? Subtitle => "Blind A/B test";
 
-    enum Ph { Intro, Rest, Flick, TrackReady, Track, Summary }
+    enum Ph { Intro, Rest, Flick, Micro, TrackReady, Track, Summary }
     Ph phase;
     float phaseT;
-    bool done, prevHeld;
+    bool done, prevHeld, prevMKey;
     ulong lastRealUsec;
 
     SensFinderConfig cfg = null!;
@@ -65,11 +68,20 @@ public sealed partial class SensFinderMode : TrainingMode
     Vector3 d0, prevFwd;
     readonly List<(float T, float W)> motion = new();
 
+    // micro-adjustments
+    Target microT = null!;
+    readonly List<(SfMicro M, bool Scored)> mseq = new();
+    int microIdx, mMisses, mExits;
+    bool microLive, mOnsetFound, mWasOn, mOver;
+    float mSpawnAt, mOnsetAt, mEnterAt, mAmp, mRAng;
+    Vector2 mDir;         // unit, crosshair → head at spawn (yaw/pitch deg space), for overshoot
+
     // tracking
     float winOn, winTot, tickAcc;
 
     // result
     float rec, confT = float.NaN;
+    (SfStage Stage, int Cond, double T)? flickBest, microBest; // which tested sens each component preferred on its own
     bool confirmed;       // a confirmation stage was run
     bool adoptC = true;
     string confidence = "", confidenceWhy = "";
@@ -78,6 +90,7 @@ public sealed partial class SensFinderMode : TrainingMode
     public override AimFocus? Focus => phase switch
     {
         Ph.Flick when trialLive => new AimFocus(focusId, flickT.GlobalPosition, flickT.Radius),
+        Ph.Micro when microLive => new AimFocus(focusId, microT.GlobalPosition, microT.Radius),
         Ph.TrackReady or Ph.Track => new AimFocus(focusId, trackT.GlobalPosition, trackT.Radius),
         _ => null,
     };
@@ -96,6 +109,7 @@ public sealed partial class SensFinderMode : TrainingMode
     {
         bool dev = Main.I.Dev;
         cfg = dev && Args.Contains("--sfquick") ? SensFinderConfig.Quick() : SensFinderConfig.Full();
+        cfg.Micro = Main.I.Settings.SensFinderMicro && !(dev && Args.Contains("--sfnomicro"));
         int seed = dev && int.TryParse(ArgAfter("--sfseed"), out var s) ? s : System.Environment.TickCount;
         rng = new Random(seed);
         devExit = dev && Args.Contains("--sfexit");
@@ -118,10 +132,12 @@ public sealed partial class SensFinderMode : TrainingMode
         flickT.Position = new Vector3(0.6f, PlayerView.EyeHeight, -SensFinderConfig.FlickDist);
         trackT = G.SpawnTarget(Difficulty.TrackRadius(SensFinderConfig.TrackTier));
         trackT.Position = new Vector3(-0.6f, PlayerView.EyeHeight, -SensFinderConfig.TrackDist);
+        microT = G.SpawnTarget(SensFinderConfig.MicroRadius);
+        microT.Position = new Vector3(0f, PlayerView.EyeHeight + 0.4f, -SensFinderConfig.MicroDist);
         phase = Ph.Intro;
         phaseT = 0;
         lastRealUsec = Time.GetTicksUsec();
-        GD.Print($"[sf] start seed={seed} quick={cfg.Steps < 5} dpi={dpi} current={current:0.000} ({SfUnits.Cm360(current, dpi):0.0} cm/360) C1={centre:0.000} ({SfUnits.Cm360(centre, dpi):0.0} cm)");
+        GD.Print($"[sf] start seed={seed} quick={cfg.Steps < 5} micro={cfg.Micro} dpi={dpi} current={current:0.000} ({SfUnits.Cm360(current, dpi):0.0} cm/360) C1={centre:0.000} ({SfUnits.Cm360(centre, dpi):0.0} cm)");
     }
 
     // =====================================================================================
@@ -139,7 +155,7 @@ public sealed partial class SensFinderMode : TrainingMode
         if (shotDir != null) DevShots();
 
         // A pause (Esc / focus loss) inside a block invalidates it: replay the block after a rest.
-        if (phase is Ph.Flick or Ph.TrackReady or Ph.Track && realGap > dt + 0.75f)
+        if (phase is Ph.Flick or Ph.Micro or Ph.TrackReady or Ph.Track && realGap > dt + 0.75f)
         {
             Notice("Round restarted after the pause");
             StartRest(blockIdx);
@@ -149,13 +165,28 @@ public sealed partial class SensFinderMode : TrainingMode
         switch (phase)
         {
             case Ph.Intro:
+            {
+                // M switches the micro-adjustment test on / off (remembered in the settings).
+                bool mKey = Input.IsKeyPressed(Godot.Key.M);
+                if (mKey && !prevMKey)
+                {
+                    cfg.Micro = !cfg.Micro;
+                    Main.I.Settings.SensFinderMicro = cfg.Micro;
+                    Main.I.Settings.Save();
+                    G.Sound("tick", 0.3f, 1.2f);
+                }
+                prevMKey = mKey;
                 if ((phaseT > 2f && pressed) || (Main.I.Dev && phaseT > 3f)) BeginStage(0);
                 break;
+            }
             case Ph.Rest:
                 if (phaseT >= cfg.RestSec) StartBlock();
                 break;
             case Ph.Flick:
                 UpdateFlick(dt, pressed);
+                break;
+            case Ph.Micro:
+                UpdateMicro(dt, pressed);
                 break;
             case Ph.TrackReady:
                 PlaceTrack(0f);
@@ -182,6 +213,7 @@ public sealed partial class SensFinderMode : TrainingMode
             Ph.Intro when phaseT > 1.5f => "1_intro",
             Ph.Rest when phaseT > 0.6f => "2_rest",
             Ph.Flick when trialLive && flickIdx >= 3 => "3_flick",
+            Ph.Micro when microLive && microIdx >= 2 && Now - mSpawnAt > 0.12f => "3m_micro",
             Ph.Track when phaseT > 3f => "4_track",
             Ph.Summary when phaseT > 1.5f * (float)Engine.TimeScale => "5_summary",
             _ => null,
@@ -245,6 +277,7 @@ public sealed partial class SensFinderMode : TrainingMode
         st.Order = abba ? new[] { condA, condB, condB, condA } : new[] { condB, condA, condA, condB };
         st.Flicks = SfFlick.MakeSet(cfg, rng);
         st.Script = new SfStrafeScript(SensFinderConfig.TrackTier, cfg.TrackSec + 0.5f, rng.Next());
+        st.Micros = cfg.Micro ? SfMicro.MakeSet(cfg, rng) : new List<SfMicro>();
         stages.Add(st);
         stage = st;
         string order = string.Concat(st.Order.Select(c => st.Label[c]));
@@ -268,7 +301,9 @@ public sealed partial class SensFinderMode : TrainingMode
         phase = Ph.Rest;
         phaseT = 0;
         trialLive = false;
+        microLive = false;
         flickT.Visible = false;
+        microT.Visible = false;
         trackT.Visible = false;
         trackT.SetHot(false);
     }
@@ -294,7 +329,8 @@ public sealed partial class SensFinderMode : TrainingMode
         st.Blocks.Add(b);
         doneBlocks++;
         float medMt = b.FlickMt.Count > 0 ? Median(b.FlickMt) : 0;
-        GD.Print($"[sf]   block {blockIdx + 1} {b.Label} sens={b.Sens:0.000} ({Cm(b.Sens):0.0}cm): flicks n={b.FlickZ.Count} zMean={SfStats.Mean(b.FlickZ):0.000} medMT'={medMt * 1000:0}ms acc={(b.Attempts > 0 ? 100f * b.Hits / b.Attempts : 0):0}% timeouts={b.Timeouts}  track on={(b.TrackTotal > 0 ? 100 * b.TrackOn / b.TrackTotal : 0):0}% windows={b.TrackLogit.Count}");
+        string micro = !cfg.Micro ? "" : $"  micro n={b.MicroZ.Count} zMean={SfStats.Mean(b.MicroZ):0.000} settle={(b.MicroSettle.Count > 0 ? Median(b.MicroSettle) * 1000 : 0):0}ms over={b.MicroOvers}/{b.MicroJudged} exits={b.MicroExits} err={(b.MicroErr.Count > 0 ? b.MicroErr.Average() : 0):0.00}r hits={b.MicroHits}/{b.MicroAttempts} timeouts={b.MicroTimeouts}";
+        GD.Print($"[sf]   block {blockIdx + 1} {b.Label} sens={b.Sens:0.000} ({Cm(b.Sens):0.0}cm): flicks n={b.FlickZ.Count} zMean={SfStats.Mean(b.FlickZ):0.000} medMT'={medMt * 1000:0}ms acc={(b.Attempts > 0 ? 100f * b.Hits / b.Attempts : 0):0}% timeouts={b.Timeouts}{micro}  track on={(b.TrackTotal > 0 ? 100 * b.TrackOn / b.TrackTotal : 0):0}% windows={b.TrackLogit.Count}");
         if (blockIdx + 1 < st.Order.Length) StartRest(blockIdx + 1);
         else EndStage();
     }
@@ -306,7 +342,7 @@ public sealed partial class SensFinderMode : TrainingMode
         st.Result = cmp;
         foreach (var b in st.Blocks) Event("sens_trial", b.Sens, (float)b.Score);
         float acc = st.Accuracy;
-        string stats = $"d={cmp.D:+0.000;-0.000} SE={cmp.Se:0.000} t={cmp.T:+0.00;-0.00} (flick d={cmp.DFlick:+0.00;-0.00}+/-{cmp.SeFlick:0.00} n={cmp.NFlick0}/{cmp.NFlick1}, track d={cmp.DTrack:+0.00;-0.00}+/-{cmp.SeTrack:0.00} n={cmp.NTrack0}/{cmp.NTrack1}) acc={acc * 100:0}%";
+        string stats = $"d={cmp.D:+0.000;-0.000} SE={cmp.Se:0.000} t={cmp.T:+0.00;-0.00} (flick d={cmp.DFlick:+0.00;-0.00}+/-{cmp.SeFlick:0.00} n={cmp.NFlick0}/{cmp.NFlick1}, micro d={cmp.DMicro:+0.00;-0.00}+/-{cmp.SeMicro:0.00} n={cmp.NMicro0}/{cmp.NMicro1}, track d={cmp.DTrack:+0.00;-0.00}+/-{cmp.SeTrack:0.00} n={cmp.NTrack0}/{cmp.NTrack1}) acc={acc * 100:0}%";
         if (!st.Confirm)
         {
             int win = cmp.T > 1 ? 0 : cmp.T < -1 ? 1 : -1;
@@ -467,12 +503,143 @@ public sealed partial class SensFinderMode : TrainingMode
         phaseT = 0;
         if (flickIdx >= seq.Count)
         {
-            phase = Ph.TrackReady;
-            focusId++;
-            flickT.Visible = false;
-            PlaceTrack(0f);
-            trackT.Visible = true;
+            if (cfg.Micro && stage!.Micros.Count > 0) StartMicro();
+            else BeginTrackReady();
         }
+    }
+
+    void BeginTrackReady()
+    {
+        phase = Ph.TrackReady;
+        phaseT = 0;
+        focusId++;
+        flickT.Visible = false;
+        microT.Visible = false;
+        PlaceTrack(0f);
+        trackT.Visible = true;
+    }
+
+    // =====================================================================================
+    // Micro-adjustments: tiny heads 0.6–3° from wherever the crosshair is (it's on the last head after a hit)
+    // =====================================================================================
+
+    void StartMicro()
+    {
+        mseq.Clear();
+        for (int i = 0; i < cfg.MicroAdjWarmup; i++) mseq.Add((new SfMicro(Rf(1.2f, 2.4f), Rf(0f, 90f)), false));
+        foreach (var m in stage!.Micros.OrderBy(_ => rng.Next())) mseq.Add((m, true));
+        microIdx = 0;
+        microLive = false;
+        flickT.Visible = false;
+        phase = Ph.Micro;
+        phaseT = 0;
+    }
+
+    void SpawnMicro()
+    {
+        var (m, _) = mseq[microIdx];
+        var fwd = G.View.Forward;
+        var right = fwd.Cross(Vector3.Up).Normalized();
+        var up = right.Cross(fwd).Normalized();
+        float a = Mathf.DegToRad(m.Amp), th = Mathf.DegToRad(m.Theta);
+        float sx = rng.Next(2) == 0 ? 1 : -1, sy = rng.Next(2) == 0 ? 1 : -1;
+        Vector3 Dir(float sY) => (fwd * Mathf.Cos(a) + (right * (sx * Mathf.Cos(th)) + up * (sY * Mathf.Sin(th))) * Mathf.Sin(a)).Normalized();
+        var dir = Dir(sy);
+        float pitch = Mathf.RadToDeg(Mathf.Asin(Mathf.Clamp(dir.Y, -1, 1)));
+        if (pitch > 18f || pitch < -6f) dir = Dir(-sy); // keep the heads in a comfortable band (exact amplitude either way)
+        microT.Position = G.View.Eye + dir * SensFinderConfig.MicroDist;
+        microT.SpawnTime = Now;
+        microT.Visible = true;
+        focusId++;
+        mAmp = m.Amp;
+        mRAng = Mathf.RadToDeg(Mathf.Atan2(microT.Radius, SensFinderConfig.MicroDist));
+        mSpawnAt = Now;
+        d0 = prevFwd = fwd;
+        motion.Clear();
+        mOnsetFound = mWasOn = mOver = false;
+        mMisses = mExits = 0;
+        mEnterAt = -1;
+        var e = AimPlusMath.CrossMinus(G.View, microT.Position); // crosshair − head
+        mDir = e.LengthSquared() > 1e-8f ? -e.Normalized() : Vector2.Zero;
+        microLive = true;
+    }
+
+    void UpdateMicro(float dt, bool pressed)
+    {
+        if (!microLive)
+        {
+            if (phaseT > 0.08f) microT.Visible = false; // hit flash, then a short blank gap
+            if (phaseT >= cfg.MicroAdjForeperiod) SpawnMicro();
+            return;
+        }
+        var fwd = G.View.Forward;
+        float w = Mathf.RadToDeg(prevFwd.AngleTo(fwd)) / Mathf.Max(dt, 1e-4f);
+        prevFwd = fwd;
+        motion.Add((Now, w));
+        // onset: start of the contiguous movement (ω ≥ 3°/s) that first carries the crosshair max(0.15°, 25% of A) away
+        if (!mOnsetFound && Mathf.RadToDeg(d0.AngleTo(fwd)) >= Mathf.Max(0.15f, 0.25f * mAmp))
+        {
+            mOnsetFound = true;
+            int i = motion.Count - 1;
+            while (i > 0 && motion[i - 1].W >= 3f) i--;
+            mOnsetAt = i > 0 ? motion[i - 1].T : mSpawnAt;
+        }
+        bool on = !float.IsPositiveInfinity(microT.Ray(G.View.Eye, fwd));
+        if (on && !mWasOn) mEnterAt = Now;      // start of the current on-head stretch
+        if (!on && mWasOn) mExits++;            // slid off the head again: one more correction needed
+        mWasOn = on;
+        if (!mOver && mDir != Vector2.Zero && AimPlusMath.CrossMinus(G.View, microT.Position).Dot(mDir) > mRAng + 0.05f)
+            mOver = true;                       // travelled past the far edge of the head
+
+        if (pressed)
+        {
+            if (on) { EndMicro(true); return; }
+            mMisses++;
+            Shots++;
+            if (mseq[microIdx].Scored) block!.MicroAttempts++;
+        }
+        if (Now - mSpawnAt >= cfg.MicroAdjTimeout) EndMicro(false);
+    }
+
+    void EndMicro(bool hit)
+    {
+        var (m, scored) = mseq[microIdx];
+        var b = block!;
+        float errDeg = Mathf.RadToDeg(G.View.Forward.AngleTo((microT.GlobalPosition - G.View.Eye).Normalized()));
+        if (hit)
+        {
+            Hits++; Shots++;
+            G.Sound("head", 0.6f, 1.15f);
+            microT.Hit();
+        }
+        else
+        {
+            if (mMisses == 0) Shots++;
+            G.Sound("fail", 0.4f);
+        }
+        float start = mOnsetFound ? mOnsetAt : mSpawnAt;
+        float mt = hit ? Now - start : cfg.MicroAdjTimeout;
+        mt = Mathf.Max(0.06f, mt + 0.15f * mMisses);
+        float errR = hit ? Mathf.Min(1f, errDeg / Mathf.Max(1e-3f, mRAng)) : 1f;
+        if (scored)
+        {
+            if (hit) { b.MicroHits++; b.MicroAttempts++; }
+            else { b.MicroTimeouts++; if (mMisses == 0) b.MicroAttempts++; }
+            if (hit)
+            {
+                b.MicroSettle.Add(Mathf.Max(0f, (mEnterAt >= 0 ? mEnterAt : Now) - start));
+                b.MicroErr.Add(errR);
+            }
+            if (mDir != Vector2.Zero) { b.MicroJudged++; if (mOver) b.MicroOvers++; }
+            b.MicroExits += mExits;
+            b.MicroZ.Add(SfStats.MicroScore(mAmp, mRAng, mt, errR));
+        }
+        Event("sf_micro", mAmp, hit ? mt * 1000f : -1f);
+        microLive = false;
+        if (!hit) microT.Visible = false;
+        microIdx++;
+        phaseT = 0;
+        if (microIdx >= mseq.Count) BeginTrackReady();
     }
 
     // =====================================================================================
@@ -527,7 +694,9 @@ public sealed partial class SensFinderMode : TrainingMode
     {
         G.TrialSens = null;
         Event("sens_set", Main.I.Sens, -1);
-        flickT.Visible = trackT.Visible = false;
+        flickT.Visible = trackT.Visible = microT.Visible = false;
+        flickBest = SfStats.ComponentBest(stages, micro: false);
+        microBest = cfg.Micro ? SfStats.ComponentBest(stages, micro: true) : null;
         var conf = ConfirmStage;
         confirmed = conf?.Result != null;
         adoptC = !confirmed || confT >= -0.5f;
@@ -553,8 +722,30 @@ public sealed partial class SensFinderMode : TrainingMode
 
         Event("sens_result", rec, confidence == "High" ? 2 : confidence == "Medium" ? 1 : 0);
         GD.Print($"[sf] RESULT rec={rec:0.000} ({Cm(rec):0.0} cm/360, eDPI {rec * dpi:0}) current={current:0.000} ({Cm(current):0.0}cm) change={ChangePct:+0.0;-0.0}% confidence={confidence} ({confidenceWhy.Replace("·", "/").Replace("σ", "sd")}) aborted={aborted}");
+        GD.Print($"[sf] SPLIT {SplitText().Replace("·", "/")}");
+        if (microBest is { } mb)
+        {
+            var w = SfStats.MicroStats(mb.Stage, mb.Cond);
+            var l = SfStats.MicroStats(mb.Stage, 1 - mb.Cond);
+            GD.Print($"[sf] MICRO at {mb.Stage.Sens[mb.Cond]:0.000} vs {mb.Stage.Sens[1 - mb.Cond]:0.000}: settle {w.SettleMs:0} vs {l.SettleMs:0} ms, overshoot {w.OverPct:0}% vs {l.OverPct:0}%, click error {w.ErrR:0.00} vs {l.ErrR:0.00} r, hits {w.HitPct:0}% vs {l.HitPct:0}% (t={mb.T:+0.0;-0.0})");
+        }
         phase = Ph.Summary;
         phaseT = 0;
+    }
+
+    float BestSens((SfStage Stage, int Cond, double T)? b) => b is { } x ? x.Stage.Sens[x.Cond] : 0f;
+
+    /// <summary>One line on what the flicks and the micro-adjustments preferred on their own.</summary>
+    string SplitText()
+    {
+        string F(float s) => s.ToString("0.000", Inv);
+        if (!cfg.Micro) return flickBest != null ? $"Your flicks were fastest at {F(BestSens(flickBest))}." : "Flicks: no clear difference between the settings.";
+        bool hasF = flickBest != null, hasM = microBest != null;
+        if (hasF && hasM && Mathf.Abs(BestSens(flickBest) - BestSens(microBest)) < 0.0005f)
+            return $"Flicks and micro-adjustments agreed: both were best at {F(BestSens(microBest))}.";
+        string m = hasM ? $"Your micro-adjustments were cleaner at {F(BestSens(microBest))}" : "Micro-adjustments: no clear difference";
+        string f = hasF ? $"your flicks were faster at {F(BestSens(flickBest))}" : "flicks: no clear difference";
+        return $"{m} · {f}.";
     }
 
     float ChangePct => current > 0 ? (rec / current - 1f) * 100f : 0f;
@@ -568,6 +759,7 @@ public sealed partial class SensFinderMode : TrainingMode
             : $"Step {st.Step + 1} / {cfg.Steps} · round {blockIdx + 1} / {st.Order.Length}";
         yield return $"Setting {block?.Label}";
         if (phase == Ph.Flick) yield return $"Flick {Math.Min(flickIdx + 1, seq.Count)} / {seq.Count}";
+        else if (phase == Ph.Micro) yield return $"Micro-adjustment {Math.Min(microIdx + 1, mseq.Count)} / {mseq.Count}";
         else if (phase is Ph.TrackReady or Ph.Track) yield return $"Tracking · {Mathf.Max(0, cfg.TrackSec - (phase == Ph.Track ? phaseT : 0)):0} s";
         if (Now < noticeUntil) yield return notice;
     }
@@ -575,6 +767,7 @@ public sealed partial class SensFinderMode : TrainingMode
     public override string? Prompt => phase switch
     {
         Ph.Flick when doneBlocks < 2 => "Flick to the head and click it",
+        Ph.Micro when doneBlocks < 2 => "Tiny moves: settle on the small head, then click",
         Ph.TrackReady => "Tracking next: keep your crosshair on the target",
         Ph.Track when doneBlocks < 2 => "Keep your crosshair on the target",
         _ => null,
@@ -591,6 +784,8 @@ public sealed partial class SensFinderMode : TrainingMode
         yield return ("cm/360", $"{Cm(rec):0.0}  (was {Cm(current):0.0})");
         yield return ("Change", KeepSens ? $"{ChangePct:+0.0;-0.0}% · keep yours" : $"{ChangePct:+0.0;-0.0}%");
         yield return ("Confidence", flips > 0 ? $"{confidence} · {flips} flip{(flips == 1 ? "" : "s")}" : confidence);
+        if (cfg.Micro) yield return ("Micro-adjust",microBest != null ? $"cleaner at {BestSens(microBest).ToString("0.000", Inv)}" : "no clear winner");
+        yield return ("Flicks", flickBest != null ? $"faster at {BestSens(flickBest).ToString("0.000", Inv)}" : "no clear winner");
         yield return ("Pro median", "eDPI 240 ≈ 54 cm/360");
         yield return ("Run again", atLimit ? "in a few days" : "another day");
         yield return (atLimit ? "Then" : "If within 10%", atLimit ? "start from the new sens" : "use the average");

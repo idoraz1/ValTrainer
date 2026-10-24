@@ -52,6 +52,7 @@ public sealed class SimAim
         public float Premature;                           // probability of clicking during the primary
         public float Bow, EndDrop;                        // curved flicks (fraction of A) / end below the head (deg)
         public float Pref;                                // preferred cm/360 (0 = none)
+        public float TapGap;                              // least time between clicks (s; 0 = the default rhythm): semi-auto recovery
         public int Seed = 1234;
     }
 
@@ -113,6 +114,7 @@ public sealed class SimAim
                     case "bow": p.Bow = f; break;
                     case "enddrop": p.EndDrop = f; break;
                     case "seed": p.Seed = (int)f; break;
+                    case "tapgap": p.TapGap = f; break;
                 }
             }
         rng = new Random(p.Seed);
@@ -125,7 +127,9 @@ public sealed class SimAim
         gridMode = mode == "gridshot";
         botMode = mode is "strafebots" or "peek" or "counterstrafe" or "peekduel" or "siteclear" or "flashmap" or "operator" or "deathmatch";
         staticTargets = mode is "flick" or "spider" or "gridshot" or "spray_vandal" or "spray_phantom" or "";
-        weapon = mode == "spray_phantom" ? Weapons.Phantom : Weapons.Vandal;
+        weapon = mode == "spray_phantom" ? Weapons.Phantom : mode == "sheriff" ? Weapons.Sheriff : Weapons.Vandal;
+        // Sheriff One-Taps: single taps that wait for the gun to recover (+ a human margin) instead of spamming
+        if (mode == "sheriff" && p.TapGap <= 0) p.TapGap = Weapons.Sheriff.RecoveryTime + 0.03f;
         sfMode = mode == "sensfinder";
         if (sfMode || mode == "xhairfinder") staticTargets = true;
         switch (simKind)
@@ -275,14 +279,17 @@ public sealed class SimAim
                     if (sprayMode && firing) uy -= p.Pull * Climb(now - burstStart - p.PullDelay);
                     dx += ux * dt; dy += uy * dt;
                     float jit = p.Jitter * noiseMul * (sprayMode ? 0.35f : 1f); // calmer hands while pulling a spray
+                    // Sheriff One-Taps: a still head far away is tapped with still hands (pursuit jitter alone is ≈ 0.6°,
+                    // bigger than a head at 25 m), so jitter fades while the target barely moves
+                    if (p.TapGap > 0 && MathF.Sqrt(vx * vx + vy * vy) < 3f) jit *= 0.15f;
                     if (jit > 0)
                     {
                         Ou(ref jitX, jit, 0.022f, dt); Ou(ref jitY, jit * 0.5f, 0.022f, dt);
                         dx += jitX * dt; dy += jitY * dt;
                     }
-                    // Clicking modes: shoot when the head is under the crosshair (in Peek Practice, once the peeker plants).
-                    bool settled = mode != "peek" || MathF.Sqrt(vx * vx + vy * vy) < 4f || now - visibleAt > 1.2f;
-                    if (Clicking && clickAt < 0 && now - lastClickAt > 0.22f && settled
+                    // Clicking modes: shoot when the head is under the crosshair (in Peek Practice and Sheriff One-Taps, once the peeker plants).
+                    bool settled = mode is not ("peek" or "sheriff") ||MathF.Sqrt(vx * vx + vy * vy) < 4f || now - visibleAt > 1.2f;
+                    if (Clicking && clickAt < 0 && now - lastClickAt > Math.Max(0.22f, p.TapGap) && settled
                         && MathF.Sqrt(ex * ex + ey * ey) <= p.Tol * rDeg)
                         clickAt = now + Math.Max(0.02f, Gauss(p.Confirm, p.ConfirmSd));
                     // Way off (e.g. a sharp reversal on a fast bot): a fresh corrective submovement.
@@ -344,7 +351,7 @@ public sealed class SimAim
 
         // ---- trigger ----
         bool held = false;
-        if (clickAt >= 0 && now >= clickAt && now - lastClickAt >= 0.11f && locked)
+        if (clickAt >= 0 && now >= clickAt && now - lastClickAt >= Math.Max(0.11f, p.TapGap) && locked)
         {
             press = true; held = true; clickAt = -1; lastClickAt = now;
             missCheckAt = staticTargets ? now + 0.06f : -1;

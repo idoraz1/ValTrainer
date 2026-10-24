@@ -461,6 +461,7 @@ public partial class MenuScreen : ScreenBase
     {
         ["microshot"] = "1.4", ["switch"] = "1.4", ["popup"] = "1.4", ["longtaps"] = "1.4", ["jumppeek"] = "1.4",
         ["jigglepeek"] = "1.4", ["postplant"] = "1.4", ["retake"] = "1.4", ["anchor"] = "1.4", ["sound"] = "1.4", ["peek_mix"] = "1.10",
+        ["sheriff"] = "1.17", ["strafeduel"] = "1.17",
     };
 
     static bool IsNew(string key)

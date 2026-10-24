@@ -523,7 +523,7 @@ static class Assess
                     "Watch the body for the moment it plants, then reverse immediately.",
                     "Make the reversal one quick, small adjustment instead of a big swing.",
                 },
-                new[] { "strafebots", "tracking" },
+                new[] { "strafebots", "tracking", "strafeduel" },
                 F($"you needed {reacq:0} ms to get back on after each direction change"), unit: "direction changes");
 
         // ---- crosshair placement ----
@@ -579,7 +579,7 @@ static class Assess
                     "Stop, then shoot: counter-strafe and click once you're still.",
                     "Don't hold a movement key while firing — tap the opposite key, then click.",
                 },
-                new[] { "counterstrafe", "peekduel" },
+                new[] { "counterstrafe", "peekduel", "strafeduel" },
                 moving ? F($"{mv:0}% of your shots were fired while moving") : F($"{early:0}% of your shots were fired before you had finished stopping"),
                 unit: "shots");
         float cs = V(m, "move.counter_pct"), stopMs = V(m, "move.stop_ms"), stopAdj = stopMs + Bench.StopOffsetMs;
@@ -597,7 +597,7 @@ static class Assess
                     "Tap the opposite key for about 80 ms, then release both.",
                     "Drill the rhythm: strafe, tap, shoot, strafe.",
                 },
-                new[] { "counterstrafe" },
+                new[] { "counterstrafe", "strafeduel" },
                 !fewCounter ? F($"your stops took {stopMs:0} ms to reach accurate speed")
                     : cs < 0.5f ? "none of your stops were counter-strafed" : F($"only {cs:0}% of your stops were counter-strafed"),
                 unit: "stops");

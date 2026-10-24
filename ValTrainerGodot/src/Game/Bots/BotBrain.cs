@@ -29,6 +29,9 @@ public sealed class BotBrain
     public bool HoldFireWhileBlind;
     /// <summary>Engage when only a shoulder is visible (higher tiers). Off = needs head or chest.</summary>
     public bool ShoulderSight = true;
+    /// <summary>Keeps tracking you (reaction, aim) but doesn't pull the trigger while set: the drill decides when the bot
+    /// stops to shoot (Strafe Duels). When it clears, the bot fires at once if its reaction and aim have finished.</summary>
+    public bool HoldFire;
 
     float? fireAt;
     int shot;
@@ -138,6 +141,7 @@ public sealed class BotBrain
 
         // Easy tiers wait out your blind, then still need a full reaction before the first shot.
         if (HoldFireWhileBlind && g.Blind.FullyBlind) { fireAt = Mathf.Max(fireAt ?? now, now + Skill.ReactMs / 1000f); return; }
+        if (HoldFire) { fireAt = Mathf.Max(fireAt ?? now, now); return; }
         if (fireAt < now - weapon.Interval * 2) fireAt = now; // never dump a backlog of shots after a hitch
         int guard = 0;
         while (fireAt != null && now >= fireAt && guard++ < 4) FireShot(g);

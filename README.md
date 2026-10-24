@@ -190,8 +190,8 @@ recent runs are kept). The coach analyses them; the method is in
   - a recommended sensitivity, limited to ±18% per change and kept within 20–80 cm/360.
 - **Run review:** the results screen adds a short review of that run: a summary, the top problems with fixes, and what
   went well.
-- **Sens Finder:** a blind A/B test of about 13 minutes. You alternate between two unlabelled sensitivities using flicks
-  and strafe tracking, and it narrows down (bisects) to the one you score best with. It ends with a recommended VALORANT
+- **Sens Finder:** a blind A/B test of about 16 minutes. You alternate between two unlabelled sensitivities using flicks,
+  micro-adjustments on tiny targets near your crosshair (M on the intro screen skips them) and strafe tracking, and it narrows down (bisects) to the one you score best with. It ends with a recommended VALORANT
   sens, eDPI and cm/360, and a button to use it in ValTrainer. VALORANT itself is never changed; set it yourself in
   VALORANT's settings.
 
