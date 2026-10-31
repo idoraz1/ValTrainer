@@ -1,0 +1,68 @@
+name: winget
+
+# Opens a pull request on microsoft/winget-pkgs that adds a published GitHub release to winget (Valtrainer.ValTrainer),
+# using winget-releaser (komac) from the fork idoraz1/winget-pkgs. A winget moderator still has to merge it.
+# Runs after every release (called by release.yml) and by hand (Actions → winget → Run workflow).
+# Needs the repository secret WINGET_TOKEN: a classic personal access token with the public_repo scope (it pushes to
+# the fork and opens the PR). Without it the job is skipped. Also skipped until the package's first version has been
+# merged into winget-pkgs (komac can only update a package that already exists).
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: Version to submit (x.y.z, no leading v)
+        type: string
+        required: true
+    secrets:
+      WINGET_TOKEN:
+        required: false
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to submit (x.y.z, no leading v)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: winget
+  cancel-in-progress: false
+
+jobs:
+  submit:
+    name: Submit to winget
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERSION: ${{ inputs.version }}
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check the token and the package
+        id: check
+        run: |
+          VERSION="${VERSION#v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          if [ -z "$WINGET_TOKEN" ]; then
+            echo "::notice::WINGET_TOKEN isn't set: skipping the winget submission."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          elif ! gh api repos/microsoft/winget-pkgs/contents/manifests/v/Valtrainer/ValTrainer --silent 2>/dev/null; then
+            echo "::notice::Valtrainer.ValTrainer isn't in winget-pkgs yet (first PR not merged): skipping."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open the winget-pkgs pull request
+        if: steps.check.outputs.ok == 'true'
+        uses: vedantmgoyal9/winget-releaser@v2
+        with:
+          identifier: Valtrainer.ValTrainer
+          version: ${{ env.VERSION }}
+          release-tag: v${{ env.VERSION }}
+          installers-regex: '-Setup\.exe$'
+          max-versions-to-keep: 0
+          fork-user: idoraz1
+          token: ${{ secrets.WINGET_TOKEN }}

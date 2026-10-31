@@ -325,6 +325,18 @@ jobs:
     secrets:
       BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
 
+  # Open the winget-pkgs pull request for the new version (skipped while WINGET_TOKEN isn't set or before the
+  # package's first version is in winget; prereleases aren't submitted). See .github/workflows/winget.yml.
+  winget:
+    name: Submit to winget
+    needs: release
+    if: needs.release.outputs.prerelease != 'true'
+    uses: ./.github/workflows/winget.yml
+    with:
+      version: ${{ needs.release.outputs.version }}
+    secrets:
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+
   # Then announce it in the ValTrainer Discord's #announcements (skipped while DISCORD_WEBHOOK_URL isn't set;
   # prereleases aren't announced). See .github/workflows/discord.yml.
   discord:
