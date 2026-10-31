@@ -13,15 +13,16 @@ public sealed class FlashPeekMode : InitiatorDrill
     public static readonly string[] Agents = { "phoenix", "skye", "yoru", "kayo", "breach", "gekko", "reyna", "omen" };
     public readonly string Agent;
 
-    public FlashPeekMode(string agent = "phoenix") : base(Pick(agent)) => Agent = Ability.AgentKey;
+    public FlashPeekMode(string agent = "phoenix") : base(AbilityFor(agent)) => Agent = Ability.AgentKey;
 
-    static InitiatorAbility Pick(string agent)
+    static InitiatorAbility AbilityFor(string agent)
     {
         var a = string.IsNullOrWhiteSpace(agent) ? "phoenix" : agent.Trim().ToLowerInvariant();
         return InitiatorAbility.Get(Agents.Contains(a) ? a : "phoenix");
     }
 
     public override string Key => "flashpeek:" + Agent;
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
     public override string Name => "Flash & Peek";
     public override string Description => "Throw your own flash, then peek and kill the defenders while they are blind.";
     protected override bool CountsDryPeeks => true;
@@ -64,15 +65,16 @@ public sealed class ReconMode : InitiatorDrill
     public static readonly string[] Agents = { "sova", "fade" };
     public readonly string Agent;
 
-    public ReconMode(string agent = "sova") : base(Pick(agent)) => Agent = Ability.AgentKey;
+    public ReconMode(string agent = "sova") : base(AbilityFor(agent)) => Agent = Ability.AgentKey;
 
-    static InitiatorAbility Pick(string agent)
+    static InitiatorAbility AbilityFor(string agent)
     {
         var a = string.IsNullOrWhiteSpace(agent) ? "sova" : agent.Trim().ToLowerInvariant();
         return InitiatorAbility.Get(Agents.Contains(a) ? a : "sova");
     }
 
     public override string Key => "recon:" + Agent;
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
     public override string Name => "Recon & Clear";
     public override string Description => "Use your recon to find the defenders, then clear the site.";
 

@@ -408,7 +408,7 @@ public partial class ReplayStage : Node3D
         var p = Rec.PlayerAt(t);
         var def = Weapons.Get(vmKind);
         float a = Mathf.Clamp(p.AdsBlend, 0f, 1f), ease = a * a * (3f - 2f * a);
-        bool scopeUp = (p.Bits & PBits.Scoped) != 0 && def?.Sniper == true && ease >= 0.6f; // AdsSession.ScopeShowAt
+        bool scopeUp = (p.Bits & PBits.Scoped) != 0 && def?.Scope == true && ease >= 0.6f; // AdsSession.ScopeShowAt
         vm.Visible = ShowViewmodel && (p.Bits & PBits.VmShown) != 0 && (p.Bits & PBits.AbilityInHand) == 0 && !scopeUp;
         vm.SetAds(a);
         vm.SetReload(p.Reload > 0f ? Mathf.Clamp(p.Reload, 0f, 1f) : -1f);

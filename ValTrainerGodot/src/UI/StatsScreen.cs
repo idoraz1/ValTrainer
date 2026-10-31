@@ -7,18 +7,50 @@ namespace ValTrainer.UI;
 
 /// <summary>
 /// Career / stats: tier tabs on top; for the selected tier one row per drill with runs, best, average of the
-/// last 10, accuracy, kill/reaction time, best badge and a sparkline of the last 20 scores.
+/// last 10, accuracy, kill/reaction time, best badge and a sparkline of the last 20 scores. Once more than one gun was used,
+/// a GUN chip row filters the table by gun (ALL GUNS: the best across guns, with the gun under the score when it isn't the
+/// drill's default). Runs from before 1.18 count as the drill's default gun. Badges count rated guns only
+/// (<see cref="GunRating"/>). Dev: <c>--stats-gun Phantom</c> opens with that filter.
 /// </summary>
 public partial class StatsScreen : ScreenBase
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
     /// <summary>Remembered across visits within the session.</summary>
     static int selTier = -99;
+    /// <summary>Gun filter (null = all guns), remembered within the session.</summary>
+    static WeaponKind? selGun = Weapons.Parse(CmdLine.DevAfter("--stats-gun"));
 
     readonly List<TrainingMode> modes = ModeRegistry.All.Select(f => f()).ToList();
     readonly List<VButton> tabs = new();
+    readonly List<(VButton B, WeaponKind? Gun)> gunChips = new();
     VBoxContainer? table;
     DrawBox? summary;
+
+    /// <summary>Every gun with at least one run, in buy-menu order (old runs: their drill's default).</summary>
+    static List<WeaponKind> GunsUsed()
+    {
+        var used = Main.I.Stats.Runs.Where(r => r != null).Select(DrillGuns.GunOf).Where(g => g != WeaponKind.None).ToHashSet();
+        return Weapons.All.Select(w => w.Kind).Where(used.Contains).ToList();
+    }
+
+    void AddGunChip(HBoxContainer row, WeaponKind? gun, string label)
+    {
+        int n = Main.I.Stats.Runs.Count(r => r != null && (gun == null || DrillGuns.GunOf(r) == gun));
+        var b = new VButton
+        {
+            Kind = VButton.Look.Select, K = K, Label = label, FontPx = 14, Selected = selGun == gun, TooltipText = $"{n} run{(n == 1 ? "" : "s")}",
+            CustomMinimumSize = new Vector2(Mathf.Max(96, 30 + label.Length * 9) * K, 34 * K),
+        };
+        b.Pressed += () =>
+        {
+            selGun = gun;
+            foreach (var (c, g) in gunChips) c.SetSelected(g == gun);
+            FillTable();
+            summary?.QueueRedraw();
+        };
+        gunChips.Add((b, gun));
+        row.AddChild(b);
+    }
 
     /// <summary>Column layout as fractions of the row width: mode, runs, best, avg10, accuracy, kill/react, badge, sparkline.</summary>
     internal static readonly float[] Cols = { 0f, 0.235f, 0.305f, 0.39f, 0.48f, 0.565f, 0.665f, 0.82f };
@@ -53,6 +85,19 @@ public partial class StatsScreen : ScreenBase
         foreach (var t in Difficulty.Tiers) AddTab(tabRow, t.Id, t.Name.ToUpperInvariant(), t.Ranks);
         if (legacy) AddTab(tabRow, -1, "LEGACY", "old Easy/Normal/Hard runs");
         col.AddChild(tabRow);
+
+        // gun filter: only once more than one gun was ever used (ALL = the best across guns)
+        gunChips.Clear();
+        var guns = GunsUsed();
+        if (selGun is { } sg && !guns.Contains(sg)) selGun = null;
+        if (guns.Count > 1)
+        {
+            var gunRow = HBox(6 * k);
+            gunRow.AddChild(new SectionLabel { Text = "GUN", K = k, CustomMinimumSize = new Vector2(70 * k, 34 * k) });
+            AddGunChip(gunRow, null, "ALL GUNS");
+            foreach (var g in guns) AddGunChip(gunRow, g, GunPicker.GunName(g).ToUpperInvariant());
+            col.AddChild(gunRow);
+        }
 
         var panel = new VPanel { K = k, Pad = 18, SizeFlagsVertical = SizeFlags.ExpandFill };
         col.AddChild(panel);
@@ -95,8 +140,9 @@ public partial class StatsScreen : ScreenBase
         int i = 0;
         foreach (var (m, label) in Rows())
         {
-            var runs = Main.I.Stats.For(m.Key).Where(r => selTier < 0 ? r.Tier < 0 : r.Tier == selTier).ToList();
-            table.AddChild(new StatsRow(m, runs) { Label = label, K = K, Legacy = selTier < 0, Stripe = i++ % 2 == 0, CustomMinimumSize = new Vector2(0, 58 * K) });
+            var runs = Main.I.Stats.For(m.Key).Where(r => (selTier < 0 ? r.Tier < 0 : r.Tier == selTier)
+                && (selGun == null || StatsStore.GunOf(r, m.Weapon) == selGun)).ToList();
+            table.AddChild(new StatsRow(m, runs, selGun) { Label = label, K = K, Legacy = selTier < 0, Stripe = i++ % 2 == 0, CustomMinimumSize = new Vector2(0, 58 * K) });
         }
     }
 
@@ -132,7 +178,7 @@ public partial class StatsScreen : ScreenBase
         float k = K;
         var all = Main.I.Stats.Runs;
         int atTier = all.Count(r => selTier < 0 ? r.Tier < 0 : r.Tier == selTier);
-        int badges = all.Where(r => r.Badge >= 0).Select(r => r.Badge).DefaultIfEmpty(-1).Max();
+        int badges = all.Where(r => r != null && r.Badge >= 0 && DrillGuns.IsRated(r)).Select(r => r.Badge).DefaultIfEmpty(-1).Max();
         (string L, string V, Color C)[] items =
         {
             ("TOTAL RUNS", all.Count.ToString(Inv), UiTheme.Text),
@@ -174,6 +220,8 @@ public partial class StatsRow : Control
     readonly TrainingMode mode;
     readonly int runs, badge;
     readonly string best = "—", avg10 = "—", acc = "—", kill = "—";
+    readonly string? bestGunName;
+    readonly bool unrated;
     readonly List<float> spark;
     public float K = 1f;
     public bool Stripe;
@@ -183,16 +231,27 @@ public partial class StatsRow : Control
     public string? Label;
     float hover;
 
-    public StatsRow(TrainingMode m, List<RunRecord> list)
+    public StatsRow(TrainingMode m, List<RunRecord> list, WeaponKind? gunFilter = null)
     {
         mode = m;
         MouseFilter = MouseFilterEnum.Pass;
         runs = list.Count;
-        badge = list.Select(r => r.Badge).DefaultIfEmpty(-1).Max();
+        // badges: rated guns only (old runs count as the drill's default gun, which is always rated)
+        bool hasGun = m.Weapon != WeaponKind.None;
+        unrated = hasGun && gunFilter is { } gf && !GunRating.IsRated(m, gf);
+        badge = list.Where(r => !hasGun || GunRating.IsRated(m, StatsStore.GunOf(r, m.Weapon))).Select(r => r.Badge).DefaultIfEmpty(-1).Max();
         spark = list.TakeLast(20).Select(r => (float)r.Score).ToList();
         if (runs == 0) return;
         var last10 = list.TakeLast(10).ToList();
-        best = list.Max(r => r.Score).ToString("#,0", Inv);
+        var top = list.MaxBy(r => r.Score)!;
+        best = top.Score.ToString("#,0", Inv);
+        // all guns: name the gun of the best when the row mixes guns or the best isn't the drill's default
+        if (hasGun && gunFilter == null)
+        {
+            var bestGun = StatsStore.GunOf(top, m.Weapon);
+            bool mixed = list.Select(r => StatsStore.GunOf(r, m.Weapon)).Distinct().Skip(1).Any();
+            if ((mixed || bestGun != m.Weapon) && bestGun != WeaponKind.None) bestGunName = GunPicker.GunName(bestGun).ToUpperInvariant();
+        }
         avg10 = last10.Average(r => r.Score).ToString("#,0", Inv);
         var accs = last10.Where(r => r.Accuracy >= 0).ToList();
         if (accs.Count > 0) acc = $"{accs.Average(r => r.Accuracy) * 100:0.0}%";
@@ -226,16 +285,25 @@ public partial class StatsRow : Control
             return;
         }
         Gfx.Text(this, UiTheme.Display, runs.ToString(Inv), X(1), Gfx.Mid(cy, vs), vs, UiTheme.Text);
-        Gfx.Text(this, UiTheme.Display, best, X(2), Gfx.Mid(cy, vs), vs, UiTheme.Good);
+        Gfx.Text(this, UiTheme.Display, best, X(2), Gfx.Mid(bestGunName != null ? cy - 6 * k : cy, vs), vs, UiTheme.Good);
+        if (bestGunName != null) Gfx.TextFit(this, UiTheme.HudWide, bestGunName, X(2), Gfx.Mid(cy + 15 * k, cs), cs, UiTheme.Dim, ColW(2));
         Gfx.Text(this, UiTheme.Display, avg10, X(3), Gfx.Mid(cy, vs), vs, UiTheme.Text);
         Gfx.Text(this, UiTheme.Display, acc, X(4), Gfx.Mid(cy, vs), vs, UiTheme.Text);
         Gfx.Text(this, UiTheme.Display, kill, X(5), Gfx.Mid(cy, vs), vs, UiTheme.Text);
 
         float er = 12 * k;
-        RankEmblem.Draw(this, new Vector2(X(6) + er, cy), er, badge, badge >= 0 ? 1f : 0.6f);
         int bs = UiTheme.Fs(14, k);
-        Gfx.TextFit(this, UiTheme.HudWide, badge >= 0 ? Difficulty.Tiers[badge].Name.ToUpperInvariant() : Legacy ? "NOT RATED" : "BELOW ROOKIE", X(6) + er * 2 + 8 * k, Gfx.Mid(cy, bs), bs,
-            UiTheme.TierColor(badge), ColW(6) - er * 2 - 8 * k);
+        if (unrated)
+        {
+            RankEmblem.Draw(this, new Vector2(X(6) + er, cy), er, -1, 0.45f);
+            Gfx.TextFit(this, UiTheme.HudWide, "UNRATED GUN", X(6) + er * 2 + 8 * k, Gfx.Mid(cy, bs), bs, UiTheme.Faint, ColW(6) - er * 2 - 8 * k);
+        }
+        else
+        {
+            RankEmblem.Draw(this, new Vector2(X(6) + er, cy), er, badge, badge >= 0 ? 1f : 0.6f);
+            Gfx.TextFit(this, UiTheme.HudWide, badge >= 0 ? Difficulty.Tiers[badge].Name.ToUpperInvariant() : Legacy ? "NOT RATED" : "BELOW ROOKIE", X(6) + er * 2 + 8 * k, Gfx.Mid(cy, bs), bs,
+                UiTheme.TierColor(badge), ColW(6) - er * 2 - 8 * k);
+        }
 
         var sr = new Rect2(X(7), cy - 16 * k, Size.X - pad - X(7), 30 * k);
         Sparkline.Draw(this, sr, spark, k, UiTheme.Accent);

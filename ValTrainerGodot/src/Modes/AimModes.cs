@@ -25,6 +25,7 @@ public sealed class GridshotMode : TrainingMode
     }
 
     public override string Key => "gridshot";
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.NoShotguns;
     public override string Name => "Gridshot";
     public override string Description => "3 targets on a 3x3 grid. Warm-up for speed and click timing.";
     public override bool SupportsAdaptive => true;
@@ -102,6 +103,7 @@ public sealed class FlickMode : TrainingMode
     public override AimFocus? Focus => target != null ? new AimFocus(fid, target.GlobalPosition, target.Radius) : null;
 
     public override string Key => "flick";
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.NoShotguns;
     public override string Name => "Head Flicks";
     public override string Description => "One real-size head (r 0.14 m). Flick, click, repeat. Higher tiers: farther, wider, timed.";
     public override bool UsesHeadshots => false;
@@ -182,6 +184,7 @@ public sealed class SpidershotMode : TrainingMode
     public override AimFocus? Focus => target != null ? new AimFocus(sid, target.GlobalPosition, radius) : null;
 
     public override string Key => "spider";
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.NoShotguns;
     public override string Name => "Spidershot";
     public override string Description => "Centre target, then a random one. Flick out and back; higher tiers are smaller and wider.";
     public override bool SupportsAdaptive => true;

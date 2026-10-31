@@ -7,6 +7,7 @@ namespace ValTrainer.Game.Weapon;
 /// three crossed side-flame quads along the barrel, and a ~35 ms OmniLight3D burst that lights the
 /// gun, the hands and the nearby world. Drawn with the viewmodel projection so it sits exactly on the
 /// barrel tip at any zoom. Materials are created once per viewmodel; firing only changes uniforms.
+/// <para>Suppressed guns (Ghost, Spectre) get a short, dim flash: no side flames past the can and a weak light.</para>
 /// </summary>
 public partial class MuzzleFlash : Node3D
 {
@@ -16,6 +17,7 @@ public partial class MuzzleFlash : Node3D
     ShaderMaterial starMat = null!, sideMat = null!;
     OmniLight3D light = null!;
     float t = 99f, size = 0.11f, baseScale = 1f, energy = 3f, lastK = -1f;
+    bool suppressed;
     readonly Random rng = new();
 
     /// <summary>Keep the flash fully visible (dev screenshots).</summary>
@@ -25,9 +27,9 @@ public partial class MuzzleFlash : Node3D
 
     static ArrayMesh? flameMesh;
 
-    public static MuzzleFlash Create(VmMaterials mats, float scale, uint layer)
+    public static MuzzleFlash Create(VmMaterials mats, float scale, uint layer, bool suppressed = false)
     {
-        var f = new MuzzleFlash { Name = "MuzzleFlash", baseScale = scale };
+        var f = new MuzzleFlash { Name = "MuzzleFlash", baseScale = scale, suppressed = suppressed };
         f.starMat = mats.MakeFlash(0);
         f.sideMat = mats.MakeFlash(1);
         f.star = new MeshInstance3D { Mesh = new QuadMesh { Size = Vector2.One }, MaterialOverride = f.starMat };
@@ -52,7 +54,7 @@ public partial class MuzzleFlash : Node3D
             Visible = false,
         };
         f.AddChild(f.light);
-        f.energy = 1.7f * Mathf.Sqrt(scale);
+        f.energy = 1.7f * Mathf.Sqrt(scale) * (suppressed ? 0.4f : 1f);
         return f;
     }
 
@@ -91,7 +93,7 @@ public partial class MuzzleFlash : Node3D
         starMat.SetShaderParameter("seed", R(0, 100));
         sideMat.SetShaderParameter("seed", R(0, 100));
         float w = 0.1f * baseScale * R(0.8f, 1.15f);
-        side.Scale = new Vector3(w, w, 0.28f * baseScale * R(0.7f, 1.25f));
+        side.Scale = new Vector3(w, w, 0.28f * baseScale * R(0.7f, 1.25f) * (suppressed ? 0.35f : 1f));
         side.Rotation = new Vector3(0, 0, R(0, Mathf.Pi));
         light.Visible = true;
     }

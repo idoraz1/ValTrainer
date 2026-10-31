@@ -97,11 +97,12 @@ public static class VmHands
         return mesh;
     }
 
-    /// <summary>Simple spare magazine (for the reload) — straight or curved box mag along -Y.</summary>
+    /// <summary>Simple spare magazine (for the reload) — straight or curved box mag along -Y (a positive curve sweeps the
+    /// bottom forward, a negative one backward: a bullpup's magazine behind the grip).</summary>
     public static ArrayMesh Magazine(Vector3 half, float curveDeg, Material body, Material plate)
     {
         var mb = new VmMesh(); var mp = new VmMesh();
-        int n = curveDeg > 0.1f ? 3 : 1;
+        int n = Mathf.Abs(curveDeg) > 0.1f ? 3 : 1;
         var t = Transform3D.Identity;
         float seg = half.Y * 2 / n;
         for (int i = 0; i < n; i++)

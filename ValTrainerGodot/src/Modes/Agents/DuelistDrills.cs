@@ -34,6 +34,7 @@ public sealed partial class MobilityEntryMode : MapMode
     }
 
     public override string Key => "mobility:" + Agent;
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => Agent == "jett-op" ? null : WeaponSets.Any;
     public override string Name => "Mobility Entry";
     public override string Description => "Use your movement ability to enter the site and take the first duel.";
     public override string Category => "Agents";

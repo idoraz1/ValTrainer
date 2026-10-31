@@ -35,6 +35,7 @@ public sealed class CounterStrafeMode : MovementMode
     public override AimFocus? Focus => bot != null && !bot.Dead && GodotObject.IsInstanceValid(bot) ? new AimFocus(IdOf(bot), bot.Head, BotCharacter.HeadRadius) : null;
 
     public override string Key => "counterstrafe";
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
     public override string Name => "Counter-Strafe";
     public override string Description => "Strafe A/D. A bot appears while you run: tap the opposite key to stop, then one-tap.";
 
@@ -117,6 +118,7 @@ public sealed class PeekDuelMode : MovementMode
     public override AimFocus? Focus => st == St.Live && bot != null && !bot.Dead && GodotObject.IsInstanceValid(bot) ? new AimFocus(IdOf(bot), bot.Head, BotCharacter.HeadRadius) : null;
 
     public override string Key => "peekduel";
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
     public override string Name => "Peek Duels";
     public override string Description => "Swing out from a corner vs a bot holding the angle. It shoots back — stop, hit first, get back.";
     public override Vector3 StartFeet => new(0.4f, 0, 0);

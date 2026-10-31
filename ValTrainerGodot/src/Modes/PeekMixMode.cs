@@ -8,6 +8,7 @@ namespace ValTrainer.Modes;
 public sealed class PeekMixMode : BotMode
 {
     public override string Key => "peek_mix";
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
     public override string Name => "Mixed Peeks";
     public override string Description => "Hold an angle against unpredictable peeks. Shoot a bait and it punishes you; hold fire and it commits.";
     public override string Category => "Movement";

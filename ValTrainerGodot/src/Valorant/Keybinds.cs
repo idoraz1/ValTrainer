@@ -21,6 +21,9 @@ public enum GameAction
     /// <summary>X.</summary>
     Ultimate,
     EquipPrimary, EquipSecondary, EquipMelee, Inspect, Drop,
+    /// <summary>VALORANT "Open buy menu" (default B): the gun picker over a running drill (GameSession, BuySession.cs).
+    /// Appended last: custom binds are saved by action name, and new actions go at the end of the enum anyway.</summary>
+    BuyMenu,
 }
 
 /// <summary>
@@ -344,7 +347,7 @@ public sealed class Keybinds
         GameAction.EquipSpike => "Equip spike", GameAction.UseSpike => "Use spike (plant / defuse)", GameAction.AbilityGrenade => "Ability C (grenade)",
         GameAction.Ability1 => "Ability Q (1)", GameAction.Ability2 => "Ability E (2)", GameAction.Ultimate => "Ultimate (X)",
         GameAction.EquipPrimary => "Equip primary", GameAction.EquipSecondary => "Equip secondary", GameAction.EquipMelee => "Equip melee",
-        GameAction.Inspect => "Inspect", GameAction.Drop => "Drop", _ => a.ToString(),
+        GameAction.Inspect => "Inspect", GameAction.Drop => "Drop", GameAction.BuyMenu => "Buy menu", _ => a.ToString(),
     };
 
     /// <summary>VALORANT's default binds (Settings → Controls with nothing changed).</summary>
@@ -374,6 +377,7 @@ public sealed class Keybinds
         D(GameAction.EquipMelee, Key.Key3);
         D(GameAction.Inspect, Key.Y);
         D(GameAction.Drop, Key.G);
+        D(GameAction.BuyMenu, Key.B);
         return k;
     }
 

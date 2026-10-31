@@ -850,6 +850,23 @@ static class RunAnalysis
     // A5. Spray (sprays of ≥ 10 bullets; bullets 4–15)
     // =====================================================================================================
 
+    /// <summary>
+    /// The climb (°/s) a spray's hand must cancel, for the compensation delay: 5.5 for the Vandal and 4.6 for the Phantom
+    /// (the values the spray metrics were tuned with); any other gun scales the Vandal's by its climb, (pitch at bullet 12 −
+    /// pitch at bullet 3) × fire rate after spin-up. A run without a known gun uses its drill's (Phantom Spray: the
+    /// Phantom, else the Vandal).
+    /// </summary>
+    public static float SprayRequired(string mode, string? weapon)
+    {
+        var w = Weapons.Parse(weapon) is { } k ? Weapons.Get(k) : null;
+        w ??= mode == "spray_phantom" ? Weapons.Phantom : Weapons.Vandal;
+        if (w.Kind == WeaponKind.Vandal) return 5.5f;
+        if (w.Kind == WeaponKind.Phantom) return 4.6f;
+        static float Climb(WeaponDef g) => (WeaponDef.Lerp(g.Pitch, 12) - WeaponDef.Lerp(g.Pitch, 3)) * g.MaxRps / 9f;
+        float c = Climb(w), v = Climb(Weapons.Vandal);
+        return float.IsFinite(c) && v > 0 ? Math.Clamp(5.5f * c / v, 1.5f, 9f) : 5.5f;
+    }
+
     static void Spray(Prep p, Dictionary<string, float> m, List<SprayInfo>? info = null)
     {
         var t = p.T;
@@ -872,7 +889,7 @@ static class RunAnalysis
             m["spray.h"] = MathF.Sqrt(Dsp.Mean(res.Select(e => e.B * e.B)));
             return;
         }
-        float required = t.Mode == "spray_phantom" ? 4.6f : 5.5f; // °/s of climb the hand must cancel
+        float required = SprayRequired(t.Mode, t.Weapon); // °/s of climb the hand must cancel
         var vs = new List<float>(); var hs = new List<float>(); var delays = new List<float>();
         foreach (var s in used)
         {
@@ -940,9 +957,11 @@ static class RunAnalysis
     /// (<see cref="Bench.ScoreSpeedOffset"/>). Also removes what older versions fed wrongly: Site Anchor's flashes
     /// (Utility is Flash Dodge only), Sound Lock's sight-to-hit time (it isn't a reaction test) and, for drills that
     /// counted enemies beside or behind you, crosshair placement recorded before the 60° gate (no "xhair.gated").
+    /// Runs with an unrated gun (<paramref name="weapon"/>, see <see cref="Modes.WeaponRating.IsRatedRun"/>) lose the
+    /// metrics the gun shapes (<see cref="GunMetric"/>); what only the mouse decides still counts.
     /// Returns a copy when anything changes; the stored record is never modified.
     /// </summary>
-    public static Dictionary<string, float> Normalize(string mode, int tier, Dictionary<string, float> m)
+    public static Dictionary<string, float> Normalize(string mode, int tier, Dictionary<string, float> m, string? weapon = null)
     {
         string b = Base(mode);
         bool dropX = HorizExcluded(mode) && m.ContainsKey("xhair.nh");
@@ -952,8 +971,14 @@ static class RunAnalysis
         bool notFlash = b != "flashmap" && m.Keys.Any(k => k.StartsWith("flash.", StringComparison.Ordinal));
         bool notReact = b == "sound" && m.ContainsKey("react.ms");
         bool ungated = UngatedSightings.Contains(b) && m.ContainsKey("xhair.n") && !m.ContainsKey("xhair.gated");
-        if (!dropX && !dodge && !track && !speed && !notFlash && !notReact && !ungated) return m;
+        bool unrated = !Modes.WeaponRating.IsRatedRun(mode, weapon) && m.Keys.Any(GunMetric);
+        if (!dropX && !dodge && !track && !speed && !notFlash && !notReact && !ungated && !unrated) return m;
         var c = new Dictionary<string, float>(m);
+        if (unrated)
+        {
+            foreach (var k in m.Keys) if (GunMetric(k)) c.Remove(k);
+            speed = false; // gone with the rest of speed.*
+        }
         if (dropX)
             foreach (var k in new[] { "xhair.nh", "xhair.err_deg", "xhair.h_deg", "xhair.on_head", "xhair.on_head_pct" }) c.Remove(k);
         if (ungated || notFlash || notReact)
@@ -966,4 +991,13 @@ static class RunAnalysis
         if (speed) c["speed.tier"] = Math.Max(-0.5f, m["speed.tier"] - Bench.ScoreSpeedOffset);
         return c;
     }
+
+    /// <summary>Metrics the gun shapes, which the rank benchmarks only know for the drill's own gun (design §1.5):
+    /// first-bullet hits (and their derived %), time to kill, spray and movement-shooting numbers, score speed. Mouse-only
+    /// metrics (onset, end error, shot error, corrections, tracking, crosshair placement, reaction) and the sample counts
+    /// they are weighted by (flick.n_first, head.n_first) stay.</summary>
+    static bool GunMetric(string k) =>
+        k is "flick.first_hits" or "flick.fsh_pct" or "head.first_hits" or "head.fsh_pct" or "flick.ttk_ms" or "flick.ttk_hit_ms"
+        || k.StartsWith("spray.", StringComparison.Ordinal) || k.StartsWith("move.", StringComparison.Ordinal)
+        || k.StartsWith("speed.", StringComparison.Ordinal);
 }

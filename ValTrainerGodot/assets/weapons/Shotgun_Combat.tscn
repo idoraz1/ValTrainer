@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/weapons/Shotgun_ShortStock.fbx" id="1_shotgun_shortstock"]
+
+[node name="Shotgun_Combat" type="Node3D" unique_id=648591328]
+metadata/source_model = "res://assets/weapons/Shotgun_ShortStock.fbx"
+metadata/length_m = 0.760
+
+[node name="Model" type="Node3D" parent="." unique_id=1721496065 instance=ExtResource("1_shotgun_shortstock")]
+transform = Transform3D(0, 0, 0.17, 0, 0.17, 0, -0.17, 0, 0, 0, 0.023, -0.043)
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=842750337]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.090787925, -0.73132966)

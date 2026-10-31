@@ -11,6 +11,9 @@ namespace ValTrainer.Game.Bots;
 /// corner cutting), and only the component connected to the seed (the map's start) is kept, so every node is reachable.
 /// Paths: A* over the grid, then greedy string-pulling with knee-height rays so bots run straight lines across open
 /// ground. Built once per map (≈ 70 ms) and cached for the process; paths can be found on worker threads (<see cref="FindPathAsync"/>).
+/// Each node also knows its clearance (<see cref="Clear"/>: body-to-wall gap), for player-like paths that keep off the
+/// walls and swing wide around corners (<see cref="FindPath"/> with a clearance weight), open-floor goals
+/// (<see cref="RandomOpen"/>, <see cref="OpenNear"/>) and walking-distance floods (<see cref="DistanceField(Vector3, float)"/>).
 /// </summary>
 public sealed class BotNav
 {
@@ -43,8 +46,8 @@ public sealed class BotNav
     public double PathMs, MaxPathMs, SmoothMs;
     readonly object statLock = new();
 
-    /// <summary>Finds a path on a worker thread (keeps A* off the frame).</summary>
-    public Task<List<Vector3>?> FindPathAsync(Vector3 a, Vector3 b) => Task.Run(() => FindPath(a, b));
+    /// <summary>Finds a path on a worker thread (keeps A* off the frame). <paramref name="clearanceWeight"/>: see <see cref="FindPath"/>.</summary>
+    public Task<List<Vector3>?> FindPathAsync(Vector3 a, Vector3 b, float clearanceWeight = 0f) => Task.Run(() => FindPath(a, b, clearanceWeight: clearanceWeight));
 
     static readonly ConcurrentDictionary<string, BotNav> Cache = new();
 
@@ -162,7 +165,39 @@ public sealed class BotNav
         for (int i = 0; i < nCols; i++) cs2[i + 1] += cs2[i];
         colStart = cs2;
         colNodes = Enumerable.Range(0, Pos.Length).ToArray();
+
+        // 5. clearance: horizontal gap from a standing body to the nearest blocking box (open-floor tests, wide paths)
+        Clear = new float[Pos.Length];
+        for (int n = 0; n < Pos.Length; n++) Clear[n] = WallGap(Pos[n], world);
         BuildMs = (float)sw.Elapsed.TotalMilliseconds;
+    }
+
+    /// <summary>Per node: horizontal gap (m, capped at <see cref="ClearCap"/>) between a standing body
+    /// (<see cref="Collision.PlayerRadius"/>) and the nearest box that blocks it (above step height, below head height).
+    /// Drop-offs don't count: only walls, crates and pillars.</summary>
+    public readonly float[] Clear;
+    public const float ClearCap = 4f;
+
+    static float WallGap(Vector3 f, Box[] world)
+    {
+        float best = ClearCap, r = Collision.PlayerRadius;
+        foreach (ref readonly var b in world.AsSpan())
+        {
+            if (b.Max.Y <= f.Y + Collision.StepHeight || b.Min.Y >= f.Y + Collision.PlayerHeight) continue;
+            float dx = Mathf.Max(0, Mathf.Max(b.Min.X - (f.X + r), (f.X - r) - b.Max.X));
+            if (dx >= best) continue;
+            float dz = Mathf.Max(0, Mathf.Max(b.Min.Z - (f.Z + r), (f.Z - r) - b.Max.Z));
+            float g = Mathf.Sqrt(dx * dx + dz * dz);
+            if (g < best) best = g;
+        }
+        return best;
+    }
+
+    /// <summary>Body-to-wall gap (m) at a world point: the clearance of its node, 0 off the grid.</summary>
+    public float ClearAt(Vector3 p)
+    {
+        int n = At(p, Collision.StepHeight);
+        return n >= 0 ? Clear[n] : 0f;
     }
 
     int Find(int ix, int iz, float y, float maxDy, Vector3[] pos)
@@ -212,17 +247,21 @@ public sealed class BotNav
     }
 
     /// <summary>A* from a world point to another; returns smoothed waypoints (excluding the start) or null.</summary>
-    public List<Vector3>? FindPath(Vector3 a, Vector3 b, int maxExpand = 20000)
+    /// <param name="clearanceWeight">0 (default) = shortest path, string-pulled tight around corners (Defense, Retake,
+    /// Site Clear, controller plans). Above 0 = player-like lines: steps within 1 m of a wall cost up to (1 + weight)×,
+    /// shortcuts keep up to 0.5 m between the shoulders and walls where the passage allows, and turn points are pushed out
+    /// toward open floor, so corners are taken wide (Deathmatch bots use 2).</param>
+    public List<Vector3>? FindPath(Vector3 a, Vector3 b, int maxExpand = 20000, float clearanceWeight = 0f)
     {
         var sw = Stopwatch.StartNew();
         List<Vector3>? r = null;
         double smooth = 0;
         int s = Nearest(a), t = Nearest(b);
-        var nodes = s >= 0 && t >= 0 ? AStar(s, t, maxExpand) : null;
+        var nodes = s >= 0 && t >= 0 ? AStar(s, t, maxExpand, clearanceWeight) : null;
         if (nodes != null)
         {
             double t0 = sw.Elapsed.TotalMilliseconds;
-            r = Smooth(a, nodes);
+            r = clearanceWeight > 0 ? SmoothWide(a, nodes) : Smooth(a, nodes);
             smooth = sw.Elapsed.TotalMilliseconds - t0;
         }
         double ms = sw.Elapsed.TotalMilliseconds;
@@ -235,7 +274,7 @@ public sealed class BotNav
         return r;
     }
 
-    List<int>? AStar(int s, int t, int maxExpand)
+    List<int>? AStar(int s, int t, int maxExpand, float clearanceWeight = 0f)
     {
         if (g == null || g.Length != Pos.Length) { g = new float[Pos.Length]; from = new int[Pos.Length]; stamp = new int[Pos.Length]; gen = 0; }
         var fromA = BotNav.from!; var stampA = BotNav.stamp!; var gA = BotNav.g;
@@ -254,7 +293,9 @@ public sealed class BotNav
             var pn = Pos[n];
             foreach (var m in Links[n])
             {
-                float ng = g[n] + pn.DistanceTo(Pos[m]);
+                float step = pn.DistanceTo(Pos[m]);
+                if (clearanceWeight > 0) step *= 1f + clearanceWeight * Mathf.Max(0f, 1f - Clear[m]);
+                float ng = g[n] + step;
                 if (stamp[m] == gen && ng >= g[m]) continue;
                 stamp[m] = gen; g[m] = ng; from[m] = n;
                 open.Enqueue(m, ng + H(Pos[m], goal));
@@ -287,9 +328,57 @@ public sealed class BotNav
         return outp;
     }
 
+    /// <summary>String-pulling for player-like lines (<see cref="FindPath"/> with a clearance weight): a shortcut must keep
+    /// the shoulders up to 0.5 m off the walls (less only where the passage is narrower), then every turn point is pushed
+    /// out toward open floor, so the bot swings wide around corners instead of shaving them.</summary>
+    List<Vector3> SmoothWide(Vector3 start, List<int> nodes)
+    {
+        var outp = new List<Vector3>();
+        var anchor = start;
+        float anchorClear = ClearAt(start);
+        int i = nodes.Count > 1 && new Vector2(start.X - Pos[nodes[0]].X, start.Z - Pos[nodes[0]].Z).Length() < 0.75f ? 1 : 0;
+        while (i < nodes.Count)
+        {
+            int j = i;
+            while (j + 1 < nodes.Count && j - i < 40)
+            {
+                int nx = nodes[j + 1];
+                // The margin the passage allows: the tighter end's clearance (a 1.7 m corridor keeps the old 6 cm).
+                float margin = Mathf.Clamp(Mathf.Min(anchorClear, Clear[nx]) * 0.8f, 0.06f, 0.5f);
+                if (!Straight(anchor, Pos[nx], Collision.PlayerRadius + margin)) break;
+                j++;
+            }
+            anchor = Pos[nodes[j]];
+            anchorClear = Clear[nodes[j]];
+            outp.Add(anchor);
+            i = j + 1;
+        }
+        // Turn points: climb the clearance field (≤ 2 m) until 1 m off the wall or the middle of the passage.
+        for (int k = 0; k + 1 < outp.Count; k++)
+        {
+            int n = At(outp[k], 0.3f);
+            if (n < 0 || Clear[n] >= 1f) continue;
+            int best = n;
+            for (int step = 0; step < 4 && Clear[best] < 1f; step++)
+            {
+                int up = best;
+                foreach (var m in Links[best]) if (Clear[m] > Clear[up] + 0.01f && Mathf.Abs(Pos[m].Y - Pos[best].Y) < 0.05f) up = m;
+                if (up == best) break;
+                best = up;
+            }
+            if (best == n) continue;
+            var prev = k == 0 ? start : outp[k - 1];
+            if (Straight(prev, Pos[best]) && Straight(Pos[best], outp[k + 1])) outp[k] = Pos[best];
+        }
+        return outp;
+    }
+
     /// <summary>Can a body walk the straight segment a→b? Ground must be continuous (every column on the way has a node
     /// within a step of the previous one) and knee-height rays (centre + both shoulders) must be clear.</summary>
-    public bool Straight(Vector3 a, Vector3 b)
+    public bool Straight(Vector3 a, Vector3 b) => Straight(a, b, Collision.PlayerRadius + 0.06f);
+
+    /// <summary><see cref="Straight(Vector3, Vector3)"/> with the shoulder rays <paramref name="halfWidth"/> either side of the centre line.</summary>
+    public bool Straight(Vector3 a, Vector3 b, float halfWidth)
     {
         var d = new Vector3(b.X - a.X, 0, b.Z - a.Z);
         float len = d.Length();
@@ -307,7 +396,7 @@ public sealed class BotNav
         }
         if (Mathf.Abs(y - b.Y) > 0.3f) return false;
         var dir = d / len;
-        var side = new Vector3(-dir.Z, 0, dir.X) * (Collision.PlayerRadius + 0.06f);
+        var side = new Vector3(-dir.Z, 0, dir.X) * halfWidth;
         float ky = Mathf.Max(a.Y, b.Y) + Collision.StepHeight + 0.05f;
         var c = new Vector3(a.X, ky, a.Z);
         return !HRayBlocked(c, dir, len) && !HRayBlocked(c + side, dir, len) && !HRayBlocked(c - side, dir, len);
@@ -328,6 +417,77 @@ public sealed class BotNav
 
     /// <summary>Random reachable node position.</summary>
     public Vector3 Random(Random rng) => Pos[rng.Next(Pos.Length)];
+
+    /// <summary>Random node with at least <paramref name="minClear"/> m between a body and the walls (open floor; the most
+    /// open of a few tries when none qualifies).</summary>
+    public Vector3 RandomOpen(Random rng, float minClear, int tries = 24)
+    {
+        int best = rng.Next(Pos.Length);
+        for (int k = 0; k < tries && Clear[best] < minClear; k++)
+        {
+            int n = rng.Next(Pos.Length);
+            if (Clear[n] > Clear[best]) best = n;
+        }
+        return Pos[best];
+    }
+
+    // Dijkstra scratch, one set per thread (DistanceField / OpenNear)
+    [ThreadStatic] static PriorityQueue<int, float>? dq;
+
+    /// <summary>Walking distance (m, along the grid) from the node nearest <paramref name="from"/> to every node; nodes
+    /// farther than <paramref name="maxDist"/> stay +∞. Allocates one float per node (≈ 30 KB on a big map), well under 1 ms.</summary>
+    public float[] DistanceField(Vector3 from, float maxDist = 60f) => DistanceField(new[] { from }, maxDist, null);
+
+    /// <summary>Walking distance to the nearest of several points (one flood from all of them). <paramref name="source"/>,
+    /// when given (one int per node), receives the index of the nearest point per node (−1 = out of reach).</summary>
+    public float[] DistanceField(IReadOnlyList<Vector3> from, float maxDist, int[]? source)
+    {
+        var d = new float[Pos.Length];
+        Array.Fill(d, float.PositiveInfinity);
+        if (source != null) Array.Fill(source, -1);
+        var q = dq ??= new PriorityQueue<int, float>();
+        q.Clear();
+        for (int i = 0; i < from.Count; i++)
+        {
+            int s = Nearest(from[i]);
+            if (s < 0 || d[s] == 0) continue;
+            d[s] = 0; q.Enqueue(s, 0);
+            if (source != null) source[s] = i;
+        }
+        while (q.TryDequeue(out int n, out float f))
+        {
+            if (f > d[n]) continue;
+            var pn = Pos[n];
+            foreach (var m in Links[n])
+            {
+                float nd = f + pn.DistanceTo(Pos[m]);
+                if (nd < d[m] && nd <= maxDist)
+                {
+                    d[m] = nd; q.Enqueue(m, nd);
+                    if (source != null) source[m] = source[n];
+                }
+            }
+        }
+        return d;
+    }
+
+    /// <summary>Open floor on this side of the walls near <paramref name="p"/>: a random node within <paramref name="radius"/> m
+    /// walking distance with at least <paramref name="minClear"/> m clearance (else the most open one in reach). Unlike
+    /// <see cref="Nearest"/> of a random offset, it never lands in the next room or against a wall.</summary>
+    public Vector3 OpenNear(Vector3 p, float radius, float minClear, Random rng)
+    {
+        int s = Nearest(p);
+        if (s < 0) return p;
+        var d = DistanceField(Pos[s], radius);
+        int pick = s, picks = 0, open = s;
+        for (int n = 0; n < d.Length; n++)
+        {
+            if (float.IsPositiveInfinity(d[n])) continue;
+            if (Clear[n] >= minClear) { if (rng.Next(++picks) == 0) pick = n; } // uniform over the qualifying nodes
+            else if (Clear[n] > Clear[open]) open = n;
+        }
+        return Pos[picks > 0 ? pick : open];
+    }
 
     /// <summary>Number of links (open nodes have 8).</summary>
     public int Degree(int n) => Links[n].Length;

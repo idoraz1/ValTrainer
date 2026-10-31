@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/weapons/Shotgun_3.fbx" id="1_shotgun_3"]
+
+[node name="Shotgun_Pump" type="Node3D" unique_id=809956737]
+metadata/source_model = "res://assets/weapons/Shotgun_3.fbx"
+metadata/length_m = 0.983
+
+[node name="Model" type="Node3D" parent="." unique_id=1624092692 instance=ExtResource("1_shotgun_3")]
+transform = Transform3D(0, 0, 0.17, 0, 0.17, 0, -0.17, 0, 0, 0, 0.01, -0.025)
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=881176764]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.04658009, -0.75731852)

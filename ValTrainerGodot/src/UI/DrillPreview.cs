@@ -8,15 +8,21 @@ using ValTrainer.Modes;
 namespace ValTrainer.UI;
 
 /// <summary>
-/// Popup shown when a drill card in the menu is clicked, instead of starting the drill right away (drills on a VALORANT map and the
-/// Agents screen's drills still start directly). Left: a live
+/// Popup shown when a drill card in the menu is clicked, instead of starting the drill right away (drills on a VALORANT map
+/// without a gun choice and the Agents screen's drills still start directly). Left: a live
 /// demo — the drill itself, played by the simulated player in a sub-viewport (<see cref="GameSession.Demo"/>: muted, no
 /// input, nothing saved, loops). Right: what the drill is, how long it runs, the weapon and map, which coach skills it
-/// feeds, your record at the chosen tier (best, badge, runs, recent scores) and the tier picker. START (Space / Enter) plays
-/// it, FREE PLAY (F) plays it without a clock or score (drills the simulated player can play), BACK (Esc) closes. Drills that need a person (Reaction Test, Sens Finder) show a note instead of a demo.
+/// feeds, your record at the chosen tier and gun (best, badge, runs, recent scores) and the tier picker. START (Space / Enter) plays
+/// it, FREE PLAY (F) plays it without a clock or score (drills the simulated player can play), BACK (Esc) closes. Drills that need a
+/// person (Reaction Test, Sens Finder) and drills on a VALORANT map show a note instead of a demo.
+/// <para>Drills that offer a gun choice (<see cref="TrainingMode.WeaponChoice"/>) have an interactive WEAPON row: clicking it or
+/// B opens the <see cref="GunPicker"/>; a pick restarts the demo with that gun, is remembered for the drill and is what START /
+/// FREE PLAY play.</para>
 /// <para>Dev: <c>--preview &lt;drill key&gt;</c> opens it over the menu (screenshots; <c>--preview-answer start|free|back</c> presses
-/// that button after 3 s); <c>--preview-check</c> runs every
-/// drill's demo headless for a few seconds and checks the simulated player plays it and nothing is saved.</para>
+/// that button after 3 s; <c>--preview-answer gun:Phantom</c> opens the gun picker after 3 s and picks that gun 2.5 s later);
+/// <c>--preview-check</c> runs every drill's demo headless for a few seconds and checks the simulated player plays it and
+/// nothing is saved (<c>--preview-gun Phantom</c>: with that gun wherever the drill offers it; <c>all</c>: each drill once per
+/// gun class it offers).</para>
 /// </summary>
 public partial class DrillPreview : Control
 {
@@ -27,23 +33,34 @@ public partial class DrillPreview : Control
     readonly Func<TrainingMode> make;
     readonly TrainingMode info;
     readonly string? title, sub;
-    readonly Action onStart, onClose;
-    readonly Action? onFreePlay;
+    readonly Action<WeaponKind?> onStart;
+    readonly Action onClose;
+    readonly Action<WeaponKind?>? onFreePlay;
 
     SubViewport? vp;
     GameSession? demo;
     Control? demoBox;
     DrawBox record = null!, tierInfo = null!;
     InfoRow? whereRow;
+    GunRow? gunRow;
+    GunPicker? picker;
+    DrawBox? noDemoBox;
     Maps.MapSpot? shownMap;
     readonly List<VButton> tierButtons = new();
     bool done;
+    /// <summary>The gun shown and played: the drill's resolved pick (per-drill pick → preferred gun → default).</summary>
+    WeaponKind gun;
+
+    /// <summary>The drill offers a gun choice: interactive WEAPON row, B opens the picker.</summary>
+    bool CanPick => info.WeaponChoice is { Count: > 0 } && !info.Is2D && info.Weapon != WeaponKind.None;
+    /// <summary>The explicit pick for sessions started from here (null = the drill's own gun).</summary>
+    WeaponKind? PickArg => CanPick ? gun : null;
 
     /// <param name="title">Card title instead of the drill's name (Agents screen); <paramref name="sub"/>: its second line.</param>
-    /// <param name="onStart">Starts the drill (after the popup and its demo are gone).</param>
+    /// <param name="onStart">Starts the drill with the picked gun (null = its own) after the popup and its demo are gone.</param>
     /// <param name="onFreePlay">Starts it in free play (no FREE PLAY button when null or the drill needs a person).</param>
-    public DrillPreview(float k, Func<TrainingMode> make, TrainingMode info, Action onStart, Action onClose, string? title = null, string? sub = null,
-        Action? onFreePlay = null)
+    public DrillPreview(float k, Func<TrainingMode> make, TrainingMode info, Action<WeaponKind?> onStart, Action onClose, string? title = null, string? sub = null,
+        Action<WeaponKind?>? onFreePlay = null)
     {
         this.onFreePlay = CanDemo(info) ? onFreePlay : null;
         this.k = k;
@@ -53,19 +70,33 @@ public partial class DrillPreview : Control
         this.onClose = onClose;
         this.title = title;
         this.sub = sub;
+        gun = CanPick ? WeaponPicks.Resolve(info) ?? info.Weapon : info.Weapon;
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         MouseFilter = MouseFilterEnum.Stop; // the screen underneath doesn't get clicks
     }
 
-    /// <summary>Opens the preview over <paramref name="parent"/> (one at a time).</summary>
-    public static void Open(Control parent, float k, Func<TrainingMode> make, Action start, string? title = null, string? sub = null, Action? freePlay = null)
+    /// <summary>Opens the preview over <paramref name="parent"/> (one at a time). <paramref name="start"/> /
+    /// <paramref name="freePlay"/> get the picked gun (null = the drill resolves its own).</summary>
+    public static void Open(Control parent, float k, Func<TrainingMode> make, Action<WeaponKind?> start, string? title = null, string? sub = null,
+        Action<WeaponKind?>? freePlay = null)
     {
         if (parent.GetChildren().Any(c => c is DrillPreview)) return;
         TrainingMode info;
         try { info = make(); }
-        catch (Exception e) { Log.Error($"[preview] can't build the drill: {e.Message}"); start(); return; }
-        if (!info.HasPreview) { start(); return; } // drills on a VALORANT map go straight in
-        parent.AddChild(new DrillPreview(k, make, info, start, () => { }, title, sub, freePlay));
+        catch (Exception e) { Log.Error($"[preview] can't build the drill: {e.Message}"); start(null); return; }
+        if (!info.HasPreview) { start(null); return; } // drills on a VALORANT map without a gun choice go straight in
+        // BACK: the cards' PBs follow a gun picked in the preview
+        parent.AddChild(new DrillPreview(k, make, info, start, () => RefreshCards(parent), title, sub, freePlay));
+    }
+
+    static void RefreshCards(Node n)
+    {
+        if (!IsInstanceValid(n)) return;
+        foreach (var c in n.GetChildren())
+        {
+            if (c is ModeCard card) card.Refresh();
+            else RefreshCards(c);
+        }
     }
 
     /// <summary>Whether a drill can be demoed by the simulated player (2D drills and the Sens Finder need a person).</summary>
@@ -73,6 +104,7 @@ public partial class DrillPreview : Control
 
     public override void _Ready()
     {
+        if (CanPick) GunIcons.Warm(); // the WEAPON row and the picker show silhouettes rendered from the gun models
         AddChild(new ColorRect { Color = new Color(0.02f, 0.04f, 0.06f, 0.78f), MouseFilter = MouseFilterEnum.Ignore, AnchorRight = 1, AnchorBottom = 1 });
         var center = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
         center.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
@@ -117,7 +149,13 @@ public partial class DrillPreview : Control
         void Row(string label, string value) =>
             right.AddChild(new InfoRow { K = k, H = 32, Label = label, Value = () => value, Stripe = stripe++ % 2 == 0 });
         Row("Length", info.Timed ? $"{info.Duration:0} s" : "Until you finish it");
-        if (!info.Is2D && info.Weapon != WeaponKind.None) Row("Weapon", WeaponName(info.Weapon));
+        if (CanPick)
+        {
+            gunRow = new GunRow { K = k, H = 40, Label = "Weapon", Gun = () => gun, Tag = GunTag, Stripe = stripe++ % 2 == 0 };
+            gunRow.Pressed += OpenPicker;
+            right.AddChild(gunRow);
+        }
+        else if (!info.Is2D && info.Weapon != WeaponKind.None) Row("Weapon", WeaponName(info.Weapon));
         // the map the demo is playing (a random map pick changes per run); RANDOM tag when the map picker is on random
         whereRow = new InfoRow
         {
@@ -129,7 +167,7 @@ public partial class DrillPreview : Control
         Row("Trains", Trains(info));
 
         right.AddChild(new SectionLabel { Text = "YOUR RECORD", K = k, CustomMinimumSize = new Vector2(0, 34 * k) });
-        record = new DrawBox { CustomMinimumSize = new Vector2(0, 112 * k), OnDraw = DrawRecord };
+        record = new DrawBox { CustomMinimumSize = new Vector2(0, (CanPick ? 120 : 112) * k), OnDraw = DrawRecord };
         right.AddChild(record);
 
         right.AddChild(new SectionLabel { Text = "DIFFICULTY", Note = "bots and targets scale with it", K = k, CustomMinimumSize = new Vector2(0, 34 * k) });
@@ -164,7 +202,11 @@ public partial class DrillPreview : Control
         var foot = new HBoxContainer();
         foot.AddThemeConstantOverride("separation", (int)(12 * k));
         col.AddChild(foot);
-        var hint = Text(CanDemo(info) ? $"Preview: the built-in simulated player, muted. Space / Enter starts,{(onFreePlay != null ? " F free play," : "")} Esc goes back." : "Space / Enter starts, Esc goes back.", 14, UiTheme.Faint);
+        // the in-drill buy menu (GameSession, BuySession.cs) changes the gun mid-run with VALORANT's buy-menu bind
+        string buy = Main.I.Valorant.Binds.Short(Valorant.GameAction.BuyMenu);
+        string pickKeys = buy == "B" ? " B picks the gun, also mid-drill," : buy == "—" ? " B picks the gun," : $" B picks the gun ({buy} mid-drill),";
+        string keys = $"Space / Enter starts,{(onFreePlay != null ? " F free play," : "")}{(CanPick ? pickKeys : "")} Esc goes back.";
+        var hint = Text(CanDemo(info) ? $"Preview: the built-in simulated player, muted. {keys}" : keys, 14, UiTheme.Faint);
         hint.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         foot.AddChild(hint);
         var back = new VButton { Label = "BACK", Kind = VButton.Look.Secondary, K = k, FontPx = 18, CustomMinimumSize = new Vector2(160 * k, 54 * k) };
@@ -181,14 +223,58 @@ public partial class DrillPreview : Control
         start.Pressed += () => Start();
         foot.AddChild(start);
 
-        // Dev: "--preview-answer start|back" presses that button after 3 s (flow tests)
+        // Dev: "--preview-answer start|free|back" presses that button after 3 s (flow tests); "gun:Phantom" opens the gun
+        // picker after 3 s with the focus on that gun and picks it 2.5 s later (screenshots of both)
         if (CmdLine.DevAfter("--preview-answer")?.ToLowerInvariant() is { } ans)
             GetTree().CreateTimer(3.0).Timeout += () =>
             {
                 if (!IsInstanceValid(this) || done) return;
                 Log.Info($"[preview] --preview-answer {ans}");
-                if (ans == "start") Start(); else if (ans == "free" && onFreePlay != null) Start(true); else Close();
+                if (ans.StartsWith("gun:")) DevPickGun(ans[4..]);
+                else if (ans == "start") Start(); else if (ans == "free" && onFreePlay != null) Start(true); else Close();
             };
+    }
+
+    void DevPickGun(string name)
+    {
+        if (Weapons.Parse(name) is not { } g) { Log.Error($"[preview] --preview-answer gun:{name}: not a gun"); return; }
+        if (!CanPick) { Log.Info($"[preview] {info.Key} offers no gun choice (locked to the {WeaponName(info.Weapon)})"); return; }
+        OpenPicker();
+        picker?.FocusGun(g);
+        GetTree().CreateTimer(2.5).Timeout += () =>
+        {
+            if (!IsInstanceValid(this) || done || picker == null || !IsInstanceValid(picker)) return;
+            picker.Pick(g);
+            Log.Info($"[preview] picked {g}: {info.Key} now plays the {WeaponName(gun)}");
+        };
+    }
+
+    // ---------------- gun ----------------
+
+    /// <summary>Where the shown gun comes from: the drill's default, the player's pick for it or their preferred gun.</summary>
+    string GunTag()
+    {
+        var choice = info.WeaponChoice;
+        if (choice != null && WeaponPicks.PickFor(info.Key) is { } own && own == gun && choice.Contains(own)) return own == info.Weapon ? "DRILL DEFAULT" : "YOUR PICK";
+        if (choice != null && WeaponPicks.Preferred() is { } pref && pref == gun && choice.Contains(pref) && pref != info.Weapon) return "PREFERRED";
+        return gun == info.Weapon ? "DRILL DEFAULT" : "YOUR PICK";
+    }
+
+    void OpenPicker()
+    {
+        if (!CanPick || done || (picker != null && IsInstanceValid(picker))) return;
+        picker = GunPicker.OpenForDrill(this, k, info, gun, SetGun, title);
+        if (picker != null) picker.Closed += () => picker = null;
+    }
+
+    void SetGun(WeaponKind g)
+    {
+        bool changed = g != gun;
+        gun = g;
+        gunRow?.QueueRedraw();
+        noDemoBox?.QueueRedraw();
+        record.QueueRedraw();
+        if (changed) StartDemo(); // the demo plays the new gun
     }
 
     string Caption()
@@ -203,9 +289,10 @@ public partial class DrillPreview : Control
     {
         if (!CanDemo(info))
         {
-            box.AddChild(new DrawBox
+            bool onMap = info.Map != null;
+            noDemoBox = new DrawBox
             {
-                Size = new Vector2(w, h),
+                Size = new Vector2(w, h), TextureFilter = TextureFilterEnum.LinearWithMipmaps,
                 OnDraw = d =>
                 {
                     var r = new Rect2(Vector2.Zero, d.Size);
@@ -213,10 +300,19 @@ public partial class DrillPreview : Control
                     Gfx.Brackets(d, r.Grow(-1), 18 * k, new Color(UiTheme.Text, 0.3f), Mathf.Max(1, 2 * k));
                     int fs = UiTheme.Fs(22, k), bs = UiTheme.Fs(16, k);
                     var c = r.GetCenter();
-                    Gfx.TextC(d, UiTheme.DisplayWide, "NO PREVIEW FOR THIS ONE", c.X, Gfx.Mid(c.Y - 18 * k, fs), fs, UiTheme.Text);
-                    Gfx.TextC(d, UiTheme.Body, "It runs on your own picks and reactions. Press START to try it.", c.X, Gfx.Mid(c.Y + 20 * k, bs), bs, UiTheme.Dim);
+                    float cy = CanPick ? c.Y - 70 * k : c.Y;
+                    Gfx.TextC(d, UiTheme.DisplayWide, "NO PREVIEW FOR THIS ONE", c.X, Gfx.Mid(cy - 18 * k, fs), fs, UiTheme.Text);
+                    Gfx.TextC(d, UiTheme.Body, onMap ? "Map drills start straight on the map, so there is no live preview."
+                        : "It runs on your own picks and reactions. Press START to try it.", c.X, Gfx.Mid(cy + 20 * k, bs), bs, UiTheme.Dim);
+                    if (!CanPick) return;
+                    // the gun you'll play, big
+                    var ir = new Rect2(c.X - 210 * k, c.Y + 6 * k, 420 * k, 110 * k);
+                    GunIcons.Draw(d, ir, gun, new Color(UiTheme.Text, 0.9f));
+                    int ls = UiTheme.Fs(13, k);
+                    Gfx.TextC(d, UiTheme.HudWide, $"YOUR GUN · {GunPicker.GunName(gun).ToUpperInvariant()} · B TO CHANGE", c.X, Gfx.Mid(ir.End.Y + 24 * k, ls), ls, UiTheme.Dim);
                 },
-            });
+            };
+            box.AddChild(noDemoBox);
             return;
         }
         var container = new SubViewportContainer { Stretch = true, Size = new Vector2(w, h), MouseFilter = MouseFilterEnum.Ignore };
@@ -253,7 +349,7 @@ public partial class DrillPreview : Control
         StopDemo(false);
         try
         {
-            demo = new GameSession(make) { Demo = true, DurationOverride = info.Timed ? Mathf.Min(info.Duration, DemoSeconds) : null };
+            demo = new GameSession(make) { Demo = true, DurationOverride = info.Timed ? Mathf.Min(info.Duration, DemoSeconds) : null, WeaponPick = PickArg };
             vp.AddChild(demo);
         }
         catch (Exception e)
@@ -287,34 +383,55 @@ public partial class DrillPreview : Control
     void DrawRecord(DrawBox d)
     {
         int tier = Main.I.Tier;
-        var runs = Main.I.Stats.For(info.Key).Where(r => r.Tier == tier && !r.Warmup).OrderBy(r => r.When).ToList();
+        var stats = Main.I.Stats;
+        // this gun's runs (old runs without a gun count as the drill's default)
+        var runs = stats.ForGun(info.Key, gun, info.Weapon).Where(r => r.Tier == tier && !r.Warmup).OrderBy(r => r.When).ToList();
         int best = runs.Count > 0 ? runs.Max(r => r.Score) : -1;
-        int badge = Main.I.Stats.BestBadge(info.Key);
+        int badge = stats.BestBadge(info);
+        bool rated = GunRating.IsRated(info, gun);
         float y = 4 * k;
         int ls = UiTheme.Fs(13, k), vs = UiTheme.Fs(30, k), ss = UiTheme.Fs(14, k);
         var inv = CultureInfo.InvariantCulture;
-        Gfx.Text(d, UiTheme.HudWide, $"BEST · {Difficulty.Get(tier).Name.ToUpperInvariant()}", 2 * k, y + ls, ls, UiTheme.Dim);
+        string head = $"BEST · {Difficulty.Get(tier).Name.ToUpperInvariant()}" + (CanPick ? $" · {GunPicker.GunName(gun).ToUpperInvariant()}" : "");
+        Gfx.TextFit(d, UiTheme.HudWide, head, 2 * k, y + ls, ls, UiTheme.Dim, d.Size.X * 0.57f);
         if (best >= 0)
         {
             Gfx.Text(d, UiTheme.Display, best.ToString("#,0", inv), 2 * k, y + ls + 8 * k + vs * 0.8f, vs, UiTheme.Good);
             string meta = $"{runs.Count} run{(runs.Count == 1 ? "" : "s")} at this tier · last {Ago(runs[^1].When)}";
-            Gfx.TextFit(d, UiTheme.Body, meta, 2 * k, y + ls + vs + 22 * k, ss, UiTheme.Dim, d.Size.X * 0.55f);
+            Gfx.TextFit(d, UiTheme.Body, meta, 2 * k, y + ls + vs + 22 * k, ss, UiTheme.Dim, d.Size.X * 0.57f);
         }
         else
         {
             Gfx.Text(d, UiTheme.Display, "—", 2 * k, y + ls + 8 * k + vs * 0.8f, vs, UiTheme.Faint);
-            Gfx.TextFit(d, UiTheme.Body, "Not played at this tier yet", 2 * k, y + ls + vs + 22 * k, ss, UiTheme.Dim, d.Size.X * 0.55f);
+            Gfx.TextFit(d, UiTheme.Body, CanPick ? $"No {GunPicker.GunName(gun)} runs at this tier yet" : "Not played at this tier yet",
+                2 * k, y + ls + vs + 22 * k, ss, UiTheme.Dim, d.Size.X * 0.57f);
         }
-        // best badge ever (any tier) + the last scores at this tier
+        // another gun with a higher best at this tier: a faint line under it
+        if (CanPick)
+        {
+            var other = stats.For(info.Key).Where(r => r.Tier == tier && !r.Warmup)
+                .Select(r => (Gun: StatsStore.GunOf(r, info.Weapon), r.Score)).Where(x => x.Gun != gun && x.Gun != WeaponKind.None)
+                .OrderByDescending(x => x.Score).FirstOrDefault();
+            if (other.Score > best && other.Gun != WeaponKind.None)
+                Gfx.TextFit(d, UiTheme.Body, $"{GunPicker.GunName(other.Gun)} best {other.Score.ToString("#,0", inv)}", 2 * k, y + ls + vs + 42 * k, UiTheme.Fs(13, k),
+                    UiTheme.Faint, d.Size.X * 0.57f);
+        }
+        // best badge ever (any tier, rated guns only) + the last scores at this tier
         float bx = d.Size.X * 0.6f;
-        if (badge >= -1 && Main.I.Stats.For(info.Key).Any())
+        if (badge >= -1 && stats.For(info.Key).Any())
         {
             RankEmblem.Draw(d, new Vector2(bx + 16 * k, y + 26 * k), 16 * k, badge, badge >= 0 ? 1f : 0.55f);
             int ts = UiTheme.Fs(10, k);
             Gfx.Text(d, UiTheme.HudWide, "BEST BADGE", bx + 40 * k, Gfx.Mid(y + 8 * k, ts), ts, UiTheme.Faint);
             var bt = badge >= 0 ? Difficulty.Get(badge) : null;
             Gfx.TextFit(d, UiTheme.Body, bt?.Name ?? "Below Rookie", bx + 40 * k, Gfx.Mid(y + 25 * k, ss), ss, bt != null ? UiTheme.TierColor(bt.Id) : UiTheme.Dim, d.Size.X - bx - 40 * k);
-            if (bt != null) Gfx.TextFit(d, UiTheme.Body, bt.Ranks, bx + 40 * k, Gfx.Mid(y + 42 * k, ts + 2), ts + 2, UiTheme.Dim, d.Size.X - bx - 40 * k);
+            if (!rated) Gfx.TextFit(d, UiTheme.Body, $"Rated: {GunRating.RatedShort(info)}", bx + 40 * k, Gfx.Mid(y + 42 * k, ts + 2), ts + 2, UiTheme.Warn, d.Size.X - bx - 40 * k);
+            else if (bt != null) Gfx.TextFit(d, UiTheme.Body, bt.Ranks, bx + 40 * k, Gfx.Mid(y + 42 * k, ts + 2), ts + 2, UiTheme.Dim, d.Size.X - bx - 40 * k);
+        }
+        else if (!rated)
+        {
+            int ts = UiTheme.Fs(12, k);
+            Gfx.TextFit(d, UiTheme.Body, $"Unrated gun: badges count with {GunRating.RatedText(info)}", bx, Gfx.Mid(y + 25 * k, ts), ts, UiTheme.Warn, d.Size.X - bx);
         }
         if (runs.Count >= 2)
             Sparkline.Draw(d, new Rect2(bx, y + 58 * k, d.Size.X - bx - 4 * k, 40 * k), runs.TakeLast(12).Select(r => (float)r.Score).ToList(), k, UiTheme.Teal);
@@ -355,7 +472,7 @@ public partial class DrillPreview : Control
         };
     }
 
-    static string WeaponName(WeaponKind w) => w switch { WeaponKind.TourDeForce => "Tour de Force", _ => w.ToString() };
+    static string WeaponName(WeaponKind w) => GunPicker.GunName(w);
     static string Cap(string s) => s.Length > 0 ? char.ToUpperInvariant(s[0]) + s[1..] : s;
 
     Label Text(string s, float px, Color c) => new()
@@ -372,7 +489,7 @@ public partial class DrillPreview : Control
         done = true;
         StopDemo(true);
         QueueFree();
-        if (free && onFreePlay != null) onFreePlay(); else onStart();
+        if (free && onFreePlay != null) onFreePlay(PickArg); else onStart(PickArg);
     }
 
     void Close()
@@ -388,7 +505,9 @@ public partial class DrillPreview : Control
     public override void _Input(InputEvent e)
     {
         if (e is not InputEventKey { Pressed: true, Echo: false } key) return;
-        if (key.Keycode == Key.Escape) { GetViewport().SetInputAsHandled(); Close(); }
+        if (picker != null && IsInstanceValid(picker)) return; // the gun picker has the keys
+        if (key.Keycode == Key.B && CanPick) { GetViewport().SetInputAsHandled(); UiTheme.ClickSound(); OpenPicker(); }
+        else if (key.Keycode == Key.Escape) { GetViewport().SetInputAsHandled(); Close(); }
         else if (key.Keycode is Key.Space or Key.Enter or Key.KpEnter) { GetViewport().SetInputAsHandled(); UiTheme.ClickSound(); Start(); }
         else if (key.Keycode == Key.F && onFreePlay != null) { GetViewport().SetInputAsHandled(); UiTheme.ClickSound(); Start(true); }
     }
@@ -400,34 +519,65 @@ public partial class DrillPreview : Control
         // a looping demo of a random-map drill moves to another map: keep "Where" in step
         var m = demo != null && IsInstanceValid(demo) ? demo.Mode?.Map : null;
         if (m != null && m != shownMap) { shownMap = m; whereRow?.QueueRedraw(); }
+        if (noDemoBox != null && GunIcons.Revision != iconRev) { iconRev = GunIcons.Revision; noDemoBox.QueueRedraw(); }
     }
+    int iconRev = -1;
 }
+
 
 /// <summary>
 /// Dev self-test <c>--preview-check</c> (works with --headless --fixed-fps 60): plays every menu drill's preview demo for a
 /// few seconds each in a sub-viewport, then checks that the demo ran,
 /// reports whether the simulated player fired, and that nothing reached the stats or the "last drill" of bug reports.
+/// <c>--preview-gun Phantom</c> demos every drill that offers the Phantom with it (and checks the demo really holds it;
+/// drills without it play their own gun, as in the game); <c>--preview-gun all</c> demos each drill once per gun class it
+/// offers (the class's first gun it allows), so pellets, bursts and spin-up get a run too.
 /// Prints "[preview-check] RESULT: PASS|FAIL" and quits with 0 / 1.
 /// </summary>
 public partial class PreviewCheck : Node
 {
     /// <summary>5 s per drill at --fixed-fps 60 (dev: --preview-check-secs N; --preview-check-only key,key).</summary>
     static readonly int FramesPerDrill = (int.TryParse(CmdLine.DevAfter("--preview-check-secs"), out var sec) ? sec : 5) * 60;
-    List<string> keys = new();
-    int idx = -1, frames, fails, idle, runsBefore;
-    string lastKeyBefore = "";
+    readonly List<(string Key, WeaponKind? Gun)> runs = new();
+    int idx = -1, frames, fails, idle, runsBefore, withGun;
+    string? lastKeyBefore;
     SubViewport? vp;
     GameSession? s;
 
     public override void _Ready()
     {
         // the menu's drills that open a preview with a demo (drills on a VALORANT map and the Agents screen's drills have none)
-        keys = ModeRegistry.All.Select(f => f()).Where(m => m.HasPreview && m.PreviewDemo && m.Category != "Agents").Select(m => m.Key).Distinct().ToList();
-        if (CmdLine.DevAfter("--preview-check-only")?.Split(',') is { } only) keys = only.ToList(); // any drill key (agent drills too)
+        var keys = ModeRegistry.All.Select(f => f()).Where(m => m.HasPreview && m.PreviewDemo && m.Category != "Agents").Select(m => m.Key).Distinct().ToList();
+        string? only = CmdLine.DevAfter("--preview-check-only");
+        if (!string.IsNullOrEmpty(only)) keys = only.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(); // any drill key (agent drills too)
+        string? gunArg = CmdLine.DevAfter("--preview-gun");
+        var gun = Weapons.Parse(gunArg);
+        if (gunArg != null && gun == null && !gunArg.Equals("all", StringComparison.OrdinalIgnoreCase))
+        {
+            GD.Print($"[preview-check] FAIL --preview-gun {gunArg}: not a gun (a name like Phantom, or all)");
+            fails++;
+        }
+        foreach (var key in keys)
+        {
+            if (gunArg != null && gunArg.Equals("all", StringComparison.OrdinalIgnoreCase))
+            {
+                // one run per gun class the drill offers (its own gun for a locked drill)
+                var choice = ModeRegistry.Find(key) is { } mk ? SafeMake(mk)?.WeaponChoice : null;
+                if (choice is not { Count: > 0 }) { runs.Add((key, null)); continue; }
+                foreach (var cls in Enum.GetValues<WeaponClass>())
+                    if (Weapons.Buyable.FirstOrDefault(w => w.Class == cls && choice.Contains(w.Kind)) is { } first) runs.Add((key, first.Kind));
+            }
+            else runs.Add((key, gun));
+        }
         runsBefore = Main.I.Stats.Runs.Count;
         lastKeyBefore = Main.I.LastModeKey;
-        GD.Print($"[preview-check] {keys.Count} drills, {FramesPerDrill} frames each");
+        GD.Print($"[preview-check] {runs.Count} demos of {keys.Count} drills, {FramesPerDrill} frames each{(gunArg != null ? $", --preview-gun {gunArg}" : "")}");
         Next();
+    }
+
+    static TrainingMode? SafeMake(Func<TrainingMode> make)
+    {
+        try { return make(); } catch { return null; }
     }
 
     public override void _Process(double delta)
@@ -435,11 +585,20 @@ public partial class PreviewCheck : Node
         if (s == null) return;
         if (++frames < FramesPerDrill) return;
         var t = s.Telemetry;
+        var (key, asked) = runs[idx];
         bool ran = t.Frames.Count > 0;
         if (!ran) fails++;
         if (t.Shots.Count == 0) idle++;
+        // the asked gun must be the one the demo holds wherever the drill offers it
+        var active = s.Mode.ActiveWeapon;
+        bool offered = asked is { } a && s.Mode.WeaponChoice?.Contains(a) == true;
+        bool gunOk = !offered || (active == asked && s.Weapon?.Kind == asked && t.Weapon == asked.ToString());
+        if (!gunOk) fails++;
+        if (offered && gunOk) withGun++;
+        string gunText = asked == null ? "" : offered ? $" [{active}{(gunOk ? "" : $" FAIL: asked {asked}, holds {s.Weapon?.Kind}")}]"
+            : active == asked ? $" [{active}, its own gun]" : $" [{active}: no {asked} here]";
         float first = t.Shots.Count > 0 ? t.Shots[0].T : -1;
-        GD.Print($"[preview-check] {(ran ? "ok  " : "FAIL")} {keys[idx]}: {t.Frames.Count} frames, {t.Shots.Count} shots" +
+        GD.Print($"[preview-check] {(ran && gunOk ? "ok  " : "FAIL")} {key}{gunText}: {t.Frames.Count} frames, {t.Shots.Count} shots" +
                  (first >= 0 ? $", first at {first:0.0} s" : " (no shots yet)") + $", {s.Mode.Kills} kills" + Details(t));
         Next();
     }
@@ -452,7 +611,7 @@ public partial class PreviewCheck : Node
         if (sprays.Count > 0) parts.Add($"sprays of {string.Join("/", sprays)} bullets (needs {(s!.Mode as SprayControlMode)?.Required})");
         var flashes = t.Events.Where(e => e.Kind == "flash").ToList();
         if (flashes.Count > 0) parts.Add($"flashes: {flashes.Count(e => e.A == 0)} dodged, {flashes.Count(e => e.A == 1)} partial, {flashes.Count(e => e.A == 2)} flashed");
-        if (s!.Weapon is { Sniper: true } && t.Shots.Count > 0)
+        if (s!.Weapon is { Scope: true } && t.Shots.Count > 0)
         {
             // the frame before the shot: the Operator unscopes the moment it fires
             int scoped = t.Shots.Count(sh => t.Frames.LastOrDefault(f => f.T < sh.T) is { } f && (f.Flags & (byte)FrameFlags.Ads) != 0);
@@ -466,11 +625,12 @@ public partial class PreviewCheck : Node
         if (s != null) { s.ProcessMode = ProcessModeEnum.Disabled; s.QueueFree(); s = null; }
         if (vp != null) { vp.QueueFree(); vp = null; }
         frames = 0;
-        if (++idx >= keys.Count) { Done(); return; }
-        if (ModeRegistry.Find(keys[idx]) is not { } make) { fails++; GD.Print($"[preview-check] FAIL {keys[idx]}: unknown drill"); Next(); return; }
+        if (++idx >= runs.Count) { Done(); return; }
+        var (key, gun) = runs[idx];
+        if (ModeRegistry.Find(key) is not { } make) { fails++; GD.Print($"[preview-check] FAIL {key}: unknown drill"); Next(); return; }
         vp = new SubViewport { OwnWorld3D = true, HandleInputLocally = false, GuiDisableInput = true, Size = new Vector2I(640, 360) };
         AddChild(vp);
-        s = new GameSession(make) { Demo = true, DurationOverride = 24f };
+        s = new GameSession(make) { Demo = true, DurationOverride = 24f, WeaponPick = gun }; // as the drill preview starts it
         vp.AddChild(s);
     }
 
@@ -478,7 +638,8 @@ public partial class PreviewCheck : Node
     {
         if (Main.I.Stats.Runs.Count != runsBefore) { fails++; GD.Print("[preview-check] FAIL a demo added a run to the stats"); }
         if (Main.I.LastModeKey != lastKeyBefore) { fails++; GD.Print("[preview-check] FAIL a demo changed the bug reports' last drill"); }
-        GD.Print($"[preview-check] RESULT: {(fails == 0 ? "PASS" : "FAIL")} ({keys.Count} drills, {fails} failed, {idle} without shots in {FramesPerDrill / 60} s)");
+        string gunNote = runs.Any(r => r.Gun != null) ? $", {withGun} with the asked gun" : "";
+        GD.Print($"[preview-check] RESULT: {(fails == 0 ? "PASS" : "FAIL")} ({runs.Count} demos, {fails} failed, {idle} without shots in {FramesPerDrill / 60} s{gunNote})");
         GetTree().Quit(fails == 0 ? 0 : 1);
     }
 }

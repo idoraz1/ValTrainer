@@ -13,6 +13,7 @@ namespace ValTrainer.Modes;
 public sealed class PopupMode : TrainingMode
 {
     public override string Key => "popup";
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.NoShotguns;
     public override string Name => "Pop-up Reflex";
     public override string Description => "Heads pop up anywhere on screen for a split second (700 ms at Rookie, 320 ms at Pro, a little longer when far): see, flick, click.";
     public override string Category => "Aim";

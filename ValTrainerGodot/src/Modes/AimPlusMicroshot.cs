@@ -12,6 +12,7 @@ namespace ValTrainer.Modes;
 public sealed class MicroshotMode : TrainingMode
 {
     public override string Key => "microshot";
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.NoShotguns;
     public override string Name => "Microshot";
     public override string Description => "Real-size heads 1.5–6° apart at 10–20 m: small, precise corrections without overshooting. Higher tiers: farther, wider apart, timed.";
     public override string Category => "Aim";

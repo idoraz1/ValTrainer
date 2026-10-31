@@ -338,7 +338,7 @@ public partial class MenuScreen : ScreenBase
             GetTree().CreateTimer(0.5).Timeout += () => { if (IsInstanceValid(this) && IsInsideTree()) ShowBugReport(); };
         // Dev-only: "--preview <drill key>" opens that drill's preview popup (screenshots of the live demo).
         if (CmdLine.DevAfter("--preview") is { } pk && ModeRegistry.Find(pk) is { } pmake)
-            GetTree().CreateTimer(0.5).Timeout += () => { if (IsInstanceValid(this) && IsInsideTree()) DrillPreview.Open(this, K, pmake, () => Main.I.StartMode(pmake), freePlay: () => Main.I.StartMode(pmake, true)); };
+            GetTree().CreateTimer(0.5).Timeout += () => { if (IsInstanceValid(this) && IsInsideTree()) DrillPreview.Open(this, K, pmake, g => Main.I.StartMode(pmake, false, g), freePlay: g => Main.I.StartMode(pmake, true, g)); };
         // Dev-only: "--screen suggest" opens the Suggest a feature panel (same --bugreport-* flags).
         if (i >= 0 && i + 1 < a.Length && a[i + 1].Equals("suggest", StringComparison.OrdinalIgnoreCase))
             GetTree().CreateTimer(0.5).Timeout += () => { if (IsInstanceValid(this) && IsInsideTree()) ShowSuggest(); };
@@ -528,7 +528,7 @@ public partial class MenuScreen : ScreenBase
                         K = k, TwoLines = two, IsNew = IsNew(info.Key),
                         CustomMinimumSize = new Vector2(0, cardH * k), SizeFlagsHorizontal = SizeFlags.ExpandFill,
                     };
-                    card.Pressed += () => DrillPreview.Open(this, K, make, () => Main.I.StartMode(make), freePlay: () => Main.I.StartMode(make, true)); // preview first, START plays
+                    card.Pressed += () => DrillPreview.Open(this, K, make, g => Main.I.StartMode(make, false, g), freePlay: g => Main.I.StartMode(make, true, g)); // preview first, START plays
                     cards.Add(card);
                     box.AddChild(card);
                 }
@@ -765,6 +765,7 @@ public partial class ModeCard : BaseButton
     public string? Tag;
     float hover;
     int pb = -1, badge = -1;
+    WeaponKind gun;
     string pbText = "—";
 
     public ModeCard(TrainingMode info)
@@ -787,8 +788,11 @@ public partial class ModeCard : BaseButton
     public void Refresh()
     {
         var stats = Main.I.Stats;
-        pb = stats.Best(info.Key, Main.I.Tier);
-        badge = stats.BestBadge(info.Key);
+        // PB with the gun this drill would play now (its pick → the preferred gun → its default; old runs count as the
+        // default), best badge with a rated gun
+        gun = WeaponPicks.Resolve(info) ?? info.Weapon;
+        pb = stats.Best(info, Main.I.Tier, gun);
+        badge = stats.BestBadge(info);
         pbText = pb >= 0 ? pb.ToString("#,0", CultureInfo.InvariantCulture) : "—";
         QueueRedraw();
     }
@@ -867,7 +871,7 @@ public partial class ModeCard : BaseButton
             int vs = UiTheme.Fs(17, k), ls = UiTheme.Fs(10, k);
             float x = r.Size.X - 14 * k;
             x -= Gfx.TextR(this, UiTheme.Display, pbText, x, Gfx.Mid(lineY, vs), vs, UiTheme.Good) + 6 * k;
-            x -= Gfx.TextR(this, UiTheme.HudWide, "PB", x, Gfx.Mid(lineY, ls), ls, UiTheme.Faint);
+            x -= Gfx.TextR(this, UiTheme.HudWide, gun != info.Weapon ? $"{GunPicker.GunName(gun).ToUpperInvariant()} PB" : "PB", x, Gfx.Mid(lineY, ls), ls, UiTheme.Faint);
             descRight = x - 12 * k;
         }
         string desc = Sub ?? info.Description;

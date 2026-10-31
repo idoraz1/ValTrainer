@@ -55,6 +55,7 @@ public partial class Hud : Control
 
     // uppercase labels cached per mode / subtitle / weapon (avoid per-frame string allocations)
     string nameUpper = "", subSrc = "", subUpper = "", gunSrc = "", gunUpper = "";
+    string readySrc = "", readyUpper = "", readyGun = "", readyText = "GET READY";
 
     string Upper(ref string src, ref string upper, string value)
     {
@@ -328,7 +329,7 @@ public partial class Hud : Control
         // magazine bar
         float bx = r.Position.X + 16 * k, bwid = r.Size.X - 32 * k, hy = r.End.Y - 11 * k;
         DrawRect(new Rect2(bx, hy, bwid, 4 * k), new Color(1, 1, 1, 0.12f));
-        float frac = gun.Reloading ? 1f - gun.ReloadLeft / Mathf.Max(0.01f, gun.Def.Reload) : gun.Ammo / (float)Math.Max(1, gun.Def.Mag);
+        float frac = gun.Reloading ? gun.ReloadProgress : gun.Ammo / (float)Math.Max(1, gun.Def.Mag);
         DrawRect(new Rect2(bx, hy, bwid * Mathf.Clamp(frac, 0, 1), 4 * k), gun.Reloading ? UiTheme.Warn : low ? UiTheme.Accent : UiTheme.Text);
     }
 
@@ -337,7 +338,7 @@ public partial class Hud : Control
         var gun = s.Gun;
         if (gun == null || !gun.Reloading) return;
         var c = size / 2;
-        float p = Mathf.Clamp(1f - gun.ReloadLeft / Mathf.Max(0.01f, gun.Def.Reload), 0, 1);
+        float p = Mathf.Clamp(gun.ReloadProgress, 0, 1); // partial and shell-by-shell reloads run their own length
         int fs = UiTheme.Fs(14, k);
         TC(UiTheme.HudWide, "RELOADING", c.X, c.Y + 72 * k, fs, UiTheme.Text);
         float w = 150 * k;
@@ -497,7 +498,11 @@ public partial class Hud : Control
         int fs = UiTheme.Fs(150, k);
         ScaledTextC(UiTheme.Display, cCount.Get(n, v => v.ToString(Inv)), new Vector2(c.X, Gfx.Mid(c.Y, fs)), fs, new Color(UiTheme.Text, 1f - 0.5f * pulse), sc);
         int ls = UiTheme.Fs(14, k);
-        TC(UiTheme.HudWide, "GET READY", c.X, c.Y - r - 34 * k, ls, UiTheme.Dim);
+        // the gun of this run, for drills that offer a choice (a buy-menu pick restarts the run: the countdown shows it)
+        bool gunShown = m.Weapon != WeaponKind.None && !m.Is2D && (m.WeaponChoice != null || m.ActiveWeapon != m.Weapon);
+        string ready = gunShown ? Upper(ref readySrc, ref readyUpper, GunPicker.GunName(m.ActiveWeapon)) : "";
+        if (!ReferenceEquals(ready, readyGun)) { readyGun = ready; readyText = ready.Length > 0 ? "GET READY · " + ready : "GET READY"; }
+        TC(UiTheme.HudWide, readyText, c.X, c.Y - r - 34 * k, ls, UiTheme.Dim);
         int ns = UiTheme.Fs(30, k), ds = UiTheme.Fs(16, k);
         TC(UiTheme.Display, nameUpper, c.X, c.Y + r + 54 * k, ns, UiTheme.Text);
         TC(UiTheme.Body, m.Description, c.X, c.Y + r + 82 * k, ds, UiTheme.Dim);
@@ -664,6 +669,9 @@ public partial class Hud : Control
 
         var pauseTier = Difficulty.Get(s.Tier);
         string pauseSub = $"{m.Name.ToUpperInvariant()} · {pauseTier.Name.ToUpperInvariant()}";
+        // the buy-menu bind changes the gun from here too (BuySession.cs), in drills that offer a choice
+        var buyBind = Main.I.Valorant.Binds.Primary(ValTrainer.Valorant.GameAction.BuyMenu);
+        string pauseKeys = GameSession.BuyRefusal(m) == null && !buyBind.IsNone ? $"ESC — RESUME · {buyBind.Text.ToUpperInvariant()} — BUY MENU" : "ESC — RESUME";
         overlay!.OnDraw = d =>
         {
             Dimmer(d, size, k, 0.78f);
@@ -694,7 +702,7 @@ public partial class Hud : Control
             if (!app.Settings.UseSensOverride) Gfx.TextC(d, UiTheme.HudWide, note, cx, sensY + ab + 24 * k, ns, UiTheme.Faint);
             else Gfx.TextC(d, UiTheme.HudWide, note, cx, sensY + ab + 56 * k, ns, UiTheme.Faint);
 
-            Gfx.TextC(d, UiTheme.HudWide, "ESC — RESUME", cx, pr.End.Y - 26 * k, ls, UiTheme.Faint);
+            Gfx.TextC(d, UiTheme.HudWide, pauseKeys, cx, pr.End.Y - 26 * k, ls, UiTheme.Faint);
         };
     }
 
@@ -705,20 +713,30 @@ public partial class Hud : Control
         var m = s.Mode;
         resultLines = m.ResultLines().ToList();
         var rec = s.Record;
-        int prev = s.PrevBest;
         int tierId = s.Tier;
+        // the gun of this run: personal bests are per gun (old runs without one count as the drill's default)
+        var gun = m.ActiveWeapon;
+        bool showGun = m.Weapon != WeaponKind.None && !m.Is2D && (m.WeaponChoice != null || gun != m.Weapon);
+        bool rated = m.Weapon == WeaponKind.None || GunRating.IsRated(m, gun);
+        string gunName = GunPicker.GunName(gun), gunUp = gunName.ToUpperInvariant();
+        int prev = rec != null
+            ? Main.I.Stats.ForGun(m.Key, gun, m.Weapon).Where(r => r.Tier == tierId && !ReferenceEquals(r, rec)).Select(r => r.Score).DefaultIfEmpty(-1).Max()
+            : s.PrevBest;
         int badge = rec?.Badge ?? m.Badge();
         int score = rec?.Score ?? m.Score;
         bool first = prev < 0, pb = !first && score > prev;
         var tier = Difficulty.Get(tierId);
         string scoreText = score.ToString("#,0", Inv);
         string modeName = m.Name.ToUpperInvariant();
-        string tl = $"{tier.Name.ToUpperInvariant()} · {tier.Ranks.ToUpperInvariant()}";
+        string tl = $"{tier.Name.ToUpperInvariant()} · {tier.Ranks.ToUpperInvariant()}" + (showGun ? $" · {gunUp}" : "");
         string? subUp = m.Subtitle?.ToUpperInvariant();
-        string chip = pb ? "NEW PERSONAL BEST" : $"FIRST RUN AT {tier.Name.ToUpperInvariant()}";
-        string prevText = pb ? $"previous best {prev.ToString("#,0", Inv)}" : $"{tier.Name} best: {prev.ToString("#,0", Inv)}  ({score - prev:+#,0;-#,0;0})";
-        string badgeName = badge >= 0 ? Difficulty.Tiers[badge].Name.ToUpperInvariant() : "BELOW ROOKIE";
-        string badgeRanks = badge >= 0 ? Difficulty.Tiers[badge].Ranks : "keep practising";
+        string chip = pb ? "NEW PERSONAL BEST" + (showGun ? $" · {gunUp}" : "")
+            : showGun && gun != m.Weapon ? $"FIRST RUN WITH THE {gunUp} AT {tier.Name.ToUpperInvariant()}" : $"FIRST RUN AT {tier.Name.ToUpperInvariant()}";
+        string bestOf = showGun ? $"{tier.Name} best with the {gunName}" : $"{tier.Name} best";
+        string prevText = pb ? $"previous best {prev.ToString("#,0", Inv)}" : $"{bestOf}: {prev.ToString("#,0", Inv)}  ({score - prev:+#,0;-#,0;0})";
+        // badges are calibrated on the drill's own gun (and the Phantom where it's the Vandal): other guns are unrated
+        string badgeName = !rated ? "UNRATED" : badge >= 0 ? Difficulty.Tiers[badge].Name.ToUpperInvariant() : "BELOW ROOKIE";
+        string badgeRanks = !rated ? $"Badges are rated with {GunRating.RatedText(m)}" : badge >= 0 ? Difficulty.Tiers[badge].Ranks : "keep practising";
         bool showScore = m.ShowScore;
         float scoreH = showScore ? 292 * k : 40 * k; // score + badge block (hidden for drills like the Sens Finder)
 
@@ -810,6 +828,23 @@ public partial class Hud : Control
             d.DrawRect(tag, UiTheme.Accent);
             Gfx.Text(d, UiTheme.HudWide, "RESULTS", tag.Position.X + 9 * k, Gfx.Mid(tag.GetCenter().Y, hs), hs, UiTheme.Text);
             Gfx.Text(d, UiTheme.Display, modeName, x0, y + 100 * k, ts, UiTheme.Text);
+            // gun chip after the drill's name: silhouette + name, teal when rated, amber when not
+            if (showGun)
+            {
+                int gs = UiTheme.Fs(13, k);
+                float mx = x0 + Gfx.TextW(UiTheme.Display, modeName, ts) + 18 * k;
+                float gw = 84 * k + Gfx.TextW(UiTheme.HudWide, gunUp, gs) + 12 * k;
+                float limit = x1 - Gfx.TextW(UiTheme.HudWide, tl, hs) - 40 * k;
+                if (mx + gw < limit)
+                {
+                    var gc = rated ? UiTheme.Teal : UiTheme.Warn;
+                    var gr = new Rect2(mx, y + 66 * k, gw, 32 * k);
+                    d.DrawRect(gr, new Color(gc, 0.12f));
+                    d.DrawRect(gr, new Color(gc, 0.7f), false, 1f);
+                    GunIcons.Draw(d, new Rect2(gr.Position + new Vector2(10 * k, 6 * k), new Vector2(64 * k, 20 * k)), gun, UiTheme.Text);
+                    Gfx.Text(d, UiTheme.HudWide, gunUp, gr.Position.X + 84 * k, Gfx.Mid(gr.GetCenter().Y, gs), gs, UiTheme.Text);
+                }
+            }
             // tier chip (right)
             if (showScore)
             {
@@ -846,18 +881,18 @@ public partial class Hud : Control
             // rank emblem block (right)
             float ex = pr.Position.X + pr.Size.X * 0.73f, ey = sy + 90 * k, er = 54 * k;
             float pop = Gfx.EaseOutBack(Mathf.Clamp((t - 0.15f) / 0.45f, 0, 1));
-            var tc = UiTheme.TierColor(badge);
+            var tc = UiTheme.TierColor(rated ? badge : -1);
             if (pop > 0.01f)
             {
                 float ring = 0.5f + 0.5f * Mathf.Sin(t * 2.4f);
                 d.DrawCircle(new Vector2(ex, ey), er * 1.35f, new Color(tc, 0.06f + 0.04f * ring));
                 d.DrawArc(new Vector2(ex, ey), er * 1.35f, 0, Mathf.Tau, 64, new Color(tc, 0.35f), Mathf.Max(1, 2 * k), true);
                 d.DrawSetTransform(new Vector2(ex, ey), 0, new Vector2(pop, pop));
-                RankEmblem.Draw(d, Vector2.Zero, er, badge);
+                RankEmblem.Draw(d, Vector2.Zero, er, rated ? badge : -1, rated ? 1f : 0.55f);
                 d.DrawSetTransformMatrix(Transform2D.Identity);
             }
             float ty = ey + er * 1.35f;
-            Gfx.TextC(d, UiTheme.HudWide, "PERFORMED AT", ex, ty + 22 * k, UiTheme.Fs(12, k), UiTheme.Dim);
+            Gfx.TextC(d, UiTheme.HudWide, rated ? "PERFORMED AT" : $"WITH THE {gunUp}", ex, ty + 22 * k, UiTheme.Fs(12, k), UiTheme.Dim);
             int bs = UiTheme.Fs(36, k);
             Gfx.TextC(d, UiTheme.Display, badgeName, ex, ty + 58 * k, bs, tc);
             Gfx.TextC(d, UiTheme.Body, badgeRanks, ex, ty + 82 * k, UiTheme.Fs(15, k), UiTheme.Dim);

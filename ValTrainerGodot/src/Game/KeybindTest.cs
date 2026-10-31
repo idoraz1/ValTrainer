@@ -8,8 +8,11 @@ namespace ValTrainer.Game;
 /// <summary>
 /// DEV / TEST ONLY: <c>--dev --mode &lt;drill&gt; --keybind-test</c>. Once the run starts, feeds the player's imported VALORANT
 /// binds (whatever they are: keys, mouse buttons, wheel notches, both slots) into the game as real input events through
-/// Input.ParseInputEvent and checks that the session reacts: movement, crouch, jump, fire, alt fire (ADS), reload, and the
-/// polled actions (abilities, use spike / equip spike, use). The player can't be hurt meanwhile. Checks that don't apply to the drill
+/// Input.ParseInputEvent and checks that the session reacts: movement, crouch, jump, fire, alt fire (ADS / scope levels, or
+/// the Classic's blast and the Bucky's air burst), aimed bursts (Stinger, Bulldog), reload, and the
+/// polled actions (abilities, use spike / equip spike, use), and last the buy menu (opens the gun picker and freezes the
+/// drill, the bind / Esc close it without a restart or a pause, a new gun restarts the run; a locked drill refuses). The
+/// player can't be hurt meanwhile. Checks that don't apply to the drill
 /// (no movement, infinite ammo, no zoom) are skipped. Prints "[keybind-test] …" lines and quits with the number of failures.
 /// Combine with <c>--valorant-dir</c> pointing at a fake config folder holding a crafted BackupKeybinds.json.
 /// </summary>
@@ -22,7 +25,7 @@ public partial class GameSession
     /// <summary>Called every frame (dev runs only).</summary>
     void DevKeybindTick()
     {
-        if (!DevKeybindTest || State != St.Running) return;
+        if (!DevKeybindTest || !(State == St.Running || (State == St.Buying && keyTest != null))) return; // the buy-menu steps run while it is open
         Player.ProtectedUntil = float.MaxValue; // bots can't interrupt the test
         keyTest ??= KeybindSteps().GetEnumerator();
         if (keyTestWait-- > 0) return;
@@ -161,22 +164,62 @@ public partial class GameSession
                 yield return 30 + Mathf.CeilToInt(weaponDef!.Interval * 150f); // the next shot is ready (Operator bolt)
             }
 
-            // ---- alt fire: ADS / scope ----
-            if (weaponDef!.Zoom <= 1f) KTSkip("alt fire", $"{weaponDef.Name} has no zoom");
+            // ---- alt fire: ADS / scope, or the alt volley of guns whose right click shoots (Classic blast, Bucky air burst) ----
+            if (weaponDef!.AltFire is AltFireKind.Shotgun or AltFireKind.AirBurst)
+                foreach (var (a, slot, b) in Slots(binds, GameAction.AltFire))
+                {
+                    for (int i = 0; i < 400 && (Gun.EquipLeft > 0 || Gun.Reloading); i++) yield return 1;
+                    float ready = Now + 0.1f + Mathf.Max(weaponDef.Interval, weaponDef.AltRps > 0 ? 1f / weaponDef.AltRps : 0f);
+                    while (Now < ready) yield return 1; // the gun is ready again (Bucky 0.9 s, Classic blast 0.45 s)
+                    int before = Telemetry.Shots.Count, ammo = Gun.Ammo, volleys = Gun.Volleys;
+                    Send(b, true);
+                    yield return 3;
+                    Send(b, false);
+                    yield return 3;
+                    int used = Mode.InfiniteAmmo ? 0 : Math.Min(ammo, weaponDef.AltFire == AltFireKind.Shotgun ? weaponDef.AltAmmoPerShot : 1);
+                    bool ok = Telemetry.Shots.Count - before == 1 && Gun.Volleys - volleys == 1 && (Gun.Reloading || ammo - Gun.Ammo == used) && !Gun.Scoped;
+                    KT($"AltFire[{slot}] {b} fires the {(weaponDef.AltFire == AltFireKind.Shotgun ? $"{weaponDef.AltPellets}-pellet blast" : "air-burst canister")}",
+                        ok, $"{Telemetry.Shots.Count - before} shot(s) recorded, {Gun.Volleys - volleys} volley(s), ammo {ammo} → {Gun.Ammo} (expected −{used}), scoped {Gun.Scoped}");
+                }
+            else if (weaponDef.Zoom <= 1f) KTSkip("alt fire", $"{weaponDef.Name} has no zoom");
             else
                 foreach (var (a, slot, b) in Slots(binds, GameAction.AltFire))
                 {
                     for (int i = 0; i < 200 && (Gun.EquipLeft > 0 || Gun.Reloading); i++) yield return 1;
-                    bool hold = (!weaponDef.Sniper || Main.I.Valorant.HoldToScope) && !b.IsWheel;
+                    bool hold = (!weaponDef.Scope || Main.I.Valorant.HoldToScope) && !b.IsWheel;
                     Send(b, true);
                     yield return 6;
                     bool scoped = Gun.Scoped;
+                    float zoom1 = View.Zoom, zoom2 = zoom1;
                     Send(b, false);
                     yield return 6;
+                    if (!hold && weaponDef.Zoom2 > 0f) { Send(b, true); yield return 2; Send(b, false); yield return 6; zoom2 = View.Zoom; } // Operator: 2nd zoom
                     if (!hold) { Send(b, true); yield return 2; Send(b, false); yield return 6; } // toggle: press again to leave
-                    KT($"AltFire[{slot}] {b} {(hold ? "aims while held" : "toggles the scope")}", scoped && !Gun.Scoped, $"scoped {scoped}, after {Gun.Scoped}");
+                    string what = hold ? "aims while held" : weaponDef.Zoom2 > 0f ? "toggles 1st zoom → 2nd zoom → off" : "toggles the scope";
+                    bool levels = hold || weaponDef.Zoom2 <= 0f || (Mathf.IsEqualApprox(zoom1, weaponDef.Zoom) && Mathf.IsEqualApprox(zoom2, weaponDef.Zoom2));
+                    KT($"AltFire[{slot}] {b} {what}", scoped && !Gun.Scoped && levels, $"scoped {scoped} ({F(zoom1)}×{(weaponDef.Zoom2 > 0f && !hold ? $", then {F(zoom2)}×" : "")}), after {Gun.Scoped}");
                     yield return 10;
                 }
+
+            // ---- aimed bursts (Stinger, Bulldog): one trigger pull while aimed fires a whole burst ----
+            if (weaponDef.AltFire == AltFireKind.ZoomBurst && binds.Primary(GameAction.AltFire) is { IsNone: false, IsWheel: false } aim)
+            {
+                for (int i = 0; i < 400 && (Gun.EquipLeft > 0 || Gun.Reloading); i++) yield return 1;
+                yield return 40;
+                Send(aim, true);
+                yield return 12;
+                bool aimed = Gun.Scoped;
+                int before = Telemetry.Shots.Count;
+                var fire = binds.Primary(GameAction.Fire);
+                Send(fire, true); yield return 1; Send(fire, false);
+                float done = Now + weaponDef.BurstCount / weaponDef.BurstRps + 0.08f;
+                while (Now < done) yield return 1;
+                int burst = Telemetry.Shots.Count - before;
+                Send(aim, false);
+                yield return 10;
+                KT($"aimed tap fires a {weaponDef.BurstCount}-round burst", aimed && (burst == weaponDef.BurstCount || (!Mode.InfiniteAmmo && burst > 0 && Gun.Reloading)),
+                    $"aimed {aimed}, {burst} shot(s)");
+            }
 
             // ---- reload ----
             if (Mode.InfiniteAmmo) KTSkip("reload", $"{Mode.Key} has infinite ammo");
@@ -230,6 +273,59 @@ public partial class GameSession
             yield return 10;
         }
         else KTSkip("shared bind", "no bind is used by two actions");
+
+        // ---- buy menu: the bind opens the gun picker over the drill (frozen), closes it again; a locked drill refuses ----
+        var lockedDrill = new Modes.SheriffMode();
+        KT("a locked drill has no buy menu (Sheriff One-Taps)", BuyRefusal(lockedDrill) is { } lr && lr.Contains("SHERIFF", StringComparison.Ordinal), BuyRefusal(lockedDrill) ?? "opens");
+        var buy = binds.Primary(GameAction.BuyMenu);
+        if (buy.IsNone) KTSkip("buy menu", "BuyMenu is unbound");
+        else if (buy.IsWheel) KTSkip("buy menu", $"{buy} is a wheel notch");
+        else if (BuyRefusal(Mode) is { } why)
+        {
+            BannerTime = 0;
+            Send(buy, true); yield return 2; Send(buy, false); yield return 2;
+            KT($"BuyMenu {buy} refused in locked {Mode.Key}", State == St.Running && !BuyMenuOpen && BannerTime > 0 && BannerText == why, $"state {State}, banner \"{BannerText}\"");
+        }
+        else
+        {
+            var run = Mode;
+            Send(buy, true); yield return 2; Send(buy, false);
+            float frozenAt = Now;
+            yield return 10;
+            KT($"BuyMenu {buy} opens the gun picker and freezes the drill", State == St.Buying && BuyMenuOpen && Now == frozenAt && Input.MouseMode != Input.MouseModeEnum.Captured,
+                $"state {State}, picker {BuyMenuOpen}, clock {F(frozenAt)} → {F(Now)}");
+            Send(buy, true); yield return 2; Send(buy, false); yield return 2;
+            KT($"BuyMenu {buy} again closes it: the same run resumes", State == St.Running && !BuyMenuOpen && ReferenceEquals(run, Mode) && Now > frozenAt,
+                $"state {State}, picker {BuyMenuOpen}, same run {ReferenceEquals(run, Mode)}");
+            Send(buy, true); yield return 2; Send(buy, false); yield return 2;
+            bool reopened = State == St.Buying;
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Escape, PhysicalKeycode = Key.Escape, Pressed = true });
+            Input.ParseInputEvent(new InputEventKey { Keycode = Key.Escape, PhysicalKeycode = Key.Escape, Pressed = false });
+            yield return 3;
+            KT("Esc closes the buy menu without pausing", reopened && State == St.Running && !BuyMenuOpen && ReferenceEquals(run, Mode), $"reopened {reopened}, state {State}");
+            // last: a new gun restarts the run with it (or swaps it in place in free play)
+            var gun = Mode.ActiveWeapon;
+            var other = Mode.WeaponChoice!.FirstOrDefault(g => g != gun && g != WeaponKind.None);
+            if (other == WeaponKind.None) KTSkip("buy menu pick", $"{Mode.Key} offers one gun");
+            else
+            {
+                Send(buy, true); yield return 2; Send(buy, false); yield return 2;
+                buyPicker?.Pick(other); // the picker's own path (a click / Enter)
+                bool nextLife = GunOnRespawn;
+                bool ok = FreePlay ? ReferenceEquals(run, Mode) && State == St.Running && Gun?.Def.Kind == other
+                    : nextLife ? ReferenceEquals(run, Mode) && State == St.Running && Gun?.Def.Kind == gun && nextLifeGun == other
+                    : !ReferenceEquals(run, Mode) && State == St.Countdown && Mode.ActiveWeapon == other && Gun?.Def.Kind == other;
+                KT($"picking the {other} {(FreePlay ? "swaps it in place (free play)" : nextLife ? "keeps the match going, the gun comes out next life" : "restarts the run with it")}", ok && !BuyMenuOpen,
+                    $"state {State}, playing {Mode.ActiveWeapon}, gun {Gun?.Def.Name}, next life {nextLifeGun}, same run {ReferenceEquals(run, Mode)}");
+                if (nextLife)
+                {
+                    ApplyNextLifeGun(); // what the drill does on your respawn
+                    KT($"on respawn the {other} comes out", Gun?.Def.Kind == other && Mode.ActiveWeapon == other && nextLifeGun == null,
+                        $"gun {Gun?.Def.Name}, playing {Mode.ActiveWeapon}");
+                }
+                yield return 5; // the countdown: the steps resume when the restarted run is running
+            }
+        }
     }
 
     static IEnumerable<(GameAction A, int Slot, InputBinding B)> Slots(Keybinds binds, params GameAction[] actions)

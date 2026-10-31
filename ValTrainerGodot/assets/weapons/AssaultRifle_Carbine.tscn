@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/weapons/AssaultRifle2_3.fbx" id="1_assaultrifle2_3"]
+[ext_resource type="PackedScene" path="res://assets/weapons/Stock.fbx" id="2_stock"]
+
+[node name="AssaultRifle_Carbine" type="Node3D" unique_id=315546683]
+metadata/source_model = "res://assets/weapons/AssaultRifle2_3.fbx"
+metadata/length_m = 0.904
+
+[node name="Model" type="Node3D" parent="." unique_id=237956713 instance=ExtResource("1_assaultrifle2_3")]
+transform = Transform3D(0, 0, 0.17, 0, 0.17, 0, -0.17, 0, 0, 0, 0, 0)
+
+[node name="Attach_Stock" type="Node3D" parent="." unique_id=1278486278 instance=ExtResource("2_stock")]
+transform = Transform3D(0, 0, 0.17, 0, 0.17, 0, -0.17, 0, 0, 0, 0.105, 0.045)
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=1316443580]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.10337938, -0.58950288)

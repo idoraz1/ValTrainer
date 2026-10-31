@@ -33,6 +33,12 @@ public sealed class AppSettings
     /// <summary>Settings → Keybinds: ValTrainer-only overrides on top of the VALORANT import, "Action.primary|secondary" →
     /// "key:Q" / "mouse:Xbutton1" / "none" (see Valorant.CustomBinds). Null = every bind follows VALORANT. VALORANT is never changed.</summary>
     public Dictionary<string, string>? CustomBinds;
+    /// <summary>Gun picker: the gun to play in every drill that offers it (a <see cref="WeaponKind"/> name); null = each drill's
+    /// own default. See <see cref="Core.WeaponPicks"/>.</summary>
+    public string? PreferredWeapon;
+    /// <summary>Gun picker: the gun picked per drill, mode key → <see cref="WeaponKind"/> name. Wins over
+    /// <see cref="PreferredWeapon"/>. Null = no picks.</summary>
+    public Dictionary<string, string>? WeaponPicks;
 
     // ---- updates / version (see UpdateCheck, WhatsNew, UpdatesPrompt) ----
     public bool? UpdatesConsent;       // the "Check GitHub for new versions?" answer: null = not asked yet, true = ENABLE UPDATES, false = NOT NOW (or turned off)

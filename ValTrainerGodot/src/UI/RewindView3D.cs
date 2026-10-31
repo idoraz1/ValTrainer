@@ -403,8 +403,7 @@ public partial class RewindScreen
             for (int i = rec.FirstEventAtOrAfter(time) - 1; i >= 0; i--)
                 if (rec.Events[i].Kind == RxKind.Weapon) { kind = (WeaponKind)rec.Events[i].Arg; break; }
         if (kind == WeaponKind.None) Enum.TryParse(run.Weapon, true, out kind);
-        bool sniper = Weapons.Get(kind)?.Sniper == true;
-        return (sniper, kind == WeaponKind.TourDeForce ? CrosshairView.SniperScope.TourDeForce : CrosshairView.SniperScope.Operator);
+        return Game.Weapon.WeaponLooks.ScopeOf(kind);
     }
 
     /// <summary>Timeline: "VIEW 2D | 3D" (3D shows its load progress under the button).</summary>

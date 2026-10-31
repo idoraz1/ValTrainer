@@ -22,7 +22,27 @@ public abstract class TrainingMode
     public virtual float Duration => 60f;
     public virtual bool Timed => true;
     public virtual bool Done => false;
+    /// <summary>The drill's own gun (its default): what it plays when nothing is picked. None = no gun (2D, tracking).</summary>
     public virtual WeaponKind Weapon => WeaponKind.Vandal;
+    /// <summary>The guns the player may pick for this drill (a <see cref="WeaponSets"/> set); null = locked to
+    /// <see cref="Weapon"/> (no picker). Default: locked.</summary>
+    public virtual IReadOnlyCollection<WeaponKind>? WeaponChoice => null;
+    /// <summary>The guns whose runs count for badges and the coach's rank estimate (both are calibrated on the drill's own
+    /// gun): <see cref="Weapon"/>, plus the Phantom where that is the Vandal (and the other way round), so the two rifles
+    /// are equal. Other picks still get a score, a personal best per gun and a review. Same rule as
+    /// <see cref="WeaponRating.RatedFor"/>, which the coach uses with only the mode key.</summary>
+    public virtual IReadOnlyCollection<WeaponKind> RatedWeapons => WeaponRating.RatedFor(Weapon);
+    /// <summary>A run with <paramref name="gun"/> counts for badges and the coach's rank (see <see cref="RatedWeapons"/>).</summary>
+    public bool IsRated(WeaponKind gun) => gun == Weapon || RatedWeapons.Contains(gun);
+    /// <summary>The player's pick, set by the session at every (re)start before <see cref="Attach"/>; null = the default.
+    /// Ignored unless it is in <see cref="WeaponChoice"/> (or <see cref="ForcePick"/>).</summary>
+    public WeaponKind? Pick { get; set; }
+    /// <summary>Dev "--gun": the pick applies even if the drill is locked (never for a drill without a gun).</summary>
+    public bool ForcePick { get; set; }
+    /// <summary>The gun this run actually plays: the pick if it is allowed, else <see cref="Weapon"/>. Everything that sets up
+    /// or records the gun (the session's equip, telemetry, the Rewind header, the run record) reads this, not Weapon.</summary>
+    public WeaponKind ActiveWeapon => Pick is { } p && p != Weapon && Weapon != WeaponKind.None && Weapons.Get(p) != null
+        && (ForcePick || WeaponChoice?.Contains(p) == true) ? p : Weapon;
     /// <summary>Bottomless magazine: pure aim drills never make you reload.</summary>
     public virtual bool InfiniteAmmo => true;
     /// <summary>Reloads never run dry (bot drills keep real magazines + reloads but can't run out).</summary>
@@ -30,11 +50,16 @@ public abstract class TrainingMode
     public virtual bool Movement => false;
     /// <summary>2D-only drill (reaction test): no world, no weapon.</summary>
     public virtual bool Is2D => false;
-    /// <summary>The drill preview can show the simulated player playing it (false for drills that need a person).</summary>
-    public virtual bool PreviewDemo => !Is2D;
+    /// <summary>The drill preview can show the simulated player playing it (false for drills that need a person, and for
+    /// drills on a VALORANT map: their preview has no live demo, see <see cref="HasPreview"/>).</summary>
+    public virtual bool PreviewDemo => !Is2D && Map == null;
     /// <summary>Clicking the card opens the drill preview first. Drills on a VALORANT map (the Map category, Flash Dodge,
-    /// Sound Lock) start right away: a preview would build the whole map twice (popup + START), about double the video memory.</summary>
-    public virtual bool HasPreview => Map == null;
+    /// Sound Lock) start right away unless they offer a gun choice: then the preview opens without a live demo (a demo would
+    /// build the whole map twice, popup + START, about double the video memory) so it can show the gun picker.</summary>
+    public virtual bool HasPreview => Map == null || WeaponChoice != null;
+    /// <summary>A gun picked mid-run from the buy menu comes out on your next life instead of restarting the run (drills
+    /// where you die and respawn, like Deathmatch; the drill calls <see cref="Game.GameSession.ApplyNextLifeGun"/>).</summary>
+    public virtual bool GunOnRespawn => false;
     public virtual bool UsesHeadshots => false;
     /// <summary>null = the shooting range.</summary>
     public virtual MapSpot? Map => null;
@@ -168,6 +193,7 @@ public abstract class TrainingMode
         Tier = Tier,
         Badge = Badge(),
         Map = Map?.Key ?? "",
+        Weapon = Weapon == WeaponKind.None ? null : ActiveWeapon.ToString(),
     };
 
     protected float R(float a, float b) => a + (float)Rng.NextDouble() * (b - a);

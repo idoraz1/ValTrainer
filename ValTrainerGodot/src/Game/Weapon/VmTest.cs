@@ -7,13 +7,16 @@ namespace ValTrainer.Game.Weapon;
 /// <summary>
 /// Dev-only viewmodel/FX test hook, active only with the user arg <c>--vmtest</c> (e.g. gshot -Extra "--vmtest").
 /// Options: <c>--vmfire</c> auto-fire bursts with tracers/impacts/body hits on a test wall,
-/// <c>--vmkind Vandal|Phantom|Sheriff|Operator</c>, <c>--vmleft</c>/<c>--vmright</c>, <c>--vmads 0..1</c>,
+/// <c>--vmkind &lt;any WeaponKind&gt;</c> (e.g. Classic, Judge, Odin), <c>--vmleft</c>/<c>--vmright</c>, <c>--vmads 0..1</c>,
 /// <c>--vmreload 0..1</c> (or <c>--vmreload loop</c>), <c>--vmspeed m/s</c>, <c>--vmcrouch</c>, <c>--vmlook</c>,
 /// <c>--vmflash</c> (hold the muzzle flash), <c>--vmwall</c> (wall 0.2 m in front of the eye: clip test),
 /// <c>--vmview side|left|top</c> (debug orthographic-ish views with a 5 cm grid).
 /// Once the gun is fully aimed (<c>--vmads 1</c>, or a session aimed with <c>--force-ads</c>) it prints the ADS pose check
 /// ("[vmtest] ads sight top …": the gun's top must sit at 0.60–0.65 H); <c>--vmprofile</c> adds the model's top silhouette.
 /// The log may not be flushed when gshot kills the game: add <c>--vmshots T --vmout prefix</c> so it quits by itself.
+/// <para>Contact sheets: <c>--vmcycle all|Gun1,Gun2,… [--vmevery S]</c> rebuilds the viewmodel with each gun in turn (S
+/// seconds each, default 2.5), saves <c>prefix_&lt;Gun&gt;.png</c> near the end of each slot (with <c>--vmout prefix</c>),
+/// runs the ADS check per gun and quits after the last one.</para>
 /// </summary>
 static class VmTest
 {
@@ -27,6 +30,10 @@ static class VmTest
     static string? shotPrefix;
     static float[] shotTimes = Array.Empty<float>();
     static int shotIdx;
+    static WeaponKind[] cycle = Array.Empty<WeaponKind>();
+    static int cycleIdx = -1;
+    static float every = 2.5f, gunClock;
+    static bool cycleShot;
     static float clock;
     static bool inited;
 
@@ -58,6 +65,12 @@ static class VmTest
         Speed = F("--vmspeed");
         Zoom = F("--vmzoom");
         if (Val("--vmreload") == "loop") ReloadLoop = true; else Reload = F("--vmreload");
+        var cyc = Val("--vmcycle");
+        if (cyc != null)
+            cycle = cyc == "all" ? Weapons.All.Select(w => w.Kind).ToArray()
+                : cyc.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(Weapons.Parse).OfType<WeaponKind>().ToArray();
+        every = F("--vmevery") ?? 2.5f;
+        if (cycle.Length > 0) Kind = cycle[0];
         View = Val("--vmview");
         ViewD = F("--vmviewd") ?? 1f;
         Dist = F("--vmdist") ?? 7f;
@@ -69,10 +82,11 @@ static class VmTest
         GD.Print($"[vmtest] fire={Fire} kind={Kind} left={ForceLeft} ads={Ads} reload={Reload}{(ReloadLoop ? " loop" : "")} view={View}");
     }
 
-    public static Transform3D ViewXform(string view, WeaponKind kind)
+    /// <summary>Debug view of the gun: distance and centre per layout (<see cref="VmPose.ViewD"/>, <see cref="VmPose.ViewZ"/>).</summary>
+    public static Transform3D ViewXform(string view, VmPose pose)
     {
-        float d = kind switch { WeaponKind.Operator => 0.85f, WeaponKind.Sheriff => 0.26f, _ => 0.66f } * ViewD;
-        float zc = kind switch { WeaponKind.Operator => -0.25f, WeaponKind.Sheriff => -0.03f, _ => -0.17f } + ViewOff.X;
+        float d = pose.ViewD * ViewD;
+        float zc = pose.ViewZ + ViewOff.X;
         var b = view switch
         {
             "left" => new Basis(Vector3.Up, Mathf.Pi / 2),
@@ -189,7 +203,7 @@ static class VmTest
     /// --vmprofile also prints the model's gun-space top silhouette.</summary>
     static void AdsCheck(Viewmodel vm)
     {
-        if (adsChecked || clock < 1.5f || View != null) return;
+        if (adsChecked || gunClock < 1.5f || View != null) return;
         var (top, x, width, ads) = vm.SightTop();
         if (ads < 0.999f) return;
         adsChecked = true;
@@ -197,16 +211,39 @@ static class VmTest
         float aspect = vm.GetViewport().GetVisibleRect().Size.Aspect();
         bool ok = top >= 0.60f && top <= 0.65f && Mathf.Abs(x - aspect / 2f) < 0.03f;
         GD.Print(string.Format(inv, "[vmtest] ads sight top {0}: y {1:0.000} H (target 0.60-0.65), x {2:+0.000;-0.000} H from centre, top width {3:0.000} H -> {4}",
-            vm.Kind, top, x - aspect / 2f, width, ok ? "PASS" : "FAIL"));
+            vm.Held, top, x - aspect / 2f, width, ok ? "PASS" : "FAIL"));
         if (CmdLine.Has("--vmprofile"))
             foreach (var (z, y, px) in vm.GunProfile())
                 GD.Print(string.Format(inv, "[vmprofile] z {0:0.000} y {1:0.000} x {2:0.000}", z, y, px));
     }
     static bool adsChecked;
 
+    /// <summary>--vmcycle: next gun every <see cref="every"/> s; a screenshot 0.3 s before each switch.</summary>
+    static void CycleTick(Viewmodel vm)
+    {
+        int i = (int)(clock / every);
+        if (i != cycleIdx)
+        {
+            if (i >= cycle.Length) { cycle = Array.Empty<WeaponKind>(); vm.GetTree().CreateTimer(0.2).Timeout += () => vm.GetTree().Quit(); return; }
+            if (cycleIdx >= 0) vm.Rebuild(cycle[i]);
+            cycleIdx = i; gunClock = clock - i * every; adsChecked = false; cycleShot = false;
+            fireT = 1.2f; burstLeft = 0; reloadT = 0f;
+        }
+        if (!cycleShot && shotPrefix != null && clock >= (i + 1) * every - 0.3f)
+        {
+            cycleShot = true;
+            var img = vm.GetViewport().GetTexture().GetImage();
+            img.Resize(img.GetWidth() * 3 / 5, img.GetHeight() * 3 / 5, Image.Interpolation.Bilinear);
+            img.SavePng($"{shotPrefix}_{cycle[i]}.png");
+            GD.Print($"[vmtest] saved {shotPrefix}_{cycle[i]}.png");
+        }
+    }
+
     public static void Tick(Viewmodel vm, float dt)
     {
         clock += dt;
+        gunClock += dt;
+        if (cycle.Length > 0) CycleTick(vm);
         AdsCheck(vm);
         if (Hide) vm.Hide();
         if (Bench) BenchTick(vm, dt);
@@ -263,7 +300,8 @@ static class VmTest
             Effects.Root.AddChild(backdrop);
             backdrop.GlobalTransform = cam.GlobalTransform * new Transform3D(Basis.Identity, new Vector3(0, 0, -Dist - 0.05f));
         }
-        var def = Weapons.Get(vm.Kind) ?? Weapons.Vandal;
+        var def = Weapons.Get(vm.Held) ?? Weapons.Vandal;
+        var look = WeaponLooks.For(vm.Held);
         fireT -= dt;
         if (fireT > 0) return;
         if (burstLeft <= 0)
@@ -272,7 +310,7 @@ static class VmTest
             burstGap = def.Auto ? def.Interval : 0f;
         }
         burstLeft--;
-        fireT = burstLeft > 0 ? burstGap : (vm.Kind == WeaponKind.Operator ? 2.0f : def.Auto ? 1.0f : 0.6f);
+        fireT = burstLeft > 0 ? burstGap : look.BoltCycle || look.Pump ? 1.6f : def.Auto ? 1.0f : Mathf.Max(0.6f, def.Interval);
         if (BenchFx) fireT = def.Interval;
         vm.OnFire();
 

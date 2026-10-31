@@ -322,7 +322,68 @@ public partial class AgentsScreen : ScreenBase
     {
         if (ModeRegistry.Find(key) is not { } make) { Log.Error($"[agents] unknown drill '{key}'"); return; }
         Main.I.ReturnToAgents = true; // results → MENU (or pause → back to menu) comes back here
-        Main.I.StartMode(make);
+        Main.I.StartMode(make); // the session resolves the gun: this drill's pick (GUN chip) → the preferred gun → its own
+    }
+
+    // ---------------- gun chip ----------------
+
+    /// <summary>The drills on the open agent page that offer a gun choice (the GUN chip and B pick for all of them).</summary>
+    List<TrainingMode> gunDrills = new();
+    VButton? gunChip;
+
+    /// <summary>"GUN: VANDAL · B" over the agent's drills when any of them offers a gun choice: opens the gun picker and
+    /// remembers the pick for each of those drills (one that doesn't offer the gun keeps its own).</summary>
+    void AddGunChip(VBoxContainer dv, AgentInfo a, List<string> keys)
+    {
+        gunDrills = keys.Select(AgentDrills.Proto).Where(m => m is { WeaponChoice.Count: > 0 }).Select(m => m!).ToList();
+        gunChip = null;
+        if (gunDrills.Count == 0) return;
+        float k = K;
+        var row = HBox(10 * k);
+        gunChip = new VButton
+        {
+            Kind = VButton.Look.Secondary, K = k, FontPx = 15, Label = GunChipLabel(), CustomMinimumSize = new Vector2(250 * k, 38 * k),
+            TooltipText = $"The gun for {a.Name}'s drills that offer a choice (B)",
+        };
+        gunChip.Pressed += () => OpenGunPicker(a);
+        row.AddChild(gunChip);
+        row.AddChild(new DrawBox
+        {
+            SizeFlagsHorizontal = SizeFlags.ExpandFill, CustomMinimumSize = new Vector2(0, 38 * k),
+            OnDraw = d =>
+            {
+                int fs = UiTheme.Fs(13, k);
+                Gfx.TextFit(d, UiTheme.Body, $"{gunDrills.Count} of these drills let you pick the gun", 0, Gfx.Mid(d.Size.Y / 2, fs), fs, UiTheme.Faint, d.Size.X);
+            },
+        });
+        dv.AddChild(row);
+    }
+
+    /// <summary>The gun the first such drill would play now.</summary>
+    WeaponKind ChipGun() => gunDrills.Count == 0 ? WeaponKind.Vandal : WeaponPicks.Resolve(gunDrills[0]) ?? gunDrills[0].Weapon;
+
+    string GunChipLabel() => $"GUN: {GunPicker.GunName(ChipGun()).ToUpperInvariant()}  ·  B";
+
+    void OpenGunPicker(AgentInfo a)
+    {
+        if (gunDrills.Count == 0) return;
+        GunPicker.OpenForGroup(this, K, $"{a.Name} · drills", gunDrills, ChipGun(), () =>
+        {
+            if (gunChip != null && IsInstanceValid(gunChip)) { gunChip.Label = GunChipLabel(); gunChip.QueueRedraw(); }
+        });
+    }
+
+    public override void _UnhandledKeyInput(InputEvent e)
+    {
+        if (e is InputEventKey { Pressed: true, Echo: false, Keycode: Key.B } && gunChip != null && IsInstanceValid(gunChip)
+            && AgentRoster.ByKey(selKey) is { } a && !(searchBox?.HasFocus() ?? false))
+        {
+            GetViewport().SetInputAsHandled();
+            UiTheme.ClickSound();
+            OpenGunPicker(a);
+            return;
+        }
+        base._UnhandledKeyInput(e);
     }
 
     // ---------------- right: page ----------------
@@ -330,6 +391,8 @@ public partial class AgentsScreen : ScreenBase
     void FillPage()
     {
         if (page == null) return;
+        gunChip = null;
+        gunDrills = new();
         foreach (var c in page.GetChildren()) { page.RemoveChild(c); c.QueueFree(); }
         if (pageScroll != null) pageScroll.ScrollVertical = 0;
         if (AgentRoster.ByKey(selKey) is { } a) BuildAgentPage(page, a);
@@ -411,6 +474,7 @@ public partial class AgentsScreen : ScreenBase
         row.AddChild(drills);
         var dv = VBox(8 * k);
         drills.AddChild(dv);
+        AddGunChip(dv, a, sig.Concat(role).Distinct().ToList());
         dv.AddChild(new SectionLabel { Text = "SIGNATURE", Note = sig.Count > 0 ? $"with {a.Name}'s own utility" : "none yet", K = k });
         if (sig.Count > 0) dv.AddChild(CardGrid(sig, a, true));
         else

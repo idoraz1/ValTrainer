@@ -263,14 +263,14 @@ public static class MovementCheck
         float slow = r.M.Speed;
         Check("speed scale 1.25 / 0.5", Mathf.Abs(fast - 6.75f) < 0.01f && Mathf.Abs(slow - 2.7f) < 0.01f, $"{F(fast, "0.00")} / {F(slow, "0.00")} m/s");
 
-        // The gun in hand sets the speeds: Operator run 5.13, scoped 72% = 3.69, deadzone 27.5% of 5.13 = 1.41.
+        // The gun in hand sets the speeds: Operator run 5.13, scoped 72% = 3.69, deadzone 15% of 5.13 = 0.77 (1.18, patch 1.09).
         r = new Rig(new List<Box> { Floor() }, Vector3.Zero);
         r.M.Hold(Weapons.Operator); r.Hold(Key.D); r.Step(120);
         float opRun = r.M.Speed;
         r.M.Ads = true; r.Step(120);
         float opScoped = r.M.Speed;
         Check("Operator in hand: run / scoped / deadzone", Mathf.Abs(opRun - 5.13f) < 0.01f && Mathf.Abs(opScoped - 5.13f * 0.72f) < 0.01f
-            && Mathf.Abs(r.M.AccurateMax - 5.13f * 0.275f) < 1e-4f, $"{F(opRun, "0.00")} / {F(opScoped, "0.00")} m/s, accurate ≤ {F(r.M.AccurateMax)} m/s");
+            && Mathf.Abs(r.M.AccurateMax - 5.13f * Weapons.Operator.DeadzoneMul) < 1e-4f, $"{F(opRun, "0.00")} / {F(opScoped, "0.00")} m/s, accurate ≤ {F(r.M.AccurateMax)} m/s");
         r = new Rig(new List<Box> { Floor() }, Vector3.Zero) { };
         r.M.JumpEnabled = false;
         r.JumpAndLand(0.5f);

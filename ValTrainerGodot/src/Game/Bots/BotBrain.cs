@@ -8,7 +8,8 @@ namespace ValTrainer.Game.Bots;
 /// 1. Sees you when any exposed point (head, chest, shoulders) has line of sight and you're within its field of view.
 /// 2. Reacts after a human-like delay (normal distribution; faster if it already saw you this fight).
 /// 3. Moves its crosshair onto your head (Fitts' law — bigger misplacement = longer settle).
-/// 4. Fires the Vandal at 9.75 rps in bursts; each shot hits with a chance that decays during the spray.
+/// 4. Fires its rifle (the Vandal at 9.75 rps unless the drill hands it another, <see cref="Weapon"/>) in bursts; each
+/// shot hits with a chance that decays during the spray.
 /// Damage goes to your 50 shield + 100 HP, so duels are won by whoever hits first and best.
 /// </summary>
 public sealed class BotBrain
@@ -17,7 +18,16 @@ public sealed class BotBrain
     /// <summary>Combat skill. Replaceable mid-life (the deathmatch finisher eases it); the next shot / sighting uses the new one.</summary>
     public BotSkill Skill;
     readonly Random rng;
-    readonly WeaponDef weapon = Weapons.Vandal;
+    WeaponDef weapon = Weapons.Vandal;
+    /// <summary>The bot's gun: fire interval, damage and falloff, shot sound. Default the Vandal, which every bot drill is
+    /// tuned for; Deathmatch rolls a Vandal or a Phantom per life (weapons-design-1.18.md §6). Only rifles are meant here:
+    /// the burst / hit-chance model knows nothing about pellets, scopes or spin-up.</summary>
+    public WeaponDef Weapon { get => weapon; set => weapon = value; }
+
+    /// <summary>The enemy shot sound for a bot gun: the AR-15 recording for the Phantom once it exists
+    /// ("enemyshot_phantom"), else the AK ("enemyshot").</summary>
+    public static string ShotSoundFor(WeaponDef? w) =>
+        w?.Kind == WeaponKind.Phantom && Audio.Sfx.I?.Has("enemyshot_phantom") == true ? "enemyshot_phantom" : "enemyshot";
 
     /// <summary>Direction the bot is holding / pre-aiming (normalized).</summary>
     public Vector3 HeldDir;
@@ -196,7 +206,7 @@ public sealed class BotBrain
             target += new Vector3(R(-0.6f, 0.6f), R(-0.4f, 0.5f), R(-0.6f, 0.6f));
         }
         Body.ShootFx(target);
-        g.SoundAt("enemyshot", Body.Head, maxRange: 60f, floor: 0.6f);
+        g.SoundAt(ShotSoundFor(weapon), Body.Head, maxRange: 60f, floor: 0.6f);
 
         shot++;
         fireAt += interval;

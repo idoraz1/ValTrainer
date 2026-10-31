@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/weapons/SubmachineGun_4.fbx" id="1_submachinegun_4"]
+
+[node name="MachinePistol" type="Node3D" unique_id=1930063528]
+metadata/source_model = "res://assets/weapons/SubmachineGun_4.fbx"
+metadata/length_m = 0.331
+
+[node name="Model" type="Node3D" parent="." unique_id=843292630 instance=ExtResource("1_submachinegun_4")]
+transform = Transform3D(0, 0, 0.13, 0, 0.13, 0, -0.13, 0, 0, 0, 0, 0)
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=464117591]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.066315275, -0.28388152)

@@ -2,6 +2,7 @@ using Godot;
 using ValTrainer.Core;
 using ValTrainer.Game.Weapon;
 using ValTrainer.UI;
+using ValTrainer.Valorant;
 
 namespace ValTrainer.Game;
 
@@ -35,7 +36,7 @@ public partial class GameSession
         System.Globalization.CultureInfo.InvariantCulture, out var fz) ? Mathf.Clamp(fz, 0f, 1f) : null;
 
     /// <summary>VALORANT's multiplier for this gun's zoomed look: scoped (snipers) or ADS (everything else).</summary>
-    static float ZoomSensMultFor(WeaponDef? w) => w?.Sniper == true ? Main.I.Valorant.ZoomedSensMult : Main.I.Valorant.AdsSensMult;
+    static float ZoomSensMultFor(WeaponDef? w) => w?.Scope == true ? Main.I.Valorant.ZoomedSensMult : Main.I.Valorant.AdsSensMult;
 
     /// <summary>Puts <paramref name="def"/> in hand: a fresh gun and viewmodel (none for null / 2D drills).</summary>
     void Equip(WeaponDef? def)
@@ -59,7 +60,7 @@ public partial class GameSession
         if (def == weaponDef || Mode.Is2D || cam == null || !IsInstanceValid(cam)) return;
         Equip(def);
         if (Gun != null) Gun.EquipLeft = def!.Equip;
-        adsHeld = false;
+        adsHeld = scope2 = false;
         AdsBlend = 0;
         View.Zoom = View.VisualZoom = 1;
         View.RecoilPitch = View.RecoilYaw = 0;
@@ -74,39 +75,70 @@ public partial class GameSession
         if (DevForceAds && ForcedScope == null) ForcedScope = true;
     }
 
+    /// <summary>Operator: the second scope level (<see cref="WeaponDef.Zoom2"/>, 5×) is in. Toggle scope input only.</summary>
+    bool scope2;
+    /// <summary>The scope level's zoom as the picture shows it (eases between the Operator's 2.5× and 5×).</summary>
+    float levelZoom = 1f;
+
+    /// <summary>
+    /// The alt-fire button, by what the gun's right click does (<see cref="WeaponDef.AltFire"/>, design §4.4):
+    /// <list type="bullet">
+    /// <item>Zoom / ZoomBurst / Scope: aim. VALORANT: guns aim down sights while held; snipers follow "Sniper scope input"
+    /// (hold / toggle). A wheel notch can't be held, so it always toggles. Toggle on a gun with a second zoom (Operator)
+    /// cycles hip → 2.5× → 5× → hip. ZoomBurst guns aim like any other; the controller turns the trigger into bursts.</item>
+    /// <item>Shotgun (Classic) / AirBurst (Bucky): the press fires the alt volley (<see cref="altFireEdge"/>); no aiming,
+    /// no zoomed sensitivity, no ADS flag in the telemetry.</item>
+    /// </list>
+    /// </summary>
+    void OnAdsButton(bool pressed, bool wheel, Keybinds binds)
+    {
+        if (Gun == null || weaponDef == null) return;
+        if (weaponDef.AltFire is AltFireKind.Shotgun or AltFireKind.AirBurst)
+        {
+            if (pressed && State == St.Running) altFireEdge = true;
+            return;
+        }
+        if (weaponDef.AltFire == AltFireKind.None || weaponDef.Zoom <= 1f) return;
+        bool hold = (!weaponDef.Scope || Main.I.Valorant.HoldToScope) && !wheel;
+        if (!pressed) { if (hold) adsHeld = binds.IsDown(GameAction.AltFire, real: true); return; } // releases always count, even while paused
+        if (State != St.Running) return;
+        if (hold) adsHeld = true;
+        else if (!adsHeld) { adsHeld = true; scope2 = false; }
+        else if (weaponDef.Zoom2 > 0f && Gun.Scoped && !scope2) scope2 = true;
+        else adsHeld = scope2 = false;
+    }
+
     /// <summary>Running frame: aim state, raise progress, sensitivity zoom and picture zoom.</summary>
     void UpdateAds(float dt)
     {
         var w = weaponDef!;
-        Gun!.Scoped = (ForcedScope ?? adsHeld) && !abilityInHand && !Gun.Reloading && w.Zoom > 1f && (!w.Sniper || Gun.EquipLeft <= 0);
+        Gun!.Scoped = (ForcedScope ?? adsHeld) && !abilityInHand && !Gun.Reloading && w.Zoom > 1f && (!w.Scope || Gun.EquipLeft <= 0);
         Mover.Ads = Gun.Scoped;
+        if (!Gun.Scoped || w.Zoom2 <= 0f) scope2 = false;
+        float zoom = scope2 ? w.Zoom2 : w.Zoom;
+        levelZoom = Gun.Scoped && w.Zoom2 > 0f ? Mathf.MoveToward(Mathf.Clamp(levelZoom, w.Zoom, w.Zoom2), zoom, dt * (w.Zoom2 - w.Zoom) / AdsInTime) : w.Zoom;
         float target = Gun.Scoped ? 1f : 0f;
         AdsBlend = Mathf.MoveToward(AdsBlend, target, dt / (target > AdsBlend ? AdsInTime : AdsOutTime));
         if (DevAdsFreeze is { } freeze && Gun.Scoped) AdsBlend = Mathf.Min(AdsBlend, freeze);
-        View.Zoom = Gun.Scoped ? w.Zoom : 1f;                   // sensitivity + telemetry: switches on the press
-        View.VisualZoom = 1f + (w.Zoom - 1f) * AdsEase;         // the picture: eases with the raise
+        View.Zoom = Gun.Scoped ? zoom : 1f;                     // sensitivity + telemetry: switches on the press
+        View.VisualZoom = 1f + (levelZoom - 1f) * AdsEase;      // the picture: eases with the raise (and between scope levels)
     }
 
     /// <summary>Every frame: which crosshair / scope / sight shows, and the viewmodel's aim pose.</summary>
     void UpdateAdsVisuals()
     {
         float e = AdsEase;
-        bool scoped = Gun?.Scoped == true, sniper = weaponDef?.Sniper == true;
+        bool scoped = Gun?.Scoped == true, sniper = weaponDef?.Scope == true;
         bool hidden = State == St.Results || Mode.Is2D;
         bool scopeUp = scoped && sniper && e >= ScopeShowAt;
         crosshair.Showing = hidden ? CrosshairView.Mode.Hidden
             : scopeUp ? CrosshairView.Mode.Sniper
             : scoped && !sniper && e >= SightShowAt ? CrosshairView.Mode.Ads : CrosshairView.Mode.Primary;
         crosshair.ScopeBlend = scopeUp ? Mathf.SmoothStep(ScopeShowAt, 1f, e) : 1f;
-        // ValTrainer's snipers today: Operator and Tour de Force. A Marshal / Outlaw (once added to WeaponKind) maps to
-        // CrosshairView.SniperScope.Marshal / .Outlaw here.
-        crosshair.ScopeStyle = weaponDef?.Kind switch
-        {
-            WeaponKind.TourDeForce => CrosshairView.SniperScope.TourDeForce,
-            _ => CrosshairView.SniperScope.Operator,
-        };
+        var look = WeaponLooks.For(weaponDef?.Kind ?? WeaponKind.None);
+        crosshair.ScopeStyle = look.ScopeStyle; // Operator, Marshal, Outlaw or Tour De Force eyepiece
 
-        adsSight.Look = hidden || weaponDef == null || sniper || abilityInHand ? null : AdsSight.LookFor(weaponDef.Kind);
+        adsSight.Look = hidden || weaponDef == null || sniper || abilityInHand ? null : look.Sight;
         adsSight.Blend = e;
         adsSight.Offset = viewmodel != null && viewmodel.Visible ? viewmodel.SightScreenOffset() : Vector2.Zero;
 

@@ -15,6 +15,7 @@ namespace ValTrainer.Modes;
 public sealed class JumpPeekMode : OpAngleMode
 {
     public override string Key => "jumppeek";
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
     public override string Name => "Jump Peek";
     public override string Description => "An Operator holds a long angle. Jump-peek to spot him and get back before he shoots; if he misses, swing and kill him during his bolt.";
 
@@ -199,6 +200,7 @@ public sealed class JumpPeekMode : OpAngleMode
 public sealed class JigglePeekMode : OpAngleMode
 {
     public override string Key => "jigglepeek";
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
     public override string Name => "Jiggle Peek";
     public override string Description => "Shoulder-peek an Operator to bait his shot without showing your head, then wide-swing during his bolt and kill him.";
     protected override float RoundTime => 16f;

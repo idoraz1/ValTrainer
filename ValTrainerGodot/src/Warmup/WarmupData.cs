@@ -211,11 +211,17 @@ public static class WarmupScore
     public static float Value(RunRecord r) => Value(r.Mode, r.Score, r.Accuracy, r.AvgKillMs, r.Kills, SecsOf(r));
 
     /// <summary>The player's usual level in this drill at this tier: the mean of normal (non-warm-up) runs from the last
-    /// 7 days, or of the last 10 runs if there are fewer than 2 recent ones.</summary>
-    public static (float Value, string Kind, int N) Baseline(string mode, int tier, DateTime now)
+    /// 7 days, or of the last 10 runs if there are fewer than 2 recent ones. Only runs with the same gun count (runs from
+    /// before 1.18 count as the drill's default gun): <paramref name="gun"/>, or when null the gun a Lock-In step of this
+    /// drill plays now (its pick → the preferred gun → its default, as the session resolves it), so a Phantom warm-up is
+    /// never compared with Vandal history.</summary>
+    public static (float Value, string Kind, int N) Baseline(string mode, int tier, DateTime now, WeaponKind? gun = null)
     {
+        var proto = WarmupDrills.Proto(mode);
+        var def = proto?.Weapon ?? WeaponKind.Vandal;
+        var g = gun ?? (proto != null ? WeaponPicks.Resolve(proto) ?? def : def);
         var runs = Main.I.Stats.Runs.ToArray()
-            .Where(r => r != null && r.Mode == mode && r.Tier == tier && !r.Warmup)
+            .Where(r => r != null && r.Mode == mode && r.Tier == tier && !r.Warmup && StatsStore.GunOf(r, def) == g)
             .Select(r => (r.When, V: Value(r))).Where(x => x.V > 0).OrderByDescending(x => x.When).ToList();
         var week = runs.Where(x => (now - x.When).TotalDays <= 7).ToList();
         if (week.Count >= 2) return (week.Average(x => x.V), "7d", week.Count);

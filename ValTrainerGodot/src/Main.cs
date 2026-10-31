@@ -112,6 +112,19 @@ public partial class Main : Node
             GetTree().Quit(failures == 0 ? 0 : 1);
             return;
         }
+        if (WeaponCheck.Requested)
+        {
+            // Dev self-test (works with --headless): every gun's fire rate, spin-up, bursts, pellets, alt fire, reloads and
+            // scope rules against its WeaponDef. Exit code = failures.
+            GetTree().Quit(WeaponCheck.Run());
+            return;
+        }
+        if (Dev && args.Contains("--dm-spawncheck"))
+        {
+            // Dev self-test (works with --headless): Deathmatch spawn safety and bot paths on every map; exit code = failures.
+            GetTree().Quit(DeathmatchSpawnCheck.Run());
+            return;
+        }
         if (Dev && args.Contains("--preview-check"))
         {
             // Dev self-test (works with --headless --fixed-fps 60): every drill's preview demo plays and saves nothing.
@@ -147,7 +160,8 @@ public partial class Main : Node
         // A downloaded update is installed now, before the menu (never mid-drill): "Updating ValTrainer…", then the
         // installer / portable swap starts the new version and this one quits.
         bool updating = make == null && Updater.ShouldApplyAtStartup();
-        if (make != null) StartMode(make);
+        // dev "--gun Name" plays that gun instead of the drill's (GameSession.DevGun); dev "--free-play" starts it in free play
+        if (make != null) StartMode(make, freePlay: Dev && CmdLine.Has("--free-play"));
         else if (updating) SetScreen(new UpdatingScreen());
         else ShowMenu();
         if (updating) return;
@@ -232,7 +246,10 @@ public partial class Main : Node
     public void ShowScreen(Node n) => SetScreen(n);
 
     /// <param name="freePlay">No clock, no score, nothing saved; the drill starts over when its time is up (<see cref="GameSession.FreePlay"/>).</param>
-    public void StartMode(Func<TrainingMode> make, bool freePlay = false) => SetScreen(new GameSession(make) { FreePlay = freePlay });
+    /// <param name="gun">The gun picked in the drill preview; null = the session resolves it (per-drill pick, preferred gun,
+    /// the drill's default: <see cref="WeaponPicks.Resolve"/>).</param>
+    public void StartMode(Func<TrainingMode> make, bool freePlay = false, WeaponKind? gun = null) =>
+        SetScreen(new GameSession(make) { FreePlay = freePlay, WeaponPick = gun });
 
     public void Quit()
     {

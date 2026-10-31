@@ -19,7 +19,8 @@ namespace ValTrainer.Game;
 /// </summary>
 public partial class GameSession : Node3D, IGame
 {
-    public enum St { Countdown, Running, Paused, Results }
+    /// <summary>Buying: the in-drill buy menu is open (frozen like Paused, without the pause menu; BuySession.cs).</summary>
+    public enum St { Countdown, Running, Paused, Results, Buying }
 
     readonly Func<TrainingMode> factory;
     public TrainingMode Mode { get; private set; } = null!;
@@ -48,6 +49,8 @@ public partial class GameSession : Node3D, IGame
     public float Countdown { get; private set; }
     float feetY; // player body feet height; jumping / falling state lives in Mover (MovementBody.cs)
     bool firePressedEdge, fireHeld, fireTap, adsHeld, wasReloading;
+    /// <summary>This frame's alt-fire press for a gun whose right click shoots (Classic blast, Bucky air burst; AdsSession.cs).</summary>
+    bool altFireEdge;
     public RunRecord? Record { get; private set; }
     /// <summary>Aim-coach review of the run that just finished (results screen).</summary>
     public RunReview? Review { get; private set; }
@@ -81,6 +84,15 @@ public partial class GameSession : Node3D, IGame
     /// <summary>Free play (the drill preview's FREE PLAY): no clock and no score on the HUD, nothing saved (stats, telemetry,
     /// Rewind), and when the drill's time is up it starts over at once (no countdown, no results). Esc → pause → menu ends it.</summary>
     public bool FreePlay { get; init; }
+    /// <summary>The gun picked for this session (drill preview, START / FREE PLAY after a pick); null = resolve it at every
+    /// Restart (per-drill pick → preferred gun → the drill's default, <see cref="WeaponPicks.Resolve"/>). Only a gun in the
+    /// drill's <see cref="TrainingMode.WeaponChoice"/> takes effect (<see cref="TrainingMode.ActiveWeapon"/>). Settable: a
+    /// new pick applies at the next <see cref="Restart"/>.</summary>
+    public WeaponKind? WeaponPick { get; set; }
+    /// <summary>Dev-only "--gun Name": every session except the drill preview plays that gun, even in drills that are locked
+    /// to their own (tests of a gun before any drill offers it). Drills without a gun (Strafe Tracking, Reaction Test, Sens
+    /// Finder) stay gunless.</summary>
+    static readonly WeaponKind? DevGun = Weapons.Parse(CmdLine.DevAfter("--gun"));
     /// <summary>Free play: the next Restart is the automatic one at the end of the drill (skips the countdown).</summary>
     bool freePlayLoop;
     /// <summary>The preview's simulated player: the coach's "good" player with the steady settings of the promo clips (less
@@ -89,7 +101,7 @@ public partial class GameSession : Node3D, IGame
     string DemoProfile => "good:tremor=0.4,jitter=2" + (DemoHoldDrills.Contains(Mode.Key) ? ",hold=1" : "")
         // spray drills: hold each spray past the tier's minimum, so it counts and shows the hit banner
         + (Mode is SprayControlMode spray && weaponDef is { Rps: > 0 } wd
-            ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $",burst={(spray.Required + 2) / wd.Rps:0.00}") : "");
+            ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $",burst={(spray.Required + 2) / wd.MaxRps:0.00}") : "");
     static readonly HashSet<string> DemoHoldDrills = new() { "peek", "peek_mix", "peekduel", "operator", "jumppeek", "jigglepeek" };
 
     /// <summary>Counter-Strafe preview: strafe A / D, and when the bot shows, tap the opposite key (the counter-strafe the
@@ -207,6 +219,7 @@ public partial class GameSession : Node3D, IGame
         // HUD layer (crosshair under the blind overlay, HUD on top)
         var layer = new CanvasLayer { Layer = 5 };
         AddChild(layer);
+        hudLayer = layer; // the buy menu opens on it, over the HUD
         adsSight = new AdsSight(); // the gun's hologram sight outline, under the crosshair (AdsSession.cs)
         layer.AddChild(adsSight);
         crosshair = new CrosshairView { Profile = Main.I.Valorant.Crosshair };
@@ -245,6 +258,9 @@ public partial class GameSession : Node3D, IGame
         cam?.QueueFree();
 
         Mode = factory();
+        nextLifeGun = null; gunHeldFor.Clear(); // a restart starts with the picked gun (BuySession.cs)
+        Mode.Pick = WeaponPick ?? WeaponPicks.Resolve(Mode); // before Attach: the drill reads ActiveWeapon from Setup on
+        if (!Demo && DevGun is { } devGun) { Mode.Pick = devGun; Mode.ForcePick = true; }
         if (!Demo) Main.I.LastModeKey = Mode.Key; // bug reports say which drill ran last
         Mode.Attach(this); // ExtraSolids / Map below already follow the session tier
         if (Adaptive is { Trials: > 0 } stair) Adaptive = stair.Fresh(); // a restarted run adapts from the start level again
@@ -287,14 +303,18 @@ public partial class GameSession : Node3D, IGame
         cam = new Camera3D { Fov = PlayerView.HipHFov, KeepAspect = Camera3D.KeepAspectEnum.Width, Near = 0.03f, Far = 400f, Current = true };
         AddChild(cam);
 
-        Equip(Weapons.Get(Mode.Weapon));
+        Equip(Weapons.Get(Mode.ActiveWeapon));
+        string? askedGun = CmdLine.DevAfter("--gun");
+        if (Main.I.Dev && !Demo && (Mode.ActiveWeapon != Mode.Weapon || askedGun != null))
+            Log.Info($"[gun] {Mode.Key}: {Mode.ActiveWeapon} active (drill default {Mode.Weapon}{(Mode.ForcePick ? ", dev --gun" : "")})"
+                + (askedGun != null && DevGun == null ? $"; --gun {askedGun} is not a gun" : ""));
 
         GetViewport().Disable3D = Mode.Is2D;
         Telemetry = new RunTelemetry
         {
             Mode = Mode.Key, Tier = Tier, Sens = SessionSens ?? Main.I.Sens, Dpi = Main.I.Settings.Dpi,
-            Weapon = Mode.Weapon.ToString(), Map = Mode.Map?.Key ?? "range", When = DateTime.Now,
-            ZoomSensMult = ZoomSensMultFor(Weapons.Get(Mode.Weapon)),
+            Weapon = Mode.ActiveWeapon.ToString(), Map = Mode.Map?.Key ?? "range", When = DateTime.Now,
+            ZoomSensMult = ZoomSensMultFor(Weapons.Get(Mode.ActiveWeapon)),
         };
         replay = Demo || FreePlay ? null : StartReplay(extras); // before Begin: it spawns the first bots / targets
         Mode.Begin(this);
@@ -319,7 +339,7 @@ public partial class GameSession : Node3D, IGame
         if (!Main.I.Dev && !Demo) Input.MouseMode = Input.MouseModeEnum.Captured;
     }
 
-    void ResetTransientInput() { fireHeld = firePressedEdge = fireTap = adsHeld = false; Keybinds.EndFrame(); }
+    void ResetTransientInput() { fireHeld = firePressedEdge = fireTap = adsHeld = altFireEdge = scope2 = false; Keybinds.EndFrame(); }
 
     /// <summary>Freeze bots, effects and timers while paused / on the results screen.</summary>
     void SetWorldRunning(bool on)
@@ -330,6 +350,7 @@ public partial class GameSession : Node3D, IGame
     public override void _Input(InputEvent e)
     {
         if (Demo) return; // the preview popup owns the keyboard and mouse
+        if (State == St.Buying) return; // the buy menu (GunPicker) owns them: its Esc / bind closes it, never pauses
         Keybinds.Observe(e); // wheel notches count as "held" for one frame (wheel-bound jump / crouch / abilities)
         if (e is InputEventMouseMotion m)
         {
@@ -348,12 +369,20 @@ public partial class GameSession : Node3D, IGame
         {
             if (k.Keycode == Key.Escape)
             {
+                if (BuyJustClosed) return; // this Esc closed the buy menu
                 if (State is St.Countdown or St.Running) Pause();
                 else if (State == St.Paused) Resume();
                 else if (State == St.Results) Main.I.ShowMenu();
                 return;
             }
             if (k.Keycode == Key.R && State == St.Results) { Restart(); return; }
+        }
+        // VALORANT's buy-menu bind (B by default): the gun picker over the drill, also from the pause menu (BuySession.cs)
+        if (State is St.Countdown or St.Running or St.Paused && !BuyJustClosed && Main.I.Valorant.Binds.Pressed(e, GameAction.BuyMenu)
+            && !(State == St.Paused && GetViewport().GuiGetFocusOwner() is LineEdit)) // typing a sensitivity on the pause menu
+        {
+            OpenBuyMenu();
+            return;
         }
         OnBindEvent(e, Main.I.Valorant.Binds);
     }
@@ -382,18 +411,13 @@ public partial class GameSession : Node3D, IGame
         if (wheel && State == St.Running && binds.Pressed(e, GameAction.Jump)) Mover.QueueJump();
     }
 
-    void OnAdsButton(bool pressed, bool wheel, Keybinds binds)
-    {
-        if (Gun == null || weaponDef!.Zoom <= 1f) return;
-        // VALORANT: rifles aim down sights while held; snipers follow "Sniper scope input" (hold / toggle). A wheel notch
-        // can't be held, so it always toggles.
-        bool hold = (!weaponDef.Sniper || Main.I.Valorant.HoldToScope) && !wheel;
-        if (!pressed) { if (hold) adsHeld = binds.IsDown(GameAction.AltFire, real: true); return; } // releases always count, even while paused
-        if (State == St.Running) adsHeld = hold || !adsHeld;
-    }
-
     public void Pause()
     {
+        if (State == St.Buying)
+        {
+            DismissBuyMenu(); // back to the state it was opened from
+            if (State is not (St.Countdown or St.Running)) return; // opened from the pause menu: still paused
+        }
         ResetTransientInput(); // releases can be missed while paused / unfocused
         SetWorldRunning(false);
         resumeTo = State;
@@ -445,6 +469,7 @@ public partial class GameSession : Node3D, IGame
                 break;
         }
         if (Main.I.Dev && !Demo) DevKeybindTick(); // --keybind-test (KeybindTest.cs)
+        if (Main.I.Dev && !Demo) DevBuyTick((float)delta); // --buy-test (BuySession.cs)
 
         UpdateCamera();
         UpdateAdsVisuals(); // crosshair mode, scope, sight outline, viewmodel aim pose (AdsSession.cs)
@@ -457,7 +482,7 @@ public partial class GameSession : Node3D, IGame
         crosshair.MinErrorPx = Gun != null && weaponDef != null ? DegToPx(Gun.Scoped ? weaponDef.FirstShotAds : weaponDef.FirstShotHip) : 0;
         if (viewmodel != null)
         {
-            viewmodel.SetReload(Gun != null && Gun.Reloading ? 1f - Gun.ReloadLeft / weaponDef!.Reload : -1f);
+            viewmodel.SetReload(Gun?.ReloadProgress ?? -1f); // partial / shell-by-shell reloads run their own length
             viewmodel.SetMotion(Mover.Speed, Mover.Crouching);
         }
         Keybinds.EndFrame(); // wheel notches seen before this frame were polled by it
@@ -468,8 +493,10 @@ public partial class GameSession : Node3D, IGame
     static readonly string? SimProfile = ArgAfter("--simaim");
     /// <summary>Dev-only "--duration N" shortens timed runs for automated tests.</summary>
     float RunDuration => DurationOverride ?? (Main.I.Dev && float.TryParse(ArgAfter("--duration"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var d) ? d : Mode.Duration);
-    ValTrainer.Analysis.SimAim? Sim => Demo ? sim ??= new ValTrainer.Analysis.SimAim(DemoProfile, Mode.Key, Mode.SimKind)
-        : Main.I.Dev && SimProfile != null ? sim ??= new ValTrainer.Analysis.SimAim(SimProfile, Mode.Key, Mode.SimKind) : null;
+    ValTrainer.Analysis.SimAim? Sim => Demo ? sim ??= new ValTrainer.Analysis.SimAim(DemoProfile, Mode.Key, Mode.SimKind, weaponDef) { UseAlt = true }
+        : Main.I.Dev && SimProfile != null ? sim ??= new ValTrainer.Analysis.SimAim(SimProfile, Mode.Key, Mode.SimKind, weaponDef) { UseAlt = true } : null;
+    bool simAltWas, spinWas;
+    float spinHeldFor;
     ValTrainer.Analysis.SimAim? sim;
 
     /// <summary>Dev-only "--pause-at N": opens the pause menu N seconds into the run (layout screenshots).</summary>
@@ -479,17 +506,26 @@ public partial class GameSession : Node3D, IGame
     void RunFrame(float dt)
     {
         Now += dt;
+        TrackGunTime(dt);
         if (Main.I.Dev && !Demo && DevPauseAt is { } pauseAt && Now >= pauseAt && !devPaused) { devPaused = true; Pause(); return; }
         if (Demo && Mode is FlashDodgeMode flashDrill && DemoFlashTurn(flashDrill)) { fireHeld = false; }
         else if (Sim is { } simAim)
         {
             // Simulated player: the drill preview, or dev runs (validation of the aim coach / sens finder without a human).
+            simAim.Gun = weaponDef; // the pick can change between runs (the sim is built once per session)
             var (counts, held, pressed) = simAim.Next(dt, Now, View, Mode.Focus, CurrentSens);
             View.Look(counts, CurrentSens, ZoomSensMultFor(weaponDef));
             frameDx += counts.X; frameDy += counts.Y;
             if (pressed && !fireHeld) firePressedEdge = true;
             fireHeld = held;
-            if (Demo && weaponDef is { Sniper: true } && Gun != null)
+            if (simAim.UseAlt && weaponDef is { Scope: false } w)
+            {
+                // Right click: aimed bursts (Stinger, Bulldog) hold the aim; the Classic / Bucky alt fires on the press
+                if (w.AltFire is AltFireKind.Shotgun or AltFireKind.AirBurst) { if (simAim.AltHeld && !simAltWas) altFireEdge = true; }
+                else adsHeld = simAim.AltHeld;
+                simAltWas = simAim.AltHeld;
+            }
+            if (Demo && weaponDef is { Scope: true } && Gun != null)
             {
                 // Operator preview: scope in whenever the gun is ready, and only fire scoped (like a player would)
                 adsHeld = !Gun.Reloading && Gun.EquipLeft <= 0;
@@ -524,17 +560,28 @@ public partial class GameSession : Node3D, IGame
         {
             bool wasScoped = Gun.Scoped;
             bool gunInHand = !Player.Dead && !abilityInHand; // an ability in hand owns mouse 1 (AbilitySession.cs)
-            var shots = Gun.Tick(Now, dt, View, Mover, Rng, (fireHeld || fireTap) && gunInHand, firePressedEdge && gunInHand, Mode.InfiniteAmmo, Mode.InfiniteReserve, Mode.Movement);
-            foreach (var (dir, accurate) in shots) Bullet(dir, accurate);
+            var shots = Gun.Tick(Now, dt, View, Mover, Rng, (fireHeld || fireTap) && gunInHand, firePressedEdge && gunInHand, Mode.InfiniteAmmo, Mode.InfiniteReserve, Mode.Movement,
+                altFireEdge && gunInHand);
+            Volleys(shots);
+            if (DevGunLog && !Demo && shots.Count > 0) GunLog(shots);
+            var look = WeaponLooks.For(weaponDef!.Kind); // shot / bolt / reload sounds
             if (shots.Count > 0)
             {
-                string snd = weaponDef!.Family switch { WeaponKind.Operator => "operator", WeaponKind.Phantom => "phantom", WeaponKind.Sheriff => "sheriff", _ => "vandal" };
-                Play2D(snd, 0.55f, 1f + ((float)Rng.NextDouble() - 0.5f) * 0.05f);
-                if (weaponDef.Kind == WeaponKind.Operator) GetTree().CreateTimer(0.45).Timeout += () => Play2D("bolt", 0.7f);
+                Play2D(look.ShotSound, 0.55f * look.Volume, 1f + ((float)Rng.NextDouble() - 0.5f) * 0.05f);
+                if (look.BoltSound is { } bolt) GetTree().CreateTimer(WeaponLooks.BoltDelay).Timeout += () => Play2D(bolt, 0.7f);
             }
-            if (Gun.Reloading && !wasReloading) Play2D(weaponDef!.Kind == WeaponKind.Sheriff ? "reload_pistol" : "reload_rifle", 0.6f, weaponDef.Kind == WeaponKind.Operator ? 0.75f : 1f);
+            if (look.SpinUpSound is { } spinUp)
+            {
+                // Odin: the barrel winds up when you hold fire from the hip (aiming skips the spin-up) and winds down after
+                bool spinTrig = (fireHeld || fireTap) && gunInHand && Gun.Ammo > 0 && !Gun.Reloading && !Gun.Scoped;
+                if (spinTrig && !spinWas) Play2D(spinUp, 0.5f);
+                if (spinTrig) spinHeldFor += dt;
+                else { if (spinWas && spinHeldFor > 0.3f && look.SpinDownSound is { } spinDown) Play2D(spinDown, 0.4f); spinHeldFor = 0f; }
+                spinWas = spinTrig;
+            }
+            if (Gun.Reloading && !wasReloading) Play2D(look.ReloadSound, 0.6f, look.ReloadPitch);
             wasReloading = Gun.Reloading;
-            if (wasScoped && !Gun.Scoped && weaponDef!.Sniper) adsHeld = false;
+            if (wasScoped && !Gun.Scoped && weaponDef!.Scope) adsHeld = false;
         }
         else if (Mode.Is2D && firePressedEdge)
         {
@@ -542,6 +589,7 @@ public partial class GameSession : Node3D, IGame
         }
         firePressedEdge = false;
         fireTap = false;
+        altFireEdge = false;
 
         RecordFrame();
         if (Main.I.Dev && Adaptive != null && Mode.SupportsAdaptive && (int)(Now / 10f) != (int)((Now - dt) / 10f))
@@ -590,43 +638,142 @@ public partial class GameSession : Node3D, IGame
 
     public void Event(string kind, float a = 0, float b = 0) => Telemetry.Events.Add(new TelemetryEvent(Now, kind, a, b));
 
-    void Bullet(Vector3 dir, bool accurate)
+    /// <summary>Dev-only "--gun-log": a log line per volley (pellets, cone, ammo, fire rate and spin-up, burst, scope) for
+    /// gshot / headless checks of the gun mechanics, e.g. <c>--gun Odin --autofire --gun-log</c> shows the fire-rate ramp.</summary>
+    static readonly bool DevGunLog = CmdLine.Dev && CmdLine.Has("--gun-log");
+
+    void GunLog(IReadOnlyList<Shot> shots)
+    {
+        var g = Gun!;
+        int pellets = shots.Count(s => s.Volley == shots[^1].Volley);
+        Log.Info(string.Create(System.Globalization.CultureInfo.InvariantCulture,
+            $"[gun] t={Now:0.000} {g.Def.Name} volley #{g.Volleys}: {(pellets > 1 ? $"{pellets} pellets, cone {g.LastConeDeg:0.00}°, " : "")}error {g.LastShotError:0.00}°, "
+            + $"ammo {g.Ammo}/{g.Def.Mag}, {g.CurrentRps:0.00} rps{(g.Def.SpinUpTime > 0f ? $" (spin {g.Spin:0.00})" : "")}"
+            + $"{(g.Bursting ? " burst" : "")}{(g.Scoped ? $" scoped {View.Zoom:0.##}x" : "")}; drill shots {Mode.Shots}, hits {Mode.Hits}"));
+    }
+
+    /// <summary>Most tracers drawn for one pellet volley (every pellet still hits and leaves its impact).</summary>
+    const int VolleyTracers = 4;
+
+    /// <summary>
+    /// Resolves this frame's shots. A single bullet goes straight to <see cref="Bullet"/>. A pellet volley (one trigger pull
+    /// of a shotgun, the Classic's blast, the Bucky's air burst) is normalised without touching any drill: every pellet
+    /// reaches the drill's OnBullet (so each deals its own damage and can kill), but the drill's Shots / Hits / HeadHits
+    /// grow by at most one, its score keeps the hits' points (or one miss's penalty when nothing was hit), and
+    /// LastShotZone, the telemetry shot and the Rewind's PlayerShot are the volley's (best zone, pellet 0's aim). Each hit
+    /// sound plays once per volley, and at most <see cref="VolleyTracers"/> tracers are drawn.
+    /// </summary>
+    void Volleys(IReadOnlyList<Shot> shots)
+    {
+        for (int i = 0; i < shots.Count;)
+        {
+            int j = i + 1;
+            while (j < shots.Count && shots[j].Volley == shots[i].Volley) j++;
+            if (j - i == 1 && shots[i].StartAt <= 0f) Bullet(shots[i].Dir, shots[i].Accurate, maxRange: shots[i].MaxRange);
+            else Volley(shots, i, j);
+            i = j;
+        }
+    }
+
+    void Volley(IReadOnlyList<Shot> shots, int from, int to)
+    {
+        int s0 = Mode.Shots, h0 = Mode.Hits, hh0 = Mode.HeadHits, score0 = Mode.Score;
+        int hitScore = 0, missScore = 0, recorded = -1, tracers = 0;
+        var best = HitZone.None;
+        bool anyHit = false, canisterStopped = false;
+        var eye = View.Eye;
+        var centre = shots[from].Dir;
+        volleySounds = new HashSet<string>();
+        try
+        {
+            for (int k = from; k < to; k++)
+            {
+                var p = shots[k];
+                Vector3? origin = null;
+                if (p.StartAt > 0f)
+                {
+                    if (canisterStopped) break; // the canister hit something before it split: no pellets
+                    origin = eye + centre * p.StartAt;
+                }
+                int hits = Mode.Hits, score = Mode.Score;
+                bool record = p.Pellet == 0;
+                var (hit, wall) = Bullet(p.Dir, p.Accurate, origin, p.MaxRange, record, tracer: tracers++ < VolleyTracers);
+                if (record) recorded = Telemetry.Shots.Count - 1;
+                bool pelletHit = Mode.Hits > hits || Mode.LastShotZone != HitZone.None;
+                if (pelletHit) hitScore += Mode.Score - score;
+                else if (record) missScore = Mode.Score - score;
+                anyHit |= pelletHit || !float.IsPositiveInfinity(hit);
+                if (Mode.LastShotZone != HitZone.None && (best == HitZone.None || Mode.LastShotZone < best)) best = Mode.LastShotZone;
+                // Bucky air burst: pellet 0 is the canister, which flies only to the split point.
+                if (k == from && to - from > 1 && shots[from + 1].StartAt > 0f)
+                    canisterStopped = !float.IsPositiveInfinity(hit) || wall < p.MaxRange;
+            }
+        }
+        finally { volleySounds = null; }
+        bool volleyHit = Mode.Hits > h0;
+        Mode.Shots = s0 + (Mode.Shots > s0 ? 1 : 0);
+        Mode.Hits = h0 + (volleyHit ? 1 : 0);
+        Mode.HeadHits = hh0 + (Mode.HeadHits > hh0 ? 1 : 0);
+        Mode.Score = score0 + (volleyHit || best != HitZone.None ? hitScore : missScore);
+        Mode.LastShotZone = best;
+        if (recorded >= 0 && recorded < Telemetry.Shots.Count)
+        {
+            var shot = Telemetry.Shots[recorded];
+            shot.Zone = (sbyte)(best != HitZone.None ? (int)best : anyHit ? 1 : -1);
+            Telemetry.Shots[recorded] = shot;
+        }
+    }
+
+    /// <summary>One bullet or pellet. <paramref name="from"/>: where it starts (null = the eye; the Bucky's air-burst
+    /// pellets start at the split point). <paramref name="maxRange"/> (0 = none) caps its reach like a wall, so the drills'
+    /// own wall checks (<see cref="BulletWallDist"/>) stop it there. <paramref name="record"/>: write the telemetry shot and
+    /// the Rewind's PlayerShot (pellet 0 of a volley only). Returns the drill's hit distance and the wall distance.</summary>
+    (float Hit, float Wall) Bullet(Vector3 dir, bool accurate, Vector3? from = null, float maxRange = 0f, bool record = true, bool tracer = true)
     {
         // Snapshot the focus BEFORE the mode reacts (a hit may respawn the target).
         var focus = Mode.Focus;
         Mode.LastShotZone = HitZone.None;
         var eye = View.Eye;
-        float wall = Collision.FirstHit(eye, dir, solid, out int wi);
-        BulletWallDist = wall;
-        float hitMode = Mode.OnBullet(eye, dir, accurate);
-        var shot = new ShotSample
+        var origin = from ?? eye;
+        float wall = Collision.FirstHit(origin, dir, solid, out int wi);
+        float reach = maxRange > 0f ? Mathf.Min(wall, maxRange) : wall;
+        BulletWallDist = reach;
+        float hitMode = Mode.OnBullet(origin, dir, accurate);
+        if (record)
         {
-            T = Now, Yaw = Mathf.RadToDeg(Mathf.Atan2(dir.X, -dir.Z)), Pitch = Mathf.RadToDeg(Mathf.Asin(Mathf.Clamp(dir.Y, -1, 1))),
-            Zone = (sbyte)(Mode.LastShotZone != HitZone.None ? (int)Mode.LastShotZone : float.IsPositiveInfinity(hitMode) ? -1 : 1),
-            Speed = Mover.Speed, Accurate = accurate,
-        };
-        if (focus is { } fc)
-        {
-            var d = (fc.Point - eye).Normalized();
-            float fyaw = Mathf.RadToDeg(Mathf.Atan2(d.X, -d.Z)), fpitch = Mathf.RadToDeg(Mathf.Asin(Mathf.Clamp(d.Y, -1, 1)));
-            shot.FocusId = fc.Id;
-            shot.ErrYaw = Mathf.Wrap(shot.Yaw - fyaw, -180f, 180f);
-            shot.ErrPitch = shot.Pitch - fpitch;
-            shot.FocusRadius = AngularRadius(fc.Point, fc.Radius);
+            var shot = new ShotSample
+            {
+                T = Now, Yaw = Mathf.RadToDeg(Mathf.Atan2(dir.X, -dir.Z)), Pitch = Mathf.RadToDeg(Mathf.Asin(Mathf.Clamp(dir.Y, -1, 1))),
+                Zone = (sbyte)(Mode.LastShotZone != HitZone.None ? (int)Mode.LastShotZone : float.IsPositiveInfinity(hitMode) ? -1 : 1),
+                Speed = Mover.Speed, Accurate = accurate,
+            };
+            if (focus is { } fc)
+            {
+                var d = (fc.Point - eye).Normalized();
+                float fyaw = Mathf.RadToDeg(Mathf.Atan2(d.X, -d.Z)), fpitch = Mathf.RadToDeg(Mathf.Asin(Mathf.Clamp(d.Y, -1, 1)));
+                shot.FocusId = fc.Id;
+                shot.ErrYaw = Mathf.Wrap(shot.Yaw - fyaw, -180f, 180f);
+                shot.ErrPitch = shot.Pitch - fpitch;
+                shot.FocusRadius = AngularRadius(fc.Point, fc.Radius);
+            }
+            Telemetry.Shots.Add(shot);
         }
-        Telemetry.Shots.Add(shot);
-        float end = Mathf.Min(Mathf.Min(hitMode, wall), 80f);
-        var muzzle = viewmodel?.MuzzleWorld ?? eye + dir * 0.6f;
-        Effects.Tracer(muzzle, eye + dir * end);
-        if (hitMode < wall && hitMode < 80f && Mode is not BotMode) Effects.BodyHit(eye + dir * hitMode, Enemy, false);
-        var wallNormal = Vector3.Zero;
-        if (wall < hitMode && wall < 80f)
+        float end = Mathf.Min(Mathf.Min(hitMode, reach), 80f);
+        if (tracer)
         {
-            var p = eye + dir * wall;
+            var muzzle = from ?? viewmodel?.MuzzleWorld ?? eye + dir * 0.6f;
+            Effects.Tracer(muzzle, origin + dir * end);
+        }
+        if (hitMode < reach && hitMode < 80f && Mode is not BotMode) Effects.BodyHit(origin + dir * hitMode, Enemy, false);
+        var wallNormal = Vector3.Zero;
+        if (wall < hitMode && wall < 80f && wall <= reach)
+        {
+            var p = origin + dir * wall;
             wallNormal = solid[wi].NormalAt(p);
             Effects.Impact(p, wallNormal, new Color(0.5f, 0.5f, 0.5f));
         }
-        replay?.PlayerShot(Now, Telemetry.Shots.Count - 1, eye + dir * end, wallNormal);
+        if (record) replay?.PlayerShot(Now, Telemetry.Shots.Count - 1, origin + dir * end, wallNormal);
+        return (hitMode, wall);
     }
 
     void MovePlayer(float dt)
@@ -663,7 +810,8 @@ public partial class GameSession : Node3D, IGame
         SetWorldRunning(false);
         Input.MouseMode = Input.MouseModeEnum.Visible;
         var app = Main.I;
-        PrevBest = app.Stats.Best(Mode.Key, Tier);
+        SettleRunGun(); // a match that changed guns is saved under the gun held longest (BuySession.cs)
+        PrevBest = app.Stats.Best(Mode, Tier, Mode.ActiveWeapon);
         Record = Mode.MakeRecord(SessionSens ?? app.Sens);
         Record.Warmup = OnFinished != null;
         // Aim coach: metrics for this run + a review of what went wrong and how to fix it.
@@ -770,7 +918,7 @@ public partial class GameSession : Node3D, IGame
                 Mode = Mode.Key, MapKey = Mode.Map?.Key ?? "range",
                 MapHash = Mode.Map != null ? ReplayFile.MapHashOf(Mode.Map) : ReplayFile.MapHashOf(extras),
                 ExtraSolids = extras.Select(b => new[] { b.Min.X, b.Min.Y, b.Min.Z, b.Max.X, b.Max.Y, b.Max.Z }).ToArray(),
-                Weapon = Mode.Weapon.ToString(), EnemyColor = Enemy.ToHtml(), Outlines = st.Outlines, TargetStyle = st.TargetStyle,
+                Weapon = Mode.ActiveWeapon.ToString(), EnemyColor = Enemy.ToHtml(), Outlines = st.Outlines, TargetStyle = st.TargetStyle,
                 Viewmodel = st.ViewModel, LeftHanded = st.LeftHandedWeapon, Support = support, AppVersion = AppInfo.Version,
             };
             return new ReplayRecorder(h, () => Now);
@@ -787,7 +935,13 @@ public partial class GameSession : Node3D, IGame
 
     public void Despawn(Node node) { if (IsInstanceValid(node)) node.QueueFree(); }
 
-    public void Sound(string name, float vol = 1f, float pitch = 1f) => Play2D(name, vol, pitch);
+    public void Sound(string name, float vol = 1f, float pitch = 1f)
+    {
+        if (volleySounds != null && !volleySounds.Add(name)) return; // a pellet volley's hits: each sound once, not 15 stacked
+        Play2D(name, vol, pitch);
+    }
+    /// <summary>Sounds the drill played during the pellet volley being resolved (null outside a volley).</summary>
+    HashSet<string>? volleySounds;
 
     public void SoundAt(string name, Vector3 pos, float maxRange = 40f, float floor = 0.45f, float vol = 1f)
     {

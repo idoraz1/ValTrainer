@@ -54,7 +54,7 @@ public static class CoachCli
             sens = t.Sens; dpi = t.Dpi;
             // contiguous blocks of files → sessions, oldest block first
             var when = fakeSessions > 0 ? t.When.AddHours(-(fakeSessions - 1 - files.IndexOf(f) * fakeSessions / files.Count) * 1.0) : t.When;
-            store.Runs.Add(new RunRecord { Mode = t.Mode, When = when, Tier = t.Tier, Sens = t.Sens, Metrics = m, TelemetryFile = f });
+            store.Runs.Add(new RunRecord { Mode = t.Mode, When = when, Tier = t.Tier, Sens = t.Sens, Metrics = m, TelemetryFile = f, Weapon = string.IsNullOrEmpty(t.Weapon) ? null : t.Weapon });
             var all = Assess.Run(m, true, t.Tier).Issues; // every triggered rule, not just the top 3
             P(F($"=== {Path.GetFileName(f)}  mode={t.Mode} tier={t.Tier} sens={t.Sens:0.###} dpi={t.Dpi} ({SensAdvisor.Cm360(t.Sens, t.Dpi):0.0} cm/360) frames={t.Frames.Count} shots={t.Shots.Count} events={t.Events.Count} dur={t.Duration:0.0}s analysed in {sw.ElapsedMilliseconds} ms"));
             P("  triggered: " + (all.Count == 0 ? "(none)" : string.Join(", ", all.Select(x => x.D.Id + (x.Possible ? "?" : "") + "/" + x.D.Severity))));
@@ -74,6 +74,7 @@ public static class CoachCli
         if (args.Contains("--coach-selftest") || args.Contains("--replay-selftest")) ReplaySelfTest();
         if (args.Contains("--coach-selftest") || args.Contains("--recordings-selftest")) RecordingsSelfTest();
         if (args.Contains("--coach-selftest")) FeedSelfTest();
+        if (args.Contains("--coach-selftest")) GunSelfTest();
 
         // --coach-stats <stats.json>: build the profile from a (copied) stats file instead, exactly as the game does
         // (stored per-run metrics; telemetry paths are looked up next to it in "telemetry\"). Read-only.
@@ -105,7 +106,7 @@ public static class CoachCli
             {
                 // How the numbers were reached: every benchmark component and the overall's robust mean + shrinkage.
                 var agg0 = Agg.Aggregate(store.Runs.Where(r => r.Metrics is { Count: > 0 } && r.Mode != "sensfinder")
-                    .Select(r => (r.When, RunAnalysis.Normalize(r.Mode, r.Tier, r.Metrics!))), DateTime.Now);
+                    .Select(r => (r.When, RunAnalysis.Normalize(r.Mode, r.Tier, r.Metrics!, r.Weapon))), DateTime.Now);
                 var a0 = Assess.Run(agg0, false, 1);
                 foreach (var line in a0.Trace) P("  · " + line);
                 P("  agg: " + KeyMetrics(agg0));
@@ -337,6 +338,8 @@ public static class CoachCli
         var bad = new List<string>();
         float dur = Math.Max(0.001f, t.Duration);
         if (rec.Header.Mode != t.Mode) bad.Add($"header mode {rec.Header.Mode} != {t.Mode}");
+        // The Rewind shows the gun actually played (a pick, or a dev --gun), the same one the telemetry names.
+        if (!string.IsNullOrEmpty(t.Weapon) && rec.Header.Weapon != t.Weapon) bad.Add($"header gun {rec.Header.Weapon} != {t.Weapon}");
         // 60 Hz player track (cuts add a few; the first sample is at the first frame).
         float rate = rec.Player.Count / dur;
         if (rate < 54 || rate > 66) bad.Add(F($"player rate {rate:0.0}/s"));
@@ -363,7 +366,7 @@ public static class CoachCli
         // Size: under 0.5 MB per 120 s.
         double perMin = bytes * 60.0 / dur;
         if (bytes * 120.0 / dur > 512 * 1024) bad.Add(F($"too big: {bytes / 1024.0:0.0} KB for {dur:0.0} s"));
-        string info = F($"{bytes / 1024.0:0.0} KB for {dur:0.0} s ({perMin / 1024.0:0.0} KB/min), player {rate:0.0}/s, {bots} bots, {tgts} targets, {samples} entity samples, {rec.Events.Count} events");
+        string info = F($"gun {rec.Header.Weapon}, {bytes / 1024.0:0.0} KB for {dur:0.0} s ({perMin / 1024.0:0.0} KB/min), player {rate:0.0}/s, {bots} bots, {tgts} targets, {samples} entity samples, {rec.Events.Count} events");
         P(bad.Count == 0 ? "  replay-check: PASS " + info : "  replay-check: FAIL " + string.Join("; ", bad) + " | " + info);
         if (!replayDump) return;
         // With --replay-dump: a peek at the tracks (first / middle / last sample, cuts, event kinds).
@@ -408,6 +411,57 @@ public static class CoachCli
         var g = new Dictionary<string, float>(old) { ["xhair.gated"] = 1, ["xhair.err_deg"] = 20 };
         Ok(RunAnalysis.Normalize("smokeexec:omen", 1, g).ContainsKey("xhair.err_deg"), "gated runs keep their crosshair placement");
         Ok(RunAnalysis.Normalize("deathmatch", 1, old).ContainsKey("xhair.err_deg"), "Deathmatch (always gated) keeps its crosshair placement");
+    }
+
+    /// <summary>1.18 gun picks (weapons-design-1.18.md §3.4, §1.5): runs with an unrated gun keep only mouse metrics in the
+    /// profile; the coach's key-only rating table agrees with every drill's own <c>RatedWeapons</c>; the spray climb
+    /// follows the gun.</summary>
+    static void GunSelfTest()
+    {
+        P();
+        P("##### COACH GUN SELF-TEST (picked guns)");
+        void Ok(bool ok, string what) => P($"  {(ok ? "PASS" : "FAIL")} gun {what}");
+        var m = new Dictionary<string, float>
+        {
+            ["flick.n"] = 10, ["flick.onset_ms"] = 180, ["flick.onset_n"] = 10, ["flick.n_first"] = 8, ["flick.first_hits"] = 5, ["flick.fsh_pct"] = 62.5f,
+            ["flick.shot_err_deg"] = 0.4f, ["flick.ttk_ms"] = 600, ["speed.n"] = 1, ["speed.tier"] = 2, ["spray.n"] = 3, ["spray.v"] = 0.5f,
+            ["move.shots"] = 9, ["move.moving"] = 2, ["xhair.n"] = 4, ["xhair.err_deg"] = 6,
+        };
+        var ghost = RunAnalysis.Normalize("peek", 1, m, "Ghost");
+        Ok(!ghost.Keys.Any(k => k is "flick.first_hits" or "flick.fsh_pct" or "flick.ttk_ms" || k.StartsWith("speed.") || k.StartsWith("spray.") || k.StartsWith("move."))
+           && ghost.ContainsKey("flick.onset_ms") && ghost.ContainsKey("flick.shot_err_deg") && ghost.ContainsKey("flick.n_first") && ghost.ContainsKey("xhair.err_deg"),
+           "an unrated pick (Ghost in Peek Practice) drops gun metrics, keeps mouse metrics");
+        Ok(RunAnalysis.Normalize("peek", 1, m, "Phantom").ContainsKey("flick.first_hits"), "the Phantom is rated in a Vandal drill");
+        Ok(RunAnalysis.Normalize("peek", 1, m, null).ContainsKey("flick.first_hits"), "runs without a gun (before 1.18) are rated");
+        Ok(RunAnalysis.Normalize("peek", 1, m, "Knife").ContainsKey("flick.first_hits"), "an unknown gun name counts as the drill's");
+        Ok(RunAnalysis.Normalize("operator", 1, m, "Operator").ContainsKey("flick.first_hits")
+           && !RunAnalysis.Normalize("operator", 1, m, "Marshal").ContainsKey("flick.first_hits"), "Operator drill: the Operator is rated, the Marshal isn't");
+        Ok(Modes.WeaponRating.IsRatedRun("spray_phantom", "Phantom") && Modes.WeaponRating.IsRatedRun("chamber:tdf", "TourDeForce")
+           && Modes.WeaponRating.IsRatedRun("mobility:jett-op", "Operator") && !Modes.WeaponRating.IsRatedRun("gridshot", "Judge"), "locked drills rate their own gun");
+
+        // The coach's table (mode key only) must match the drills themselves.
+        var makers = Modes.ModeRegistry.All.ToList();
+        makers.Add(() => new Modes.ChamberMode("tdf"));
+        makers.Add(() => new Modes.MobilityEntryMode("jett-op"));
+        makers.Add(() => new Modes.AnchorMode("killjoy"));
+        var bad = new List<string>();
+        int n = 0;
+        foreach (var make in makers)
+        {
+            Modes.TrainingMode d;
+            try { d = make(); } catch (Exception e) { bad.Add("ctor " + e.GetType().Name); continue; }
+            n++;
+            if (Modes.WeaponRating.DefaultGun(d.Key) != d.Weapon) bad.Add($"{d.Key}: table {Modes.WeaponRating.DefaultGun(d.Key)} vs drill {d.Weapon}");
+            foreach (var w in Weapons.All)
+                if (d.Weapon != WeaponKind.None && Modes.WeaponRating.IsRatedRun(d.Key, w.Kind.ToString()) != d.IsRated(w.Kind)) bad.Add($"{d.Key}/{w.Kind}");
+            if (d.WeaponChoice is { } ch && (d.Weapon == WeaponKind.None || !ch.Contains(d.Weapon))) bad.Add($"{d.Key}: picker without its own gun");
+        }
+        Ok(bad.Count == 0, $"key-only rating = each drill's RatedWeapons ({n} drills){(bad.Count > 0 ? ": " + string.Join(", ", bad.Take(6)) : "")}");
+
+        Ok(RunAnalysis.SprayRequired("spray_vandal", "Vandal") == 5.5f && RunAnalysis.SprayRequired("spray_phantom", null) == 4.6f
+           && RunAnalysis.SprayRequired("spray_transfer", "Phantom") == 4.6f, "spray climb: the Vandal / Phantom constants stay");
+        float spectre = RunAnalysis.SprayRequired("spray_transfer", "Spectre"), odin = RunAnalysis.SprayRequired("spray_transfer", "Odin");
+        Ok(spectre > 1.5f && spectre < 5.5f && odin > 5.5f && odin <= 9f, F($"spray climb per gun: Spectre {spectre:0.0}°/s < Vandal 5.5 < Odin {odin:0.0}°/s"));
     }
 
     /// <summary>"--recordings-selftest": the Rewind recordings keep rules (RecordingStore) on a throwaway temp folder:

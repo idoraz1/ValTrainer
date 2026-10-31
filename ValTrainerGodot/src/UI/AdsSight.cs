@@ -18,17 +18,18 @@ public partial class AdsSight : Control
     /// isn't visible in the evidence). Measured from VALORANT footage: about 0.20 × 0.145 H.</summary>
     public static readonly SightLook Vandal = new(0.20f, 0.145f, 0.022f, 0.0028f, new Color(0.93f, 0.96f, 1f, 0.80f), 0.35f, 0f);
     public static readonly SightLook Phantom = Vandal with { H = 0.14f, Chamfer = 0.030f };
+    /// <summary>SMGs (Stinger, Spectre): a smaller, squarer box.</summary>
+    public static readonly SightLook Smg = Vandal with { W = 0.17f, H = 0.125f, Chamfer = 0.026f };
+    /// <summary>Marksman rifles (Guardian, Warden): a wider box with deep chamfers, reading almost round.</summary>
+    public static readonly SightLook Dmr = Vandal with { W = 0.22f, H = 0.16f, Chamfer = 0.048f };
+    /// <summary>Machine guns (Ares, Odin): a wide, low box.</summary>
+    public static readonly SightLook Heavy = Vandal with { W = 0.24f, H = 0.13f, Chamfer = 0.02f };
     /// <summary>Chamber's Headhunter: a larger orange octagon, 0.33 × 0.235 H, slightly below the centre (Headhunter ADS.png).</summary>
     public static readonly SightLook Headhunter = new(0.33f, 0.235f, 0.040f, 0.0035f, new Color(1f, 0.66f, 0.18f, 0.95f), 0.6f, 0.005f);
 
-    /// <summary>The outline of a gun that aims down sights (null: no ADS, or a scope).</summary>
-    public static SightLook? LookFor(WeaponKind k) => k switch
-    {
-        WeaponKind.Vandal => Vandal,
-        WeaponKind.Phantom => Phantom,
-        WeaponKind.Headhunter => Headhunter,
-        _ => null,
-    };
+    /// <summary>The outline of a gun that aims down sights (null: no ADS, or a scope). The mapping lives in
+    /// <see cref="Game.Weapon.WeaponLooks"/>.</summary>
+    public static SightLook? LookFor(WeaponKind k) => Game.Weapon.WeaponLooks.For(k).Sight;
 
     /// <summary>The outline to draw (null = none).</summary>
     public SightLook? Look;

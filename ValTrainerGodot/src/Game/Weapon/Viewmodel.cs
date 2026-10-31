@@ -11,7 +11,8 @@ namespace ValTrainer.Game.Weapon;
 /// (directional light + sky ambient + muzzle-flash omni light), casts no shadows and sits on its own visual
 /// layer (<see cref="VisualLayer"/>) so bullet-hole decals never project onto it.</para>
 /// <para>Animation is procedural: recoil spring, idle breathing, mouse-look lag, movement bob, crouch, ADS,
-/// reload (tilt, mag out/in with a spare magazine), Operator bolt cycle, equip raise, shell ejection.</para>
+/// reload (tilt, mag out/in with a spare magazine, or rounds pushed into a loading port for guns without one), bolt
+/// cycle (Operator, Marshal), pump (Bucky), equip raise, shell ejection.</para>
 /// </summary>
 public partial class Viewmodel : Node3D
 {
@@ -19,11 +20,12 @@ public partial class Viewmodel : Node3D
     public const uint VisualLayer = 1u << 19;
 
     WeaponKind kind;
-    /// <summary>The gun actually held: Chamber's guns use their family's model (<see cref="WeaponDef.Family"/>) in gold.</summary>
+    /// <summary>The gun actually held (<see cref="kind"/> is the gun whose model and pose it uses: <see cref="WeaponLooks"/>).</summary>
     WeaponKind actual;
+    WeaponLook look = null!;
     bool left;
     VmPose pose = null!;
-    readonly VmMaterials mats = new();
+    VmMaterials mats = new();
     Node3D pivot = null!, gun = null!;
     Node3D? muzzle;
     MeshInstance3D gripHand = null!, supportHand = null!, spareMag = null!;
@@ -43,8 +45,9 @@ public partial class Viewmodel : Node3D
     Vector2 sway, swayV;
     float lastYaw, lastPitch;
     bool haveLook;
-    float boltT = -1f;
+    float boltT = -1f, pumpT = -1f, pumpPull;
     bool magHidden, reloadBolted;
+    Transform3D supportHome; // supportRest, slid back while the pump is worked
 
     sealed class Shell { public MeshInstance3D Node = null!; public Vector3 Vel, AngVel; public float Age = 99f; }
     readonly List<Shell> shells = new();
@@ -55,7 +58,8 @@ public partial class Viewmodel : Node3D
         VmTest.Init();
         if (VmTest.Kind is { } k) kind = k;
         if (VmTest.ForceLeft is { } l) leftHanded = l;
-        var v = new Viewmodel { kind = Weapons.FamilyOf(kind), actual = kind, left = leftHanded, Name = "Viewmodel" };
+        var look = WeaponLooks.For(kind);
+        var v = new Viewmodel { kind = look.Base, actual = kind, look = look, left = leftHanded, Name = "Viewmodel" };
         v.Build();
         return v;
     }
@@ -70,7 +74,8 @@ public partial class Viewmodel : Node3D
         float w = pose.KickFreq * 2.1f;
         kPosV += new Vector3(R(-0.12f, 0.12f), R(0.15f, 0.35f), 1f) * pose.KickBack * w * s;
         kRotV += new Vector3(pose.KickPitch * R(0.85f, 1.1f), pose.KickPitch * R(-0.25f, 0.25f), pose.KickPitch * R(-0.4f, 0.4f)) * w * Mathf.Lerp(1f, 0.25f, adsK);
-        if (actual == WeaponKind.Operator) boltT = 0f;
+        if (look.BoltCycle) boltT = 0f;
+        else if (look.Pump) pumpT = 0f;
         else if (pose.Shells) EjectShell();
     }
 
@@ -145,10 +150,10 @@ public partial class Viewmodel : Node3D
 
     void Build()
     {
-        pose = VmPose.For(kind);
+        pose = look.Pose;
         lastFov = Main.I?.Settings?.ViewmodelFov ?? 70f;
         mats.SetFov(lastFov);
-        mats.Gold = actual != kind; // Chamber's custom guns: gold finish on the family model
+        mats.Gold = look.Gold; // Chamber's custom guns: gold finish on the family model
 
         pivot = new Node3D { Name = "Pivot" };
         AddChild(pivot);
@@ -159,8 +164,9 @@ public partial class Viewmodel : Node3D
         modelMeshes.AddRange(FindMeshes(gun)); // the gun model only (hands, magazine and flash are added below)
 
         // Re-material the gun (flat FBX colours → metal / polymer).
+        // (A curved magazine sweeps forward, or backward behind a bullpup's grip: the clip box follows it.)
         var clipMin = pose.MagWell + new Vector3(-0.06f, -0.4f, -pose.MagHalf.Z - 0.012f - (pose.MagCurve > 1f ? 0.07f : 0f));
-        var clipMax = pose.MagWell + new Vector3(0.06f, -0.004f, pose.MagHalf.Z + 0.012f);
+        var clipMax = pose.MagWell + new Vector3(0.06f, -0.004f, pose.MagHalf.Z + 0.012f + (pose.MagCurve < -1f ? 0.07f : 0f));
         foreach (var mi in FindMeshes(gun))
         {
             Configure(mi);
@@ -189,7 +195,7 @@ public partial class Viewmodel : Node3D
         gripHand = new MeshInstance3D { Name = "GripHand", Mesh = VmHands.Build(pose.Grip.Shape, left, pose.Grip.ElbowLocal, glove, pad, sleeve, accent) };
         supportHand = new MeshInstance3D { Name = "SupportHand", Mesh = VmHands.Build(pose.Support.Shape, !left, new Vector3(-se.X, se.Y, se.Z), glove, pad, sleeve, accent) };
         gripRest = X(pose.Grip.Xform);
-        supportRest = X(pose.Support.Xform);
+        supportRest = supportHome = X(pose.Support.Xform);
         boltPose = pose.Bolt != null ? X(pose.Bolt.Xform) : gripRest;
         gripHand.Transform = gripRest;
         supportHand.Transform = supportRest;
@@ -203,12 +209,12 @@ public partial class Viewmodel : Node3D
         gun.AddChild(spareMag);
 
         // Muzzle flash.
-        flash = MuzzleFlash.Create(mats, pose.FlashScale, VisualLayer);
+        flash = MuzzleFlash.Create(mats, pose.FlashScale, VisualLayer, look.Suppressed);
         flash.Hold = VmTest.HoldFlash;
         (muzzle ?? gun).AddChild(flash);
 
         // Shell pool.
-        if (pose.Shells || kind == WeaponKind.Operator)
+        if (pose.Shells || pose.Bolt != null || look.Pump) // bolt and pump guns eject on the bolt / pump cycle
         {
             var brass = mats.Make(new Color(0.8f, 0.6f, 0.28f), 1f, 0.3f, 0.5f, 0.2f, 0.1f);
             var primer = mats.Make(new Color(0.6f, 0.5f, 0.4f), 1f, 0.35f);
@@ -309,7 +315,8 @@ public partial class Viewmodel : Node3D
         pos += kPos;
         rot += kRot;
 
-        // Reload and bolt.
+        // Pump, reload and bolt.
+        rot += PumpOffset(dt);
         var (rPos, rRot) = ReloadOffset(reload, dt);
         pos += rPos; rot += rRot;
         var (bRot, bHand) = BoltOffset(dt);
@@ -320,7 +327,7 @@ public partial class Viewmodel : Node3D
         rot += new Vector3(-55f, 10f, 30f) * eo;
 
         var t = new Transform3D(VmMesh.Euler(rot.X, rot.Y, rot.Z), pos);
-        if (VmTest.View is { } view) t = VmTest.ViewXform(view, kind);
+        if (VmTest.View is { } view) t = VmTest.ViewXform(view, pose);
         pivot.Transform = X(t);
 
         // Hands: trigger hand may be on the bolt.
@@ -356,16 +363,18 @@ public partial class Viewmodel : Node3D
         if (!active)
         {
             reloadBolted = false;
+            loadsDone = 0;
             if (magHidden) SetMagHidden(false);
             spareMag.Visible = false;
-            supportHand.Transform = supportRest.InterpolateWith(supportHand.Transform, reloadW);
+            supportHand.Transform = supportHome.InterpolateWith(supportHand.Transform, reloadW);
             return (Vector3.Zero, Vector3.Zero);
         }
 
         float env = Smooth(Mathf.Clamp(p / 0.13f, 0f, 1f)) * (1f - Smooth(Mathf.Clamp((p - 0.82f) / 0.15f, 0f, 1f)));
-        bool pistol = kind == WeaponKind.Sheriff;
+        bool pistol = look.Pistol;
         var rPos = (pistol ? new Vector3(-0.025f, 0.03f, 0.03f) : new Vector3(-0.035f, 0.012f, 0.03f)) * env;
         var rRot = (pistol ? new Vector3(18f, 10f, -18f) : new Vector3(10f, 6f, -30f)) * env;
+        if (look.NoMag) return LoadRounds(p, rPos, rRot);
 
         // Magazine path in gun space: at the well → pulled down and away → back → inserted.
         var well = pose.MagWell;
@@ -384,18 +393,72 @@ public partial class Viewmodel : Node3D
             magPos + new Vector3(-0.045f, -0.035f, 0.045f)));
         float toMag = Smooth(Mathf.Clamp((p - 0.06f) / 0.12f, 0f, 1f));
         float back = Smooth(Mathf.Clamp((p - 0.64f) / 0.14f, 0f, 1f));
-        var hand = supportRest.InterpolateWith(handOnMag, toMag * (1f - back));
-        supportHand.Transform = supportRest.InterpolateWith(hand, reloadW);
+        var hand = supportHome.InterpolateWith(handOnMag, toMag * (1f - back));
+        supportHand.Transform = supportHome.InterpolateWith(hand, reloadW);
 
-        // Operator: cycle the bolt at the end of the reload.
-        if (actual == WeaponKind.Operator && p > 0.8f && !reloadBolted) { reloadBolted = true; boltT = 0.15f; }
+        CycleAfterReload(p);
         return (rPos * reloadW, rRot * reloadW);
     }
 
-    void Jolt()
+    /// <summary>Bolt (Operator, Marshal) or pump (Bucky) worked once at the end of the reload.</summary>
+    void CycleAfterReload(float p)
     {
-        kPosV += new Vector3(0f, 0.012f, -0.004f) * pose.KickFreq * 2f;
-        kRotV += new Vector3(-2.5f, 0f, 1.5f) * pose.KickFreq * 2f;
+        if (p <= 0.8f || reloadBolted) return;
+        if (look.BoltCycle) { reloadBolted = true; boltT = 0.15f; }
+        else if (look.Pump) { reloadBolted = true; pumpT = 0.15f; }
+    }
+
+    /// <summary>Reload without a magazine (revolver, shotguns, Marshal): the support hand goes to the loading port
+    /// (<see cref="VmPose.MagWell"/>) and pushes <see cref="VmPose.Loads"/> rounds in, one trip each, then returns. Nothing
+    /// is clipped and no spare magazine is drawn.</summary>
+    (Vector3, Vector3) LoadRounds(float p, Vector3 rPos, Vector3 rRot)
+    {
+        spareMag.Visible = false;
+        int n = Math.Max(1, pose.Loads);
+        const float a = 0.2f, b = 0.74f;
+        float local = Mathf.Clamp((p - a) / (b - a), 0f, 0.9999f) * n;
+        float ph = local - Mathf.Floor(local);
+        float trip = p < a || p > b ? 0f : Mathf.Sin(ph * Mathf.Pi); // 0 = at the port, 1 = away fetching the next round
+        var atPort = pose.MagWell + new Vector3(-0.045f, -0.035f, 0.045f) + new Vector3(-0.04f, -0.07f, 0.05f) * trip;
+        var handAtPort = X(new Transform3D(VmMesh.Look(new Vector3(0.9f, 0.25f, -0.5f), new Vector3(-0.3f, -1f, 0.1f)), atPort));
+        float to = Smooth(Mathf.Clamp((p - 0.06f) / 0.12f, 0f, 1f));
+        float back = Smooth(Mathf.Clamp((p - 0.76f) / 0.12f, 0f, 1f));
+        int done = p < a ? 0 : Math.Min(n, (int)local + (ph > 0.5f ? 1 : 0));
+        if (done != loadsDone) { if (done > loadsDone && trip < 0.2f) Jolt(0.35f); loadsDone = done; }
+        var hand = supportHome.InterpolateWith(handAtPort, to * (1f - back));
+        supportHand.Transform = supportHome.InterpolateWith(hand, reloadW);
+        if (p > 0.78f && !loadsClosed) { loadsClosed = true; Jolt(); }
+        if (p < 0.5f) loadsClosed = false;
+        CycleAfterReload(p);
+        return (rPos * reloadW, rRot * reloadW);
+    }
+    int loadsDone;
+    bool loadsClosed;
+
+    void Jolt(float k = 1f)
+    {
+        kPosV += new Vector3(0f, 0.012f, -0.004f) * pose.KickFreq * 2f * k;
+        kRotV += new Vector3(-2.5f, 0f, 1.5f) * pose.KickFreq * 2f * k;
+    }
+
+    // ---------------- pump ----------------
+
+    /// <summary>Pump after a Bucky shot, timed with its sound (<see cref="WeaponLooks.BoltDelay"/>): the support hand slides
+    /// back <see cref="VmPose.PumpTravel"/> (the spent shell flies out at the back) and forward again; the gun dips a little.
+    /// Returns the pivot rotation; moves <see cref="supportHome"/>.</summary>
+    Vector3 PumpOffset(float dt)
+    {
+        if (pumpT < 0f) { supportHome = supportRest; return Vector3.Zero; }
+        float prev = pumpT;
+        pumpT += dt;
+        const float t0 = 0.28f, t1 = 0.45f, t2 = 0.6f;
+        if (prev < t1 && pumpT >= t1) EjectShell();
+        if (pumpT > t2 + 0.08f) { pumpT = -1f; supportHome = supportRest; return Vector3.Zero; }
+        pumpPull = Smooth(Mathf.Clamp((pumpT - t0) / (t1 - t0), 0f, 1f)) * (1f - Smooth(Mathf.Clamp((pumpT - t1) / (t2 - t1), 0f, 1f)));
+        var t = supportRest;
+        t.Origin += XV(new Vector3(0f, -0.004f, pose.PumpTravel)) * pumpPull;
+        supportHome = t;
+        return new Vector3(2.5f, 1f, -3f) * pumpPull;
     }
 
     void SetMagHidden(bool hide)
@@ -462,6 +525,19 @@ public partial class Viewmodel : Node3D
 
     // ---------------- dev ----------------
 
+    /// <summary>Dev (VmTest --vmcycle): drop the current model, hands and effects and build <paramref name="k"/> in place,
+    /// with the equip raise from the start.</summary>
+    internal void Rebuild(WeaponKind k)
+    {
+        foreach (var c in GetChildren()) { RemoveChild(c); c.QueueFree(); }
+        shells.Clear(); gunMats.Clear(); modelMeshes.Clear(); nextShell = 0;
+        mats = new VmMaterials();
+        look = WeaponLooks.For(k); kind = look.Base; actual = k;
+        equipT = 0f; boltT = pumpT = -1f; reloadW = 0f; magHidden = reloadBolted = loadsClosed = false; loadsDone = 0;
+        kPos = kPosV = kRot = kRotV = Vector3.Zero;
+        Build();
+    }
+
     internal Node3D GunNode => gun;
     /// <summary>Screen position of the drawn muzzle (viewmodel projection), for the alignment check.</summary>
     internal Vector2 MuzzleScreen()
@@ -520,6 +596,8 @@ public partial class Viewmodel : Node3D
     internal bool LeftLayout => left;
     internal VmMaterials Materials => mats;
     internal WeaponKind Kind => kind;
+    /// <summary>The gun actually held (<see cref="Kind"/> is the one whose model it borrows).</summary>
+    internal WeaponKind Held => actual;
 }
 
 static class Node3DExt

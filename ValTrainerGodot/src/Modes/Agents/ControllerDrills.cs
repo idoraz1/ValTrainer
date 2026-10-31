@@ -39,6 +39,7 @@ public sealed class SmokeExecuteMode : MapMode
     }
 
     public override string Key => "smokeexec:" + Agent;
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
     public override string Name => "Smoke Execute";
     public override string Description => "Place your smokes to cut the defenders' sightlines, then execute onto the site.";
     public override string Category => "Agents";

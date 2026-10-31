@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/weapons/SubmachineGun_5.fbx" id="1_submachinegun_5"]
+[ext_resource type="PackedScene" path="res://assets/weapons/Silencer_2.fbx" id="2_silencer_2"]
+
+[node name="SMG_Suppressed" type="Node3D" unique_id=430758257]
+metadata/source_model = "res://assets/weapons/SubmachineGun_5.fbx"
+metadata/length_m = 0.961
+
+[node name="Model" type="Node3D" parent="." unique_id=791893652 instance=ExtResource("1_submachinegun_5")]
+transform = Transform3D(0, 0, 0.15, 0, 0.15, 0, -0.15, 0, 0, 0, 0, 0)
+
+[node name="Attach_Silencer" type="Node3D" parent="." unique_id=1861663872 instance=ExtResource("2_silencer_2")]
+transform = Transform3D(0, 0, 0.13, 0, 0.13, 0, -0.13, 0, 0, 0, 0.085, -0.486)
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=764613349]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.085, -0.69239229)

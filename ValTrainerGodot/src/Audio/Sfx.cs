@@ -47,10 +47,21 @@ public partial class Sfx : Node
         Rec("vandal", W + "rifle_ak_shot_01.wav", W + "rifle_ak_shot_02.wav", W + "rifle_ak_shot_03.wav");
         Rec("phantom", W + "rifle_ar_shot_01.wav", W + "rifle_ar_shot_02.wav");
         Rec("operator", W + "sniper_bolt_shot_01.wav", W + "sniper_bolt_shot_02.wav");
-        Rec("sheriff", W + "pistol_shot_01.wav", W + "pistol_shot_02.wav", W + "pistol_shot_03.wav");
+        Rec("classic", W + "pistol_shot_01.wav", W + "pistol_shot_02.wav", W + "pistol_shot_03.wav"); // Walther PPQ (the Sheriff's before 1.18)
         Rec("enemyshot", W + "rifle_ak_shot_01.wav", W + "rifle_ak_shot_02.wav", W + "rifle_ak_shot_03.wav");
+        Rec("enemyshot_phantom", W + "rifle_ar_shot_01.wav", W + "rifle_ar_shot_02.wav");
+        // 1.18 guns: <key>_shot_01..03.wav, cut and processed by tools/sfx/gun_sfx.py (sources and chains in its header).
+        foreach (var key in GunKeys)
+            if (!recorded.ContainsKey(key))
+                Rec(key, Enumerable.Range(1, 3).Select(i => $"{W}{key}_shot_{i:00}.wav").ToArray());
         Rec("reload_rifle", W + "rifle_reload_airsoft.wav");
         Rec("reload_pistol", W + "pistol_reload.wav");
+        Rec("reload_shotgun", W + "shotgun_reload.wav");
+        Rec("reload_revolver", W + "revolver_reload.wav");
+        Rec("reload_lmg", W + "lmg_reload.wav");
+        Rec("pump", W + "shotgun_pump.wav");
+        Rec("spinup", W + "heavy_spinup.wav");
+        Rec("spindown", W + "heavy_spindown.wav");
         const string F = "res://assets/audio/footsteps/";
         Rec("footstep", Enumerable.Range(0, 5).Select(i => $"{F}footstep_concrete_00{i}.ogg").ToArray());
 
@@ -72,8 +83,41 @@ public partial class Sfx : Node
             Rec(key, FL + key + ".wav");
     }
 
+    /// <summary>The shot sound key of every gun (<see cref="Game.Weapon.WeaponLooks"/>), in buy-menu order. The Tour De
+    /// Force uses "operator". Each has a <see cref="Fallback"/>, so no gun is ever silent.</summary>
+    public static readonly string[] GunKeys =
+    {
+        "classic", "shorty", "frenzy", "ghost", "bandit", "sheriff", "stinger", "spectre", "bucky", "judge",
+        "bulldog", "guardian", "phantom", "vandal", "warden", "marshal", "outlaw", "operator", "ares", "odin", "headhunter",
+    };
+
+    /// <summary>What plays instead when a key has no sound (a file is missing, or a look names a key this build lacks).
+    /// Followed until something exists; every chain ends at a synthesized sound ("vandal", "operator", "bolt"), so a gun
+    /// sound never goes silent. Keys that aren't listed (UI, hits) have no fallback.</summary>
+    public static readonly IReadOnlyDictionary<string, string> Fallback = new Dictionary<string, string>
+    {
+        ["ghost"] = "classic", ["frenzy"] = "classic", ["bandit"] = "classic", ["headhunter"] = "sheriff", ["sheriff"] = "classic",
+        ["classic"] = "vandal", ["stinger"] = "phantom", ["spectre"] = "phantom", ["bulldog"] = "phantom", ["phantom"] = "vandal",
+        ["shorty"] = "bucky", ["judge"] = "bucky", ["bucky"] = "vandal", ["guardian"] = "vandal", ["warden"] = "vandal",
+        ["ares"] = "vandal", ["odin"] = "vandal", ["marshal"] = "operator", ["outlaw"] = "operator",
+        ["enemyshot_phantom"] = "enemyshot", ["enemyshot"] = "vandal",
+        ["reload_shotgun"] = "reload_rifle", ["reload_lmg"] = "reload_rifle", ["reload_revolver"] = "reload_pistol",
+        ["reload_rifle"] = "bolt", ["reload_pistol"] = "bolt", ["pump"] = "bolt", ["lever"] = "bolt",
+    };
+
+    /// <summary>The key that actually plays for <paramref name="name"/> (itself, or its first <see cref="Fallback"/>
+    /// that has a sound); null if none does.</summary>
+    public string? Resolve(string name)
+    {
+        string? k = name;
+        for (int hop = 0; k != null && hop < 8; hop++, k = Fallback.GetValueOrDefault(k)) // the cap guards against a cycle
+            if (recorded.ContainsKey(k) || streams.ContainsKey(k)) return k;
+        return null;
+    }
+
     AudioStream? Pick(string name) =>
-        recorded.TryGetValue(name, out var r) ? r[Random.Shared.Next(r.Length)] : streams.TryGetValue(name, out var s) ? s : null;
+        Resolve(name) is not { } k ? null
+        : recorded.TryGetValue(k, out var r) ? r[Random.Shared.Next(r.Length)] : streams[k];
 
     void Build()
     {
@@ -228,7 +272,8 @@ public partial class Sfx : Node
 
     }
 
-    public bool Has(string name) => streams.ContainsKey(name) || recorded.ContainsKey(name);
+    /// <summary>Whether <paramref name="name"/> plays something (its own sound or a fallback's).</summary>
+    public bool Has(string name) => Resolve(name) != null;
 
     public void Play(string name, float vol = 1f, float pitch = 1f)
     {

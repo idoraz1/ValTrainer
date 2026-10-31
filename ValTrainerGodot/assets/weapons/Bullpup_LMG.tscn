@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/weapons/Bullpup_3.fbx" id="1_bullpup_3"]
+
+[node name="Bullpup_LMG" type="Node3D" unique_id=233740577]
+metadata/source_model = "res://assets/weapons/Bullpup_3.fbx"
+metadata/length_m = 0.732
+
+[node name="Model" type="Node3D" parent="." unique_id=842830827 instance=ExtResource("1_bullpup_3")]
+transform = Transform3D(0, 0, 0.17, 0, 0.17, 0, -0.17, 0, 0, 0, 0, 0)
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=911311221]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.130872205, -0.45538104)

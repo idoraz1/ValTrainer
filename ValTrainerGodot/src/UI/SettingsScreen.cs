@@ -447,6 +447,19 @@ public partial class SettingsScreen : ScreenBase
             note: () => Main.I.Valorant.Found
                 ? $"Applies on next drill · VALORANT uses {(Main.I.Valorant.LeftHanded ? "left" : "right")}"
                 : "Applies on next drill"));
+        // the gun every drill that offers a choice starts with (a pick made for one drill still wins there); the arrows step
+        // through the buy menu, the value opens the gun picker
+        var gunOptions = new List<WeaponKind?> { null };
+        gunOptions.AddRange(Weapons.Buyable.Select(w => (WeaponKind?)w.Kind));
+        v.AddChild(Selector("Preferred gun",
+            () => WeaponPicks.Preferred() is { } pg ? GunPicker.GunName(pg) : "Each drill's default",
+            d =>
+            {
+                int i = gunOptions.IndexOf(WeaponPicks.Preferred());
+                WeaponPicks.SetPreferred(gunOptions[Wrap(i + d, 0, gunOptions.Count - 1)]);
+            },
+            note: () => WeaponPicks.Preferred() == null ? "Click to pick from the buy menu · B in a drill's preview" : "For drills that offer it · your pick for a drill still wins",
+            onField: () => GunPicker.OpenPreferred(this, K, RefreshAll)));
 
         v.AddChild(Spacer(0, 6 * k));
         v.AddChild(new SectionLabel { Text = "AUDIO", K = k });
@@ -988,7 +1001,7 @@ public partial class SettingsScreen : ScreenBase
     // ---------------- row builders ----------------
 
     SettingRow Selector(string label, Func<string> value, Action<int> step, Func<bool>? enabled = null, Func<string?>? note = null,
-        Func<Color?>? swatch = null, Func<float>? bar = null, Func<int>? emblem = null)
+        Func<Color?>? swatch = null, Func<float>? bar = null, Func<int>? emblem = null, Action? onField = null)
     {
         float k = K;
         var row = new SettingRow { K = k, Label = label, Note = note, Enabled = enabled, Stacked = stacked };
@@ -1008,7 +1021,7 @@ public partial class SettingsScreen : ScreenBase
         }
         l.Pressed += () => Do(-1);
         r.Pressed += () => Do(1);
-        field.Pressed += () => Do(1);
+        field.Pressed += () => { if (onField != null) { if (enabled == null || enabled()) onField(); } else Do(1); };
         sel.AddChild(l); sel.AddChild(field); sel.AddChild(r);
         row.AddChild(sel);
         refreshers.Add(() =>

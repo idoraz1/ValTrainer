@@ -32,6 +32,7 @@ public sealed partial class AnchorMode : MapMode
     }
 
     public override string Key => Agent.Length == 0 ? "anchor" : "anchor:" + Agent;
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
     public override string Name => "Site Anchor";
     public override string Description => Agent.Length == 0
         ? "Hold the site alone while 2–4 attackers execute through the choke. Hear them, hold your angle, win the duels."

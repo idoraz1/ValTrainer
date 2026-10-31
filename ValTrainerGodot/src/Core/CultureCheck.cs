@@ -300,6 +300,7 @@ public static class CultureCheck
                 r == null ? "null" : $"{r.Score} {F(r.Accuracy)} {F(r.AvgKillMs)} {r.When:O}");
             File.WriteAllText(Path.Combine(data, "stats.json"), "{\"Runs\":[{\"Mode\":\"flick\",\"Score\":");
             Check("truncated stats.json -> empty, no crash", StatsStore.Load().Runs.Count == 0);
+            GunChecks(data);
 
             var t = new RunTelemetry { Mode = "flick", Tier = 2, Sens = 0.352f, Dpi = 800, Weapon = "Vandal", Map = "range", Duration = 12.5f, When = new DateTime(2026, 10, 2, 13, 45, 7) };
             t.Frames.Add(new FrameSample { T = 0.25f, Yaw = 12.5f, Pitch = -3.75f, FocusRadius = 0.6f });
@@ -362,7 +363,7 @@ public static class CultureCheck
         Check("keybinds: no file -> VALORANT defaults",
             d.Text(GameAction.MoveForward) == "W" && d.Text(GameAction.Walk) == "Shift" && d.Text(GameAction.Crouch) == "Ctrl" &&
             d.Text(GameAction.Jump) == "Space" && d.Text(GameAction.Fire) == "Mouse 1" && d.Text(GameAction.AltFire) == "Mouse 2" &&
-            d.Text(GameAction.Reload) == "R" && d.Text(GameAction.UseSpike) == "4" && d.Text(GameAction.Use) == "F" &&
+            d.Text(GameAction.Reload) == "R" && d.Text(GameAction.UseSpike) == "4" && d.Text(GameAction.Use) == "F" && d.Text(GameAction.BuyMenu) == "B" &&
             string.Join("", Enumerable.Range(0, 4).Select(noFile.AbilityBindText)) == "CQEX", d.ListText().Replace('\n', ';'));
 
         string M(string name, int slot, string key, string extra = "") =>
@@ -371,7 +372,8 @@ public static class CultureCheck
             M("Crouch", 1, "SpaceBar"), M("VOICE_TeamPTTAction", 0, "ThumbMouseButton"), M("OpenMegamap", 0, "None"),
             M("Jump", 1, "None"), M("Jump", 0, "MouseScrollDown"), M("Reload", 0, "None"), M("UseChannelObject", 0, "Five"),
             M("Activate_Ability1", 0, "ThumbMouseButton2"), M("Walk", 0, "Escape"), M("PrimaryTrigger", 1, "K"), M("SecondaryTrigger", 0, "ThumbMouseButton"), M("DropEquippable", 0, "F"),
-            M("Crouch", 0, "C", ",\"characterName\":\"Clay\"").Replace("\"characterName\":\"None\",", "")) +
+            M("ToggleShop", 0, "N"), M("ToggleShop", 1, "MiddleMouseButton"),
+            M("Crouch", 0, "C",",\"characterName\":\"Clay\"").Replace("\"characterName\":\"None\",", "")) +
             "],\"axisMappings\":[],\"settingsProfiles\":[],\"characterProfileData\":[{\"profileName\":\"None\",\"presetIndex\":0}]}";
         Write(Path.Combine(accDir, "WindowsClient", "BackupKeybinds.json"), json);
         var p = ValorantImporter.Load(ValorantImporter.FindAccounts().FirstOrDefault());
@@ -386,6 +388,7 @@ public static class CultureCheck
         Check("keybinds: per-agent binds not applied to everyone", b[GameAction.Crouch, 0].Key == Godot.Key.Ctrl && b.Skipped.Any(s => s.Contains("Clay")),
             string.Join(", ", b.Skipped));
         Check("keybinds: alt fire on a thumb button", b.Text(GameAction.AltFire) == "Mouse 4", b.Text(GameAction.AltFire));
+        Check("keybinds: buy menu (ToggleShop) on N and Mouse 3", b.Text(GameAction.BuyMenu) == "N · Mouse 3", b.Text(GameAction.BuyMenu));
         Check("keybinds: untouched actions keep defaults", b.Text(GameAction.MoveForward) == "W" && b.Text(GameAction.Use) == "F" &&
             p.AbilityBindText(0) == "C" && p.AbilityBindText(3) == "X", b.ListText().Replace('\n', ';'));
         Check("keybinds: shared bind listed", b.SharedBinds().Any(s => s.StartsWith("F: Use + Drop", StringComparison.Ordinal)), string.Join("; ", b.SharedBinds()));
@@ -408,6 +411,11 @@ public static class CultureCheck
             M("Inspect", 0, "Q", ",\"shift\":true").Replace("\"shift\":false,", "")) + "]}");
         Check("keybinds: tolerant ability names", t.Text(GameAction.AbilityGrenade) == "1" && t.Text(GameAction.Ultimate) == "4" && t.Text(GameAction.Ability2) == "3",
             $"{t.Text(GameAction.AbilityGrenade)} {t.Text(GameAction.Ability2)} {t.Text(GameAction.Ultimate)}");
+        // Buy-menu spellings: matched before the toggle / menu ignore list; other shop and buy actions stay ignored.
+        string? Buy(string n) => ValorantImporter.ActionOf(n)?.ToString();
+        Check("keybinds: buy menu names", Buy("ToggleShop") == "BuyMenu" && Buy("OpenBuyMenu") == "BuyMenu" && Buy("Toggle_Buy_Menu") == "BuyMenu"
+            && Buy("ShopToggle") == "BuyMenu" && Buy("ShopSwitchTabs") == null && Buy("TapHoldReloadBuy") == null && Buy("ToggleMap") == null,
+            string.Join(" ", new[] { "ToggleShop", "OpenBuyMenu", "Toggle_Buy_Menu", "ShopToggle", "ShopSwitchTabs", "TapHoldReloadBuy", "ToggleMap" }.Select(n => $"{n}={Buy(n) ?? "-"}")));
         Check("keybinds: toggle / ping actions ignored", t.Text(GameAction.Crouch) == "Ctrl", t.Text(GameAction.Crouch));
         Check("keybinds: tolerant alt-fire name", t.Text(GameAction.AltFire) == "Mouse 4", t.Text(GameAction.AltFire));
         Check("keybinds: modifier flag", t.Text(GameAction.Inspect) == "Shift+Q", t.Text(GameAction.Inspect));
@@ -486,6 +494,98 @@ public static class CultureCheck
     {
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, text, new UTF8Encoding(false));
+    }
+
+    // ---------------- guns (1.18: per-gun records and picks) ----------------
+
+    /// <summary>A drill stand-in for the gun checks (key and gun choice only; never played).</summary>
+    sealed class GunTestDrill : Modes.TrainingMode
+    {
+        readonly string key;
+        readonly IReadOnlyCollection<WeaponKind>? choice;
+        readonly WeaponKind gun;
+        public GunTestDrill(string key, IReadOnlyCollection<WeaponKind>? choice, WeaponKind gun = WeaponKind.Vandal) { this.key = key; this.choice = choice; this.gun = gun; }
+        public override string Key => key;
+        public override string Name => key;
+        public override string Description => "";
+        public override WeaponKind Weapon => gun;
+        public override IReadOnlyCollection<WeaponKind>? WeaponChoice => choice;
+        public override void Update(float dt) { }
+    }
+
+    /// <summary>Old stats without a gun keep their PBs and badges (they count as the drill's default gun); runs with another
+    /// gun get their own PB and no badge when unrated; an unknown gun name never throws and never counts as a real gun; the
+    /// picker's memory (per-drill picks, preferred gun) round-trips through settings.json.</summary>
+    static void GunChecks(string data)
+    {
+        string statsPath = Path.Combine(data, "stats.json");
+        // a stats.json written before 1.18: no "Weapon" anywhere
+        File.WriteAllText(statsPath, "{\"Runs\":[" +
+            "{\"Mode\":\"gridshot\",\"When\":\"2026-09-01T10:00:00\",\"Score\":41200,\"Accuracy\":0.5,\"Tier\":2,\"Badge\":2,\"Map\":\"\"}," +
+            "{\"Mode\":\"gridshot\",\"When\":\"2026-09-02T10:00:00\",\"Score\":39000,\"Accuracy\":0.5,\"Tier\":2,\"Badge\":3,\"Map\":\"\"}," +
+            "{\"Mode\":\"operator\",\"When\":\"2026-09-03T10:00:00\",\"Score\":9000,\"Accuracy\":0.5,\"Tier\":2,\"Badge\":1,\"Map\":\"\"}]}");
+        var old = StatsStore.Load();
+        var grid = new GunTestDrill("gridshot", WeaponSets.NoShotguns);
+        Check("old stats.json loads, runs have no gun", old.Runs.Count == 3 && old.Runs.All(r => r.Weapon == null), $"{old.Runs.Count} runs");
+        Check("old run without a gun counts as the drill's default", old.Runs.Count == 3 && old.Runs.All(r => StatsStore.GunOf(r, WeaponKind.Vandal) == WeaponKind.Vandal)
+            && StatsStore.GunOf(old.Runs[2], WeaponKind.Operator) == WeaponKind.Operator);
+        Check("old stats: same PB per default gun as before", old.Best("gridshot", 2, WeaponKind.Vandal, WeaponKind.Vandal) == old.Best("gridshot", 2)
+            && old.Best("gridshot", 2) == 41200 && old.Best("gridshot", 2, WeaponKind.Phantom, WeaponKind.Vandal) == -1,
+            $"{old.Best("gridshot", 2, WeaponKind.Vandal, WeaponKind.Vandal)} vs {old.Best("gridshot", 2)}");
+        Check("old stats: same best badge (rated) as before", old.BestBadge(grid) == old.BestBadge("gridshot") && old.BestBadge(grid) == 3,
+            $"{old.BestBadge(grid)} vs {old.BestBadge("gridshot")}");
+
+        // new runs: a Phantom PB, an unrated Spectre with a high badge, a gun this build doesn't know
+        old.Runs.Add(new RunRecord { Mode = "gridshot", When = new DateTime(2026, 10, 1, 9, 0, 0), Score = 50000, Tier = 2, Badge = 3, Weapon = "Phantom" });
+        old.Runs.Add(new RunRecord { Mode = "gridshot", When = new DateTime(2026, 10, 1, 9, 5, 0), Score = 30000, Tier = 2, Badge = 4, Weapon = "Spectre" });
+        old.Runs.Add(new RunRecord { Mode = "gridshot", When = new DateTime(2026, 10, 1, 9, 10, 0), Score = 99999, Tier = 2, Badge = 4, Weapon = "Knife" });
+        old.Save();
+        string json = File.ReadAllText(statsPath);
+        int weaponKeys = json.Split("\"Weapon\"").Length - 1;
+        Check("runs without a gun write no \"Weapon\" (older versions read the file as before)", weaponKeys == 3, $"{weaponKeys} \"Weapon\" keys");
+        var st = StatsStore.Load();
+        Check("gun round trip", st.Runs.Count(r => r.Weapon == "Phantom") == 1 && st.Runs.Count(r => r.Weapon == null) == 3, Snip(json, "Weapon"));
+        Check("per-gun PB: Vandal unchanged, Phantom and Spectre their own", st.Best("gridshot", 2, WeaponKind.Vandal, WeaponKind.Vandal) == 41200
+            && st.Best("gridshot", 2, WeaponKind.Phantom, WeaponKind.Vandal) == 50000 && st.Best("gridshot", 2, WeaponKind.Spectre, WeaponKind.Vandal) == 30000,
+            $"{st.Best("gridshot", 2, WeaponKind.Vandal, WeaponKind.Vandal)} / {st.Best("gridshot", 2, WeaponKind.Phantom, WeaponKind.Vandal)}");
+        bool knifeOk;
+        try { knifeOk = st.Runs.Count > 0 && StatsStore.GunOf(st.Runs[^1], WeaponKind.Vandal) == WeaponKind.None && Weapons.Parse("Knife") == null; }
+        catch { knifeOk = false; }
+        Check("unknown gun name 'Knife': no throw, never counts as a real gun", knifeOk);
+        Check("badges count rated guns only (Vandal / Phantom, not the Spectre)", st.BestBadge(grid) == 3
+            && GunRating.IsRated(grid, WeaponKind.Phantom) && !GunRating.IsRated(grid, WeaponKind.Spectre), st.BestBadge(grid).ToString(CultureInfo.InvariantCulture));
+        var op = new GunTestDrill("operator", WeaponSets.Snipers, WeaponKind.Operator);
+        Check("Operator drill: only the Operator is rated", GunRating.IsRated(op, WeaponKind.Operator) && !GunRating.IsRated(op, WeaponKind.Marshal)
+            && GunRating.RatedText(op) == "the Operator" && GunRating.RatedText(grid) == "the Vandal or Phantom", GunRating.RatedText(grid));
+
+        // the picker's memory in settings.json
+        var s = new AppSettings { PreferredWeapon = "Ghost", WeaponPicks = new() { ["gridshot"] = "Phantom", ["flick"] = "Knife", ["operator"] = "Vandal" } };
+        s.Save();
+        var s2 = AppSettings.Load();
+        Check("settings round trip: gun picks + preferred gun", s2.PreferredWeapon == "Ghost" && s2.WeaponPicks is { Count: 3 } wp && wp["gridshot"] == "Phantom",
+            $"{s2.PreferredWeapon} {s2.WeaponPicks?.Count}");
+        WeaponKind? r1 = null, r2 = null, r3 = null, r4 = null;
+        bool threw = false;
+        try
+        {
+            r1 = WeaponPicks.Resolve(grid, s2);                                                   // own pick
+            r2 = WeaponPicks.Resolve(new GunTestDrill("flick", WeaponSets.NoShotguns), s2);       // unknown pick -> preferred
+            r3 = WeaponPicks.Resolve(op, s2);                                                     // pick + preferred not allowed -> default
+            r4 = WeaponPicks.Resolve(new GunTestDrill("sheriff", null, WeaponKind.Sheriff), s2); // locked
+        }
+        catch { threw = true; }
+        Check("resolve: own pick -> preferred -> default; unknown or not allowed falls through", !threw && r1 == WeaponKind.Phantom && r2 == WeaponKind.Ghost
+            && r3 == null && r4 == null, $"{r1} {r2} {r3} {r4}");
+        s2.PreferredWeapon = "Knife";
+        WeaponKind? r5 = WeaponKind.Odin;
+        try { r5 = WeaponPicks.Resolve(new GunTestDrill("spider", WeaponSets.NoShotguns), s2); } catch { threw = true; }
+        Check("unknown preferred gun 'Knife' -> the drill's default, no throw", !threw && r5 == null && WeaponPicks.Preferred(s2) == null);
+        WeaponPicks.Remember("spider", WeaponKind.Spectre, s2);
+        WeaponPicks.SetPreferred(WeaponKind.Vandal, s2);
+        var s3 = AppSettings.Load();
+        Check("Remember / SetPreferred save", WeaponPicks.PickFor("spider", s3) == WeaponKind.Spectre && WeaponPicks.Preferred(s3) == WeaponKind.Vandal);
+        foreach (var key in (s3.WeaponPicks?.Keys ?? Enumerable.Empty<string>()).ToList()) WeaponPicks.Remember(key, null, s3);
+        Check("forgetting every pick leaves no empty WeaponPicks", s3.WeaponPicks == null && AppSettings.Load().WeaponPicks == null);
     }
 
     static bool Near(float a, float b) => MathF.Abs(a - b) < 1e-4f;

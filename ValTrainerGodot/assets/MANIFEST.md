@@ -1,7 +1,7 @@
 # ValTrainer asset manifest
 
 All third-party assets in `res://assets/` are **CC0 1.0 (public domain)**. No Riot/Valorant, Mixamo or CC-BY(-SA) content.
-Imported and inspected with Godot 4.7.2 (.NET). Source size ≈ 197 MB (textures 110 MB, characters 67 MB, HDRI 14 MB, audio 6.2 MB, weapons 0.2 MB).
+Imported and inspected with Godot 4.7.2 (.NET). Source size ≈ 205 MB (textures 110 MB, characters 67 MB, HDRI 14 MB, audio 12.6 MB, weapons 1.2 MB).
 The import cache (`.godot/imported`) is ≈ 250 MB.
 
 | Folder | Contents | Source / license |
@@ -10,7 +10,7 @@ The import cache (`.godot/imported`) is ≈ 250 MB.
 | `assets/hdri/` | 3 pure-sky HDRIs, 2K `.hdr` | Poly Haven, CC0 |
 | `assets/characters/` | 6 rigged character glTFs (4 looks + 2 colour variants), shared textures, BoneMap | Quaternius (Universal Base Characters + Modular Character Outfits – Fantasy), CC0 |
 | `assets/characters/animations/` | Universal Animation Library (Standard), imported as **AnimationLibrary** | Quaternius, CC0 |
-| `assets/weapons/` | 4 gun FBX + 4 normalized wrapper scenes | Quaternius Ultimate Gun Pack, CC0 |
+| `assets/weapons/` | 26 FBX (21 guns + 5 accessories) and 21 normalized wrapper scenes, one per VALORANT gun | Quaternius Ultimate Gun Pack, CC0 |
 | `assets/audio/` | gunshots, reloads, impacts, footsteps, UI | Free Firearm Sound Library / OpenGameArt / Kenney, CC0 |
 
 ---
@@ -170,7 +170,7 @@ The 8-directional locomotion and rifle sets exist only in Quaternius' paid Sourc
 
 ## 5. Weapons (`assets/weapons/`)
 
-These come from the Quaternius Ultimate Gun Pack (2019), which ships only as FBX (plus OBJ/Blend). Godot imports the FBX natively. Each gun is a single MeshInstance3D with 3–5 flat-colour materials and no textures.
+These come from the Quaternius Ultimate Gun Pack (July 2019), which ships as FBX (plus OBJ/Blend). Godot imports the FBX natively (default import settings). Each gun is a single MeshInstance3D with 3–5 flat-colour materials and no textures. Since 1.18 every gun has its own model (research: `docs/research/weapons-design-1.18.md` §5). The pack has no machine gun, so the Ares and Odin are bullpups (the Odin with the pack's bipod).
 
 **Use the wrapper scenes.** They are normalized to real-world size, with the root at the pistol grip, **barrel along -Z** (Godot forward), +Y up, and a `Marker3D` named **`Muzzle`** at the barrel tip.
 
@@ -179,7 +179,71 @@ These come from the Quaternius Ultimate Gun Pack (2019), which ships only as FBX
 | `res://assets/weapons/AssaultRifle_AK.tscn` | **Vandal-like** (AK, black stock) | `AssaultRifle_5.fbx` | 0.92 m | (0.033, 0.272, 0.920) | (0, 0.102, -0.649) |
 | `res://assets/weapons/AssaultRifle_M4.tscn` | Phantom-like (M4) | `AssaultRifle2_1.fbx` | 0.88 m | (0.059, 0.305, 0.880) | (0, 0.109, -0.614) |
 | `res://assets/weapons/SniperRifle_Bolt.tscn` | **Operator-like** (AWP-style bolt action, scope, thumbhole stock) | `SniperRifle_3.fbx` | 1.20 m | (0.074, 0.199, 1.200) | (0, 0.067, -0.880) |
-| `res://assets/weapons/Pistol_Compact.tscn` | **Classic-like** polymer pistol | `Pistol_5.fbx` | 0.19 m | (0.029, 0.125, 0.190) | (0, 0.057, -0.152) |
+| `res://assets/weapons/Pistol_Compact.tscn` | **Classic-like** polymer pistol (the Sheriff's model before 1.18) | `Pistol_5.fbx` | 0.19 m | (0.029, 0.125, 0.190) | (0, 0.057, -0.152) |
+
+Added in 1.18. A script generated these from the OBJ twins of the FBX files. `scale` is the uniform model scale; `offset` shifts the model so the root sits at the grip.
+
+| wrapper scene | gun | source FBX (+ accessories) | scale | offset (y, z) | length | AABB size (x, y, z) | Muzzle (local) |
+|---|---|---|---|---|---|---|---|
+| `res://assets/weapons/Shotgun_Sawnoff.tscn` | Shorty | `Shotgun_SawedOff.fbx` | 0.15 | (0.015, -0.05) | 0.55 m | (0.063, 0.153, 0.553) | (0, 0.076, -0.543) |
+| `res://assets/weapons/MachinePistol.tscn` | Frenzy | `SubmachineGun_4.fbx` | 0.13 | 0 | 0.33 m | (0.041, 0.213, 0.331) | (0, 0.066, -0.284) |
+| `res://assets/weapons/Pistol_Suppressed.tscn` | Ghost | `Pistol_1.fbx` + `Silencer_1.fbx` (×0.0884 at (0, 0.057, -0.154)) | 0.104 | 0 | 0.34 m | (0.034, 0.121, 0.335) | (0, 0.057, -0.300), the silencer tip |
+| `res://assets/weapons/Pistol_Heavy.tscn` | Bandit | `Pistol_3.fbx` | 0.112 | 0 | 0.21 m | (0.037, 0.145, 0.207) | (0, 0.078, -0.169) |
+| `res://assets/weapons/Revolver_Heavy.tscn` | Sheriff | `Revolver_3.fbx` | 0.13 | 0 | 0.26 m | (0.038, 0.128, 0.258) | (0, 0.060, -0.230) |
+| `res://assets/weapons/Pistol_Long.tscn` | Headhunter (gold in game) | `Pistol_6.fbx` | 0.104 | 0 | 0.25 m | (0.032, 0.121, 0.255) | (0, 0.060, -0.219) |
+| `res://assets/weapons/SMG_Compact.tscn` | Stinger | `SubmachineGun_2.fbx` | 0.15 | 0 | 0.61 m | (0.048, 0.277, 0.607) | (0, 0.085, -0.337) |
+| `res://assets/weapons/SMG_Suppressed.tscn` | Spectre | `SubmachineGun_5.fbx` + `Silencer_2.fbx` (×0.13 at (0, 0.085, -0.486)) | 0.15 | 0 | 0.96 m | (0.048, 0.260, 0.961) | (0, 0.085, -0.692), the silencer tip |
+| `res://assets/weapons/Shotgun_Pump.tscn` | Bucky | `Shotgun_3.fbx` | 0.17 | (0.01, -0.025) | 0.98 m | (0.042, 0.160, 0.983) | (0, 0.047, -0.757) |
+| `res://assets/weapons/Shotgun_Combat.tscn` | Judge | `Shotgun_ShortStock.fbx` | 0.17 | (0.023, -0.043) | 0.76 m | (0.042, 0.164, 0.760) | (0, 0.091, -0.731) |
+| `res://assets/weapons/AssaultRifle_Carbine.tscn` | Bulldog | `AssaultRifle2_3.fbx` + `Stock.fbx` (×0.17 at (0, 0.105, 0.045)) | 0.17 | 0 | 0.90 m | (0.059, 0.248, 0.904) | (0, 0.103, -0.590) |
+| `res://assets/weapons/AssaultRifle_DMR.tscn` | Guardian | `AssaultRifle_4.fbx` | 0.17 | 0 | 0.93 m | (0.033, 0.272, 0.934) | (0, 0.099, -0.651) |
+| `res://assets/weapons/AssaultRifle_Scoped.tscn` | Warden | `AssaultRifle2_2.fbx` + `Scope_3.fbx` (×0.1 at (0, 0.144, -0.17)) | 0.17 | 0 | 0.82 m | (0.046, 0.304, 0.820) | (0, 0.111, -0.555) |
+| `res://assets/weapons/SniperRifle_Hunting.tscn` | Marshal | `SniperRifle_6.fbx` | 0.155 | (0.01, -0.03) | 1.12 m | (0.077, 0.235, 1.117) | (0, 0.056, -0.843) |
+| `res://assets/weapons/SniperRifle_Heavy.tscn` | Outlaw | `SniperRifle_2.fbx` | 0.155 | (0.01, -0.025) | 1.15 m | (0.075, 0.234, 1.149) | (0, 0.055, -0.884) |
+| `res://assets/weapons/Bullpup_LMG.tscn` | Ares | `Bullpup_3.fbx` | 0.17 | 0 | 0.73 m | (0.053, 0.271, 0.732) | (0, 0.131, -0.455) |
+| `res://assets/weapons/Bullpup_HMG.tscn` | Odin | `Bullpup_1.fbx` + `Bipod.fbx` (×0.13 at (0, 0.095, -0.405), folded back under the barrel: rolled -90°, leg spread squeezed to 0.3) | 0.17 | 0 | 0.89 m | (0.053, 0.262, 0.892) | (0, 0.138, -0.462) |
+
+The Vandal, Phantom and Operator keep their wrappers. The Classic uses `Pistol_Compact`, and Chamber's Tour De Force uses the Operator's wrapper. Why these models:
+- The Guardian is `AssaultRifle_4` (skeleton stock, wood handguard), not `AssaultRifle_2`, because `AssaultRifle_2` has the same AK silhouette as the Vandal.
+- `AssaultRifle2_3` has no stock, so the Bulldog gets the pack's `Stock`.
+- The Bandit (a patch 12.00 sidearm) is the bulky, railed `Pistol_3`.
+- The Warden (a patch 13.06 scoped rifle) is the M4-pattern `AssaultRifle2_2` with the short `Scope_3`.
+
+**Scale rule.** The hands are posed around each grip, so each class shares one scale:
+- 0.17: rifles, shotguns and the bullpups
+- 0.155: the two new snipers (the Operator is 0.166)
+- 0.15: the SMGs and the Shorty
+- 0.13: the machine pistol and the revolver
+- 0.104–0.112: pistols
+
+**Viewmodel anchors** are in gun space, in metres. They were measured from the OBJ vertices on side renders in gun space, and `VmPoses.cs` uses them.
+- **Grip**: the `GripAt` centre and slant.
+- **Support**: one of three placements:
+  - `CupAt`: the bottom centre of the handguard or pump under the support hand.
+  - `PistolSupportAt`: the support hand wraps the trigger hand.
+  - `ForeGripAt`: the centre of a vertical foregrip.
+- **Port**: the magazine well (the top of the magazine). For guns without a magazine, it is the loading port the support hand pushes rounds into.
+
+| gun | grip (y, z), slant | support | magazine well / port, half size, curve | ejection port | other |
+|---|---|---|---|---|---|
+| Classic, Ghost, Headhunter | (-0.005, 0.005), 15° | pistol wrap | (-0.045, 0.005) | (0.015, 0.065, -0.03) | |
+| Bandit | (-0.005, 0.005), 15° | pistol wrap | (-0.048, 0.008) | (0.016, 0.075, -0.035) | |
+| Sheriff | (-0.01, 0.015), 30° | pistol wrap | port: the cylinder (-0.02, 0.045, -0.065), 1 load | none (revolver) | |
+| Frenzy | (-0.01, 0.005), 10° | pistol wrap | (0.003, -0.10), (0.011, 0.055, 0.016), 12° | (0.02, 0.085, -0.05) | |
+| Shorty | (0, 0), 50° | cup (0.04, -0.31) | port: the breech (0.075, -0.15), 2 loads | none (break action) | |
+| Stinger | (-0.01, 0.01), 20° | cup (0.058, -0.235) | (0.005, -0.122), (0.012, 0.065, 0.022) | (0.024, 0.11, -0.10) | |
+| Spectre | (-0.01, 0.01), 20° | cup (0.05, -0.30) | as Stinger | as Stinger | |
+| Bucky | (0, 0), 40° | cup (-0.013, -0.38) = the pump | port (-0.005, -0.17), 3 loads | (0.022, 0.035, -0.13), on the pump stroke | pump travel 0.075 |
+| Judge | (0, 0), 50° | cup (0.032, -0.52) | port (0.048, -0.248), 3 loads | (0.022, 0.083, -0.283) | |
+| Bulldog | (0, 0.012), 12° | cup (0.074, -0.29) | (0.035, -0.118), (0.015, 0.05, 0.033) | (0.022, 0.11, -0.09) | |
+| Guardian | as the Vandal: (0.01, 0), 25° | cup (0.07, -0.34) | (0.066, -0.158), 26° | (0.018, 0.105, -0.10) | |
+| Warden | (0.005, 0), 35° | cup (0.083, -0.27) | (0.035, -0.12), (0.012, 0.08, 0.026), 15° | (0.022, 0.115, -0.07) | |
+| Marshal | (0, 0), 35° | cup (0.017, -0.37) | port (0.04, -0.08), 3 loads | (0.02, 0.06, -0.08) | bolt handle (0.025, 0.055, -0.075) |
+| Outlaw | (0, 0), 35° | cup (0.02, -0.40) | (0.04, -0.26), (0.013, 0.03, 0.035) | (0.02, 0.06, -0.06) | |
+| Ares | (0, 0.018), 25° | cup (0.072, -0.26) | behind the grip (0.063, 0.17), (0.014, 0.07, 0.03), -25° (curves back) | (0.026, 0.11, 0.08) | |
+| Odin | (0, 0.018), 25° | foregrip (0.045, -0.342) | (0.065, 0.165), (0.014, 0.075, 0.028), -12° | (0.026, 0.11, 0.08) | |
+
+The ADS poses of the guns that aim (Stinger, Spectre, Bulldog, Guardian, Warden, Ares, Odin, Headhunter) were solved offline so the gun's highest projected vertex sits at about 0.62 H. They were then checked with `--vmtest --vmads 1`: the "[vmtest] ads sight top" line, target 0.60–0.65 H. The Marshal and Outlaw bring the scope's eyepiece to the Operator's eye distance.
 
 Wrapper tree: `<Root Node3D> ├─ Model (instance of the FBX scene; transform = RotY(+90°) · uniform scale) └─ Muzzle (Marker3D)`. The stock end is at +Z, for example AK z ≈ +0.27 and sniper z ≈ +0.32.
 
@@ -193,6 +257,7 @@ Wrapper tree: `<Root Node3D> ├─ Model (instance of the FBX scene; transform 
   - `.godot/imported/Pistol_5.fbx-adedefc3909281bb9f2cf1bea5b66a4c.scn`
 
 **Materials** (FBX import gives roughness 1.0 / metallic 0, so everything is matte):
+- New in 1.18: Wood / DarkWood (stocks, grips, pumps), Black2, Grey, Glass, and Main / MainDark / MainLight (the M4 family and the bullpups). `VmMaterials.ForGunSurface` maps each name, and wood is non-metallic.
 - AK: Black #28292a, DarkMetal #373736, Metal #414241
 - M4: Main #22272a, MainDark #191f27, MainLight #2a2f33
 - Sniper: Green #4d5449, Black, DarkMetal, Glass #070e1c, Grey #333435
@@ -213,16 +278,21 @@ For a nicer look, override the surfaces in code with roughness ~0.4–0.6 and me
 | path | content | source |
 |---|---|---|
 | `audio/weapons/rifle_ak_shot_01..03.wav` | AK-47, single shot, near distance (Vandal) | Free Firearm Sound Library (C_28P) |
-| `audio/weapons/rifle_ar_shot_01..02.wav` | AR-15, single shot, near distance (Phantom) | Free Firearm Sound Library (D_32P) |
+| `audio/weapons/rifle_ar_shot_01..02.wav` | AR-15, single shot, near distance (Phantom; also `enemyshot_phantom` for Deathmatch bots holding a Phantom) | Free Firearm Sound Library (D_32P) |
 | `audio/weapons/sniper_bolt_shot_01..02.wav` | Tikka T3 .30-06 bolt action, single shot, with long outdoor tail (Operator) | Free Firearm Sound Library (W_29P) |
-| `audio/weapons/pistol_shot_01..03.wav` | Walther PPQ 9 mm, single shot (Classic) | Free Firearm Sound Library (X_39P) |
+| `audio/weapons/pistol_shot_01..03.wav` | Walther PPQ 9 mm, single shot (**Classic**, key `classic`; the Sheriff's sound before 1.18) | Free Firearm Sound Library (X_39P) |
+| `audio/weapons/<gun>_shot_01..03.wav` (shorty, frenzy, ghost, bandit, sheriff, headhunter, stinger, spectre, bucky, judge, bulldog, guardian, warden, marshal, outlaw, ares, odin) | one shot per gun, 48 kHz / 16-bit **mono**, 0.6–1.3 s; starts 4 ms before the onset, faded, peak ≤ −1 dBFS; loudness-matched to the AK (suppressed guns quieter, snipers and shotguns louder) | Free Firearm Sound Library near takes, plus LeMudCrab's Freesound #163455 in the Judge and qubodup's Freesound #482122 in the Odin and Ares. Processed by `tools/sfx/gun_sfx.py` |
+| `audio/weapons/shotgun_pump.wav`, `shotgun_reload.wav` | Bucky pump; shell loads plus pump | the Winchester Model 12 take K_22P (its own mechanical sounds between the shots) |
+| `audio/weapons/revolver_reload.wav`, `lmg_reload.wav` | Sheriff and machine-gun reloads | edits of `pistol_reload.wav` (zer0_sol) and of `rifle_reload_airsoft.wav` + `gun_reload_airsoft.wav` (SpringySpringo), plus synthesized brass |
+| `audio/weapons/heavy_spinup.wav`, `heavy_spindown.wav` | Odin barrel spin-up / spin-down | synthesized by `tools/sfx/gun_sfx.py` (our own work, CC0) |
 | `audio/weapons/rifle_reload_airsoft.wav`, `gun_reload_airsoft.wav` | magazine reloads (airsoft recordings), ~1.6 s | OpenGameArt "Gun reload sounds" by SpringySpringo |
 | `audio/weapons/pistol_reload.wav` | handgun mag drop, insert and slide rack, 1.6 s | OpenGameArt "Handgun Reload Sound Effect" by zer0_sol |
 | `audio/impacts/impact*.ogg` (105 files) | bullet-impact / surface hits: Metal, Plate, Wood, Glass, Soft, Punch, Mining, Bell, Tin, Generic. `impactBell_heavy_*` and `impactMetal_light_*` work well as hit/headshot markers. | Kenney Impact Sounds |
 | `audio/footsteps/footstep_{carpet,concrete,grass,snow,wood}_000..004.ogg` | footsteps (bots: concrete; the Sound Lock / Site Anchor enemy footsteps pick concrete / wood / grass / snow by the surface under the foot) | Kenney Impact Sounds |
 | `audio/ui/*.ogg` (100 files: click, select, confirmation, error, toggle, tick, …) | menu / UI sounds | Kenney Interface Sounds |
 
-- **Gunshot WAVs** are 48 kHz / 16-bit stereo, 1.40 s each. Each is one shot that starts ~4 ms in, with a 0.25 s fade-out at the end, peak-normalized to -1 dBFS.
+- Gun sound keys, fallbacks and the per-gun reload, pump and spin keys live in `src/Audio/Sfx.cs` (`GunKeys`, `Fallback`) and `src/Game/Weapon/WeaponLooks.cs`. A missing clip falls back along a chain (e.g. ghost → classic → vandal), so no gun is ever silent.
+- **Gunshot WAVs** of the four pre-1.18 guns are 48 kHz / 16-bit stereo, 1.40 s each. Each is one shot that starts ~4 ms in, with a 0.25 s fade-out at the end, peak-normalized to -1 dBFS.
 - They were cut from the library's 96 kHz / 24-bit multi-shot takes, so each file is a single shot ready for repeated firing. Echo tails are natural (outdoor range).
 - Godot imports WAVs as AudioStreamWAV and OGGs as AudioStreamOggVorbis, both with default settings.
 

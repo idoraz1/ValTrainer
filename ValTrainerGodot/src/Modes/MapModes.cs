@@ -49,6 +49,7 @@ public sealed class SiteClearMode : MapMode
     public override AimFocus? Focus => between > 0 ? null : NearestHead(defenders.Select(d => d.Body));
 
     public override string Key => "siteclear";
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
     public override string Name => "Site Clear";
     public override string Description => "Attack through a real choke on any of the six maps. Defenders hold real angles and duel you.";
 
@@ -166,6 +167,7 @@ public sealed class FlashDodgeMode : MapMode
             ? new AimFocus(IdOf(attacker), attacker.Head, BotCharacter.HeadRadius) : null;
 
     public override string Key => "flashmap";
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
     public override string Name => "Flash Dodge";
     public override string Description => "Hold a real angle. Hear the flash, turn it off-screen (60–90°+), swing back, win the duel. Shoot Gekko's Dizzy before she spits.";
     public override string Category => "Utility";

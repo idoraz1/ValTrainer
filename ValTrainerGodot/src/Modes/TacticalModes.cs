@@ -25,6 +25,7 @@ namespace ValTrainer.Modes;
 public sealed class PostPlantMode : TacticalMode
 {
     public override string Key => "postplant";
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
     public override string Name => "Post-Plant";
     public override string Description => "The spike is down: hold your post-plant angle while defenders retake. Play the defuse, not the peek.";
     public override string Category => "Map";
@@ -507,6 +508,7 @@ public sealed class PostPlantMode : TacticalMode
 public sealed class RetakeMode : TacticalMode
 {
     public override string Key => "retake";
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
     public override string Name => "Retake";
     public override string Description => $"Retake the site and defuse while attackers hold their post-plant spots. Hold {DefuseKeyText} to defuse (7 s, half at 3.5 s).";
     public override string Category => "Map";

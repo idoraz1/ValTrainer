@@ -16,6 +16,16 @@ public static class RecoilTiers
     public static float TransferDistance(int t) => Difficulty.T(t, 8f, 10f, 12f, 15f, 18f);
     public static float TransferSpacing(int t) => Difficulty.T(t, 1.5f, 1.8f, 2.2f, 2.6f, 3.0f);
     public static int TransferBots(int t) => Difficulty.Ti(t, 2, 3, 3, 3, 4);
+
+    /// <summary>No bullet for longer than this (s) ends a held spray: 1.6 shot intervals at the hip (the Vandal: 0.16 s),
+    /// or longer for guns that fire slower when aimed or pause between aimed bursts (Stinger, Bulldog: about 0.4 s), so
+    /// aiming doesn't count as letting go. Spin-up guns use their start rate (<see cref="WeaponDef.Rps"/>), the slowest.</summary>
+    public static float SprayBreak(WeaponDef w)
+    {
+        float slow = w.AdsRpsMul > 0f && w.AdsRpsMul < 1f ? w.Interval / w.AdsRpsMul : 0f;
+        if (w.BurstCount > 1 && w.BurstRps > 0f) slow = Mathf.Max(slow, w.BurstCycle - (w.BurstCount - 1) / w.BurstRps);
+        return Mathf.Max(1.6f * w.Interval, 1.25f * slow);
+    }
 }
 
 /// <summary>
@@ -72,7 +82,7 @@ public sealed class SprayControlMode : TrainingMode
         dummy.Hp = BotCharacter.MaxHp; // a practice dummy never dies
         var w = G.Weapon!;
         // The spray ends when you release or the magazine runs dry (no bullet for > 1.6 intervals).
-        if (spraying && Now - lastBulletAt > w.Interval * 1.6f) EndSpray();
+        if (spraying && Now - lastBulletAt > RecoilTiers.SprayBreak(w)) EndSpray();
     }
 
     public override float OnBullet(Vector3 o, Vector3 d, bool accurate)
@@ -206,7 +216,7 @@ public sealed class SprayControlMode : TrainingMode
 
         // the gun's raw (uncompensated) pattern, starting where your first bullet went, in grey
         var w = G.Weapon!;
-        float side = kind == WeaponKind.Phantom ? 1f : -1f;
+        float side = w.FirstDriftSide >= 0 ? 1f : -1f;
         var (y0, p0, _) = shots.Count > 0 ? shots[0] : (0f, 0f, HitZone.None);
         Vector2? prev = null;
         for (int i = 0; i < Math.Min(shots.Count + 3, w.Pitch.Length); i++)
@@ -260,8 +270,9 @@ public sealed class SprayTransferMode : BotMode
     }
 
     public override string Key => "spray_transfer";
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Auto;
     public override string Name => "Spray Transfer";
-    public override string Description => "Kill all the agents in one continuous Vandal spray: control the recoil while dragging between targets.";
+    public override string Description => "Kill all the agents in one continuous spray: control the recoil while dragging between targets.";
     public override string Category => "Recoil";
 
     readonly List<BotCharacter> bots = new();
@@ -297,8 +308,8 @@ public sealed class SprayTransferMode : BotMode
             return;
         }
         foreach (var b in bots) if (GodotObject.IsInstanceValid(b)) b.Velocity = Vector3.Zero;
-        // Spray broken: no bullet for > 1.6 intervals while someone is still alive.
-        if (spraying && Now - lastBulletAt > Weapons.Vandal.Interval * 1.6f && bots.Any(b => !b.Dead))
+        // Spray broken: no bullet for > 1.6 intervals of the gun in hand while someone is still alive.
+        if (spraying && Now - lastBulletAt > RecoilTiers.SprayBreak(G.Weapon ?? Weapons.Vandal) && bots.Any(b => !b.Dead))
         {
             rounds++;
             Event("round_lost");

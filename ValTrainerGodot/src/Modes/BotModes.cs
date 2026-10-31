@@ -80,8 +80,9 @@ public sealed class StrafeBotsMode : BotMode
     public override AimFocus? Focus => bot != null && !bot.Dead && GodotObject.IsInstanceValid(bot) ? new AimFocus(IdOf(bot), bot.Head, BotCharacter.HeadRadius) : null;
 
     public override string Key => "strafebots";
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
     public override string Name => "Strafe Bots";
-    public override string Description => "A-D strafing bots. Vandal damage: 1 head or 4 body. Kill before they leave.";
+    public override string Description => "A-D strafing bots. Real damage of your gun (a Vandal kills with 1 head or 4 body). Kill before they leave.";
 
     BotCharacter? bot;
     float targetVx, turnIn, respawnIn;
@@ -160,6 +161,7 @@ public sealed class PeekMode : BotMode
     public override AimFocus? Focus => bot != null && st != St.Between && !bot.Dead && GodotObject.IsInstanceValid(bot) ? new AimFocus(IdOf(bot), bot.Head, BotCharacter.HeadRadius) : null;
 
     public override string Key => "peek";
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
     public override string Name => "Peek Practice";
     public override string Description => "Bots wide-swing (and jiggle at high tiers) from cover. Pre-aim at head level; kill them before they leave.";
 
@@ -303,8 +305,9 @@ public sealed class OperatorMode : BotMode
     }
 
     public override string Key => "operator";
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Snipers;
     public override string Name => "Operator";
-    public override string Description => "Bots cross a gap between cover at 22–45 m. Scope (2.5x), one-shot body, bolt action.";
+    public override string Description => "Bots cross a gap between cover at 22–45 m. Operator: 2.5x scope, one-shot body, bolt action (or pick the Marshal / Outlaw).";
     public override WeaponKind Weapon => WeaponKind.Operator;
 
     static readonly float[] LaneZ = { -24f, -34f, -44f };

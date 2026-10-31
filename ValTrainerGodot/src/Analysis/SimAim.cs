@@ -23,6 +23,12 @@ namespace ValTrainer.Analysis;
 /// <para>pref = the cm/360 the sim is "used to": away from it the gain error follows the muscle-memory mismatch
 /// (gain × (pref/cm)^0.5 → overshoot at higher sens, undershoot below), angular noise grows with sens, and movements
 /// get slower / laggier at lower sens. Without pref the sim is at home at any sens.</para>
+/// <para>It plays the gun in hand (<see cref="Gun"/>) like a player would: automatic rifles, SMGs and the Frenzy tap
+/// like the Vandal; semi-automatic guns (sidearms, the Guardian, snipers) wait for the shot interval and the recovery
+/// between taps; shotguns tap at the shot interval with a looser aim at close range, where the pellet cone covers the
+/// target; machine guns (Odin, Ares) hold the trigger on a moving target and pull down against the climb, spin-up
+/// included. With <see cref="UseAlt"/> it also uses right click: aimed bursts at range with the Stinger and Bulldog and
+/// the Classic's alt-fire blast up close (<see cref="AltHeld"/>).</para>
 /// </summary>
 public sealed class SimAim
 {
@@ -32,7 +38,63 @@ public sealed class SimAim
     readonly string mode;
     readonly bool sprayMode, transferMode, botMode, gridMode, sfMode;
     bool trackMode, staticTargets;   // mutable: the sens finder alternates static flick heads and a strafing target
-    readonly WeaponDef? weapon;
+    WeaponDef? weapon;
+    readonly float userTapGap;       // "tapgap=" from the profile (wins over the gun's own rhythm)
+    // ---- how the gun in hand is played (GunChanged) ----
+    float gunGap;                    // least time between taps for this gun (s; 0 = the default rhythm)
+    bool pellets, holdGun, burstAlt, blastAlt;
+    float closeRange;                // shotguns: the first damage bracket (m); inside it the pellet cone may cover the target
+    float targetDist = 99f;          // eye to the locked target (m)
+    bool altNow, holding;
+    float holdStart;
+
+    /// <summary>The gun in hand. Set by the constructor; the session may update it when the gun changes mid-run (the
+    /// Crosshair Finder's sniper tab, a new pick in the drill preview). Null is ignored.</summary>
+    public WeaponDef? Gun
+    {
+        get => weapon;
+        set { if (value != null && value != weapon) { weapon = value; GunChanged(); } }
+    }
+
+    /// <summary>The session reads <see cref="AltHeld"/> and passes it on as right click (aim / alt fire). Off (default):
+    /// the sim never uses right click, so burst guns tap from the hip and the Classic uses its primary fire.</summary>
+    public bool UseAlt { get; set; }
+
+    /// <summary>Right click this frame (only with <see cref="UseAlt"/>): held while aiming bursts at a target 12 m+ away
+    /// (Stinger, Bulldog); a one-frame press for each Classic alt-fire blast at a target within 6 m (the left trigger
+    /// stays up for that click). Snipers are not covered: the session scopes them itself.</summary>
+    public bool AltHeld { get; private set; }
+
+    /// <summary>How this gun is played: its tap rhythm, pellets, held sprays, alt fire.</summary>
+    void GunChanged()
+    {
+        var w = weapon!;
+        pellets = w.Pellets > 1;
+        holdGun = w.Auto && w.Class == WeaponClass.Heavy;
+        burstAlt = w.AltFire == AltFireKind.ZoomBurst && w.BurstCount > 1 && w.BurstCycle > 0f;
+        blastAlt = w.AltFire == AltFireKind.Shotgun && w.AltPellets > 1 && w.AltRps > 0f;
+        closeRange = pellets && w.DamageRangeEnd.Length > 0 ? Math.Min(w.DamageRangeEnd[0], 15f) : 0f;
+        // Semi-automatic guns: the next tap waits for the gun (interval) and for the recovery (+ a human margin), as
+        // Sheriff One-Taps always did. Shotguns: their spread is the pellet cone anyway, so just the shot interval.
+        gunGap = pellets ? w.Interval + 0.03f : !w.Auto ? MathF.Max(w.Interval, w.RecoveryTime) + 0.03f : 0f;
+    }
+
+    /// <summary>Least time between two clicks right now (s; 0 = the default rhythm).</summary>
+    float Gap => userTapGap > 0 ? userTapGap
+        : altNow && burstAlt ? weapon!.BurstCycle + 0.03f
+        : altNow && blastAlt ? 1f / weapon!.AltRps + 0.03f
+        : gunGap;
+
+    /// <summary>How close to the target centre counts as on target for a click (deg): the profile's tolerance, looser
+    /// for a pellet cone that covers the target anyway (shotguns inside their first damage bracket, the Classic's blast).</summary>
+    float TolDeg(float r)
+    {
+        float tol = p.Tol * r;
+        if (weapon == null) return tol;
+        if (pellets && targetDist <= closeRange) return MathF.Max(tol, 0.5f * weapon.FirstShotHip);
+        if (altNow && blastAlt && weapon.AltSpread.Length > 0) return MathF.Max(tol, 0.5f * weapon.AltSpread[0]);
+        return tol;
+    }
 
     sealed class Prm
     {
@@ -57,7 +119,9 @@ public sealed class SimAim
     }
 
     /// <param name="modeKey">The drill actually being played (warm-up routines change it per step); null = the --mode argument.</param>
-    public SimAim(string profile, string? modeKey = null, string? simKind = null)
+    /// <param name="gun">The gun in hand (see <see cref="Gun"/>: tap rhythm, pellets, held sprays, the spray pull-down);
+    /// null = guessed from the mode key (Phantom Spray → Phantom, Sheriff One-Taps → Sheriff, else the Vandal).</param>
+    public SimAim(string profile, string? modeKey = null, string? simKind = null, WeaponDef? gun = null)
     {
         Profile = profile;
         p = new Prm();
@@ -127,9 +191,11 @@ public sealed class SimAim
         gridMode = mode == "gridshot";
         botMode = mode is "strafebots" or "peek" or "counterstrafe" or "peekduel" or "siteclear" or "flashmap" or "operator" or "deathmatch";
         staticTargets = mode is "flick" or "spider" or "gridshot" or "spray_vandal" or "spray_phantom" or "";
-        weapon = mode == "spray_phantom" ? Weapons.Phantom : mode == "sheriff" ? Weapons.Sheriff : Weapons.Vandal;
-        // Sheriff One-Taps: single taps that wait for the gun to recover (+ a human margin) instead of spamming
-        if (mode == "sheriff" && p.TapGap <= 0) p.TapGap = Weapons.Sheriff.RecoveryTime + 0.03f;
+        // Semi-automatic guns (Sheriff One-Taps, and any pick): single taps that wait for the gun to recover (+ a human
+        // margin) instead of spamming. GunChanged works it out per gun; a "tapgap=" in the profile wins.
+        userTapGap = p.TapGap;
+        weapon = gun ?? (mode == "spray_phantom" ? Weapons.Phantom : mode == "sheriff" ? Weapons.Sheriff : Weapons.Vandal);
+        GunChanged();
         sfMode = mode == "sensfinder";
         if (sfMode || mode == "xhairfinder") staticTargets = true;
         switch (simKind)
@@ -236,7 +302,8 @@ public sealed class SimAim
             (tYaw, tPitch) = Angles(view.Eye, pt);
             ex = Mathf.Wrap(tYaw - cy, -180f, 180f);
             ey = tPitch - cp;
-            rDeg = Mathf.RadToDeg(Mathf.Atan2(fc.Radius, Mathf.Max(0.1f, view.Eye.DistanceTo(pt))));
+            targetDist = view.Eye.DistanceTo(pt);
+            rDeg = Mathf.RadToDeg(Mathf.Atan2(fc.Radius, Mathf.Max(0.1f, targetDist)));
             hist.Add(new Seen(now, ex, ey, tYaw, tPitch, lockId));
             while (hist.Count > 0 && now - hist[0].T > 1.2f) hist.RemoveAt(0);
 
@@ -253,6 +320,10 @@ public sealed class SimAim
                 }
             }
         }
+        else targetDist = 99f;
+        // Right click (with UseAlt): aimed bursts at range (Stinger, Bulldog), the Classic's blast up close.
+        altNow = UseAlt && Clicking && locked && (!botMode || visible) && (burstAlt ? targetDist >= 12f : blastAlt && targetDist <= 6f);
+        bool holdsTrigger = holdGun && Clicking && pursuit; // machine guns spray a moving target instead of tapping it
 
         float dx = 0, dy = 0;
         if (locked)
@@ -277,11 +348,12 @@ public sealed class SimAim
                     float kv = p.Kv * MathF.Pow(Math.Min(1f, rho), 0.25f), kp = p.Kp * MathF.Pow(Math.Min(1f, rho), 0.3f);
                     float ux = kv * vx + kp * pex, uy = kv * vy + kp * pey;
                     if (sprayMode && firing) uy -= p.Pull * Climb(now - burstStart - p.PullDelay);
+                    else if (holding) uy -= p.Pull * Climb(now - holdStart - p.PullDelay);
                     dx += ux * dt; dy += uy * dt;
-                    float jit = p.Jitter * noiseMul * (sprayMode ? 0.35f : 1f); // calmer hands while pulling a spray
-                    // Sheriff One-Taps: a still head far away is tapped with still hands (pursuit jitter alone is ≈ 0.6°,
-                    // bigger than a head at 25 m), so jitter fades while the target barely moves
-                    if (p.TapGap > 0 && MathF.Sqrt(vx * vx + vy * vy) < 3f) jit *= 0.15f;
+                    float jit = p.Jitter * noiseMul * (sprayMode || holding ? 0.35f : 1f); // calmer hands while pulling a spray
+                    // Semi-automatic guns (Sheriff One-Taps): a still head far away is tapped with still hands (pursuit
+                    // jitter alone is ≈ 0.6°, bigger than a head at 25 m), so jitter fades while the target barely moves
+                    if (Gap > 0 && MathF.Sqrt(vx * vx + vy * vy) < 3f) jit *= 0.15f;
                     if (jit > 0)
                     {
                         Ou(ref jitX, jit, 0.022f, dt); Ou(ref jitY, jit * 0.5f, 0.022f, dt);
@@ -289,8 +361,8 @@ public sealed class SimAim
                     }
                     // Clicking modes: shoot when the head is under the crosshair (in Peek Practice and Sheriff One-Taps, once the peeker plants).
                     bool settled = mode is not ("peek" or "sheriff") ||MathF.Sqrt(vx * vx + vy * vy) < 4f || now - visibleAt > 1.2f;
-                    if (Clicking && clickAt < 0 && now - lastClickAt > Math.Max(0.22f, p.TapGap) && settled
-                        && MathF.Sqrt(ex * ex + ey * ey) <= p.Tol * rDeg)
+                    if (Clicking && !holdsTrigger && clickAt < 0 && now - lastClickAt > Math.Max(0.22f, Gap) && settled
+                        && MathF.Sqrt(ex * ex + ey * ey) <= TolDeg(rDeg))
                         clickAt = now + Math.Max(0.02f, Gauss(p.Confirm, p.ConfirmSd));
                     // Way off (e.g. a sharp reversal on a fast bot): a fresh corrective submovement.
                     if (cur == null && MathF.Sqrt(pex * pex + pey * pey) > Math.Max(3f, 6 * rDeg) && !trackMode)
@@ -300,7 +372,7 @@ public sealed class SimAim
                 {
                     evalAt = -1;
                     float err = MathF.Sqrt(ex * ex + ey * ey) + MathF.Abs(Gauss(0, 0.12f * rDeg));
-                    if (err <= p.Tol * rDeg || now - trialStart > 3.5f) clickAt = now + Math.Max(0.015f, Gauss(p.Confirm, p.ConfirmSd));
+                    if (err <= TolDeg(rDeg) || now - trialStart > 3.5f) clickAt = now + Math.Max(0.015f, Gauss(p.Confirm, p.ConfirmSd));
                     else PlanCorrection(now, ex, ey, rDeg);
                 }
             }
@@ -350,12 +422,24 @@ public sealed class SimAim
         dx += tremX * dt; dy += tremY * dt;
 
         // ---- trigger ----
-        bool held = false;
-        if (clickAt >= 0 && now >= clickAt && now - lastClickAt >= Math.Max(0.11f, p.TapGap) && locked)
+        bool held = false, altClick = false;
+        if (clickAt >= 0 && now >= clickAt && now - lastClickAt >= Math.Max(0.11f, Gap) && locked)
         {
-            press = true; held = true; clickAt = -1; lastClickAt = now;
+            if (altNow && blastAlt) altClick = true; // the Classic's blast is right click: the left trigger stays up
+            else { press = true; held = true; }
+            clickAt = -1; lastClickAt = now;
             missCheckAt = staticTargets ? now + 0.06f : -1;
         }
+        // Machine guns on a moving target: hold the trigger while the crosshair stays near it (the pull-down against the
+        // climb, spin-up included, is in the pursuit above); a new spray starts with a fresh press.
+        if (holdsTrigger && locked && primaryDone && (!botMode || visible) && now >= reactUntil)
+        {
+            float err = MathF.Sqrt(ex * ex + ey * ey), near = Math.Max(3f * TolDeg(rDeg), 0.6f);
+            if (!holding && err <= TolDeg(rDeg) && now - lastClickAt >= 0.22f) { holding = true; holdStart = now; press = true; }
+            else if (holding && err > near) { holding = false; lastClickAt = now; }
+            held |= holding;
+        }
+        else holding = false;
         if (missCheckAt >= 0 && now >= missCheckAt)
         {
             missCheckAt = -1;
@@ -376,6 +460,7 @@ public sealed class SimAim
             press = firing && now - burstStart < 1e-4f;
         }
         else if (transferMode) { firing = held; }
+        AltHeld = altNow && (burstAlt || altClick);
 
         // ---- degrees → integer mouse counts (+y = down) ----
         if (!float.IsFinite(dx) || !float.IsFinite(dy) || !(k > 0))
@@ -401,7 +486,7 @@ public sealed class SimAim
     void Land(float now, float ex, float ey, float r)
     {
         float err = MathF.Sqrt(ex * ex + ey * ey) + MathF.Abs(Gauss(0, 0.12f * r));
-        if (Clicking && err <= p.Tol * r) clickAt = now + Math.Max(0.015f, Gauss(p.Confirm, p.ConfirmSd));
+        if (Clicking && err <= TolDeg(r)) clickAt = now + Math.Max(0.015f, Gauss(p.Confirm, p.ConfirmSd));
         else evalAt = now + Math.Max(0.03f, Gauss(p.Lat, p.LatSd) * slowMul);
     }
     bool Clicking => !trackMode && !sprayMode && !transferMode;
@@ -423,8 +508,19 @@ public sealed class SimAim
     float Climb(float t)
     {
         if (t <= 0 || weapon == null) return 0;
-        float a = WeaponDef.Lerp(weapon.Pitch, t * weapon.Rps), b = WeaponDef.Lerp(weapon.Pitch, Math.Max(0, t - 0.03f) * weapon.Rps);
+        float a = WeaponDef.Lerp(weapon.Pitch, BulletsAt(t)), b = WeaponDef.Lerp(weapon.Pitch, BulletsAt(Math.Max(0, t - 0.03f)));
         return (a - b) / 0.03f;
+    }
+
+    /// <summary>Bullets fired t seconds into a held spray (fractional): the fire rate, or for spin-up guns (Odin) a rate
+    /// that ramps linearly from <see cref="WeaponDef.Rps"/> to <see cref="WeaponDef.MaxRps"/> over the spin-up time.</summary>
+    float BulletsAt(float t)
+    {
+        var w = weapon!;
+        float r0 = w.Rps, r1 = w.MaxRps, T = w.SpinUpTime;
+        if (T <= 0f || r1 <= r0) return t * r0;
+        if (t <= T) return r0 * t + (r1 - r0) * t * t / (2f * T);
+        return (r0 + r1) * T / 2f + r1 * (t - T);
     }
 
     void Lock(AimFocus f, float now, PlayerView view)
@@ -433,7 +529,7 @@ public sealed class SimAim
         lockId = f.Id;
         lockPoint = f.Point;
         cur = null; evalAt = -1; clickAt = -1; missCheckAt = -1;
-        primaryDone = false; pursuit = false; prefired = false;
+        primaryDone = false; pursuit = false; prefired = false; holding = false;
         trialStart = now;
         firing = firing && transferMode;
         hist.Clear();
@@ -448,7 +544,7 @@ public sealed class SimAim
     {
         locked = false; visible = false;
         cur = null; evalAt = -1; clickAt = -1; missCheckAt = -1;
-        primaryDone = false; pursuit = false;
+        primaryDone = false; pursuit = false; holding = false;
         firing = false;
     }
 

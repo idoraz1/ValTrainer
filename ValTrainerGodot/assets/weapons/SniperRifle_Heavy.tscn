@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/weapons/SniperRifle_2.fbx" id="1_sniperrifle_2"]
+
+[node name="SniperRifle_Heavy" type="Node3D" unique_id=1868103535]
+metadata/source_model = "res://assets/weapons/SniperRifle_2.fbx"
+metadata/length_m = 1.149
+
+[node name="Model" type="Node3D" parent="." unique_id=1293714932 instance=ExtResource("1_sniperrifle_2")]
+transform = Transform3D(0, 0, 0.155, 0, 0.155, 0, -0.155, 0, 0, 0, 0.01, -0.025)
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=1169374419]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05521319, -0.88359863)

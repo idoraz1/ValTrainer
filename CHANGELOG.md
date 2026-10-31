@@ -8,6 +8,28 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Added
+- Every gun in VALORANT (suggested on Discord and GitHub): Classic, Shorty, Frenzy, Ghost, Sheriff, Bandit, Stinger, Spectre, Bucky, Judge, Bulldog, Guardian, Phantom, Vandal, Marshal, Outlaw, Operator, Ares, Odin and Warden. Each one uses VALORANT's numbers (fire rate, magazine, reload, damage by range, first-shot accuracy, spread, movement accuracy, run speed) and plays like it:
+  - Shotguns fire pellets (Shorty 15, Bucky 15, Judge 12). A shot counts as one shot in the drills, and every pellet that hits does its own damage. Shorty and Bucky pellets stop at 50 m.
+  - The Classic's right click fires its 3-pellet blast, and the Bucky's right click fires a canister that splits into pellets after 7.5 m.
+  - The Stinger fires 4-round bursts and the Bulldog 3-round bursts when you aim.
+  - The Odin's fire rate winds up from 12 to 15.6 rounds per second from the hip (aiming skips the wind-up).
+  - The Operator, Marshal and Outlaw have their scopes. The Operator has a second zoom (5×) with toggle scope. The Marshal and Operator drop the scope after each shot. The Outlaw's second shot is less accurate. The Marshal and Bucky reload one round at a time, and pulling the trigger stops the reload.
+  - Each gun has its own model, sounds (shot, reload, the Bucky's pump, the Odin's spin) and aim-down-sights view. The Sheriff is now a revolver.
+- Pick your gun before a drill: a WEAPON row in the drill preview (click it or press B) opens a buy menu with every gun the drill allows. Your pick is remembered per drill, and Settings has a "Preferred gun" for every drill. Drills built around one gun keep it (Sheriff One-Taps, the spray drills, the Operator drill offers only snipers), and target drills leave out shotguns. Drills on a VALORANT map now open the preview too (without the live demo), so you can pick a gun there. You can also open the buy menu mid-drill with VALORANT's buy-menu key (B by default, also from the pause menu): picking a gun restarts the run with it (free play just swaps the gun), and closing it without a change carries on where you were. In Deathmatch the match keeps going, as in VALORANT: the new gun comes out when you next respawn, and the match is saved under the gun you held longest.
+- Best scores per gun. The results and the drill preview show your best with the gun you used, and the Stats screen can filter by gun. Badges and the coach's rank estimate count runs with the drill's own gun (the Vandal and Phantom count for each other); runs with other guns still get a score, a best and a coach review, marked "unrated".
+
+### Changed
+- Deathmatch spawns work like VALORANT's (reported on Discord): you spawn out of every enemy's sight (also one step out), far from where you died, with your back to cover and facing the fight, and never on top of walls or ledges. Spawn protection lasts 3 s and ends when you fire or move. Bots no longer know where you are when they respawn; they hear your shots within about 25 m or when they can see you.
+- Deathmatch bots move like players (reported on Discord): they strafe and counter-strafe in fights, shooting only once they've stopped (Veteran and up), speed up and brake like you do, peek corners (wide, short, crouch and jiggle peeks by difficulty), and keep away from walls instead of hugging them. They carry a Vandal or a Phantom.
+- Bind's deathmatch has 2 bots instead of 3 (the area is small).
+- The Operator's movement accuracy matches VALORANT (it was too forgiving), and the Sheriff and Operator are more accurate crouched, as in VALORANT.
+
+### Not done (and why)
+- The guns are made from free (CC0) models and real recordings that sound and look close; Riot's models and sounds can't be used.
+- Riot doesn't publish recoil patterns, so the new guns' sprays are reconstructed from Riot's documented rules and are estimates, as are a few timings (how long the Odin takes to wind up, some recovery times). There are no wallbangs yet.
+- Deathmatch bots holding a Phantom still show the Vandal-style model.
+
 ## [1.17.0] - 2026-10-24
 
 ### Added

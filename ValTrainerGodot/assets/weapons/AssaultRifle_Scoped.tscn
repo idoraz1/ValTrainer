@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/weapons/AssaultRifle2_2.fbx" id="1_assaultrifle2_2"]
+[ext_resource type="PackedScene" path="res://assets/weapons/Scope_3.fbx" id="2_scope_3"]
+
+[node name="AssaultRifle_Scoped" type="Node3D" unique_id=52227291]
+metadata/source_model = "res://assets/weapons/AssaultRifle2_2.fbx"
+metadata/length_m = 0.820
+
+[node name="Model" type="Node3D" parent="." unique_id=218848207 instance=ExtResource("1_assaultrifle2_2")]
+transform = Transform3D(0, 0, 0.17, 0, 0.17, 0, -0.17, 0, 0, 0, 0, 0)
+
+[node name="Attach_Scope" type="Node3D" parent="." unique_id=1727519262 instance=ExtResource("2_scope_3")]
+transform = Transform3D(0, 0, 0.1, 0, 0.1, 0, -0.1, 0, 0, 0, 0.144, -0.17)
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=980878934]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.11050493, -0.55476236)

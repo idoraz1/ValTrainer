@@ -7,7 +7,7 @@ namespace ValTrainer.Game;
 /// Valorant movement (ported from the tuned raylib build). Braking matches Riot-measured Phantom stop times (≈105 ms to
 /// the accuracy threshold, ≈160 ms to full stop); releasing the keys and counter-strafing stop almost equally fast
 /// (counter ≈6% quicker). The max speeds follow the gun in hand (<see cref="Hold"/>): run = the gun's VALORANT run speed,
-/// walk / crouch / aimed are fractions of it, and the accuracy deadzone is 27.5% of it.
+/// walk / crouch / aimed are fractions of it, and the accuracy deadzone is 27.5% of it (Operator 15%).
 /// <para>This file is the horizontal model (ground, air control, dash lock). Jumping, crouch-jumps, falling, landing,
 /// ability impulses and the collision step are in MovementBody.cs; the numbers are in <see cref="MovementTuning"/>.</para>
 /// </summary>
@@ -30,8 +30,10 @@ public sealed partial class Mover
     public float RunMax { get; private set; } = RunSpeed;
     public float WalkMax => RunMax * WalkMul;
     public float CrouchMax => RunMax * CrouchMul;
-    /// <summary>The deadzone with the gun in hand (rifles ≈1.49 m/s, Operator ≈1.41 m/s).</summary>
-    public float AccurateMax => RunMax * DeadzoneMul;
+    /// <summary>The deadzone with the gun in hand: its <see cref="Core.WeaponDef.DeadzoneMul"/> of its run speed (rifles
+    /// 27.5% of 5.40 ≈ 1.49 m/s; Operator 15% of 5.13 ≈ 0.77 m/s, patch 1.09).</summary>
+    public float AccurateMax => RunMax * deadzone;
+    float deadzone = DeadzoneMul;
 
     /// <summary>Ground acceleration (m/s²): standstill → run speed in ≈0.3 s. Riot publishes no acceleration; this is
     /// frame-counted from a VALORANT Range recording (2026-10-18: strafes reach full speed in 0.27–0.39 s, see the
@@ -52,11 +54,13 @@ public sealed partial class Mover
     /// Operator 0.72), <see cref="AdsMultiplier"/> by default.</summary>
     public float AdsSpeedMul = AdsMultiplier;
 
-    /// <summary>The gun in hand sets the max speeds: its run speed and its aimed / scoped fraction (null = no gun: rifle).</summary>
+    /// <summary>The gun in hand sets the max speeds (its run speed and its aimed / scoped fraction) and the accuracy
+    /// deadzone (null = no gun: rifle).</summary>
     public void Hold(Core.WeaponDef? w)
     {
         RunMax = w?.RunSpeed ?? RunSpeed;
         AdsSpeedMul = w?.AdsMoveMul ?? AdsMultiplier;
+        deadzone = w?.DeadzoneMul ?? DeadzoneMul;
     }
 
     /// <summary>Horizontal (ground) speed in m/s.</summary>

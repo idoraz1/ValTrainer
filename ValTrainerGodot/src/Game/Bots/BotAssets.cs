@@ -1,4 +1,5 @@
 using Godot;
+using ValTrainer.Core;
 
 namespace ValTrainer.Game.Bots;
 
@@ -31,6 +32,13 @@ internal static class BotAssets
     public static PackedScene Scene(int v) => scenes[v] ??= GD.Load<PackedScene>($"res://assets/characters/{Variants[v]}.gltf");
     public static AnimationLibrary Library => lib ??= GD.Load<AnimationLibrary>("res://assets/characters/animations/UAL1_Standard.glb");
     public static PackedScene Rifle => rifle ??= GD.Load<PackedScene>("res://assets/weapons/AssaultRifle_AK.tscn");
+    static PackedScene? rifleM4;
+    /// <summary>The rifle a bot carries for <paramref name="kind"/>: the M4 wrapper for a Phantom (Deathmatch bots roll
+    /// Vandal or Phantom), the AK for everything else. Both wrappers have their root at the grip, so
+    /// <see cref="RifleInHand"/> fits either.</summary>
+    public static PackedScene RifleFor(WeaponKind kind) => kind == WeaponKind.Phantom
+        ? rifleM4 ??= GD.Load<PackedScene>("res://assets/weapons/AssaultRifle_M4.tscn")
+        : Rifle;
 
     public static AudioStream[] Steps
     {

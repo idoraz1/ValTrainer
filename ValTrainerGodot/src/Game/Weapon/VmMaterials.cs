@@ -71,6 +71,10 @@ public sealed class VmMaterials
             "glass" => Make(new Color(0.02f, 0.05f, 0.11f), 0.1f, 0.05f, 1.0f, 0f, 0.6f),
             "green" => Make(src.Darkened(0.1f), 0.0f, 0.55f, 0.45f, 0.55f, 0.12f),
             "black" => Make(new Color(0.055f, 0.057f, 0.062f), 0.0f, 0.42f, 0.5f, 0.6f, 0.2f),
+            "black2" => Make(new Color(0.035f, 0.036f, 0.04f), 0.0f, 0.4f, 0.5f, 0.6f, 0.2f),
+            // Wood furniture (stocks, grips, pumps of the 1.18 guns): unvarnished, no metal, a little grain from the detail noise.
+            "wood" => Make(src.Lightened(0.06f), 0.0f, 0.62f, 0.4f, 0.7f, 0.12f),
+            "darkwood" => Make(src, 0.0f, 0.58f, 0.4f, 0.7f, 0.12f),
             "main" => Make(src.Darkened(0.1f), 0.6f, 0.36f, 0.5f, 0.5f, 0.2f),
             "maindark" => Make(src.Darkened(0.35f), 0.1f, 0.45f, 0.5f, 0.55f, 0.18f),
             "mainlight" => Make(src.Lightened(0.12f), 0.85f, 0.34f, 0.5f, 0.5f, 0.2f),

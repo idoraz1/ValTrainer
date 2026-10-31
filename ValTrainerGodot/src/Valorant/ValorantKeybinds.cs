@@ -97,8 +97,9 @@ public static partial class ValorantImporter
     /// <item>From the game's action classes (one "…ActionTraits" class per bindable action, in a public UE type dump; the
     /// class name normally equals the action name): Walk, PrimaryTrigger (fire), SecondaryTrigger (alt fire), Reload,
     /// Activate_Primary / _Secondary / _Melee, Activate_GrenadeAbility (C), Activate_Ability1 (Q), Activate_Ability2 (E),
-    /// Activate_Ultimate (X), Inspect, DropEquippable, UseChannelObject (use spike: plant / defuse, likely) and
-    /// Activate_Level (equip spike, likely), MoveForward / MoveRight (axes).</item>
+    /// Activate_Ultimate (X), Inspect, DropEquippable, UseChannelObject (use spike: plant / defuse, likely),
+    /// Activate_Level (equip spike, likely), ToggleShop (open buy menu: "ToggleShopActionTraits", patch 5.09 to 12.06
+    /// dumps), MoveForward / MoveRight (axes).</item>
     /// <item>Everything else here is an older or guessed spelling; unknown names fall back to <see cref="ActionOf"/>'s word match.</item>
     /// </list>
     /// </summary>
@@ -125,12 +126,14 @@ public static partial class ValorantImporter
         ["Activate_Melee"] = GameAction.EquipMelee, ["EquipMeleeWeapon"] = GameAction.EquipMelee,
         ["Inspect"] = GameAction.Inspect, ["InspectWeapon"] = GameAction.Inspect,
         ["DropEquippable"] = GameAction.Drop, ["Drop"] = GameAction.Drop, ["DropItem"] = GameAction.Drop,
+        ["ToggleShop"] = GameAction.BuyMenu, ["OpenBuyMenu"] = GameAction.BuyMenu, ["ToggleBuyMenu"] = GameAction.BuyMenu,
+        ["BuyMenu"] = GameAction.BuyMenu, ["OpenShop"] = GameAction.BuyMenu, ["Shop"] = GameAction.BuyMenu,
     };
 
     /// <summary>
     /// The trainer action of a VALORANT action name: the known names first, then a tolerant match on the words in the name
     /// (Riot doesn't document them and they changed over the years). Toggle variants, pings, chat, voice, map, scoreboard,
-    /// spectator and gamepad actions map to nothing.
+    /// spectator and gamepad actions map to nothing; the buy menu ("ToggleShop") is the one toggle that maps.
     /// </summary>
     internal static GameAction? ActionOf(string name)
     {
@@ -138,6 +141,9 @@ public static partial class ValorantImporter
         if (KnownNames.TryGetValue(name.Trim(), out var known)) return known;
         const StringComparison I = StringComparison.OrdinalIgnoreCase;
         bool Has(string w) => name.Contains(w, I);
+        // The buy menu before the ignore list (its "Toggle" / "Menu" words would drop it). Other buy and shop names stay
+        // ignored: tap / hold reload variants, the shop's tabs and search.
+        if (!Has("Reload") && !Has("Tab") && !Has("Search") && (Has("Shop") || (Has("Buy") && Has("Menu")))) return GameAction.BuyMenu;
         string[] ignore = { "Toggle", "Ping", "Chat", "Radio", "Comm", "Voice", "PTT", "Map", "Score", "Spectat", "Observer", "Gamepad",
                             "Menu", "Camera", "Replay", "Spray", "Emote", "Wheel", "Cycle", "Previous", "Next", "Last", "Buy", "Shop" };
         if (ignore.Any(Has)) return null;

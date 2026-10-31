@@ -18,6 +18,8 @@ public partial class SettingsScreen
     {
         ("MOVEMENT", new[] { GameAction.MoveForward, GameAction.MoveBack, GameAction.StrafeLeft, GameAction.StrafeRight, GameAction.Walk, GameAction.Crouch, GameAction.Jump }),
         ("COMBAT", new[] { GameAction.Fire, GameAction.AltFire, GameAction.Reload }),
+        // the gun picker in a drill; here, not under EQUIPMENT: that column is full at 720p (one more row scrolls it)
+        ("SHOP", new[] { GameAction.BuyMenu }),
     };
 
     static readonly (string Title, GameAction[] Actions)[] BindGroupsRight =

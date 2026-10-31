@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
   Headless self-tests for ValTrainer: the coach self-test (with the .vtr replay round trip), the locale (culture) tests, the bug report
-  checks, a short smoke test of the drills with the simulated player, the 3D Rewind sidecar check of those runs and the Rewind insights
+  checks, a short smoke test of the drills with the simulated player (also with picked guns, --gun), the 3D Rewind sidecar check of those runs and the Rewind insights
   check (flawed simulated players must show their own problem moments).
 .DESCRIPTION
   Runs the same checks as CI (.github/workflows/ci.yml). Every run uses --dev with a throw-away --data-dir and an empty
@@ -23,6 +23,10 @@ param(
                        "spray_phantom", "spray_transfer", "counterstrafe", "peekduel", "siteclear", "flashmap", "deathmatch",
                        "microshot", "switch", "popup", "longtaps", "sheriff", "strafeduel", "jumppeek", "jigglepeek", "postplant", "retake",
                        "anchor", "sound", "flashpeek:phoenix", "recon:sova", "smokeexec:omen", "mobility:jett", "chamber:headhunter"),
+  # Smoke runs with a picked gun ("mode@Gun", dev --gun): each class of gun (shotgun, sidearm, sniper, SMG, machine gun)
+  # in a drill that offers it. The run must play that gun, finish, and its telemetry and 3D Rewind header must name it.
+  [string[]]$GunRuns = @("peek@Judge", "gridshot@Ghost", "operator@Outlaw", "spray_transfer@Spectre", "strafebots@Odin",
+                         "flick@Classic"),
   # Extra cultures for the locale test (the invariant culture always runs).
   [string[]]$Cultures = @("de-DE", "tr-TR"),
   [switch]$SkipSmoke,
@@ -146,6 +150,14 @@ $why = if ($r.Code -ne 0) { "exit code $($r.Code)" } elseif ($ex.Count -gt 0) { 
        elseif ($null -eq $body -or $body.schema -ne 1 -or -not $body.report.title -or $null -eq $body.app.ram_gb) { "the printed JSON doesn't match the contract" } else { "" }
 Report "bug report dry run (nothing sent)" ($why -eq "") $why $r
 
+# ---- 3a. Guns: every gun's fire rate, spin-up, bursts, pellets, alt fire, reloads and scope rules vs its WeaponDef ----
+$r = Invoke-Godot "weapon-check" (@("--headless", "--fixed-fps", "60", "--path", $Project, "--") + $sandbox + @("--weapon-check"))
+$res = ($r.Text -split "`r?`n" | Where-Object { $_ -match '\[weapon-check\] RESULT:' } | Select-Object -Last 1)
+$fail = @($r.Text -split "`r?`n" | Where-Object { $_ -match '\[weapon-check\] FAIL ' })
+$why = if ($r.Code -ne 0) { "exit code $($r.Code) ($res) " + ($fail -join "; ") } elseif ($res -notmatch 'RESULT: PASS') { "no PASS result" } else { "" }
+$detail = if ($res -match '\((.+)\)') { " ($($Matches[1]))" } else { "" }
+Report "weapon check$detail" ($why -eq "") $why $r
+
 # ---- 3b. Drill previews: every drill's live demo (menu + agent drills) plays a few seconds, nothing is saved ----
 $r = Invoke-Godot "preview-check" (@("--headless", "--fixed-fps", "60", "--path", $Project, "--") + $sandbox + @("--preview-check", "--preview-check-secs", "6"))
 $res = ($r.Text -split "`r?`n" | Where-Object { $_ -match '\[preview-check\] RESULT:' } | Select-Object -Last 1)
@@ -153,6 +165,13 @@ $ex = Get-Exceptions $r.Text
 $why = if ($r.Code -ne 0) { "exit code $($r.Code) ($res)" } elseif ($ex.Count -gt 0) { "exception: $($ex[0].Trim())" } elseif ($res -notmatch 'RESULT: PASS') { "no PASS result" } else { "" }
 $detail = if ($res -match '\((.+)\)') { " ($($Matches[1]))" } else { "" }
 Report "drill previews$detail" ($why -eq "") $why $r
+
+# ---- 3c. Deathmatch spawns: the spawn picker on every map's real geometry against the acceptance targets ----
+$r = Invoke-Godot "dm-spawncheck" (@("--headless", "--path", $Project, "--") + $sandbox + @("--dm-spawncheck"))
+$res = ($r.Text -split "`r?`n" | Where-Object { $_ -match '\[dm-spawncheck\] RESULT:' } | Select-Object -Last 1)
+$fail = @($r.Text -split "`r?`n" | Where-Object { $_ -match '\[dm-spawncheck\] FAIL ' })
+$why = if ($r.Code -ne 0) { "exit code $($r.Code) ($res) " + ($fail -join "; ") } elseif ($res -notmatch 'RESULT: PASS') { "no PASS result" } else { "" }
+Report "deathmatch spawn check" ($why -eq "") $why $r
 
 # ---- 4. Smoke test: each drill runs 5 s with the simulated player, then its telemetry must load in the coach ----
 if (-not $SkipSmoke) {
@@ -185,6 +204,44 @@ if (-not $SkipSmoke) {
   $why = if ($r.Code -ne 0) { "exit code $($r.Code)" } elseif ($ex.Count -gt 0) { "exception: $($ex[0].Trim())" } `
          elseif ($rl.Count -ne $files) { "checked $($rl.Count) of $files runs" } elseif ($rf.Count -gt 0) { "$($rf.Count) run(s) failed: " + ($rf -join "; ").Trim() } else { "" }
   Report "3D Rewind sidecars of $files smoke runs ($vtr .vtr)" ($why -eq "") $why $r
+
+  # ---- 4a. Picked guns: the same smoke run with --gun; the session must equip it, and the telemetry / Rewind header must
+  #          name it (their own folder, so a plain run of the same drill can't stand in for it) ----
+  $telGun = Join-Path $work "telemetry-gun"
+  New-Item -ItemType Directory -Force $telGun | Out-Null
+  $gunOf = @{}
+  foreach ($gr in $GunRuns) {
+    $m, $gun = $gr -split '@', 2
+    $gunOf[$m] = $gun
+    $r = Invoke-Godot "smoke-gun-$m-$gun" (@("--headless", "--fixed-fps", "120", "--quit-after", "1500", "--path", $Project, "--") + $sandbox +
+                                           @("--mode", $m, "--gun", $gun, "--simaim", "good", "--duration", "5", "--telemetry-out", $telGun))
+    $safe = $m -replace '[:\/*?"<>|]', '-'
+    $vtt = @(Get-ChildItem $telGun -Filter "*_$safe.vtt" -ErrorAction SilentlyContinue)
+    $ex = Get-Exceptions $r.Text
+    $active = $r.Text -match ("\[gun\] " + [regex]::Escape($m) + ": " + [regex]::Escape($gun) + " active")
+    $why = if ($r.TimedOut) { "timed out after $TimeoutSec s" } elseif ($r.Code -ne 0) { "exit code $($r.Code)" } `
+           elseif ($ex.Count -gt 0) { "exception: $($ex[0].Trim())" } elseif (-not $active) { "the session didn't equip the $gun" } `
+           elseif ($vtt.Count -eq 0) { "no telemetry written (the run didn't finish)" } else { "" }
+    Report "smoke: $m with the $gun" ($why -eq "") $why $r
+  }
+  $r = Invoke-Godot "replay-check-gun" (@("--headless", "--path", $Project, "--") + $sandbox + @("--coach-analyze", $telGun, "--brief", "--replay-check"))
+  $bad = New-Object System.Collections.Generic.List[string]
+  $cur = $null; $checked = 0
+  foreach ($l in ($r.Text -split "`r?`n")) {
+    if ($l -match '^=== .*\.vtt\s+mode=(\S+)') { $cur = $Matches[1]; continue }
+    if ($l -match '^\s+replay-check: (PASS|FAIL|SKIP)(.*)$' -and $cur) {
+      $checked++
+      $want = $gunOf[$cur]
+      if ($Matches[1] -eq 'FAIL') { $bad.Add("$cur$($Matches[2])") }
+      elseif ($Matches[1] -eq 'PASS' -and $want -and $Matches[2] -notmatch ("gun " + [regex]::Escape($want) + ",")) { $bad.Add("$cur Rewind header isn't the $want") }
+      $cur = $null
+    }
+  }
+  $gunFiles = @(Get-ChildItem $telGun -Filter "*.vtt").Count
+  $ex = Get-Exceptions $r.Text
+  $why = if ($r.Code -ne 0) { "exit code $($r.Code)" } elseif ($ex.Count -gt 0) { "exception: $($ex[0].Trim())" } elseif ($r.Text -match 'unreadable') { "a telemetry file was unreadable" } `
+         elseif ($checked -ne $gunFiles) { "checked $checked of $gunFiles runs" } elseif ($bad.Count -gt 0) { ($bad -join "; ").Trim() } else { "" }
+  Report "coach + 3D Rewind of $gunFiles picked-gun runs (header names the gun)" ($why -eq "") $why $r
 }
 
 # ---- 4b. Rewind insights: each flawed simulated player must produce many moments of its own problem, the good one few ----

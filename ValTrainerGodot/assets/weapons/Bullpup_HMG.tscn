@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/weapons/Bullpup_1.fbx" id="1_bullpup_1"]
+[ext_resource type="PackedScene" path="res://assets/weapons/Bipod.fbx" id="2_bipod"]
+
+[node name="Bullpup_HMG" type="Node3D" unique_id=1178201324]
+metadata/source_model = "res://assets/weapons/Bullpup_1.fbx"
+metadata/length_m = 0.892
+
+[node name="Model" type="Node3D" parent="." unique_id=1032234347 instance=ExtResource("1_bullpup_1")]
+transform = Transform3D(0, 0, 0.17, 0, 0.17, 0, -0.17, 0, 0, 0, 0, 0)
+
+[node name="Attach_Bipod" type="Node3D" parent="." unique_id=47763236 instance=ExtResource("2_bipod")]
+transform = Transform3D(0, 0, 0.039, -0.13, 0, 0, 0, -0.13, 0, 0, 0.095, -0.405)
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=927261166]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.138371925, -0.46226502)

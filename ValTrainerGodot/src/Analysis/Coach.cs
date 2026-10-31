@@ -99,7 +99,7 @@ public static class Coach
                 m = FromFile(r.TelemetryFile!); // bounded: ≈10–40 ms per file, cached
                 analysed++;
             }
-            if (m != null && m.Count > 0) runs.Add(new SensAdvisor.RunInfo(r.When, r.Sens, RunAnalysis.Normalize(r.Mode, r.Tier, m)));
+            if (m != null && m.Count > 0) runs.Add(new SensAdvisor.RunInfo(r.When, r.Sens, RunAnalysis.Normalize(r.Mode, r.Tier, m, r.Weapon)));
         }
         var agg = Agg.Aggregate(runs.Select(r => (r.When, r.M)), DateTime.Now);
         int tierGuess = (int)MathF.Round((float)all.Take(20).Where(r => r.Tier >= 0).Select(r => r.Tier).DefaultIfEmpty(1).Average());

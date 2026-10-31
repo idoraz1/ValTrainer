@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/weapons/Revolver_3.fbx" id="1_revolver_3"]
+
+[node name="Revolver_Heavy" type="Node3D" unique_id=855427928]
+metadata/source_model = "res://assets/weapons/Revolver_3.fbx"
+metadata/length_m = 0.258
+
+[node name="Model" type="Node3D" parent="." unique_id=1062355116 instance=ExtResource("1_revolver_3")]
+transform = Transform3D(0, 0, 0.13, 0, 0.13, 0, -0.13, 0, 0, 0, 0, 0)
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=1362777463]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.059532915, -0.23034453)

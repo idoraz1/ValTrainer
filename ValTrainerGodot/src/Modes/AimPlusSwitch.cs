@@ -14,8 +14,9 @@ namespace ValTrainer.Modes;
 public sealed class TargetSwitchMode : BotMode
 {
     public override string Key => "switch";
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.NoShotguns;
     public override string Name => "Target Switch";
-    public override string Description => "Three strafing agents (Vandal: 1 head or 4 body). Kill one, switch to the next — fast switches, no flicking past them.";
+    public override string Description => "Three strafing agents (real damage of your gun; a Vandal kills with 1 head or 4 body). Kill one, switch to the next — fast switches, no flicking past them.";
     public override string Category => "Aim";
     public override bool InfiniteAmmo => true; // pure aim drill: no reloads
     public override string SimKind => "bot";

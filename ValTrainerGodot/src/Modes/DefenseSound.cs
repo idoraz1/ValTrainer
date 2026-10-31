@@ -20,6 +20,7 @@ namespace ValTrainer.Modes;
 public sealed class SoundLockMode : MapMode
 {
     public override string Key => "sound";
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
     public override string Name => "Sound Lock";
     public override string Description => "Listen for footsteps and pre-aim where the enemy will appear.";
     public override string Category => "Utility";

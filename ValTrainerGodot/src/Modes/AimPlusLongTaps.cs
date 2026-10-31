@@ -16,6 +16,7 @@ namespace ValTrainer.Modes;
 public sealed class LongTapsMode : BotMode
 {
     public override string Key => "longtaps";
+    public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.NoShotguns;
     public override string Name => "Long-range Taps";
     public override string Description => "Tiny heads at 30–50 m with the Vandal: make the first bullet count, then let the recoil reset before the next tap. Higher tiers add strafers and peekers.";
     public override string Category => "Valorant";

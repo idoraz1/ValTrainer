@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/weapons/Shotgun_SawedOff.fbx" id="1_shotgun_sawedoff"]
+
+[node name="Shotgun_Sawnoff" type="Node3D" unique_id=1748767092]
+metadata/source_model = "res://assets/weapons/Shotgun_SawedOff.fbx"
+metadata/length_m = 0.553
+
+[node name="Model" type="Node3D" parent="." unique_id=910874547 instance=ExtResource("1_shotgun_sawedoff")]
+transform = Transform3D(0, 0, 0.15, 0, 0.15, 0, -0.15, 0, 0, 0, 0.015, -0.05)
+
+[node name="Muzzle" type="Marker3D" parent="." unique_id=113495033]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.075554025, -0.5427812)
