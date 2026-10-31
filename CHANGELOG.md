@@ -8,6 +8,8 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.18.0] - 2026-10-31
+
 ### Added
 - Every gun in VALORANT (suggested on Discord and GitHub): Classic, Shorty, Frenzy, Ghost, Sheriff, Bandit, Stinger, Spectre, Bucky, Judge, Bulldog, Guardian, Phantom, Vandal, Marshal, Outlaw, Operator, Ares, Odin and Warden. Each one uses VALORANT's numbers (fire rate, magazine, reload, damage by range, first-shot accuracy, spread, movement accuracy, run speed) and plays like it:
   - Shotguns fire pellets (Shorty 15, Bucky 15, Judge 12). A shot counts as one shot in the drills, and every pellet that hits does its own damage. Shorty and Bucky pellets stop at 50 m.
@@ -352,7 +354,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.17.0...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.18.0...HEAD
+[1.18.0]: https://github.com/idoraz1/ValTrainer/compare/v1.17.0...v1.18.0
 [1.17.0]: https://github.com/idoraz1/ValTrainer/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/idoraz1/ValTrainer/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/idoraz1/ValTrainer/compare/v1.14.1...v1.15.0
