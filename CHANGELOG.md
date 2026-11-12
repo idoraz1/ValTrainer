@@ -8,6 +8,8 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.19.0] - 2026-11-12
+
 ### Added
 - Gun skins (suggested on Discord): 15 original skin lines made for ValTrainer, in three tiers:
   - **Core** (5 lines, free from the start): Carbon Weave, Desert Camo, Anodized Teal, Damascus Steel and Two-Tone Polymer. A finish only.
@@ -373,7 +375,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.18.0...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.19.0...HEAD
+[1.19.0]: https://github.com/idoraz1/ValTrainer/compare/v1.18.0...v1.19.0
 [1.18.0]: https://github.com/idoraz1/ValTrainer/compare/v1.17.0...v1.18.0
 [1.17.0]: https://github.com/idoraz1/ValTrainer/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/idoraz1/ValTrainer/compare/v1.15.0...v1.16.0
