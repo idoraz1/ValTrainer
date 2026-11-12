@@ -4,11 +4,11 @@
 [![Latest release](https://img.shields.io/github/v/release/idoraz1/ValTrainer?label=download)](https://github.com/idoraz1/ValTrainer/releases/latest)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)](LICENSE)
 
-**A free aim, movement and utility trainer for VALORANT players.** ValTrainer imports your VALORANT sensitivity, crosshair
+**A free aim trainer for VALORANT players: aim, movement and utility training with your own settings.** ValTrainer imports your VALORANT sensitivity, crosshair
 and keybinds, so every drill feels like the game. Bots and targets scale to your rank, and an aim coach tells you
 what holds you back and how to fix it.
 
-Windows 10/11 · free and open source · fan-made, not affiliated with Riot Games
+Windows 10/11 · free and open source · English, Français, Español, Português (Brasil), Deutsch · fan-made, not affiliated with Riot Games
 
 **Website:** [valtrainer.github.io](https://valtrainer.github.io/): features, clips, download and FAQ. Also on [itch.io](https://idoraz1.itch.io/valtrainer).
 
@@ -53,6 +53,15 @@ downloads:
 | `ValTrainer-x.y.z-Portable.zip` | No installation: unzip anywhere and run `ValTrainer.exe`. On its first start it unpacks its .NET runtime to a folder in `%LOCALAPPDATA%`. |
 
 Both use the same settings and stats in `%APPDATA%\ValTrainer`, so you can switch between them.
+
+**Or install with winget** (Windows Package Manager, built into Windows 10 and 11):
+
+```powershell
+winget install Valtrainer.ValTrainer
+```
+
+It installs the same Setup.exe and checks its hash. Update with `winget upgrade Valtrainer.ValTrainer`, or let ValTrainer
+update itself. New versions reach winget after Microsoft's review, usually a day or two after the release.
 
 **"Windows protected your PC"?** ValTrainer isn't code-signed yet, so Windows SmartScreen warns about new downloads.
 Click **More info → Run anyway**. To check that your download is the official one, compare its SHA-256 hash with
