@@ -1,4 +1,5 @@
 using Godot;
+using ValTrainer.Core;
 using ValTrainer.Game;
 using ValTrainer.Game.Fx;
 using ValTrainer.Valorant;
@@ -119,7 +120,7 @@ public sealed class AbilityKit
             case Phase.Ready:
                 if (!keyEdge) break;
                 if (CanRecast?.Invoke() == true) { Recast?.Invoke(); break; }
-                if (Charges <= 0) { AbilitySfx.Play(g, "empty", 0.6f); Refuse("No charges left this round"); break; }
+                if (Charges <= 0) { AbilitySfx.Play(g, "empty", 0.6f); Refuse(L.N("No charges left this round")); break; }
                 Equip();
                 break;
 

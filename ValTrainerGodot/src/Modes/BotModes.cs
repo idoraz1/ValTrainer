@@ -12,6 +12,16 @@ public abstract class BotMode : TrainingMode
     public override string Category => "Valorant";
     public override bool InfiniteAmmo => false;   // real magazines + reloads
     public override bool InfiniteReserve => true;  // …that never run dry during a drill
+    /// <summary>Skin finisher rule (skins3-contracts §3, VALORANT's): drills that emit <c>round_won</c> are round drills (the
+    /// finisher plays on the kill of the last living enemy that wins the round), Deathmatch never plays one, and the
+    /// one-bot-at-a-time drills are rep drills (none). The KillTracker promotes a rep drill to a round drill at its first
+    /// <c>round_won</c> (any other bot drill that emits one).</summary>
+    public override Game.Skins.KillDrill KillDrill => this switch
+    {
+        DeathmatchMode => Game.Skins.KillDrill.Deathmatch,
+        MapMode or OpAngleMode or StrafeDuelMode or SprayTransferMode or PeekDuelMode => Game.Skins.KillDrill.Round,
+        _ => Game.Skins.KillDrill.Rep,
+    };
 
     /// <summary>Hits the closest live bot along the ray (walls checked by the caller via <paramref name="maxDist"/>).</summary>
     protected BotCharacter? ShootBots(IEnumerable<BotCharacter> bots, Vector3 o, Vector3 d, out HitZone zone, out bool killed, out float dist, float maxDist = float.PositiveInfinity)
@@ -38,6 +48,7 @@ public abstract class BotMode : TrainingMode
         {
             killed = true;
             best.Die(d);
+            G.OnPlayerKill(Game.Skins.KillInfo.For(G, best, zone, dist)); // skin kill effect (cosmetic; the session ignores non-player bullets)
             RegisterKill(best.SpawnTime, zone == HitZone.Head);
         }
         return best;
@@ -81,8 +92,8 @@ public sealed class StrafeBotsMode : BotMode
 
     public override string Key => "strafebots";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
-    public override string Name => "Strafe Bots";
-    public override string Description => "A-D strafing bots. Real damage of your gun (a Vandal kills with 1 head or 4 body). Kill before they leave.";
+    public override string Name => L.N("Strafe Bots");
+    public override string Description => L.N("A-D strafing bots. Real damage of your gun (a Vandal kills with 1 head or 4 body). Kill before they leave.");
 
     BotCharacter? bot;
     float targetVx, turnIn, respawnIn;
@@ -145,7 +156,7 @@ public sealed class StrafeBotsMode : BotMode
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
         foreach (var l in base.ResultLines()) yield return l;
-        yield return ("Bots that got away", escaped.ToString());
+        yield return (L.N("Bots that got away"), escaped.ToString());
     }
 
     public override int Badge()
@@ -162,8 +173,8 @@ public sealed class PeekMode : BotMode
 
     public override string Key => "peek";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
-    public override string Name => "Peek Practice";
-    public override string Description => "Bots wide-swing (and jiggle at high tiers) from cover. Pre-aim at head level; kill them before they leave.";
+    public override string Name => L.N("Peek Practice");
+    public override string Description => L.N("Bots wide-swing (and jiggle at high tiers) from cover. Pre-aim at head level; kill them before they leave.");
 
     static readonly Vector3[] Pillars =
     {
@@ -267,14 +278,14 @@ public sealed class PeekMode : BotMode
 
     public override IEnumerable<string> HudLines()
     {
-        if (placementErr.Count > 0) yield return $"Last pre-aim error {placementErr[^1]:0.0}°";
+        if (placementErr.Count > 0) yield return L.F($"Last pre-aim error {placementErr[^1]:0.0}°");
     }
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
         foreach (var l in base.ResultLines()) yield return l;
-        yield return ("Escaped", escaped.ToString());
-        if (placementErr.Count > 0) yield return ("Avg crosshair placement error", $"{placementErr.Average():0.0}° (lower = better)");
+        yield return (L.N("Escaped"), escaped.ToString());
+        if (placementErr.Count > 0) yield return (L.N("Avg crosshair placement error"), L.F($"{placementErr.Average():0.0}° (lower = better)"));
     }
 
     public override int Badge()
@@ -307,7 +318,7 @@ public sealed class OperatorMode : BotMode
     public override string Key => "operator";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Snipers;
     public override string Name => "Operator";
-    public override string Description => "Bots cross a gap between cover at 22–45 m. Operator: 2.5x scope, one-shot body, bolt action (or pick the Marshal / Outlaw).";
+    public override string Description => L.N("Bots cross a gap between cover at 22–45 m. Operator: 2.5x scope, one-shot body, bolt action (or pick the Marshal / Outlaw).");
     public override WeaponKind Weapon => WeaponKind.Operator;
 
     static readonly float[] LaneZ = { -24f, -34f, -44f };
@@ -367,7 +378,7 @@ public sealed class OperatorMode : BotMode
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
         foreach (var l in base.ResultLines()) yield return l;
-        yield return ("Escaped", escaped.ToString());
+        yield return (L.N("Escaped"), escaped.ToString());
     }
 
     public override int Badge() => Difficulty.BadgeWinRate(Tier, spawned == 0 ? 0 : (float)Kills / Math.Max(1, Kills + escaped));

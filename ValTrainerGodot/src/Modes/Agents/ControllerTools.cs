@@ -1,4 +1,5 @@
 using Godot;
+using ValTrainer.Core;
 using ValTrainer.Game;
 using ValTrainer.Game.Fx;
 using ValTrainer.UI;
@@ -27,8 +28,8 @@ abstract class SmokeAbility
     public virtual bool BlocksMovement => false;
     /// <summary>Nothing left to place with this ability this round.</summary>
     public virtual bool Spent => Charges <= 0 && !Equipped;
-    /// <summary>Short HUD status, e.g. "×2" or "ON".</summary>
-    public virtual string Status => Charges > 0 ? "×" + Charges : "USED";
+    /// <summary>Short HUD status, e.g. "×2" or "ON" (translated: display only, never compared).</summary>
+    public virtual string Status => Charges > 0 ? "×" + Charges : L.T("USED");
 
     /// <summary>The ability key was pressed. Default: take it in hand / put it away.</summary>
     public virtual bool OnKey()
@@ -182,7 +183,7 @@ sealed class AstralAbility : MapAbility
     public override string Name => "Astral Form";
     public override bool BlocksMovement => Equipped;
     public override bool Spent => !Equipped && M.StarsLeft <= 0;
-    public override string Status => $"{M.StarsLeft} star{(M.StarsLeft == 1 ? "" : "s")}";
+    public override string Status => L.P(M.StarsLeft, $"{M.StarsLeft} star", $"{M.StarsLeft} stars");
     public bool Visited;
 
     public override bool OnKey()
@@ -450,7 +451,7 @@ abstract class ViperGas : SmokeAbility
     protected ViperGas(SmokeExecuteMode m, GameAction key) : base(m, key, 1) { }
     public bool On => Active != null && Active.DownAt > M.Clock;
     public override bool Spent => Deployed && !Equipped;
-    public override string Status => !Deployed ? (Equipped ? "AIM" : "READY") : On ? "ON" : "OFF";
+    public override string Status => !Deployed ? L.T(Equipped ? "AIM" : "READY") : On ? L.C("toggle", "ON") : L.C("toggle", "OFF");
 
     public override bool OnKey()
     {
@@ -505,7 +506,7 @@ sealed class OrbAbility : ViperGas
     public Vector3 Ground { get; private set; }
     public OrbAbility(SmokeExecuteMode m) : base(m, m.Kit.SmokeKey) { }
     public override string Name => "Poison Cloud";
-    public override string Status => flying ? "FLYING" : base.Status;
+    public override string Status => flying ? L.T("FLYING") : base.Status;
     public override bool Spent => Deployed && !Equipped && !flying;
 
     public override bool OnInput(InputEvent e)
@@ -711,7 +712,9 @@ sealed class TideAbility : SmokeAbility
     public TideAbility(SmokeExecuteMode m) : base(m, m.Kit.WallKey, 1) { }
     public override string Name => M.Kit.WallAbility;
     public override bool Spent => Charges <= 0 && !Equipped && !running;
-    public override string Status => running ? "FLOWING" : base.Status;
+    public override string Status => running ? L.T("FLOWING") : base.Status;
+    /// <summary>The wave is travelling (the HUD hides the aim preview).</summary>
+    public bool Running => running;
 
     public override bool OnInput(InputEvent e)
     {

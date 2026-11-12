@@ -17,5 +17,5 @@ public static class SensInput
         return sens >= Min;
     }
 
-    public static string Hint => $"Type a number between {Min.ToString(CultureInfo.InvariantCulture)} and {Max.ToString(CultureInfo.InvariantCulture)}, e.g. 0.35";
+    public static string Hint => L.F($"Type a number between {Min.ToString(CultureInfo.InvariantCulture)} and {Max.ToString(CultureInfo.InvariantCulture)}, e.g. 0.35");
 }

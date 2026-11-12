@@ -1,4 +1,5 @@
 using Godot;
+using ValTrainer.Core;
 using ValTrainer.Game.Fx;
 using ValTrainer.Valorant;
 
@@ -49,10 +50,12 @@ public sealed record ControllerKit
     public int Stars { get; init; }
     public required SmokeLook Look { get; init; }
     public SmokeLook? WallLook { get; init; }
-    /// <summary>One-line placement help (HUD).</summary>
-    public required string HowTo { get; init; }
-    /// <summary>Short kit summary for the plan screen.</summary>
-    public required string Summary { get; init; }
+    /// <summary>One-line placement help (plan screen), translated when called (ability names are format arguments).</summary>
+    public required Func<ControllerKit, string> HowTo { get; init; }
+    /// <summary>Short kit summary for the plan screen, translated when called.</summary>
+    public required Func<ControllerKit, string> Summary { get; init; }
+
+    const string AstralForm = "Astral Form";
 
     static Color C(int r, int g, int b) => Color.Color8((byte)r, (byte)g, (byte)b);
 
@@ -63,32 +66,32 @@ public sealed record ControllerKit
             Key = "brimstone", Agent = "Brimstone", Ability = "Sky Smoke", Placing = SmokePlacing.Map,
             Charges = 3, Radius = 4.15f, Duration = 19.25f, Range = 55f, Deploy = 1f,
             Look = new SmokeLook(C(214, 210, 204), C(98, 94, 92), C(255, 196, 150), C(255, 160, 90), Density: 3.4f),
-            HowTo = "Tactical map: CLICK to mark up to 3 smokes (click a mark to remove it) · RIGHT-CLICK to launch",
-            Summary = "3 smokes · 4.15 m · 19 s · 55 m from you · dropped from the sky",
+            HowTo = _ => L.T("Tactical map: CLICK to mark up to 3 smokes (click a mark to remove it) · RIGHT-CLICK to launch"),
+            Summary = _ => L.T("3 smokes · 4.15 m · 19 s · 55 m from you · dropped from the sky"),
         },
         new()
         {
             Key = "omen", Agent = "Omen", Ability = "Dark Cover", Placing = SmokePlacing.Aim,
             Charges = 2, Radius = 4.1f, Duration = 15f, Range = 80f, Deploy = 1f,
             Look = new SmokeLook(C(92, 70, 132), C(14, 9, 26), C(150, 105, 255), C(170, 120, 255), Density: 3.8f, Swirl: 0.1f),
-            HowTo = "Aim the marker (it goes through walls): HOLD CLICK pushes it out, HOLD RIGHT-CLICK pulls it in · E throws · R overhead view",
-            Summary = "2 smokes · 4.1 m · 15 s · up to 80 m, aimed through walls",
+            HowTo = _ => L.T("Aim the marker (it goes through walls): HOLD CLICK pushes it out, HOLD RIGHT-CLICK pulls it in · E throws · R overhead view"),
+            Summary = _ => L.T("2 smokes · 4.1 m · 15 s · up to 80 m, aimed through walls"),
         },
         new()
         {
             Key = "astra", Agent = "Astra", Ability = "Nebula", Placing = SmokePlacing.Stars,
             Charges = 2, Stars = 5, Radius = 4.75f, Duration = 14.25f, Range = 0f, Deploy = 0.75f, SmokeKey = GameAction.Ability2,
             Look = new SmokeLook(C(150, 92, 206), C(34, 16, 62), C(246, 196, 255), C(236, 190, 255), Density: 3.4f, Sparkle: 1f, Swirl: 0.05f),
-            HowTo = "Astral Form: CLICK to place stars (click one to take it back) · RIGHT-CLICK or X to return · then LOOK AT A STAR + E = Nebula",
-            Summary = "5 stars, 2 Nebulas · 4.75 m · 14 s · anywhere on the map",
+            HowTo = k => L.F($"{AstralForm}: CLICK to place stars (click one to take it back) · RIGHT-CLICK or X to return · then LOOK AT A STAR + E = {k.Ability}"),
+            Summary = k => L.F($"5 stars, 2 × {k.Ability} · 4.75 m · 14 s · anywhere on the map"),
         },
         new()
         {
             Key = "clove", Agent = "Clove", Ability = "Ruse", Placing = SmokePlacing.Map,
             Charges = 2, Radius = 4f, Duration = 14f, Range = 60f, Deploy = 1f, FormTime = 0.5f,
             Look = new SmokeLook(C(232, 158, 226), C(92, 48, 104), C(130, 210, 255), C(255, 170, 240), Density: 3.3f),
-            HowTo = "Battlefield view: CLICK to mark 2 clouds (click a mark to remove it) · RIGHT-CLICK to launch",
-            Summary = "2 smokes · 4 m · 14 s · 60 m from you",
+            HowTo = _ => L.T("Battlefield view: CLICK to mark 2 clouds (click a mark to remove it) · RIGHT-CLICK to launch"),
+            Summary = _ => L.T("2 smokes · 4 m · 14 s · 60 m from you"),
         },
         new()
         {
@@ -97,8 +100,8 @@ public sealed record ControllerKit
             Wall = WallKind.ToxicScreen, WallAbility = "Toxic Screen", WallKey = GameAction.Ability2,
             Look = new SmokeLook(C(120, 196, 92), C(22, 64, 22), C(196, 255, 110), C(170, 255, 90), Density: 3.4f, Swirl: 0.09f),
             WallLook = new SmokeLook(C(118, 196, 90), C(24, 70, 22), C(200, 255, 120), C(170, 255, 90)),
-            HowTo = "Q orb: CLICK throws, RIGHT-CLICK lobs · E wall: CLICK fires it along your aim (through walls) · Q / E again = gas on/off (fuel)",
-            Summary = "Poison Cloud 4.5 m + Toxic Screen 60 m · fuel 100: one 12 s, both 8 s",
+            HowTo = _ => L.T("Q orb: CLICK throws, RIGHT-CLICK lobs · E wall: CLICK fires it along your aim (through walls) · Q / E again = gas on/off (fuel)"),
+            Summary = k => L.F($"{k.Ability} 4.5 m + {k.WallAbility} 60 m · fuel 100: one 12 s, both 8 s"),
         },
         new()
         {
@@ -107,16 +110,16 @@ public sealed record ControllerKit
             Wall = WallKind.HighTide, WallAbility = "High Tide", WallKey = GameAction.Ability1,
             Look = new SmokeLook(C(86, 170, 196), C(10, 58, 82), C(196, 246, 255), C(150, 230, 255), Density: 3.1f, Ripple: 1f, Swirl: 0.12f, Water: true),
             WallLook = new SmokeLook(C(92, 176, 204), C(12, 62, 88), C(220, 250, 255), C(150, 230, 255), Water: true),
-            HowTo = "E Cove: aim the marker (HOLD CLICK out / RIGHT-CLICK in), E throws · Q High Tide: CLICK sends the wave, HOLD CLICK steers it, RIGHT-CLICK stops it",
-            Summary = "Cove 4.6 m · 19 s + High Tide wall 60 m · 15 s",
+            HowTo = k => L.F($"E {k.Ability}: aim the marker (HOLD CLICK out / RIGHT-CLICK in), E throws · Q {k.WallAbility}: CLICK sends the wave, HOLD CLICK steers it, RIGHT-CLICK stops it"),
+            Summary = k => L.F($"{k.Ability} 4.6 m · 19 s + {k.WallAbility} wall 60 m · 15 s"),
         },
         new()
         {
             Key = "miks", Agent = "Miks", Ability = "Waveform", Placing = SmokePlacing.Map,
             Charges = 2, Radius = 4.72f, Duration = 16.75f, Range = 55.5f, Deploy = 1f, FormTime = 0.5f,
             Look = new SmokeLook(C(104, 214, 186), C(12, 76, 78), C(150, 255, 214), C(140, 255, 210), Density: 3.3f, Pulse: 1f),
-            HowTo = "Map targeter: CLICK to mark 2 smokes (click a mark to remove it) · RIGHT-CLICK to launch",
-            Summary = "2 smokes · 4.72 m · 17 s · 55 m from you",
+            HowTo = _ => L.T("Map targeter: CLICK to mark 2 smokes (click a mark to remove it) · RIGHT-CLICK to launch"),
+            Summary = _ => L.T("2 smokes · 4.72 m · 17 s · 55 m from you"),
         },
     };
 

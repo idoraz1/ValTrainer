@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using Godot;
 using ValTrainer.Analysis;
+using ValTrainer.Core;
 using ValTrainer.Game;
 
 namespace ValTrainer.UI;
@@ -81,32 +82,32 @@ public static class RewindData
 
     // ---------------- names ----------------
 
-    /// <summary>Short plain-English name of a moment code (plural, for "Show me" / headers).</summary>
+    /// <summary>Short plain-English name of a moment code (plural, for "Show me" / headers). English: translate where shown.</summary>
     public static string CodeName(string code) => code switch
     {
-        "MISS" => "Misses",
-        "KILL" => "Kills",
-        "DEATH" => "Deaths",
-        "OVERFLICK" => "Overshot flicks",
-        "UNDERFLICK" => "Short flicks",
-        "SLOW_REACT" => "Slow reactions",
-        "SLOW_START" => "Slow starts",
-        "SLOW_REACQ" => "Slow re-aims",
-        "SLOW_MICRO" => "Slow corrections",
-        "NO_MICRO" => "Shots straight off the flick",
-        "PREMATURE" => "Shots before you were on target",
-        "HESITATE" => "Hesitations",
-        "JITTER" => "Shaky aim",
-        "CURVED" => "Curved flicks",
-        "XHAIR_LOW" => "Crosshair too low",
-        "XHAIR_WIDE" => "Crosshair off the angle",
-        "TRACK_BEHIND" => "Trailing the target",
-        "TRACK_OVERRUN" => "Running past the target",
-        "RUN_GUN" => "Shots while moving",
-        "CLUMSY_MOVE" => "Clumsy stops",
-        "SPRAY_VERT" => "Spray drifting up",
-        "SPRAY_HORIZ" => "Spray drifting sideways",
-        "FLASH_SLOW" => "Late flash turns",
+        "MISS" => L.N("Misses"),
+        "KILL" => L.N("Kills"),
+        "DEATH" => L.N("Deaths"),
+        "OVERFLICK" => L.N("Overshot flicks"),
+        "UNDERFLICK" => L.N("Short flicks"),
+        "SLOW_REACT" => L.N("Slow reactions"),
+        "SLOW_START" => L.N("Slow starts"),
+        "SLOW_REACQ" => L.N("Slow re-aims"),
+        "SLOW_MICRO" => L.N("Slow corrections"),
+        "NO_MICRO" => L.N("Shots straight off the flick"),
+        "PREMATURE" => L.N("Shots before you were on target"),
+        "HESITATE" => L.N("Hesitations"),
+        "JITTER" => L.N("Shaky aim"),
+        "CURVED" => L.N("Curved flicks"),
+        "XHAIR_LOW" => L.N("Crosshair too low"),
+        "XHAIR_WIDE" => L.N("Crosshair off the angle"),
+        "TRACK_BEHIND" => L.N("Trailing the target"),
+        "TRACK_OVERRUN" => L.N("Running past the target"),
+        "RUN_GUN" => L.N("Shots while moving"),
+        "CLUMSY_MOVE" => L.N("Clumsy stops"),
+        "SPRAY_VERT" => L.N("Spray drifting up"),
+        "SPRAY_HORIZ" => L.N("Spray drifting sideways"),
+        "FLASH_SLOW" => L.N("Late flash turns"),
         _ => Pretty(code),
     };
 
@@ -128,13 +129,14 @@ public static class RewindData
         _ => UiTheme.Warn,
     };
 
-    /// <summary>Screen direction of an 8-way flick sector (0 = right, counter-clockwise).</summary>
+    /// <summary>Screen direction of an 8-way flick sector (0 = right, counter-clockwise), translated (display only).</summary>
     public static string SectorName(int s) => (s & 7) switch
     {
-        0 => "right", 1 => "up-right", 2 => "up", 3 => "up-left", 4 => "left", 5 => "down-left", 6 => "down", _ => "down-right",
+        0 => L.C("direction", "right"), 1 => L.C("direction", "up-right"), 2 => L.C("direction", "up"), 3 => L.C("direction", "up-left"),
+        4 => L.C("direction", "left"), 5 => L.C("direction", "down-left"), 6 => L.C("direction", "down"), _ => L.C("direction", "down-right"),
     };
 
-    /// <summary>Drill name for a mode key ("flashpeek:skye" → its base drill's name).</summary>
+    /// <summary>Drill name for a mode key ("flashpeek:skye" → its base drill's name). English: translate where shown.</summary>
     public static string ModeName(string key)
     {
         if (CoachData.HasDrill(key)) return CoachData.DrillName(key);

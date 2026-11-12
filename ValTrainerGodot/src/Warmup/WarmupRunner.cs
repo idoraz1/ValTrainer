@@ -328,6 +328,7 @@ public sealed class WarmupRunner
         var previous = store.Warmups.ToList();
         store.Warmups.Add(rec);
         store.Save();
+        Progression.Progress.OnLockInFinished(rec); // completion bonus + Lock-In challenges (Progress.LastLockIn: the hand-off line)
         Log.Info($"[lockin] complete={all} steps {rec.Steps.Count(s => !s.Skipped)}/{Plan.Steps.Count} readiness {(rec.Readiness >= 0 ? $"{rec.Readiness:0}% ({rec.ReadinessKind})" : "n/a")} " +
                  $"breathed {(breathed ? $"{breathSecs:0}s" : "no")} total {WarmupPlan.Clock(rec.TotalSeconds)}; sens back to {Main.I.Sens:0.000}");
         Main.I.ShowScreen(new LockInHandoff(rec, previous));

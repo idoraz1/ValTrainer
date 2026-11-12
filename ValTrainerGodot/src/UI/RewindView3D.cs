@@ -74,7 +74,7 @@ public partial class RewindScreen
             view3D = !Start2D;
             recTask = Task.Run(() => { try { return ReplayFile.For(run); } catch { return null; } });
         }
-        else note = "3D replay is recorded for new runs only";
+        else note = L.N("3D replay is recorded for new runs only");
     }
 
     static bool SidecarExists(string vtt)
@@ -115,7 +115,7 @@ public partial class RewindScreen
     /// <summary>3D can't be shown: 2D with a short note, the stage freed.</summary>
     void Fail3D()
     {
-        note = "3D replay unavailable for this run";
+        note = L.N("3D replay unavailable for this run");
         view3D = false;
         stage = null;
         if (sv != null && IsInstanceValid(sv)) sv.QueueFree();
@@ -237,7 +237,7 @@ public partial class RewindScreen
         over.DrawArc(sc, 11 * k, 0, Mathf.Tau, 32, new Color(UiTheme.Text, 0.12f * a), Mathf.Max(1.5f, 3 * k), true);
         float a0 = loadClock * 5.5f;
         over.DrawArc(sc, 11 * k, a0, a0 + 1.9f, 20, new Color(UiTheme.Accent, a), Mathf.Max(1.5f, 3 * k), true);
-        string title = readingFile ? "Loading run…" : stage is { Built: true } ? "3D replay ready" : "Loading 3D replay…";
+        string title = L.T(readingFile ? "Loading run…" : stage is { Built: true } ? "3D replay ready" : "Loading 3D replay…");
         Gfx.TextFit(over, UiTheme.Display, title, x + 34 * k, Gfx.Mid(ty, ts), ts, new Color(UiTheme.Text, a), right - x - 34 * k - 70 * k);
         int ps = UiTheme.Fs(18, k);
         Gfx.TextR(over, UiTheme.HudWide, $"{Mathf.RoundToInt(barShown * 100)}%", right, Gfx.Mid(ty, ps), ps, new Color(UiTheme.Text, 0.85f * a));
@@ -258,21 +258,22 @@ public partial class RewindScreen
 
         // step + hint
         int ss = UiTheme.Fs(15, k), hs = UiTheme.Fs(11, k);
-        string status = readingFile ? "Reading the replay file…" : stage?.LoadStatus is { Length: > 0 } st ? st : "Preparing…";
+        string status = readingFile ? L.T("Reading the replay file…") : stage?.LoadStatus is { Length: > 0 } st ? st : L.T("Preparing…");
         Gfx.TextFit(over, UiTheme.Body, status, x, bar.End.Y + 14 * k + ss, ss, new Color(UiTheme.Dim, a), right - x);
         Gfx.TextFit(over, UiTheme.HudWide, "PLAYS WHEN READY · PRESS V FOR 2D NOW", x, card.End.Y - 18 * k, hs,
             new Color(UiTheme.Faint, a), right - x);
     }
 
-    /// <summary>A subtle note at the top centre of the view (2D fallback reasons).</summary>
+    /// <summary>A subtle note at the top centre of the view (2D fallback reasons; English, translated here).</summary>
     void Note(Vector2 sz, string text)
     {
         int fs = UiTheme.Fs(12, k);
-        float w = Mathf.Min(Gfx.TextW(UiTheme.HudWide, text.ToUpperInvariant(), fs) + 24 * k, sz.X * 0.5f);
+        text = L.Upper(L.T(text));
+        float w = Mathf.Min(Gfx.RawW(UiTheme.HudWide, text, fs) + 24 * k, sz.X * 0.5f);
         var r = new Rect2((sz.X - w) / 2, 12 * k, w, fs + 12 * k);
         over.DrawRect(r, new Color(0.02f, 0.035f, 0.05f, 0.75f));
         over.DrawRect(r, new Color(UiTheme.Text, 0.14f), false, 1f);
-        Gfx.TextFit(over, UiTheme.HudWide, text.ToUpperInvariant(), r.Position.X + 12 * k, Gfx.Mid(r.GetCenter().Y, fs), fs, UiTheme.Dim, w - 20 * k);
+        Gfx.TextFit(over, UiTheme.HudWide, text, r.Position.X + 12 * k, Gfx.Mid(r.GetCenter().Y, fs), fs, UiTheme.Dim, w - 20 * k);
     }
 
     /// <summary>The analysis over the 3D picture, all anchored in the world through the replay camera.</summary>
@@ -350,22 +351,22 @@ public partial class RewindScreen
             Crosshair(over, sz, scoped && !sniper && e >= 0.55f ? CrosshairView.Mode.Ads : CrosshairView.Mode.Primary);
 
         // captions: the view, the moment at the playhead, partial support, status line
-        var cap = CaptionPlate(over, new Vector2(12 * k, 12 * k), zoom == 1 ? "3D REPLAY · 1×" : "3D CLOSE-UP · 4×", UiTheme.Text, cs);
+        var cap = CaptionPlate(over, new Vector2(12 * k, 12 * k), L.T(zoom == 1 ? "3D REPLAY · 1×" : "3D CLOSE-UP · 4×"), UiTheme.Text, cs);
         if (mi >= 0 && mi < moments.Count)
         {
             var m = moments[mi];
             var mc = RewindData.CodeColor(m.Code);
-            CaptionPlate(over, new Vector2(12 * k, cap.End.Y + 6 * k), $"MOMENT {mi + 1}/{moments.Count} · {m.Label.ToUpperInvariant()}", mc, cs, mc,
+            CaptionPlate(over, new Vector2(12 * k, cap.End.Y + 6 * k), L.F($"MOMENT {mi + 1}/{moments.Count} · {L.Upper(L.T(m.Label))}"), mc, cs, mc,
                 sz.X * 0.62f);
         }
-        string fov = $"{stage.Pose.HFov:0}° FOV";
+        string fov = L.F($"{stage.Pose.HFov:0}° FOV");
         float fw = Gfx.TextW(UiTheme.HudWide, fov, cs) + 18 * k;
         var fovR = new Rect2(sz.X - 12 * k - fw, 12 * k, fw, cs + 12 * k);
         over.DrawRect(fovR, new Color(0.02f, 0.035f, 0.05f, 0.7f));
         Gfx.TextC(over, UiTheme.HudWide, fov, fovR.GetCenter().X, Gfx.Mid(fovR.GetCenter().Y, cs), cs, UiTheme.Dim);
         if (support == ReplaySupport.Partial)
         {
-            const string chip = "UTILITY NOT SHOWN IN 3D YET";
+            string chip = L.T("UTILITY NOT SHOWN IN 3D YET");
             int chs = UiTheme.Fs(11, k);
             float cw = Gfx.TextW(UiTheme.HudWide, chip, chs) + 18 * k;
             var cr = new Rect2(sz.X - 12 * k - cw, fovR.End.Y + 6 * k, cw, chs + 10 * k);
@@ -381,12 +382,12 @@ public partial class RewindScreen
         if (cur.Id != 0)
         {
             float err = Mathf.Sqrt(cur.Yaw * cur.Yaw + cur.Pitch * cur.Pitch);
-            if (err <= cur.R) { status = "On the target"; sc = UiTheme.Good; }
-            else status = $"Target {err:0.0}° away";
-            if (!onScreen && stage.FocusPoint != null) status += " (off screen)";
+            if (err <= cur.R) { status = L.T("On the target"); sc = UiTheme.Good; }
+            else status = L.F($"Target {err:0.0}° away");
+            if (!onScreen && stage.FocusPoint != null) status += " " + L.T("(off screen)");
         }
-        else status = "No target";
-        string extra = (fr0.Has(FrameFlags.Firing) ? "  ·  FIRING" : "") + (fr0.Speed > 1f ? $"  ·  MOVING {fr0.Speed:0.0} M/S" : "");
+        else status = L.T("No target");
+        string extra = (fr0.Has(FrameFlags.Firing) ? L.T("  ·  FIRING") : "") + (fr0.Speed > 1f ? L.F($"  ·  MOVING {fr0.Speed:0.0} M/S") : "");
         float sw = Gfx.TextW(UiTheme.Body, status, fs) + Gfx.TextW(UiTheme.HudWide, extra, cs);
         float y = sz.Y - 14 * k;
         over.DrawRect(new Rect2(6 * k, y - fs - 8 * k, sw + 16 * k, fs + 16 * k), new Color(0.02f, 0.035f, 0.05f, 0.7f));

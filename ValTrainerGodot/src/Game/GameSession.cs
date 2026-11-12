@@ -5,6 +5,7 @@ using ValTrainer.Core;
 using ValTrainer.Game.Bots;
 using ValTrainer.Game.Fx;
 using ValTrainer.Game.Replay;
+using ValTrainer.Game.Skins;
 using ValTrainer.Game.Weapon;
 using ValTrainer.Modes;
 using ValTrainer.UI;
@@ -74,6 +75,12 @@ public partial class GameSession : Node3D, IGame
     public string BannerText = "";
     public float BannerTime;
     public Color BannerColor;
+    /// <summary>The small crosshair-name plate under the crosshair after a switch (Hud.DrawXhairToast); not the big banner,
+    /// which drills use for round events and which would cover the crosshair being judged.</summary>
+    public string XhairToastText = "", XhairToastSub = "";
+    public float XhairToastTime;
+    public bool XhairToastWarn;
+    public const float XhairToastLife = 1.3f;
 
     public GameSession(Func<TrainingMode> factory) => this.factory = factory;
 
@@ -298,6 +305,7 @@ public partial class GameSession : Node3D, IGame
         AddChild(World);
         Effects.Root = World;
         Effects.Prewarm();
+        SkinRestart(); // skin kill effects / finishers: a fresh pool + tracker; Equip below builds the gun's recipes (SkinSession.cs)
         if (Mode is BotMode) BotCharacter.Prewarm(World, Enemy, Main.I.Settings.Outlines, Mode.StartFeet + new Vector3(0, -3f, -4f));
 
         cam = new Camera3D { Fov = PlayerView.HipHFov, KeepAspect = Camera3D.KeepAspectEnum.Width, Near = 0.03f, Far = 400f, Current = true };
@@ -377,6 +385,14 @@ public partial class GameSession : Node3D, IGame
             }
             if (k.Keycode == Key.R && State == St.Results) { Restart(); return; }
         }
+        // ValTrainer's Previous / Next crosshair binds ("," "." by default; VALORANT has no such bind). Not while typing a
+        // sensitivity on the pause menu ("." is a decimal point there). No return: a shared bind still does its other action.
+        if (State is St.Countdown or St.Running or St.Paused && !(State == St.Paused && GetViewport().GuiGetFocusOwner() is LineEdit))
+        {
+            var xb = Main.I.Valorant.Binds;
+            int xd = xb.Pressed(e, GameAction.CrosshairNext) ? 1 : xb.Pressed(e, GameAction.CrosshairPrev) ? -1 : 0;
+            if (xd != 0) SwitchCrosshair(xd);
+        }
         // VALORANT's buy-menu bind (B by default): the gun picker over the drill, also from the pause menu (BuySession.cs)
         if (State is St.Countdown or St.Running or St.Paused && !BuyJustClosed && Main.I.Valorant.Binds.Pressed(e, GameAction.BuyMenu)
             && !(State == St.Paused && GetViewport().GuiGetFocusOwner() is LineEdit)) // typing a sensitivity on the pause menu
@@ -409,6 +425,7 @@ public partial class GameSession : Node3D, IGame
             Gun.StartReload(Mode.InfiniteReserve);
         // Wheel notches have no hold: queue the jump (key / mouse-button jumps are polled by the Mover).
         if (wheel && State == St.Running && binds.Pressed(e, GameAction.Jump)) Mover.QueueJump();
+        InspectBindEvent(e, binds, fire > 0, ads > 0); // weapon inspect: the bind starts it, fire / ADS cancel it (InspectSession.cs)
     }
 
     public void Pause()
@@ -430,6 +447,7 @@ public partial class GameSession : Node3D, IGame
         // A results-screen "Practise" button starts the next session before this one is freed: leave its state alone.
         if (active != this) return;
         active = null;
+        Skins.SkinAudio.StopAll(); // leaving the drill: no skin voice keeps playing in the menu
         if (GetViewport() is { } vp) vp.Disable3D = false;
         Engine.TimeScale = 1; // dev --sftimescale, if the drill was left mid-run
     }
@@ -453,6 +471,7 @@ public partial class GameSession : Node3D, IGame
     {
         float dt = Mathf.Min((float)delta, 0.05f);
         if (BannerTime > 0) BannerTime -= dt;
+        if (XhairToastTime > 0) XhairToastTime -= dt;
 
         switch (State)
         {
@@ -470,6 +489,8 @@ public partial class GameSession : Node3D, IGame
         }
         if (Main.I.Dev && !Demo) DevKeybindTick(); // --keybind-test (KeybindTest.cs)
         if (Main.I.Dev && !Demo) DevBuyTick((float)delta); // --buy-test (BuySession.cs)
+        if (Main.I.Dev && !Demo) DevXhairSwitchTick(dt); // --xhair-switch-test (XhairSwitchTest.cs)
+        if (Main.I.Dev && !Demo) DevInspectTick(); // --inspect-test (InspectSession.cs)
 
         UpdateCamera();
         UpdateAdsVisuals(); // crosshair mode, scope, sight outline, viewmodel aim pose (AdsSession.cs)
@@ -567,8 +588,14 @@ public partial class GameSession : Node3D, IGame
             var look = WeaponLooks.For(weaponDef!.Kind); // shot / bolt / reload sounds
             if (shots.Count > 0)
             {
-                Play2D(look.ShotSound, 0.55f * look.Volume, 1f + ((float)Rng.NextDouble() - 0.5f) * 0.05f);
-                if (look.BoltSound is { } bolt) GetTree().CreateTimer(WeaponLooks.BoltDelay).Timeout += () => Play2D(bolt, 0.7f);
+                float shotPitch = 1f + ((float)Rng.NextDouble() - 0.5f) * 0.05f;
+                var skin = skinState; // null in previews and drills without skin effects
+                // a skin with its own fire replaces the shot (core + skin, same gain and pitch); else the factory shot
+                if (skin == null || !SkinAudio.PlayFire(skin, weaponDef!.Kind, look.ShotSound, 0.55f * look.Volume, shotPitch))
+                    Play2D(look.ShotSound, 0.55f * look.Volume, shotPitch);
+                var boltGun = weaponDef!.Kind;
+                if (look.BoltSound is { } bolt)
+                    GetTree().CreateTimer(WeaponLooks.BoltDelay).Timeout += () => { Play2D(bolt, 0.7f); if (skin != null) SkinAudio.PlayBoltLayer(skin, boltGun); };
             }
             if (look.SpinUpSound is { } spinUp)
             {
@@ -579,8 +606,13 @@ public partial class GameSession : Node3D, IGame
                 else { if (spinWas && spinHeldFor > 0.3f && look.SpinDownSound is { } spinDown) Play2D(spinDown, 0.4f); spinHeldFor = 0f; }
                 spinWas = spinTrig;
             }
-            if (Gun.Reloading && !wasReloading) Play2D(look.ReloadSound, 0.6f, look.ReloadPitch);
+            if (Gun.Reloading && !wasReloading)
+            {
+                Play2D(look.ReloadSound, 0.6f, look.ReloadPitch);
+                SkinReloadSound(look); // the skin layer, or the Apex special reload's sound with the factory duration (InspectSession.cs)
+            }
             wasReloading = Gun.Reloading;
+            InspectFrame(); // weapon inspect cancel rules (InspectSession.cs)
             if (wasScoped && !Gun.Scoped && weaponDef!.Scope) adsHeld = false;
         }
         else if (Mode.Is2D && firePressedEdge)
@@ -594,6 +626,7 @@ public partial class GameSession : Node3D, IGame
         RecordFrame();
         if (Main.I.Dev && Adaptive != null && Mode.SupportsAdaptive && (int)(Now / 10f) != (int)((Now - dt) / 10f))
             Log.Info($"[adapt] t={Now:0} {Adaptive}"); // dev: the staircase every 10 s
+        SkinFrame(); // skins: the Mode.Done watch (match-winning finisher), the finisher window, the kill counter
         if ((Mode.Timed && Now >= RunDuration) || Mode.Done) Finish();
     }
 
@@ -636,7 +669,11 @@ public partial class GameSession : Node3D, IGame
         }
     }
 
-    public void Event(string kind, float a = 0, float b = 0) => Telemetry.Events.Add(new TelemetryEvent(Now, kind, a, b));
+    public void Event(string kind, float a = 0, float b = 0)
+    {
+        Telemetry.Events.Add(new TelemetryEvent(Now, kind, a, b));
+        SkinWatchEvent(kind); // read-only: round_won / round_lost / died drive the skin finishers (SkinSession.cs)
+    }
 
     /// <summary>Dev-only "--gun-log": a log line per volley (pellets, cone, ammo, fire rate and spin-up, burst, scope) for
     /// gshot / headless checks of the gun mechanics, e.g. <c>--gun Odin --autofire --gun-log</c> shows the fire-rate ramp.</summary>
@@ -733,12 +770,17 @@ public partial class GameSession : Node3D, IGame
         // Snapshot the focus BEFORE the mode reacts (a hit may respawn the target).
         var focus = Mode.Focus;
         Mode.LastShotZone = HitZone.None;
+        Mode.LastShotIgnored = false;
         var eye = View.Eye;
         var origin = from ?? eye;
         float wall = Collision.FirstHit(origin, dir, solid, out int wi);
         float reach = maxRange > 0f ? Mathf.Min(wall, maxRange) : wall;
         BulletWallDist = reach;
-        float hitMode = Mode.OnBullet(origin, dir, accurate);
+        float hitMode;
+        inPlayerBullet = true; // OnPlayerKill (skin kill effects) only counts inside the player's own bullet
+        try { hitMode = Mode.OnBullet(origin, dir, accurate); }
+        finally { inPlayerBullet = false; }
+        if (Mode.LastShotIgnored) record = false; // an accidental double-click: not a shot for the coach or the Rewind
         if (record)
         {
             var shot = new ShotSample
@@ -762,7 +804,8 @@ public partial class GameSession : Node3D, IGame
         if (tracer)
         {
             var muzzle = from ?? viewmodel?.MuzzleWorld ?? eye + dir * 0.6f;
-            Effects.Tracer(muzzle, origin + dir * end);
+            if (SkinBullets is { } sb) sb.Tracer(muzzle, origin + dir * end); // the worn line's Bullet FX tracer (SkinSession.cs)
+            else Effects.Tracer(muzzle, origin + dir * end, skinTracer); // null = factory colour
         }
         if (hitMode < reach && hitMode < 80f && Mode is not BotMode) Effects.BodyHit(origin + dir * hitMode, Enemy, false);
         var wallNormal = Vector3.Zero;
@@ -770,7 +813,8 @@ public partial class GameSession : Node3D, IGame
         {
             var p = origin + dir * wall;
             wallNormal = solid[wi].NormalAt(p);
-            Effects.Impact(p, wallNormal, new Color(0.5f, 0.5f, 0.5f));
+            if (SkinBullets is { } sb) sb.Impact(p, wallNormal); // the line's impact + the factory bullet hole (SkinSession.cs)
+            else Effects.Impact(p, wallNormal, new Color(0.5f, 0.5f, 0.5f));
         }
         if (record) replay?.PlayerShot(Now, Telemetry.Shots.Count - 1, origin + dir * end, wallNormal);
         return (hitMode, wall);
@@ -808,6 +852,7 @@ public partial class GameSession : Node3D, IGame
         State = St.Results;
         ResetTransientInput();
         SetWorldRunning(false);
+        SkinResults(); // a finisher on the last kill plays out behind the results
         Input.MouseMode = Input.MouseModeEnum.Visible;
         var app = Main.I;
         SettleRunGun(); // a match that changed guns is saved under the gun held longest (BuySession.cs)
@@ -825,6 +870,8 @@ public partial class GameSession : Node3D, IGame
         }
         catch (Exception ex) { GD.PushWarning($"Coach failed: {ex.Message}"); }
         bool adaptive = Mode.SupportsAdaptive && Adaptive != null;
+        // a real run (stats.json, PBs, stars, score challenges): kept, fixed tier, the drill's own full length or completed
+        bool real = Progression.XpRules.RealRun(KeepInStats, adaptive, Mode.Timed, Mode.Duration, RunDuration);
         if (adaptive)
         {
             // Lock-In calibration drills: the level held at the target hit rate (Threshold; the final level if too few trials).
@@ -849,12 +896,15 @@ public partial class GameSession : Node3D, IGame
             catch { }
         }
         else if (TelemetryOut != null) { try { Telemetry.Save(TelemetryOut, keep: 500); } catch { } }
-        // Automated/dev runs never touch the user's stats; adaptive runs' scores aren't comparable with fixed-tier runs.
-        if (app.SavesData && KeepInStats && !adaptive)
+        // Automated/dev runs never touch the user's stats; adaptive and shortened runs' scores aren't comparable.
+        if (app.SavesData && real)
         {
             app.Stats.Runs.Add(Record);
             app.Stats.Save();
         }
+        // Progression: XP, stars, challenges and unlocks (dev runs count in memory only); Progress.LastRun feeds the results XP strip.
+        Progression.Progress.OnRunFinished(new Progression.RunFacts(Record, real, Progression.Progress.ActiveSeconds(Telemetry),
+            GunSkins.IdFor(Mode.ActiveWeapon), OnFinished != null, adaptive, Progression.XpRules.IsFinder(Mode.Key)));
         if (OnFinished is { } done) { OnFinished = null; done(this); } // routine: next step instead of the results screen
     }
 
@@ -896,6 +946,7 @@ public partial class GameSession : Node3D, IGame
         World.AddChild(b);
         b.Feet = feet;
         replay?.TrackBot(b, Now);
+        SkinSpawned(b, feet); // spawn-clear: skin effects near a new bot fade at once
         return b;
     }
 
@@ -938,6 +989,8 @@ public partial class GameSession : Node3D, IGame
     public void Sound(string name, float vol = 1f, float pitch = 1f)
     {
         if (volleySounds != null && !volleySounds.Add(name)) return; // a pellet volley's hits: each sound once, not 15 stacked
+        // the player's hit sounds: the skin's own body / headshot sound (Settings → Classic hit sounds keeps the factory ones)
+        if (name is "body" or "head" && !Demo && skinState is { } hs && SkinAudio.PlayHit(hs, name == "head", vol, pitch)) return;
         Play2D(name, vol, pitch);
     }
     /// <summary>Sounds the drill played during the pellet volley being resolved (null outside a volley).</summary>
@@ -977,6 +1030,30 @@ public partial class GameSession : Node3D, IGame
         BannerTime = 1.4f;
     }
 
+    /// <summary>The crosshair switcher in a drill (binds, pause-menu arrows): the next (+1) / previous (-1) crosshair of
+    /// <see cref="ValTrainer.Valorant.CrosshairList"/>, with its name under the crosshair. Refused in the Crosshair Finder
+    /// (it picks the crosshair there and records its own trials) and with the dev --xhair-code.</summary>
+    public void SwitchCrosshair(int d)
+    {
+        if (Demo) return;
+        if (Mode.Key == "xhairfinder") { XhairToast(L.N("CROSSHAIR FINDER PICKS THE CROSSHAIR HERE"), L.N("SWITCH AFTER THE TEST"), warn: true); return; }
+        if (ValTrainer.Valorant.CrosshairCode.DevOverride != null) { XhairToast("DEV CROSSHAIR (--xhair-code)", "SWITCHING IS OFF", warn: true); return; }
+        var list = ValTrainer.Valorant.CrosshairList.All;
+        if (list.Count <= 1) { XhairToast(L.N("ONLY ONE CROSSHAIR"), L.N("ADD CODES IN SETTINGS (CROSSHAIR)"), warn: true); return; }
+        var e = ValTrainer.Valorant.CrosshairList.Step(d);
+        Play2D("kill1", 0.3f, d > 0 ? 1.15f : 0.95f);
+        XhairToast(e.Name, e.DisplayTag); // the source tag in the UI language (the HUD upper-cases it)
+    }
+
+    /// <summary>English (warnings: L.N, translated by the HUD where drawn) or a crosshair name and its source tag.</summary>
+    void XhairToast(string text, string sub, bool warn = false)
+    {
+        XhairToastText = text;
+        XhairToastSub = sub;
+        XhairToastWarn = warn;
+        XhairToastTime = XhairToastLife;
+    }
+
     /// <summary>Dev-only "--campos x,y,z,yaw[,pitch]" (world metres, degrees): every respawn puts the player there instead —
     /// screenshots of exact map spots (map fixes).</summary>
     static readonly float[]? DevCamPos = ArgAfter("--campos")?.Split(',')
@@ -994,10 +1071,17 @@ public partial class GameSession : Node3D, IGame
         View.Yaw = yaw;
         View.Pitch = Main.I.Dev && !Demo && DevCamPos is { Length: >= 5 } cpp ? cpp[4] : 0;
         View.RecoilPitch = View.RecoilYaw = 0;
+        int ammoWas = Gun?.Ammo ?? 0; bool reloadingWas = Gun?.Reloading == true;
+        Gun?.Refill();       // every life and every round starts on a full magazine, like VALORANT (Discord, Nov 5)
         Gun?.ResetRecoil();
+        if (Main.I.Dev && !Demo && Gun != null && (ammoWas < Gun.Def.Mag || reloadingWas))
+            Log.Info(string.Create(System.Globalization.CultureInfo.InvariantCulture,
+                $"[refill] {Mode.Key} t={Now:0.0}: respawn, {Gun.Def.Name} {ammoWas}/{Gun.Def.Mag}{(reloadingWas ? " reloading" : "")} -> full"));
         Player.Reset();
         UpdateCamera();
     }
+
+    public void RefillGun() => Gun?.Refill();
 
     public bool LineOfSight(Vector3 a, Vector3 b) => (smokes.Count == 0 || !SmokeVolume.Blocks(smokes, a, b, Now)) && !Collision.Blocked(a, b, solid);
     // Controller smokes / walls: vision blockers for LineOfSight (bullets ignore them). Restart() clears them.

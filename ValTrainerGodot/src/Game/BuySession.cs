@@ -43,8 +43,8 @@ public partial class GameSession
     /// <summary>Why <paramref name="m"/> has no buy menu (the banner text), or null when it offers a gun choice.</summary>
     public static string? BuyRefusal(TrainingMode m)
     {
-        if (m.Weapon == WeaponKind.None || m.Is2D) return "NO GUNS IN THIS DRILL";
-        if (m.WeaponChoice is not { Count: > 0 }) return $"THIS DRILL USES THE {GunPicker.GunName(m.Weapon).ToUpperInvariant()}";
+        if (m.Weapon == WeaponKind.None || m.Is2D) return L.T("NO GUNS IN THIS DRILL");
+        if (m.WeaponChoice is not { Count: > 0 }) return L.F($"THIS DRILL USES THE {GunPicker.GunName(m.Weapon).ToUpperInvariant()}");
         return null;
     }
 
@@ -60,14 +60,14 @@ public partial class GameSession
         var binds = Main.I.Valorant.Binds;
         var size = GetViewport().GetVisibleRect().Size;
         float k = UiTheme.S(size);
-        string title = $"{Mode.Name} · {(FreePlay ? "free play: a new gun comes out right away" : GunOnRespawn ? "a new gun comes out when you respawn" : "a new gun restarts the run")}";
+        string title = $"{Mode.DisplayName} · {L.T(FreePlay ? "free play: a new gun comes out right away" : GunOnRespawn ? "a new gun comes out when you respawn" : "a new gun restarts the run")}";
         buyPicked = null;
         var picker = GunPicker.OpenForDrill(hudLayer, k, Mode, Mode.ActiveWeapon, g => buyPicked = g, title, p =>
         {
             p.Theme = UiTheme.MakeTheme(k);
             p.CloseOn = e => binds.Pressed(e, GameAction.BuyMenu);
             string bind = binds.Text(GameAction.BuyMenu, " / ");
-            p.KeysHint = $"Click or Enter picks · arrows move · {(bind == "B" ? "B" : bind + " / B")} / Esc closes";
+            p.KeysHint = L.F($"Click or Enter picks · arrows move · {(bind == "B" ? "B" : bind + " / B")} / Esc closes");
         });
         if (picker == null) return false;
         buyPicker = picker;
@@ -103,7 +103,7 @@ public partial class GameSession
             nextLifeGun = null;
             WeaponPick = same;
             LeaveBuy(true);
-            Banner($"KEEPING THE {GunPicker.GunName(same).ToUpperInvariant()}", UiTheme.Text);
+            Banner(L.F($"KEEPING THE {GunPicker.GunName(same).ToUpperInvariant()}"), UiTheme.Text);
         }
         else LeaveBuy(false);
     }
@@ -135,7 +135,7 @@ public partial class GameSession
         if (g == Mode.ActiveWeapon) return;
         Mode.Pick = g;
         SwitchWeapon(g);
-        Banner(GunPicker.GunName(g).ToUpperInvariant(), UiTheme.Text);
+        Banner(L.Raw(GunPicker.GunName(g).ToUpperInvariant()), UiTheme.Text); // gun names stay English
         if (Main.I.Dev) Log.Info($"[buy] {Mode.Key}: respawned with the {g}");
     }
 
@@ -164,7 +164,7 @@ public partial class GameSession
             // Deathmatch: no restart, no respawn — the gun comes out on your next life (right away if you're dead)
             LeaveBuy(true);
             nextLifeGun = g;
-            Banner($"{GunPicker.GunName(g).ToUpperInvariant()} · NEXT LIFE", UiTheme.Text);
+            Banner(L.F($"{GunPicker.GunName(g).ToUpperInvariant()} · NEXT LIFE"), UiTheme.Text);
             if (Main.I.Dev) Log.Info($"[buy] {Mode.Key}: {g} on the next life (no restart)");
             return;
         }
@@ -174,7 +174,7 @@ public partial class GameSession
             LeaveBuy(true);
             Mode.Pick = g;
             SwitchWeapon(g);
-            Banner(GunPicker.GunName(g).ToUpperInvariant(), UiTheme.Text);
+            Banner(L.Raw(GunPicker.GunName(g).ToUpperInvariant()), UiTheme.Text); // gun names stay English
             if (Main.I.Dev) Log.Info($"[buy] {Mode.Key}: free play now plays the {g} (no restart)");
             return;
         }

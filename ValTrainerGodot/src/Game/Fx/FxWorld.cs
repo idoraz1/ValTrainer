@@ -160,15 +160,7 @@ public partial class FxWorld : Node3D
     public void Impact(Vector3 pos, Vector3 normal, Color surface)
     {
         normal = normal.LengthSquared() > 1e-6f ? normal.Normalized() : Vector3.Up;
-        // Bullet hole.
-        var h = holes[nHole];
-        nHole = (nHole + 1) % holes.Count;
-        h.Age = 0f;
-        float s = R(0.85f, 1.15f);
-        h.Node.Size = new Vector3(0.085f * s, 0.08f, 0.085f * s);
-        h.Node.GlobalTransform = new Transform3D(Around(normal), pos);
-        h.Node.Modulate = Colors.White;
-        h.Node.Visible = true;
+        Hole(pos, normal);
 
         // Sparks (warm), dust (surface tinted), quick flash.
         var xf = new Transform3D(Around(normal), pos + normal * 0.01f);
@@ -178,6 +170,20 @@ public partial class FxWorld : Node3D
         Burst(dust[nDust], xf, dustTint, 1f, 1f);
         nDust = (nDust + 1) % dust.Count;
         Flash(pos + normal * 0.03f, new Color(1f, 0.7f, 0.4f), R(0.1f, 0.16f), 1f);
+    }
+
+    /// <summary>Only the bullet-hole decal of an impact (skin Bullet FX draw their own sparks and flash).</summary>
+    public void Hole(Vector3 pos, Vector3 normal)
+    {
+        normal = normal.LengthSquared() > 1e-6f ? normal.Normalized() : Vector3.Up;
+        var h = holes[nHole];
+        nHole = (nHole + 1) % holes.Count;
+        h.Age = 0f;
+        float s = R(0.85f, 1.15f);
+        h.Node.Size = new Vector3(0.085f * s, 0.08f, 0.085f * s);
+        h.Node.GlobalTransform = new Transform3D(Around(normal), pos);
+        h.Node.Modulate = Colors.White;
+        h.Node.Visible = true;
     }
 
     public void BodyHit(Vector3 pos, Color enemy, bool headshot)

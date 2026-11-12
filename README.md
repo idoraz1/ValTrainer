@@ -202,7 +202,7 @@ The ratings need data: play Head Flicks, Strafe Tracking, Peek Practice, Counter
 - **Nothing is uploaded on its own.** No account, no analytics, no telemetry leaves your PC.
 - Your settings, stats and run recordings stay in `%APPDATA%\ValTrainer` on your PC. Delete that folder to reset
   everything.
-- Apart from bug reports you send yourself (below), the **only** network traffic is the optional update check to
+- Apart from bug reports you send yourself and **Get my code** (both below), the **only** network traffic is the optional update check to
   `api.github.com` (at startup and every 6 hours), which asks for the latest release of this project, and downloading
   that release's files from GitHub. Turn it off in Settings and ValTrainer never goes online. Downloaded updates wait
   in `%LOCALAPPDATA%\ValTrainer\updates` and are deleted after they're installed.
@@ -214,6 +214,11 @@ The ratings need data: play Head Flicks, Strafe Tracking, Peek Practice, Counter
   server members can see it. Nothing else is uploaded; COPY REPORT lets you post it yourself instead.
 - The **Support ValTrainer** panel (Buy Me a Coffee / Ko-fi) makes no network requests: its buttons only open the page
   in your browser.
+- **Supporter codes** are checked on your PC, offline. **Get my code** (Settings → About) is the only exception: when you
+  press GET, ValTrainer sends the email you typed, once, to the supporter server
+  ([`ValTrainerGodot/tools/supporter/server`](ValTrainerGodot/tools/supporter/server)), which answers with your code if
+  that email made a donation. The server only knows the emails donors gave Ko-fi or Buy Me a Coffee; ValTrainer stores
+  nothing but the code.
 
 ## Troubleshooting
 

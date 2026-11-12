@@ -1,5 +1,6 @@
 using System.Text;
 using Godot;
+using ValTrainer.Core;
 
 namespace ValTrainer.Valorant;
 
@@ -24,6 +25,9 @@ public enum GameAction
     /// <summary>VALORANT "Open buy menu" (default B): the gun picker over a running drill (GameSession, BuySession.cs).
     /// Appended last: custom binds are saved by action name, and new actions go at the end of the enum anyway.</summary>
     BuyMenu,
+    /// <summary>ValTrainer only (VALORANT has no crosshair-profile bind): the previous / next crosshair of the switcher
+    /// (Valorant.CrosshairList) in a drill. Defaults "," and ".".</summary>
+    CrosshairPrev, CrosshairNext,
 }
 
 /// <summary>
@@ -305,7 +309,7 @@ public sealed class Keybinds
     {
         var p = Get(a, 0);
         var s = Get(a, 1);
-        if (p.IsNone && s.IsNone) return "unbound";
+        if (p.IsNone && s.IsNone) return L.N("unbound"); // English (self-tests); the draw helpers translate it
         if (p.IsNone) return s.Text;
         if (s.IsNone || s == p) return p.Text;
         return p.Text + sep + s.Text;
@@ -341,16 +345,17 @@ public sealed class Keybinds
     /// <summary>Human label of an action.</summary>
     public static string Label(GameAction a) => a switch
     {
-        GameAction.MoveForward => "Move forward", GameAction.MoveBack => "Move back", GameAction.StrafeLeft => "Strafe left",
-        GameAction.StrafeRight => "Strafe right", GameAction.Walk => "Walk", GameAction.Crouch => "Crouch", GameAction.Jump => "Jump",
-        GameAction.Fire => "Fire", GameAction.AltFire => "Alt fire / ADS", GameAction.Reload => "Reload", GameAction.Use => "Use",
-        GameAction.EquipSpike => "Equip spike", GameAction.UseSpike => "Use spike (plant / defuse)", GameAction.AbilityGrenade => "Ability C (grenade)",
-        GameAction.Ability1 => "Ability Q (1)", GameAction.Ability2 => "Ability E (2)", GameAction.Ultimate => "Ultimate (X)",
-        GameAction.EquipPrimary => "Equip primary", GameAction.EquipSecondary => "Equip secondary", GameAction.EquipMelee => "Equip melee",
-        GameAction.Inspect => "Inspect", GameAction.Drop => "Drop", GameAction.BuyMenu => "Buy menu", _ => a.ToString(),
+        GameAction.MoveForward => L.N("Move forward"), GameAction.MoveBack => L.N("Move back"), GameAction.StrafeLeft => L.N("Strafe left"),
+        GameAction.StrafeRight => L.N("Strafe right"), GameAction.Walk => L.N("Walk"), GameAction.Crouch => L.N("Crouch"), GameAction.Jump => L.N("Jump"),
+        GameAction.Fire => L.N("Fire"), GameAction.AltFire => L.N("Alt fire / ADS"), GameAction.Reload => L.N("Reload"), GameAction.Use => L.N("Use"),
+        GameAction.EquipSpike => L.N("Equip spike"), GameAction.UseSpike => L.N("Use spike (plant / defuse)"), GameAction.AbilityGrenade => L.N("Ability C (grenade)"),
+        GameAction.Ability1 => L.N("Ability Q (1)"), GameAction.Ability2 => L.N("Ability E (2)"), GameAction.Ultimate => L.N("Ultimate (X)"),
+        GameAction.EquipPrimary => L.N("Equip primary"), GameAction.EquipSecondary => L.N("Equip secondary"), GameAction.EquipMelee => L.N("Equip melee"),
+        GameAction.Inspect => L.N("Inspect"), GameAction.Drop => L.N("Drop"), GameAction.BuyMenu => L.N("Buy menu"),
+        GameAction.CrosshairPrev => L.N("Previous crosshair"), GameAction.CrosshairNext => L.N("Next crosshair"), _ => a.ToString(),
     };
 
-    /// <summary>VALORANT's default binds (Settings → Controls with nothing changed).</summary>
+    /// <summary>VALORANT's default binds (Settings → Controls with nothing changed), plus ValTrainer's own crosshair switch keys.</summary>
     public static Keybinds Defaults()
     {
         var k = new Keybinds();
@@ -378,6 +383,9 @@ public sealed class Keybinds
         D(GameAction.Inspect, Key.Y);
         D(GameAction.Drop, Key.G);
         D(GameAction.BuyMenu, Key.B);
+        // ValTrainer-only actions (VALORANT has no such bind, so its file never changes these)
+        D(GameAction.CrosshairPrev, Key.Comma);
+        D(GameAction.CrosshairNext, Key.Period);
         return k;
     }
 

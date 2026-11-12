@@ -11,6 +11,9 @@ namespace ValTrainer.Analysis;
 /// Gold 22.1%, Plat 17.6%, Diamond 11.6%, Ascendant 6.3%, Immortal 1.4%, Radiant 0.05%), so the median player
 /// (Gold 2) is tier ≈ 1.2. Metrics the drills measure on a different scale than the spec assumed (onset, N_c,
 /// re-acquire, stop time) are re-anchored to what ValTrainer actually records.</para>
+/// <para>Calibration 2 (v1.19, docs/research/coach-calibration-1.19.md): drill-aware crosshair placement, movement habits
+/// only from drills that don't instruct them, tighter spray tables, a validity per skill and a clip centred on the aim
+/// core (a Gold 2 with easy-drill habits read Platinum 1).</para>
 /// </summary>
 static class Bench
 {
@@ -55,18 +58,35 @@ static class Bench
     public static readonly float[] ReactMs = { 262, 230, 206, 180, 162 };
     /// <summary>
     /// Crosshair placement: angle to the head when an enemy is first seen. Leetify (CS2) reports ≈ 10.2° for an average
-    /// player and 7.5° for the top 3%; ValTrainer's Site Clear / Peek Duel sightings are on the same scale.
+    /// player and 7.5° for the top 3%, measured in matches. ValTrainer's match-like drills (Site Clear, Retake …) are on
+    /// that scale; easier drills are brought onto it first (<see cref="XhairDrillFactor"/>, "xhair.err_ref_deg").
     /// </summary>
     public static readonly float[] XhairErrDeg = { 13.5f, 10.5f, 8.8f, 7.0f, 5.5f };
+
+    /// <summary>
+    /// How much smaller a drill's first-sight error is than a match's for the same player (v1.19, docs/research/
+    /// coach-calibration-1.19.md §5.1): the profile rates err / k. Deathmatch bots are predictable and the player learns
+    /// the spawns (a Gold 2 measured 7.3° there vs 12.1° in Site Clear, ratio 0.61; 0.70 stays conservative) [estimate,
+    /// re-fit from calibration lines]. Drills where enemies come from several unknown spots are 1. Drills that announce
+    /// the angle (Peek Duel, Jiggle Peek, Recon) don't count horizontally at all (RunAnalysis.HorizExcluded).
+    /// </summary>
+    public static float XhairDrillFactor(string baseMode) => baseMode switch
+    {
+        "deathmatch" => 0.70f,
+        _ => 1f,
+    };
     /// <summary>Typical |vertical error| on first sight (°). Capped at <see cref="PitchCap"/>.</summary>
     public static readonly float[] PitchAbsDeg = { 3.0f, 1.6f, 0.9f, 0.5f, 0.3f };
     public const float PitchCap = 2.5f;
-    /// <summary>Drill sprays (static target, fixed range) are tighter than in-game sprays at the same rank.</summary>
-    public static readonly float[] SprayV = { 1.6f, 1.05f, 0.7f, 0.45f, 0.3f };
-    public static readonly float[] SprayH = { 1.1f, 0.8f, 0.55f, 0.4f, 0.28f };
-    /// <summary>When the pull-down starts. Starting early is necessary but not sufficient: capped at <see cref="CompDelayCap"/>.</summary>
+    /// <summary>Drill sprays (static target, fixed range, visual feedback) are tighter than in-game sprays at the same rank:
+    /// v1.19 tightened the spec's tables ×0.8 (1.6 1.05 0.7 0.45 0.3 / 1.1 0.8 0.55 0.4 0.28), since even a simulated
+    /// player with a weak, late pull-down read Ascendant [estimate].</summary>
+    public static readonly float[] SprayV = { 1.28f, 0.84f, 0.56f, 0.36f, 0.24f };
+    public static readonly float[] SprayH = { 0.88f, 0.64f, 0.44f, 0.32f, 0.22f };
+    /// <summary>When the pull-down starts. Starting early is necessary but not sufficient (any early pull reaches the
+    /// cap): capped at <see cref="CompDelayCap"/> (2.0 before v1.19).</summary>
     public static readonly float[] CompDelayMs = { 450, 330, 250, 190, 150 };
-    public const float CompDelayCap = 2.0f;
+    public const float CompDelayCap = 1.5f;
     public static readonly float[] MovingShotPct = { 28, 10, 4, 2, 1 };
     public static readonly float[] CounterPct = { 10, 30, 55, 75, 90 };
     /// <summary>
@@ -100,24 +120,53 @@ static class Bench
 
     // ---------------- overall rank ----------------
 
+    /// <summary>
+    /// Version of the rank estimate's calibration (tables, drill factors, overall formula). Bump it whenever a change
+    /// moves players' estimates on the same data, so systems that keep a placement from the estimate (progression) can
+    /// re-place players without taking unlocks back. 1 = v1.1.1 … v1.18; 2 = v1.19 (docs/research/coach-calibration-1.19.md).
+    /// </summary>
+    public const int Calibration = 2;
+
     /// <summary>The median ranked player (Gold 2): where an estimate goes without evidence.</summary>
     public const float PriorTier = 1.2f;
     /// <summary>
-    /// Share of the distance from the median that aim mechanics alone justify. Aim-trainer skill correlates only
-    /// moderately with rank (game sense, comms and utility matter too), so with a full profile (evidence ≈ 0.8–1) a
-    /// player whose mechanics look two tiers above the median is estimated ≈ 1.6 tiers above it.
+    /// How much each skill's drill measurement says about rank (v1.19, replaces one global 0.9) [estimate]: a per-skill
+    /// shrink toward the median player. Nothing published puts aim-trainer scores anywhere near r = 0.9 with rank; the
+    /// w-weighted mean here is ≈ 0.6 (mechanics ≈ 20–35% of rank variance). Clean aim mechanics count most; behaviour the
+    /// drills make easy or ask for (placement, spray on a static target, movement, flash dodging) counts less.
     /// </summary>
-    public const float Validity = 0.9f;
-    /// <summary>Evidence (Σ w·c / Σ w) at which half of <see cref="Validity"/> applies.</summary>
+    public static readonly Dictionary<Skill, float> SkillValidity = new()
+    {
+        [Skill.Flicking] = 0.85f, [Skill.Precision] = 0.85f, [Skill.Tracking] = 0.75f, [Skill.CrosshairPlacement] = 0.65f,
+        [Skill.SprayControl] = 0.50f, [Skill.Movement] = 0.45f, [Skill.Utility] = 0.40f, [Skill.Reaction] = 0.40f,
+    };
+    /// <summary>The aim core: the overall's robust clip is centred on these (when at least two are rated), so a majority of
+    /// drill-behaviour weight can't lift weak aim skills.</summary>
+    public static bool AimCore(Skill s) => s is Skill.Flicking or Skill.Precision or Skill.Tracking or Skill.Reaction;
+    /// <summary>Behaviour skills (placement, spray, movement, utility) count at most this far above the aim core's median:
+    /// a drill habit can't carry the estimate (weak behaviour still pulls it down: that's a real habit gap).</summary>
+    public const float BehaviourLift = 0.5f;
+    /// <summary>Evidence (Σ w·c / Σ w) at which half of the skill validities apply.</summary>
     public const float Evidence0 = 0.1f;
-    /// <summary>A skill counts at most this many tiers away from the weighted median of the skills.</summary>
+    /// <summary>A skill counts at most this many tiers away from the (aim core's) weighted median.</summary>
     public const float OutlierClip = 0.75f;
 
-    public static float ShrinkFactor(float evidence) => evidence <= 0 ? 0 : Validity * evidence / (evidence + Evidence0);
+    /// <summary>λ(E) = E / (E + E₀): how much of the validity-weighted distance from the median the data supports.</summary>
+    public static float ShrinkFactor(float evidence) => evidence <= 0 ? 0 : evidence / (evidence + Evidence0);
 
-    /// <summary>Overall = prior + λ(evidence)·(robust mean − prior).</summary>
-    public static float Shrink(float rawMean, float evidence) =>
-        float.IsNaN(rawMean) ? float.NaN : PriorTier + ShrinkFactor(evidence) * (rawMean - PriorTier);
+    /// <summary>
+    /// Half-width of the "likely range" shown around the estimate, in tiers: ±0.35 (two divisions) with full data, wider
+    /// with less (v1.19; was 0.15 + 0.30·(1 − E), which implied r ≈ 0.96 between the estimate and rank). Still narrower
+    /// than an honest 50% interval at r ≈ 0.5 (±0.49); the "aim only" note carries the rest.
+    /// </summary>
+    public static float RangeHalfWidth(float evidence) => 0.35f + 0.25f * (1f - Math.Clamp(evidence, 0f, 1f));
+
+    /// <summary>How much data the estimate rests on, 0 = little, 1 = some, 2 = plenty (the overall "confidence" measured
+    /// data coverage, never accuracy, so the screen says that).</summary>
+    public static int DataLevel(float evidence) => evidence < 0.5f ? 0 : evidence < 0.75f ? 1 : 2;
+
+    /// <summary>"little" / "some" / "plenty of" (English, CLI and logs).</summary>
+    public static string DataAmount(float evidence) => DataLevel(evidence) switch { 0 => "little", 1 => "some", _ => "plenty of" };
 
     /// <summary>T(x) = i + (x − bᵢ)/(bᵢ₊₁ − bᵢ), extrapolated up to 0.5 beyond either end, clamped to [−0.5, 4.5].</summary>
     public static float TierOf(float x, float[] b)
@@ -143,16 +192,21 @@ static class Bench
         return b[i] + (b[i + 1] - b[i]) * (tier - i);
     }
 
+    /// <summary>VALORANT rank names in English (logs, traces); <see cref="RankUi"/> for text players read (VALORANT
+    /// localizes them: "Or", "Platine" …; the keys come from CoachRank.Names).</summary>
     public static readonly string[] RankNames = { "Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant" };
 
     /// <summary>Iron &lt; 0 ≤ Bronze &lt; 0.5 ≤ Silver &lt; 1 ≤ Gold &lt; 1.5 ≤ Platinum &lt; 2 ≤ Diamond &lt; 2.5 ≤ Ascendant &lt; 3 ≤ Immortal &lt; 3.5 ≤ Radiant.</summary>
     public static string Rank(float t)
     {
-        if (float.IsNaN(t) || t < -0.75f) return "Unrated";
+        if (float.IsNaN(t) || t < -0.75f) return L.N("Unrated");
         if (t < 0) return "Iron";
         int i = Math.Min(8, 1 + (int)(t / 0.5f));
         return RankNames[i];
     }
+
+    /// <summary><see cref="Rank"/> in the UI language (for the coach's sentences and headlines).</summary>
+    public static string RankUi(float t) => L.T(Rank(t));
 
     public static string TierName(int tier) => Difficulty.Get(tier).Name;
 }

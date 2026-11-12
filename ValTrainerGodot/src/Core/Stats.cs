@@ -122,6 +122,14 @@ public static class GunRating
     /// <summary>"the Vandal or Phantom" / "the Operator" (results note for unrated runs).</summary>
     public static string RatedText(Modes.TrainingMode m) => "the " + string.Join(" or ", RatedFor(m).Select(GunName));
 
+    /// <summary><see cref="RatedText"/> in the UI language, for display (RatedText stays English: a self-test compares it).
+    /// Gun names are never translated.</summary>
+    public static string DisplayRatedText(Modes.TrainingMode m)
+    {
+        var g = RatedFor(m).Select(GunName).ToList();
+        return g.Count <= 1 ? L.F($"the {g.FirstOrDefault() ?? ""}") : L.F($"the {string.Join(", ", g.Take(g.Count - 1))} or {g[^1]}");
+    }
+
     /// <summary>"Vandal / Phantom" (where space is tight).</summary>
     public static string RatedShort(Modes.TrainingMode m) => string.Join(" / ", RatedFor(m).Select(GunName));
 

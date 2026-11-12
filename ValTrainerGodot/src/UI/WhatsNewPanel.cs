@@ -118,7 +118,7 @@ public partial class WhatsNewPanel : Control
         var vs = GetViewportRect().Size;
         var panel = new VPanel
         {
-            Title = "WHAT'S NEW", Caption = $"ValTrainer {AppInfo.Version}", K = k, Fill = new Color(0.07f, 0.11f, 0.15f, 0.97f),
+            Title = "WHAT'S NEW", Caption = L.Raw($"ValTrainer {AppInfo.Version}"), K = k, Fill = new Color(0.07f, 0.11f, 0.15f, 0.97f),
             CustomMinimumSize = new Vector2(Mathf.Min(960 * k, vs.X - 80 * k), Mathf.Min(760 * k, vs.Y - 80 * k)),
         };
         center.AddChild(panel);
@@ -145,7 +145,7 @@ public partial class WhatsNewPanel : Control
         if (AppInfo.HasRepo)
         {
             var all = new VButton { Label = "ALL RELEASES ON GITHUB", Kind = VButton.Look.Ghost, K = k, FontPx = 16, CustomMinimumSize = new Vector2(230 * k, 40 * k),
-                SizeFlagsVertical = SizeFlags.ShrinkCenter, TooltipText = "Opens the releases page in your browser" };
+                SizeFlagsVertical = SizeFlags.ShrinkCenter, TooltipText = L.T("Opens the releases page in your browser") };
             all.Pressed += () => AppInfo.OpenGitHub(AppInfo.ReleasesUrl);
             foot.AddChild(all);
         }
@@ -164,9 +164,10 @@ public partial class WhatsNewPanel : Control
         {
             int fs = UiTheme.Fs(34, k), ds = UiTheme.Fs(14, k);
             float y = b.Size.Y - 12 * k;
-            Gfx.Text(b, UiTheme.Display, ver, 0, y, fs, UiTheme.Text);
-            float w = Gfx.TextW(UiTheme.Display, ver, fs);
-            if (date.Length > 0) Gfx.Text(b, UiTheme.HudWide, date.ToUpperInvariant(), w + 14 * k, y, ds, UiTheme.Dim);
+            // CHANGELOG text: never looked up (TextRaw / RawW)
+            Gfx.TextRaw(b, UiTheme.Display, ver, 0, y, fs, UiTheme.Text);
+            float w = Gfx.RawW(UiTheme.Display, ver, fs);
+            if (date.Length > 0) Gfx.TextRaw(b, UiTheme.HudWide, date.ToUpperInvariant(), w + 14 * k, y, ds, UiTheme.Dim);
             b.DrawRect(new Rect2(0, b.Size.Y - 2 * k, b.Size.X, 1), new Color(UiTheme.Text, 0.09f));
             b.DrawRect(new Rect2(0, b.Size.Y - 3 * k, 40 * k, 2 * k), UiTheme.Accent);
         };
@@ -204,8 +205,8 @@ public partial class WhatsNewPanel : Control
                         float cy = b.Size.Y / 2 + 3 * k;
                         int fs = UiTheme.Fs(14, k);
                         b.DrawRect(new Rect2(0, cy - 3 * k, 6 * k, 6 * k), col);
-                        float w = Gfx.TextW(UiTheme.HudWide, cap, fs);
-                        Gfx.Text(b, UiTheme.HudWide, cap, 14 * k, Gfx.Mid(cy, fs), fs, col);
+                        float w = Gfx.RawW(UiTheme.HudWide, cap, fs); // CHANGELOG subheading ("ADDED"): stays English
+                        Gfx.TextRaw(b, UiTheme.HudWide, cap, 14 * k, Gfx.Mid(cy, fs), fs, col);
                         float lx = 14 * k + w + 14 * k;
                         if (b.Size.X > lx) b.DrawRect(new Rect2(lx, cy, b.Size.X - lx, 1), new Color(UiTheme.Text, 0.08f));
                     },

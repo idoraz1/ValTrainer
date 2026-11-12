@@ -393,7 +393,7 @@ public abstract partial class TacticalMode : MapMode
         c.DrawRect(new Rect2(r.Position.X + 40 * k, r.End.Y - 7 * k, (bw - 50 * k) * frac, 4 * k), barCol);
         DrawSpikeIcon(c, new Vector2(r.Position.X + 20 * k, r.Position.Y + bh / 2), 11 * k, Live && Now - (NextBeepAt - 0.1f) < 0 ? barCol : barCol, Live ? 1f : 0.4f);
         int fs = UiTheme.Fs(20, k);
-        string label = !Live ? "ROUND OVER" : DefuseProgress >= DefuseTime ? "DEFUSED" : $"SPIKE  {left:0.0}s";
+        string label = !Live ? L.T("ROUND OVER") : DefuseProgress >= DefuseTime ? L.T("DEFUSED") : L.F($"SPIKE  {left:0.0}s");
         Gfx.TextC(c, UiTheme.HudWide, label, cx + 16 * k, Gfx.Mid(r.Position.Y + bh / 2 - 3 * k, fs), fs, hurry ? UiTheme.Accent : UiTheme.Text);
         int ns = UiTheme.Fs(22, k), ls = UiTheme.Fs(11, k);
         int you = G.Player.Dead ? 0 : 1, them = AliveBots;
@@ -417,7 +417,7 @@ public abstract partial class TacticalMode : MapMode
             c.DrawRect(new Rect2(dr.Position, new Vector2(dw * p, dh)), col);
             c.DrawRect(new Rect2(dr.Position.X + dw / 2 - 1.5f * k, dr.Position.Y - 4 * k, 3 * k, dh + 8 * k), new Color(UiTheme.Text, 0.9f));
             int ds = UiTheme.Fs(16, k);
-            string who = PlayerDefusing ? $"DEFUSING  {DefuseProgress:0.0} / 7.0s" : $"ENEMY DEFUSING  {DefuseProgress:0.0} / 7.0s";
+            string who = PlayerDefusing ? L.F($"DEFUSING  {DefuseProgress:0.0} / 7.0s") : L.F($"ENEMY DEFUSING  {DefuseProgress:0.0} / 7.0s");
             Gfx.TextC(c, UiTheme.HudWide, who, cx, dr.Position.Y - 12 * k, ds, col);
         }
 
@@ -425,7 +425,7 @@ public abstract partial class TacticalMode : MapMode
         var cam = ((Node)G).GetViewport()?.GetCamera3D();
         if (cam != null && Live)
         {
-            DrawMarker(c, cam, Spike + new Vector3(0, 0.9f, 0), k, "SPIKE", new Color(1f, 0.42f, 0.38f));
+            DrawMarker(c, cam, Spike + new Vector3(0, 0.9f, 0), k, L.N("SPIKE"), new Color(1f, 0.42f, 0.38f));
             DrawMarkers(c, cam, k);
         }
     }
@@ -441,7 +441,7 @@ public abstract partial class TacticalMode : MapMode
         if (!float.IsFinite(p.X) || !float.IsFinite(p.Y) || Mathf.Abs(p.X) > 20000f || Mathf.Abs(p.Y) > 20000f) return;
         DrawSpikeIcon(c, p, 7 * k, col, 0.85f);
         int fs = UiTheme.Fs(12, k);
-        Gfx.TextC(c, UiTheme.HudWide, $"{text} {dist:0}m", p.X, p.Y - 12 * k, fs, new Color(col, 0.9f));
+        Gfx.TextC(c, UiTheme.HudWide, L.F($"{L.T(text)} {dist:0}m"), p.X, p.Y - 12 * k, fs, new Color(col, 0.9f));
     }
 
     protected static void DrawSpikeIcon(CanvasItem c, Vector2 at, float s, Color col, float a)

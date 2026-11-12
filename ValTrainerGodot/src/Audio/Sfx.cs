@@ -13,6 +13,14 @@ public partial class Sfx : Node
     const float SR = 44100f;
     public static Sfx I { get; private set; } = null!;
     public static float Volume = 0.5f;
+    /// <summary>Audio bus of the skin sounds (layers, equip, kill effects, finishers; skins2-design §4.3): created at runtime
+    /// like FootstepFx's bus, volume = Settings.SkinFxVolume, ducked <see cref="SkinDuckDb"/> under gameplay cues
+    /// (<see cref="DucksSkin"/>, <see cref="DuckSkin"/>). Played only from the skin pool (<see cref="PlaySkin"/>).</summary>
+    public const string SkinBus = "Skin";
+    /// <summary>The skin voice pool: skin sounds never steal the 24 gameplay voices (at most one voice per shot).</summary>
+    public const int SkinVoices = 12;
+    /// <summary>How far and how long a gameplay cue ducks the Skin bus (skins2-design §4.3 rule 5).</summary>
+    public const float SkinDuckDb = 8f, SkinDuckSecs = 0.35f;
 
     readonly Dictionary<string, AudioStream> streams = new();
     /// <summary>Recorded CC0 variants (gunshots, reloads, footsteps) — preferred over the synthesized sound of the same name.</summary>
@@ -20,6 +28,10 @@ public partial class Sfx : Node
     readonly List<AudioStreamPlayer> players2D = new();
     readonly List<AudioStreamPlayer3D> players3D = new();
     int next2D, next3D;
+    readonly List<AudioStreamPlayer> skinPlayers = new();
+    readonly ulong[] skinStarted = new ulong[SkinVoices];
+    double duckLeft;   // seconds the Skin bus stays ducked
+    float duckDb;      // the duck applied now (smoothed)
 
     public override void _Ready()
     {
@@ -31,8 +43,117 @@ public partial class Sfx : Node
             AddChild(p);
             players3D.Add(p);
         }
+        EnsureSkinBus();
+        for (int i = 0; i < SkinVoices; i++) { var p = new AudioStreamPlayer { Bus = SkinBus }; AddChild(p); skinPlayers.Add(p); }
         Build();
         LoadRecorded();
+        // Dev: "--dump-kills DIR" writes the synthesized kill1..5 + bolt for tools/sfx/skin_sfx.py --factory DIR, then quits;
+        // "--skinaudio-test" plays every skin sound set and checks the skin pool, gating and ducking (Game.Skins.SkinAudio).
+        if (Core.CmdLine.DevAfter("--dump-kills") is { } dumpDir) Callable.From(() => DumpKills(dumpDir)).CallDeferred();
+        else if (Core.CmdLine.Dev && Core.CmdLine.Has("--skinaudio-test")) Callable.From(() => Game.Skins.SkinAudio.RunTest(this)).CallDeferred();
+    }
+
+    // ---------------- skin sounds: bus, pool, ducking (skins2-design §4.3) ----------------
+
+    static void EnsureSkinBus()
+    {
+        if (AudioServer.GetBusIndex(SkinBus) >= 0) return;
+        AudioServer.AddBus();
+        int idx = AudioServer.BusCount - 1;
+        AudioServer.SetBusName(idx, SkinBus);
+        AudioServer.SetBusSend(idx, "Master");
+    }
+
+    /// <summary>Skin bus volume = Settings.SkinFxVolume (0..1) minus the duck: fast attack (~15 ms), smooth release (~120 ms)
+    /// so the duck itself never clicks.</summary>
+    public override void _Process(double delta)
+    {
+        int bus = AudioServer.GetBusIndex(SkinBus);
+        if (bus < 0) return;
+        duckLeft = Math.Max(0, duckLeft - delta);
+        float target = duckLeft > 0 ? SkinDuckDb : 0f;
+        float tau = target > duckDb ? 0.015f : 0.12f;
+        duckDb += (target - duckDb) * (1f - MathF.Exp(-(float)delta / tau));
+        float vol = Math.Clamp(Game.Skins.SkinAudio.Volume, 0f, 1f);
+        AudioServer.SetBusVolumeDb(bus, (vol <= 0.001f ? -80f : Mathf.LinearToDb(vol)) - duckDb);
+    }
+
+    /// <summary>The Skin bus volume now (dB, after the duck).</summary>
+    public float SkinBusDb => AudioServer.GetBusIndex(SkinBus) is var b and >= 0 ? AudioServer.GetBusVolumeDb(b) : 0f;
+
+    /// <summary>Ducks the Skin bus for <paramref name="secs"/> (gameplay cues that don't go through <see cref="Play"/> /
+    /// <see cref="PlayAt"/>: footsteps, ability cues).</summary>
+    public static void DuckSkin(float secs = SkinDuckSecs)
+    {
+        if (I != null) I.duckLeft = Math.Max(I.duckLeft, secs);
+    }
+
+    /// <summary>2D sounds that are gameplay cues and duck the Skin bus: enemy shots, damage and death, footsteps, the spike and
+    /// utility (flashes). Every positional sound (<see cref="PlayAt"/>) ducks too. The player's own gun, hits, kills and UI
+    /// clicks don't.</summary>
+    public static bool DucksSkin(string key) =>
+        key.StartsWith("enemyshot") || key is "damage" or "death" or "footstep" or "flashpop" or "flash_ring" or "shatter"
+        || key.StartsWith("step") || key.StartsWith("spike") || key.StartsWith("dizzy_")
+        || key.EndsWith("_pop") || key.EndsWith("_windup") || key.EndsWith("_windup_bounce") || key.EndsWith("_wind")
+        || key.EndsWith("_throw") || key.EndsWith("_flight");
+
+    /// <summary>Adds (or replaces) the sound <paramref name="key"/> from streams loaded elsewhere (skin sound sets:
+    /// <c>skin.&lt;set&gt;.&lt;file&gt;</c>, Game.Skins.SkinAudio). Several streams = random variants.</summary>
+    public void Register(string key, params AudioStream[] list)
+    {
+        if (list.Length > 0) recorded[key] = list;
+    }
+
+    /// <summary>Whether <see cref="Register"/> added <paramref name="key"/> (no fallback chain).</summary>
+    public bool IsRegistered(string key) => recorded.ContainsKey(key);
+
+    /// <summary>Plays a registered sound on the skin pool (a free voice, else the one that started first). On the Skin bus,
+    /// or with <paramref name="skinBus"/> false on Master (kill sounds 1–5, which replace a gameplay cue at its loudness).
+    /// Null if <paramref name="key"/> isn't registered.</summary>
+    public AudioStreamPlayer? PlaySkin(string key, float vol = 1f, float pitch = 1f, bool skinBus = true)
+    {
+        if (!recorded.TryGetValue(key, out var list) || skinPlayers.Count == 0) return null;
+        int pick = 0;
+        ulong oldest = ulong.MaxValue;
+        for (int i = 0; i < skinPlayers.Count; i++)
+        {
+            if (!skinPlayers[i].Playing) { pick = i; break; }
+            if (skinStarted[i] < oldest) { oldest = skinStarted[i]; pick = i; }
+        }
+        var p = skinPlayers[pick];
+        p.Stop();
+        p.Bus = skinBus ? SkinBus : "Master";
+        p.Stream = list[list.Length == 1 ? 0 : Random.Shared.Next(list.Length)];
+        p.VolumeDb = Mathf.LinearToDb(Mathf.Max(1e-4f, Volume * vol));
+        p.PitchScale = pitch;
+        p.Play();
+        skinStarted[pick] = Time.GetTicksUsec();
+        return p;
+    }
+
+    /// <summary>Stops every skin voice.</summary>
+    public void StopSkin()
+    {
+        foreach (var p in skinPlayers) p.Stop();
+    }
+
+    /// <summary>Skin voices playing, and gameplay voices routed to the Skin bus (always 0): the dev test.</summary>
+    public (int Playing, int GameplayOnSkin) SkinPoolInfo() =>
+        (skinPlayers.Count(p => p.Playing), players2D.Count(p => p.Bus == SkinBus) + players3D.Count(p => p.Bus == SkinBus));
+
+    /// <summary>Dev "--dump-kills DIR": the synthesized kill1..5 and bolt as WAVs (tools/sfx/skin_sfx.py matches the skin kill
+    /// sounds and bolt layers against them), then quits (exit code = files not written).</summary>
+    void DumpKills(string dir)
+    {
+        int bad = 0;
+        DirAccess.MakeDirRecursiveAbsolute(dir);
+        foreach (var key in new[] { "kill1", "kill2", "kill3", "kill4", "kill5", "bolt" })
+        {
+            var err = streams.GetValueOrDefault(key) is AudioStreamWav w ? w.SaveToWav(System.IO.Path.Combine(dir, key + ".wav")) : Error.DoesNotExist;
+            if (err != Error.Ok) { bad++; GD.PrintErr($"[dump-kills] {key}: {err}"); }
+        }
+        GD.Print($"[dump-kills] wrote {6 - bad} WAVs to {dir}");
+        GetTree().Quit(bad);
     }
 
     /// <summary>CC0 recordings from assets/audio (Free Firearm Sound Library, OpenGameArt, Kenney). See CREDITS.md.</summary>
@@ -278,6 +399,7 @@ public partial class Sfx : Node
     public void Play(string name, float vol = 1f, float pitch = 1f)
     {
         if (Pick(name) is not { } s) return;
+        if (DucksSkin(name)) DuckSkin();
         var p = players2D[next2D = (next2D + 1) % players2D.Count];
         p.Stream = s;
         p.VolumeDb = Mathf.LinearToDb(Mathf.Max(1e-4f, Volume * vol));
@@ -291,6 +413,7 @@ public partial class Sfx : Node
         if (Pick(name) is not { } s) return;
         float d = pos.DistanceTo(listener);
         if (d > maxRange) return;
+        DuckSkin(); // world sounds are gameplay cues (enemies, utility, the spike)
         float k = Mathf.Clamp((d - 2f) / (maxRange - 2f), 0f, 1f);
         float g = (floor + (1 - floor) * (1 - k) * (1 - k)) * (k < 0.9f ? 1f : (1 - k) / 0.1f);
         var p = players3D[next3D = (next3D + 1) % players3D.Count];

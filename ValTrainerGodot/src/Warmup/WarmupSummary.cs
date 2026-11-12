@@ -45,10 +45,10 @@ public partial class WarmupSummary : ScreenBase
 
         var head = HBox(16 * k);
         var preset = WarmupPresets.Get(rec.Preset);
-        string shift = rec.Shift == "off" ? "every drill at your sens" : $"sens shifter {(rec.Shift == "low" ? "−" : "+")}{rec.ShiftPct}% → your sens";
+        string shift = rec.Shift == "off" ? L.T("every drill at your sens") : L.F($"sens shifter {(rec.Shift == "low" ? "−" : "+")}{rec.ShiftPct}% → your sens");
         var title = Heading("LOCK-IN DETAILS",
-            $"{preset.Name.ToUpperInvariant()} · {Difficulty.Get(rec.Tier).Name.ToUpperInvariant()} TIER · {WarmupPlan.Clock(rec.PlaySeconds)} PLAYED · {shift.ToUpperInvariant()}" +
-            (Demo && !Core.CmdLine.Showcase ? " · DEMO DATA" : ""));
+            L.F($"{L.Upper(L.T(preset.Name))} · {L.Upper(Difficulty.Get(rec.Tier).DisplayName)} TIER · {WarmupPlan.Clock(rec.PlaySeconds)} PLAYED · {L.Upper(shift)}") +
+            (Demo && !Core.CmdLine.Showcase ? " · " + L.T("DEMO DATA") : ""));
         title.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         head.AddChild(title);
         var back = Btn("BACK", VButton.Look.Secondary, Back, 150, 52, 20);
@@ -66,7 +66,7 @@ public partial class WarmupSummary : ScreenBase
         var gp = new VPanel
         {
             Title = "LOCK-IN GRAPH", K = k, SizeFlagsVertical = SizeFlags.ExpandFill,
-            Caption = rec.Steps.Any(s => s.Shifted) ? "bars: each drill vs your usual level · line: sensitivity" : "bars: each drill vs your usual level · boxes: adaptive drills",
+            Caption = rec.Steps.Any(s => s.Shifted) ? L.T("bars: each drill vs your usual level · line: sensitivity") : L.T("bars: each drill vs your usual level · boxes: adaptive drills"),
         };
         col.AddChild(gp);
         gp.AddChild(new DrawBox
@@ -83,7 +83,7 @@ public partial class WarmupSummary : ScreenBase
         rp.SizeFlagsStretchRatio = 1.1f;
         bottom.AddChild(rp);
         rp.AddChild(new DrawBox { CustomMinimumSize = new Vector2(0, 220 * k), OnDraw = DrawReadout });
-        var tp = new VPanel { Title = "DRILLS", K = k, Caption = $"{rec.Steps.Count(s => !s.Skipped)} played", SizeFlagsHorizontal = SizeFlags.ExpandFill };
+        var tp = new VPanel { Title = "DRILLS", K = k, Caption = L.F($"{rec.Steps.Count(s => !s.Skipped)} played"), SizeFlagsHorizontal = SizeFlags.ExpandFill };
         bottom.AddChild(tp);
         var scroll = new ScrollContainer { HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled, CustomMinimumSize = new Vector2(0, 220 * k) };
         tp.AddChild(scroll);
@@ -111,9 +111,9 @@ public partial class WarmupSummary : ScreenBase
             bool lower = WarmupScore.LowerBetter(mode);
             float pct = (b.Value - a.Value) / a.Value * 100f;
             int dir = b.Value == a.Value ? 0 : (lower ? b.Value < a.Value : b.Value > a.Value) ? 1 : -1; // +1 = better
-            string sens = a.Shifted && !b.Shifted ? $"  (sens {a.Sens.ToString("0.000", Inv)} → {b.Sens.ToString("0.000", Inv)})" : "";
-            string change = WarmupScore.Def(mode) == WarmupScore.Kind.OnTarget ? $"{b.Value - a.Value:+0;-0} pts" : $"{pct:+0;-0}%";
-            yield return ($"{WarmupDrills.Name(mode)} · {WarmupScore.Label(mode)}  {WarmupScore.Format(mode, a.Value)} → {WarmupScore.Format(mode, b.Value)}  {change}{sens}", pct, dir);
+            string sens = a.Shifted && !b.Shifted ? "  " + L.F($"(sens {a.Sens.ToString("0.000", Inv)} → {b.Sens.ToString("0.000", Inv)})") : "";
+            string change = WarmupScore.Def(mode) == WarmupScore.Kind.OnTarget ? L.F($"{b.Value - a.Value:+0;-0} pts") : $"{pct:+0;-0}%";
+            yield return ($"{WarmupDrills.DisplayName(mode)} · {L.T(WarmupScore.Label(mode))}  {WarmupScore.Format(mode, a.Value)} → {WarmupScore.Format(mode, b.Value)}  {change}{sens}", pct, dir);
         }
     }
 
@@ -126,9 +126,12 @@ public partial class WarmupSummary : ScreenBase
             var last = g.Last();
             float lv = g.Average(s => s.Level);
             float prev = g.First().PrevLevel;
-            string hits = last.HitRate >= 0 ? $" at {g.Average(s => Mathf.Max(0, s.HitRate)) * 100:0}% hits" : "";
-            string vs = prev >= 0 ? $"  (last Lock-Ins {prev.ToString("0.0", Inv)})" : "  (first time)";
-            yield return ($"{WarmupDrills.Name(g.Key)} · held level {WarmupScore.LevelText(lv)}{hits}{vs}", prev < 0 ? -2 : lv > prev + 0.05f ? 1 : lv < prev - 0.05f ? -1 : 0);
+            string name = WarmupDrills.DisplayName(g.Key), level = WarmupScore.DisplayLevelText(lv);
+            string held = last.HitRate >= 0
+                ? L.F($"{name} · held level {level} at {g.Average(s => Mathf.Max(0, s.HitRate)) * 100:0}% hits")
+                : L.F($"{name} · held level {level}");
+            string vs = prev >= 0 ? L.F($"(last Lock-Ins {prev.ToString("0.0", Inv)})") : L.T("(first time)");
+            yield return (held + "  " + vs, prev < 0 ? -2 : lv > prev + 0.05f ? 1 : lv < prev - 0.05f ? -1 : 0);
         }
     }
 
@@ -156,8 +159,9 @@ public partial class WarmupSummary : ScreenBase
         // vs previous Lock-Ins
         var prev = previous.Where(p => p.Readiness >= 0).TakeLast(5).ToList();
         string hist = rec.Readiness < 0 || prev.Count == 0
-            ? previous.Count == 0 ? "Your first Lock-In. Next time you'll see how it compares." : "Not enough history to compare with your previous Lock-Ins yet."
-            : $"Higher than {prev.Count(p => rec.Readiness > p.Readiness)} of your last {prev.Count} Lock-In{(prev.Count == 1 ? "" : "s")} (vs your usual).";
+            ? previous.Count == 0 ? L.T("Your first Lock-In. Next time you'll see how it compares.") : L.T("Not enough history to compare with your previous Lock-Ins yet.")
+            : L.P(prev.Count, $"Higher than {prev.Count(p => rec.Readiness > p.Readiness)} of your last {prev.Count} Lock-In (vs your usual).",
+                $"Higher than {prev.Count(p => rec.Readiness > p.Readiness)} of your last {prev.Count} Lock-Ins (vs your usual).");
         Gfx.Diamond(d, new Vector2(6 * k, y - 5 * k), 4 * k, 4 * k, UiTheme.Accent);
         Gfx.TextFit(d, UiTheme.Body, hist, 20 * k, y, ls, UiTheme.Text, w - 20 * k);
         y += 26 * k;
@@ -165,8 +169,9 @@ public partial class WarmupSummary : ScreenBase
         if (shifted.Count > 0)
         {
             float realSecs = rec.Steps.Where(s => !s.Shifted && !s.Skipped).Sum(s => s.Seconds);
-            string s = $"Sens {shifted[0].Sens.ToString("0.000", Inv)} ({shifted[0].OffsetPct:+0;-0}%) → {rec.BaseSens.ToString("0.000", Inv)} over {shifted.Count} drills, " +
-                       $"then {WarmupPlan.Clock(realSecs)} at your real sens.";
+            string sFrom = shifted[0].Sens.ToString("0.000", Inv), sTo = rec.BaseSens.ToString("0.000", Inv), real = WarmupPlan.Clock(realSecs);
+            string s = L.P(shifted.Count, $"Sens {sFrom} ({shifted[0].OffsetPct:+0;-0}%) → {sTo} over {shifted.Count} drill, then {real} at your real sens.",
+                $"Sens {sFrom} ({shifted[0].OffsetPct:+0;-0}%) → {sTo} over {shifted.Count} drills, then {real} at your real sens.");
             Gfx.TextFit(d, UiTheme.Body, s, 20 * k, y, UiTheme.Fs(14, k), UiTheme.Faint, w - 20 * k);
         }
     }
@@ -179,7 +184,7 @@ public partial class WarmupSummary : ScreenBase
         int ls = UiTheme.Fs(11, k), fs = UiTheme.Fs(15, k);
         bool anyShift = rec.Steps.Any(s => s.Shifted);
         float[] cx = { 0, 0.06f, 0.36f, 0.53f, 0.76f, 1f };
-        string[] heads = { "#", "DRILL", anyShift ? "SENS" : "TIER", "RESULT", "VS USUAL" };
+        string[] heads = { "#", L.N("DRILL"), anyShift ? L.N("SENS") : L.N("TIER"), L.N("RESULT"), L.N("VS USUAL") };
         for (int i = 0; i < heads.Length; i++)
         {
             if (i == heads.Length - 1) Gfx.TextR(d, UiTheme.HudWide, heads[i], w - 4 * k, Gfx.Mid(rh / 2, ls), ls, UiTheme.Faint);
@@ -193,20 +198,20 @@ public partial class WarmupSummary : ScreenBase
             if (i % 2 == 0) d.DrawRect(new Rect2(0, y, w, rh), new Color(1, 1, 1, 0.03f));
             var dim = s.Skipped ? UiTheme.Faint : UiTheme.Text;
             Gfx.Text(d, UiTheme.Body, (i + 1).ToString(Inv), cx[0] * w, Gfx.Mid(cy, fs), fs, UiTheme.Faint);
-            Gfx.TextFit(d, UiTheme.Body, WarmupDrills.Name(s.Mode), cx[1] * w, Gfx.Mid(cy, fs), fs, dim, (cx[2] - cx[1]) * w - 6 * k);
+            Gfx.TextFit(d, UiTheme.Body, WarmupDrills.DisplayName(s.Mode), cx[1] * w, Gfx.Mid(cy, fs), fs, dim, (cx[2] - cx[1]) * w - 6 * k);
             string third = anyShift ? s.Sens.ToString("0.000", Inv) + (s.Shifted ? $" {s.OffsetPct:+0;-0}%" : "")
-                : s.Adaptive ? "adaptive" : s.Tier >= 0 ? Difficulty.Get(s.Tier).Name : "—";
+                : s.Adaptive ? L.T("adaptive") : s.Tier >= 0 ? Difficulty.Get(s.Tier).DisplayName : "—";
             Gfx.TextFit(d, UiTheme.Body, third, cx[2] * w, Gfx.Mid(cy, fs), fs, s.Shifted ? WarmupCharts.ShiftCol : dim, (cx[3] - cx[2]) * w - 6 * k);
-            string res = s.Skipped ? "skipped"
-                : s.Adaptive ? s.HitRate >= 0 ? $"{s.HitRate * 100:0}% hits · {s.Trials} targets" : "—"
-                : $"{WarmupScore.Format(s.Mode, s.Value)} {WarmupScore.Label(s.Mode)}";
+            string res = s.Skipped ? L.T("skipped")
+                : s.Adaptive ? s.HitRate >= 0 ? L.F($"{s.HitRate * 100:0}% hits · {s.Trials} targets") : "—"
+                : WarmupScore.Format(s.Mode, s.Value) + " " + L.T(WarmupScore.Label(s.Mode));
             Gfx.TextFit(d, UiTheme.Body, res, cx[3] * w, Gfx.Mid(cy, fs), fs, dim, (cx[4] - cx[3]) * w - 6 * k);
             string vs;
             Color vc;
-            if (s.Adaptive && !s.Skipped && s.Level >= 0) { vs = $"LEVEL {s.Level.ToString("0.0", Inv)}"; vc = WarmupCharts.PhaseColor(Phase.Calibration); }
+            if (s.Adaptive && !s.Skipped && s.Level >= 0) { vs = L.F($"LEVEL {s.Level.ToString("0.0", Inv)}"); vc = WarmupCharts.PhaseColor(Phase.Calibration); }
             else
             {
-                vs = s.Skipped || s.Index < 0 ? "—" : s.BaselineKind == "today" ? $"{s.Index:0}% (today)" : $"{s.Index:0}%";
+                vs = s.Skipped || s.Index < 0 ? "—" : s.BaselineKind == "today" ? L.F($"{s.Index:0}% (today)") : $"{s.Index:0}%";
                 vc = s.Index < 0 || s.Skipped ? UiTheme.Faint : s.Index >= 106 ? UiTheme.Good : s.Index >= 94 ? UiTheme.Text : UiTheme.Dim;
             }
             float vw = Gfx.TextR(d, UiTheme.Display, vs, w - 4 * k, Gfx.Mid(cy, fs), fs, vc);

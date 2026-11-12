@@ -41,11 +41,11 @@ public sealed class SprayControlMode : TrainingMode
     public SprayControlMode(WeaponKind kind) => this.kind = kind;
 
     public override string Key => kind == WeaponKind.Phantom ? "spray_phantom" : "spray_vandal";
-    public override string Name => kind == WeaponKind.Phantom ? "Phantom Spray" : "Vandal Spray";
+    public override string Name => kind == WeaponKind.Phantom ? L.N("Phantom Spray") : L.N("Vandal Spray");
     public override string Description => kind == WeaponKind.Phantom
-        ? "Recoil control with the Phantom (11 rps, 30 rounds). Keep the spray on the body; chart + tips after each spray."
-        : "Recoil control with the Vandal (9.75 rps, 25 rounds). Pull down, counter the drift; chart + tips after each spray.";
-    public override string Category => "Recoil";
+        ? L.N("Recoil control with the Phantom (11 rps, 30 rounds). Keep the spray on the body; chart + tips after each spray.")
+        : L.N("Recoil control with the Vandal (9.75 rps, 25 rounds). Pull down, counter the drift; chart + tips after each spray.");
+    public override string Category => L.N("Recoil");
     public override WeaponKind Weapon => kind;
     public override bool InfiniteAmmo => false;   // real magazine: a full spray is 25 (Vandal) / 30 (Phantom)
     public override bool InfiniteReserve => true;
@@ -125,7 +125,8 @@ public sealed class SprayControlMode : TrainingMode
         if (n < Required)
         {
             shortSprays++;
-            tip = $"Short spray ({n} bullets) — hold for at least {Required} to train the full pattern.";
+            tip = L.P(n, $"Short spray ({n} bullet) — hold for at least {Required} to train the full pattern.",
+                $"Short spray ({n} bullets) — hold for at least {Required} to train the full pattern.");
             return;
         }
         countedSprays++;
@@ -135,29 +136,29 @@ public sealed class SprayControlMode : TrainingMode
         Score += hits * 10 + heads * 15 + (lastPct >= 0.8f ? 100 : 0);
         bestPct = Mathf.Max(bestPct, lastPct);
         tip = Coach(current);
-        G.Banner($"{hits}/{n} on target · {lastPct * 100:0}%", lastPct >= 0.8f ? UiTheme.Good : lastPct >= 0.5f ? UiTheme.Warn : UiTheme.Accent);
+        G.Banner(L.F($"{hits}/{n} on target · {lastPct * 100:0}%"), lastPct >= 0.8f ? UiTheme.Good : lastPct >= 0.5f ? UiTheme.Warn : UiTheme.Accent);
     }
 
     /// <summary>Plain-language feedback from where bullets 4+ ended up relative to the chest.</summary>
     static string Coach(List<(float Yaw, float Pitch, HitZone Zone)> s)
     {
         var tail = s.Skip(3).ToList();
-        if (tail.Count < 3) return "Nice — now try longer sprays.";
+        if (tail.Count < 3) return L.T("Nice — now try longer sprays.");
         float v = tail.Average(b => b.Pitch), h = tail.Average(b => b.Yaw);
         var parts = new List<string>();
-        if (v > 0.35f) parts.Add("pull down MORE (the spray climbed over the body)");
-        else if (v < -0.45f) parts.Add("pull down LESS (you dragged below the body)");
-        if (h > 0.35f) parts.Add("counter the drift to the LEFT");
-        else if (h < -0.35f) parts.Add("counter the drift to the RIGHT");
-        return parts.Count == 0 ? "Great control — the spray stayed centred." : "Tip: " + string.Join(", ", parts) + ".";
+        if (v > 0.35f) parts.Add(L.T("pull down MORE (the spray climbed over the body)"));
+        else if (v < -0.45f) parts.Add(L.T("pull down LESS (you dragged below the body)"));
+        if (h > 0.35f) parts.Add(L.T("counter the drift to the LEFT"));
+        else if (h < -0.35f) parts.Add(L.T("counter the drift to the RIGHT"));
+        return parts.Count == 0 ? L.T("Great control — the spray stayed centred.") : L.F($"Tip: {string.Join(", ", parts)}.");
     }
 
-    public override string? Prompt => sprays == 0 && !spraying ? $"Hold Mouse 1 on the agent — spray at least {Required} bullets and keep them on the body" : null;
+    public override string? Prompt => sprays == 0 && !spraying ? L.F($"Hold Mouse 1 on the agent — spray at least {Required} bullets and keep them on the body") : null;
 
     public override IEnumerable<string> HudLines()
     {
-        yield return $"Distance {Dist:0} m · spray ≥ {Required} bullets";
-        if (lastPct >= 0) yield return $"Last spray {lastPct * 100:0}% on target";
+        yield return L.F($"Distance {Dist:0} m · spray ≥ {Required} bullets");
+        if (lastPct >= 0) yield return L.F($"Last spray {lastPct * 100:0}% on target");
         if (tip.Length > 0) yield return tip;
     }
 
@@ -165,11 +166,11 @@ public sealed class SprayControlMode : TrainingMode
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Counted sprays", $"{countedSprays} (≥ {Required} bullets at {Dist:0} m)");
-        yield return ("Bullets on target", countedShots == 0 ? "—" : $"{Accuracy * 100:0.0}%  ({countedHits}/{countedShots})");
-        if (bestPct >= 0) yield return ("Best spray", $"{bestPct * 100:0}%");
-        if (Hits > 0) yield return ("Headshot %", $"{100f * HeadHits / Hits:0}%");
-        if (shortSprays > 0) yield return ("Short sprays (not counted)", shortSprays.ToString());
+        yield return (L.N("Counted sprays"), L.F($"{countedSprays} (≥ {Required} bullets at {Dist:0} m)"));
+        yield return (L.N("Bullets on target"), countedShots == 0 ? "—" : $"{Accuracy * 100:0.0}%  ({countedHits}/{countedShots})");
+        if (bestPct >= 0) yield return (L.N("Best spray"), $"{bestPct * 100:0}%");
+        if (Hits > 0) yield return (L.N("Headshot %"), $"{100f * HeadHits / Hits:0}%");
+        if (shortSprays > 0) yield return (L.N("Short sprays (not counted)"), shortSprays.ToString());
     }
 
     public override int Badge()
@@ -193,7 +194,7 @@ public sealed class SprayControlMode : TrainingMode
         var r = new Rect2(size.X - pw - 28 * k, size.Y * 0.2f, pw, ph);
         c.DrawRect(r, new Color(0.06f, 0.1f, 0.14f, 0.82f));
         c.DrawRect(new Rect2(r.Position, new Vector2(4 * k, 26 * k)), UiTheme.Accent);
-        c.DrawString(UiTheme.HudWide, r.Position + new Vector2(14 * k, 19 * k), spraying ? "SPRAY (LIVE)" : "LAST SPRAY",
+        c.DrawString(UiTheme.HudWide, r.Position + new Vector2(14 * k, 19 * k), L.T(spraying ? "SPRAY (LIVE)" : "LAST SPRAY"),
             HorizontalAlignment.Left, -1, UiTheme.Fs(14, k), UiTheme.Text);
 
         // degrees → pixels: fit ~7° of vertical travel in the panel
@@ -240,9 +241,9 @@ public sealed class SprayControlMode : TrainingMode
         }
 
         int n = shots.Count, hits = shots.Count(s => s.Zone != HitZone.None);
-        c.DrawString(UiTheme.Hud, new Vector2(r.Position.X + 14 * k, r.End.Y - 40 * k), $"{hits}/{n} on target",
+        c.DrawString(UiTheme.Hud, new Vector2(r.Position.X + 14 * k, r.End.Y - 40 * k), L.F($"{hits}/{n} on target"),
             HorizontalAlignment.Left, -1, UiTheme.Fs(18, k), UiTheme.Text);
-        c.DrawString(UiTheme.Body, new Vector2(r.Position.X + 14 * k, r.End.Y - 16 * k), "● head  ● body  ● miss   grey = raw pattern",
+        c.DrawString(UiTheme.Body, new Vector2(r.Position.X + 14 * k, r.End.Y - 16 * k), L.T("● head  ● body  ● miss   grey = raw pattern"),
             HorizontalAlignment.Left, -1, UiTheme.Fs(11, k), UiTheme.Dim);
     }
 }
@@ -271,9 +272,9 @@ public sealed class SprayTransferMode : BotMode
 
     public override string Key => "spray_transfer";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Auto;
-    public override string Name => "Spray Transfer";
-    public override string Description => "Kill all the agents in one continuous spray: control the recoil while dragging between targets.";
-    public override string Category => "Recoil";
+    public override string Name => L.N("Spray Transfer");
+    public override string Description => L.N("Kill all the agents in one continuous spray: control the recoil while dragging between targets.");
+    public override string Category => L.N("Recoil");
 
     readonly List<BotCharacter> bots = new();
     bool spraying;
@@ -313,7 +314,7 @@ public sealed class SprayTransferMode : BotMode
         {
             rounds++;
             Event("round_lost");
-            G.Banner("Spray broken — keep holding until everyone is down", UiTheme.Accent);
+            G.Banner(L.N("Spray broken — keep holding until everyone is down"), UiTheme.Accent);
             G.Sound("fail", 0.6f);
             EndRound();
         }
@@ -343,26 +344,26 @@ public sealed class SprayTransferMode : BotMode
             Event("round_won", t);
             clearTimes.Add(t);
             Score += 300 + (int)Mathf.Max(0, (3f - t) * 100);
-            G.Banner($"ALL DOWN in {t:0.00}s", UiTheme.Good);
+            G.Banner(L.F($"ALL DOWN in {t:0.00}s"), UiTheme.Good);
             EndRound();
         }
         return dist;
     }
 
-    public override string? Prompt => roundLive && !spraying && rounds == 0 ? "One spray, no release: kill every agent before you let go of Mouse 1" : null;
+    public override string? Prompt => roundLive && !spraying && rounds == 0 ? L.N("One spray, no release: kill every agent before you let go of Mouse 1") : null;
 
     public override IEnumerable<string> HudLines()
     {
-        if (roundLive) yield return $"Agents left: {bots.Count(b => !b.Dead)}";
-        if (rounds > 0) yield return $"Rounds won {wins}/{rounds}";
+        if (roundLive) yield return L.F($"Agents left: {bots.Count(b => !b.Dead)}");
+        if (rounds > 0) yield return L.F($"Rounds won {wins}/{rounds}");
     }
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Rounds won", $"{wins} / {rounds}");
-        if (clearTimes.Count > 0) yield return ("Median clear time", $"{Median(clearTimes):0.00} s");
-        yield return ("Accuracy", $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
-        if (Hits > 0) yield return ("Headshot %", $"{100f * HeadHits / Hits:0}%");
+        yield return (L.N("Rounds won"), $"{wins} / {rounds}");
+        if (clearTimes.Count > 0) yield return (L.N("Median clear time"), L.F($"{Median(clearTimes):0.00} s"));
+        yield return (L.N("Accuracy"), $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
+        if (Hits > 0) yield return (L.N("Headshot %"), $"{100f * HeadHits / Hits:0}%");
     }
 
     public override int Badge() => rounds < 3 ? -1 : Difficulty.BadgeWinRate(Tier, (float)wins / rounds);

@@ -1,3 +1,4 @@
+using ValTrainer.Core;
 using ValTrainer.Game;
 
 namespace ValTrainer.Analysis;
@@ -9,7 +10,6 @@ namespace ValTrainer.Analysis;
 /// </summary>
 static partial class InsightsBuilder
 {
-    static string F(FormattableString s) => FormattableString.Invariant(s);
     const float Pre = 0.3f, Post = 0.4f;
     const float BaseRtMs = 250f;          // Assess SLOW_START's reaction baseline without Reaction Test data
 
@@ -133,37 +133,38 @@ static partial class InsightsBuilder
             if (r.HasPrimary && !tr.Bot)
             {
                 if (r.Over && r.S >= 1.5f * R && r.S / r.A >= 0.04f)
-                    c.Add(w0, w1, "OVERFLICK", F($"Overshot by {r.S:0.0}° ({100 * r.S / r.A:0}%)"), k);
+                    c.Add(w0, w1, "OVERFLICK", L.F($"Overshot by {r.S:0.0}° ({100 * r.S / r.A:0}%)"), k);
                 if (r.Under && r.Gain < 0.85f)
-                    c.Add(w0, w1, "UNDERFLICK", F($"Stopped {-r.S:0.0}° short ({100 * r.Gain:0}% of the way)"), k);
+                    c.Add(w0, w1, "UNDERFLICK", L.F($"Stopped {-r.S:0.0}° short ({100 * r.Gain:0}% of the way)"), k);
                 if (r.EtaP < 0.75f)
-                    c.Add(w0, ti.TPrimEnd + Post, "CURVED", F($"Curved flick: {100 * (1 - r.EtaP):0}% of the path wasted"), k);
+                    c.Add(w0, ti.TPrimEnd + Post, "CURVED", L.F($"Curved flick: {100 * (1 - r.EtaP):0}% of the path wasted"), k);
                 else if (r.EndY < -2 * R && r.EndY < -1f)
-                    c.Add(w0, ti.TPrimEnd + Post, "CURVED", F($"Flick ended {-r.EndY:0.0}° below the head"), k);
+                    c.Add(w0, ti.TPrimEnd + Post, "CURVED", L.F($"Flick ended {-r.EndY:0.0}° below the head"), k);
             }
             if (r.HasPrimary && !r.Predictable && r.Onset >= 100 && r.Onset <= 1000 && r.Onset - baseRt > 120)
-                c.Add(w0, ti.TPrimEnd + Post, "SLOW_START", F($"Reacted in {r.Onset:0} ms"), k);
+                c.Add(w0, ti.TPrimEnd + Post, "SLOW_START", L.F($"Reacted in {r.Onset:0} ms"), k);
             if (r.HasPrimary && tr.Hit && !tr.Bot)
             {
                 // Assess's 150 ms bar is for the median; one dwell is noisy (a flick that lands just inside the radius
                 // and gets corrected reads as dwell), so a single instance needs the rule's major level.
                 if (r.Dwell > 250)
-                    c.Add(ti.TOnTarget - Pre, tr.THit + Post, "HESITATE", F($"Waited {r.Dwell:0} ms on the target before clicking"), k);
+                    c.Add(ti.TOnTarget - Pre, tr.THit + Post, "HESITATE", L.F($"Waited {r.Dwell:0} ms on the target before clicking"), k);
                 if (r.Tc > 1.3f * bandTc || r.Nc >= 3)
                     c.Add(ti.TPrimEnd - Pre, tr.THit + Post, "SLOW_MICRO",
-                        r.Nc > 0 ? F($"Took {r.Tc:0} ms and {r.Nc} correction{(r.Nc == 1 ? "" : "s")} to settle") : F($"Took {r.Tc:0} ms to settle"), k);
+                        r.Nc > 0 ? L.P(r.Nc, $"Took {r.Tc:0} ms and {r.Nc} correction to settle", $"Took {r.Tc:0} ms and {r.Nc} corrections to settle")
+                            : L.F($"Took {r.Tc:0} ms to settle"), k);
             }
             for (int j = 0; j < r.PrematureT.Count; j++)
             {
                 float st = r.PrematureT[j];
                 c.Explained.Add(st);
-                c.Add(Math.Max(w0, st - 1f), st + Post, "PREMATURE", F($"Fired while still moving at {r.PrematureDps[j]:0}°/s"), k);
+                c.Add(Math.Max(w0, st - 1f), st + Post, "PREMATURE", L.F($"Fired while still moving at {r.PrematureDps[j]:0}°/s"), k);
             }
             for (int j = 0; j < r.SnapT.Count; j++)
             {
                 float st = r.SnapT[j];
                 c.Explained.Add(st);
-                c.Add(Math.Max(w0, st - 1f), st + Post, "NO_MICRO", F($"Fired straight off the flick, {r.SnapErr[j]:0.0}° off"), k);
+                c.Add(Math.Max(w0, st - 1f), st + Post, "NO_MICRO", L.F($"Fired straight off the flick, {r.SnapErr[j]:0.0}° off"), k);
             }
         }
         for (int s = 0; s < 8; s++) if (ins.SectorN[s] > 0) ins.SectorGain[s] = gainSum[s] / ins.SectorN[s];
@@ -194,15 +195,15 @@ static partial class InsightsBuilder
         var revs = RunAnalysis.Reversals(p, out float rMean, behind);
         float bandRq = Bench.ValueAt(c.Tier, Bench.ReacqMs);
         foreach (var b in behind)
-            c.Add(b.T0 - Pre, b.T1 + Pre, "TRACK_BEHIND", F($"Trailed the target by {b.LagDeg:0.0}° for {b.T1 - b.T0:0.0} s"));
+            c.Add(b.T0 - Pre, b.T1 + Pre, "TRACK_BEHIND", L.F($"Trailed the target by {b.LagDeg:0.0}° for {b.T1 - b.T0:0.0} s"));
         foreach (var v in revs)
         {
             float end = v.T + Math.Min(v.ReacqMs, 1500f) / 1000f + Pre;
             if (v.ReacqMs > 1.3f * bandRq)
-                c.Add(v.T - Pre, end, "SLOW_REACQ", v.ReacqMs >= 1500f ? "Not back on target within 1.5 s of a direction change"
-                    : F($"Took {v.ReacqMs:0} ms to get back on after a direction change"));
+                c.Add(v.T - Pre, end, "SLOW_REACQ", v.ReacqMs >= 1500f ? L.T("Not back on target within 1.5 s of a direction change")
+                    : L.F($"Took {v.ReacqMs:0} ms to get back on after a direction change"));
             if (rMean > 0 && v.OverrunExcessDeg > 1.5f * rMean)
-                c.Add(v.T - Pre, end, "TRACK_OVERRUN", F($"Ran {v.OverrunDeg:0.0}° past the target when it turned"));
+                c.Add(v.T - Pre, end, "TRACK_OVERRUN", L.F($"Ran {v.OverrunDeg:0.0}° past the target when it turned"));
         }
     }
 
@@ -212,10 +213,10 @@ static partial class InsightsBuilder
         {
             float a = s.T0 - Pre, b = s.T1 + Post;
             if (MathF.Abs(s.V) > 1.0f)
-                c.Add(a, b, "SPRAY_VERT", s.V >= 0 ? F($"Spray climbed {s.V:0.0}° over the target") : F($"Pulled the spray {-s.V:0.0}° under the target"));
+                c.Add(a, b, "SPRAY_VERT", s.V >= 0 ? L.F($"Spray climbed {s.V:0.0}° over the target") : L.F($"Pulled the spray {-s.V:0.0}° under the target"));
             else if (!vertOnly && s.DelayMs > 300)
-                c.Add(a, b, "SPRAY_VERT", F($"Started pulling down {s.DelayMs:0} ms into the spray"));
-            if (!vertOnly && s.H > 0.9f) c.Add(a, b, "SPRAY_HORIZ", F($"Late bullets drifted {s.H:0.0}° sideways"));
+                c.Add(a, b, "SPRAY_VERT", L.F($"Started pulling down {s.DelayMs:0} ms into the spray"));
+            if (!vertOnly && s.H > 0.9f) c.Add(a, b, "SPRAY_HORIZ", L.F($"Late bullets drifted {s.H:0.0}° sideways"));
         }
     }
 
@@ -234,18 +235,18 @@ static partial class InsightsBuilder
         {
             if (moving == null) return;
             float v = moving.Average(s => s.Speed);
-            c.Add(moving[0].T - 0.6f, moving[^1].T + Post, "RUN_GUN", moving.Count == 1 ? F($"Fired while moving at {v:0.0} m/s")
-                : F($"{moving.Count} shots fired while moving at {v:0.0} m/s"), TrialAt(ins, moving[0].T));
+            c.Add(moving[0].T - 0.6f, moving[^1].T + Post, "RUN_GUN", moving.Count == 1 ? L.F($"Fired while moving at {v:0.0} m/s")
+                : L.F($"{moving.Count} shots fired while moving at {v:0.0} m/s"), TrialAt(ins, moving[0].T));
             moving = null;
         }
         void FlushMissed()
         {
             if (missed == null) return;
             var s0 = missed[0];
-            string label = missed.Count > 1 ? F($"Missed {missed.Count} shots in a row")
-                : s0.FocusId == 0 || !float.IsFinite(s0.Err) ? "Missed"
-                : s0.FocusRadius > 0 ? F($"Missed by {s0.Err:0.0}° ({s0.Err / s0.FocusRadius:0.0}× the target radius)")
-                : F($"Missed by {s0.Err:0.0}°");
+            string label = missed.Count > 1 ? L.F($"Missed {missed.Count} shots in a row")
+                : s0.FocusId == 0 || !float.IsFinite(s0.Err) ? L.T("Missed")
+                : s0.FocusRadius > 0 ? L.F($"Missed by {s0.Err:0.0}° ({s0.Err / s0.FocusRadius:0.0}× the target radius)")
+                : L.F($"Missed by {s0.Err:0.0}°");
             c.Add(s0.T - 0.6f, missed[^1].T + Post, "MISS", label, TrialAt(ins, s0.T));
             missed = null;
         }
@@ -316,35 +317,39 @@ static partial class InsightsBuilder
                     int ti = ins.Trials.FindIndex(x => x.Bot && MathF.Abs(x.T0 - e.T) < 1e-3f);
                     float end = ti >= 0 ? Math.Min(ins.Trials[ti].TEnd, e.T + 2f) + Post : e.T + 1f;
                     if (e.B < -r && e.B <= -1.5f)
-                        c.Add(e.T - 0.5f, end, "XHAIR_LOW", F($"Crosshair {-e.B:0.0}° below head height"), ti);
+                        c.Add(e.T - 0.5f, end, "XHAIR_LOW", L.F($"Crosshair {-e.B:0.0}° below head height"), ti);
                     float h = MathF.Sqrt(Math.Max(0, e.A * e.A - e.B * e.B));
                     if (horiz && h > bandE)
-                        c.Add(e.T - 0.5f, end, "XHAIR_WIDE", F($"Crosshair {h:0.0}° to the side when the enemy appeared"), ti);
+                        c.Add(e.T - 0.5f, end, "XHAIR_WIDE", L.F($"Crosshair {h:0.0}° to the side when the enemy appeared"), ti);
                     break;
                 }
                 case "reaction":
                     if (e.A > 80 && e.A < 1500 && e.A > reactLimit)
-                        c.Add(e.T - e.A / 1000f - Pre, e.T + Post, "SLOW_REACT", F($"Reacted in {e.A:0} ms"));
+                        c.Add(e.T - e.A / 1000f - Pre, e.T + Post, "SLOW_REACT", L.F($"Reacted in {e.A:0} ms"));
                     break;
                 case "flash":
                     if (e.A >= 0 && e.B >= 0 && e.B > bandF + 100)
-                        c.Add(e.T - e.B / 1000f - 0.5f, e.T + 0.6f, "FLASH_SLOW", F($"Turned away {e.B:0} ms after the cue"));
+                        c.Add(e.T - e.B / 1000f - 0.5f, e.T + 0.6f, "FLASH_SLOW", L.F($"Turned away {e.B:0} ms after the cue"));
                     break;
                 case "stop":
                     // Assess CLUMSY_MOVE: stops that weren't counter-strafed, or slow to reach accurate speed.
                     if (e.B < 0.5f || e.A + Bench.StopOffsetMs > 200)
                         c.Add(e.T - e.A / 1000f - 0.5f, e.T + Post, "CLUMSY_MOVE",
-                            e.B < 0.5f ? F($"Stopped without counter-strafing ({e.A:0} ms)") : F($"Slow stop: {e.A:0} ms to accurate speed"));
+                            e.B < 0.5f ? L.F($"Stopped without counter-strafing ({e.A:0} ms)") : L.F($"Slow stop: {e.A:0} ms to accurate speed"));
                     break;
                 case "kill":
                 {
                     float ttk = float.IsFinite(e.A) && e.A > 0 ? Math.Min(e.A / 1000f, 2.5f) : 0.5f;
                     int ti = ins.Trials.FindLastIndex(x => x.Bot && x.T0 <= e.T + 1e-4f && e.T <= x.TEnd + 0.1f);
-                    c.Add(e.T - ttk - Pre, e.T + Post, "KILL", (e.A > 0 ? F($"Kill in {e.A:0} ms") : "Kill") + (e.B >= 1 ? " · headshot" : ""), ti);
+                    bool hs = e.B >= 1;
+                    string what = e.A > 0
+                        ? hs ? L.F($"Kill in {e.A:0} ms · headshot") : L.F($"Kill in {e.A:0} ms")
+                        : hs ? L.T("Kill · headshot") : L.T("Kill");
+                    c.Add(e.T - ttk - Pre, e.T + Post, "KILL", what, ti);
                     break;
                 }
                 case "died":
-                    c.Add(e.T - 2.5f, e.T + 0.6f, "DEATH", "You died", TrialAt(ins, e.T));
+                    c.Add(e.T - 2.5f, e.T + 0.6f, "DEATH", L.T("You died"), TrialAt(ins, e.T));
                     break;
             }
         }

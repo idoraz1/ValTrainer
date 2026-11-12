@@ -26,12 +26,12 @@ public sealed class PostPlantMode : TacticalMode
 {
     public override string Key => "postplant";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
-    public override string Name => "Post-Plant";
-    public override string Description => "The spike is down: hold your post-plant angle while defenders retake. Play the defuse, not the peek.";
-    public override string Category => "Map";
-    public override string? Subtitle => $"{MapSpot.Map} — Post-Plant";
-    protected override string Side => "ATK";
-    protected override string OtherSide => "DEF";
+    public override string Name => L.N("Post-Plant");
+    public override string Description => L.N("The spike is down: hold your post-plant angle while defenders retake. Play the defuse, not the peek.");
+    public override string Category => L.N("Map");
+    public override string? Subtitle => L.F($"{MapSpot.Map} — Post-Plant");
+    protected override string Side => L.N("ATK");
+    protected override string OtherSide => L.N("DEF");
 
     // plan states of a retaking defender
     const int Wait = 0, ToStage = 1, Staged = 2, ToClear = 3, Clearing = 4, ToSpike = 5, Kneel = 6, AfterStick = 7, Hunt = 8;
@@ -354,7 +354,7 @@ public sealed class PostPlantMode : TacticalMode
             wonKills++;
             wonPerKind[spotKind]++;
             Score += 300;
-            EndRound(true, "ALL DEFENDERS DOWN", UiTheme.Good, "eliminations");
+            EndRound(true, L.N("ALL DEFENDERS DOWN"), UiTheme.Good, "eliminations");
         }
     }
 
@@ -363,14 +363,14 @@ public sealed class PostPlantMode : TacticalMode
         if (G.Player.Dead) wonAfterDeath++; else wonDetonation++;
         wonPerKind[spotKind]++;
         Score += 300;
-        EndRound(true, "SPIKE DETONATED", UiTheme.Good, "detonation");
+        EndRound(true, L.N("SPIKE DETONATED"), UiTheme.Good, "detonation");
     }
 
     protected override void OnDefused(bool byPlayer)
     {
         lostDefuse++;
         Score -= 50;
-        EndRound(false, "SPIKE DEFUSED", UiTheme.Accent, "defused");
+        EndRound(false, L.N("SPIKE DEFUSED"), UiTheme.Accent, "defused");
     }
 
     public override void OnPlayerDied()
@@ -379,7 +379,7 @@ public sealed class PostPlantMode : TacticalMode
         Score -= 100;
         if (leftEarly && !defuseHeard) earlyPeekDeaths++;
         DevDeathLog(spot.Name);
-        G.Banner("YOU DIED", UiTheme.Accent);
+        G.Banner(L.N("YOU DIED"), UiTheme.Accent);
         resolveAt = Now + 1.6f;
     }
 
@@ -400,7 +400,7 @@ public sealed class PostPlantMode : TacticalMode
             lostDefuse++;
             SpikeNode?.Disarm();
             SpikeSfx.PlayAt(G.World, "defused", Spike, G.View.Eye, 1f, 90f, 0.6f);
-            EndRound(false, "SPIKE DEFUSED", UiTheme.Accent, "died, defused");
+            EndRound(false, L.N("SPIKE DEFUSED"), UiTheme.Accent, "died, defused");
         }
         else
         {
@@ -411,7 +411,7 @@ public sealed class PostPlantMode : TacticalMode
             wonAfterDeath++;
             wonPerKind[spotKind]++;
             Score += 150;
-            EndRound(true, "SPIKE DETONATED — THEY RAN OUT OF TIME", UiTheme.Good, "died, detonated");
+            EndRound(true, L.N("SPIKE DETONATED — THEY RAN OUT OF TIME"), UiTheme.Good, "died, detonated");
         }
     }
 
@@ -423,8 +423,8 @@ public sealed class PostPlantMode : TacticalMode
         {
             if (G == null || !Live || G.Player.Dead) return null;
             if (Now < setupUntil)
-                return $"{spot.Name}  ·  switch: " + string.Join("  ", Enumerable.Range(0, 3).Where(k => offers[k] != null).Select(k => $"{k + 1} {TacticalSite.Kinds[k]}"));
-            if (!defuseHeard && Round <= 2 && RoundT < 9f) return "Hold the spike — don't peek until you hear the defuse";
+                return L.F($"{spot.DisplayName}  ·  switch: {string.Join("  ", Enumerable.Range(0, 3).Where(k => offers[k] != null).Select(k => $"{k + 1} {L.T(TacticalSite.Kinds[k])}"))}");
+            if (!defuseHeard && Round <= 2 && RoundT < 9f) return L.N("Hold the spike — don't peek until you hear the defuse");
             return null;
         }
     }
@@ -432,8 +432,8 @@ public sealed class PostPlantMode : TacticalMode
     public override IEnumerable<string> HudLines()
     {
         if (Site == null) yield break;
-        yield return $"Round {Round}   Won {Won}  Lost {Lost}";
-        if (Live) yield return $"Your spot: {spot.Name}";
+        yield return L.F($"Round {Round}   Won {Won}  Lost {Lost}");
+        if (Live) yield return L.F($"Your spot: {spot.DisplayName}");
     }
 
     protected override void DrawMarkers(CanvasItem c, Camera3D cam, float k)
@@ -441,27 +441,27 @@ public sealed class PostPlantMode : TacticalMode
         if (Now >= setupUntil) return;
         for (int i = 0; i < 3; i++)
             if (offers[i] is { } o && i != spotKind)
-                DrawMarker(c, cam, o.Feet + new Vector3(0, 1.2f, 0), k, $"{i + 1} {TacticalSite.Kinds[i].ToUpperInvariant()}", UiTheme.Teal);
+                DrawMarker(c, cam, o.Feet + new Vector3(0, 1.2f, 0), k, L.F($"{i + 1} {L.Upper(L.T(TacticalSite.Kinds[i]))}"), UiTheme.Teal);
     }
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Map", MapSpot.Map);
-        yield return ("Rounds won / lost", $"{Won} / {Lost}");
-        yield return ("Wins: detonation / kills", $"{wonDetonation} / {wonKills}");
-        if (wonAfterDeath > 0) yield return ("Won after dying", wonAfterDeath.ToString());
-        if (lostDefuse > 0) yield return ("Lost to the defuse", lostDefuse.ToString());
-        yield return ("Defusers killed", defuserKillMs.Count > 0 ? $"{defusersKilled} · {defuserKillMs.Average() / 1000f:0.0}s after sound" : defusersKilled.ToString());
+        yield return (L.N("Map"), MapSpot.Map);
+        yield return (L.N("Rounds won / lost"), $"{Won} / {Lost}");
+        yield return (L.N("Wins: detonation / kills"), $"{wonDetonation} / {wonKills}");
+        if (wonAfterDeath > 0) yield return (L.N("Won after dying"), wonAfterDeath.ToString());
+        if (lostDefuse > 0) yield return (L.N("Lost to the defuse"), lostDefuse.ToString());
+        yield return (L.N("Defusers killed"), defuserKillMs.Count > 0 ? L.F($"{defusersKilled} · {defuserKillMs.Average() / 1000f:0.0}s after sound") : defusersKilled.ToString());
         int rounds = Won + Lost;
-        if (rounds > 0) yield return ("Held spot until defuse", $"{heldRounds} of {rounds}");
-        if (earlyPeekDeaths > 0) yield return ("Died peeking early", earlyPeekDeaths.ToString());
+        if (rounds > 0) yield return (L.N("Held spot until defuse"), L.F($"{heldRounds} of {rounds}"));
+        if (earlyPeekDeaths > 0) yield return (L.N("Died peeking early"), earlyPeekDeaths.ToString());
         var best = Enumerable.Range(0, 3).Where(k => roundsPerKind[k] > 0).OrderByDescending(k => (float)wonPerKind[k] / roundsPerKind[k]).ThenByDescending(k => roundsPerKind[k]).ToList();
-        if (best.Count > 1) yield return ("Best spot", $"{TacticalSite.Kinds[best[0]]} ({wonPerKind[best[0]]}/{roundsPerKind[best[0]]})");
-        if (botSticks > 0) yield return ("Fake defuses seen", botSticks.ToString());
-        yield return ("Kills / deaths", $"{Kills} / {Deaths}");
-        if (Hits > 0) yield return ("Headshot %", $"{100f * HeadHits / Hits:0}%");
-        yield return ("Accuracy", $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
-        if (KillTimes.Count > 0) yield return ("Avg time to kill", $"{KillTimes.Average():0} ms");
+        if (best.Count > 1) yield return (L.N("Best spot"), $"{L.T(TacticalSite.Kinds[best[0]])} ({wonPerKind[best[0]]}/{roundsPerKind[best[0]]})");
+        if (botSticks > 0) yield return (L.N("Fake defuses seen"), botSticks.ToString());
+        yield return (L.N("Kills / deaths"), $"{Kills} / {Deaths}");
+        if (Hits > 0) yield return (L.N("Headshot %"), $"{100f * HeadHits / Hits:0}%");
+        yield return (L.N("Accuracy"), $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
+        if (KillTimes.Count > 0) yield return (L.N("Avg time to kill"), L.F($"{KillTimes.Average():0} ms"));
         foreach (var l in MovementLines()) yield return l;
     }
 
@@ -509,12 +509,14 @@ public sealed class RetakeMode : TacticalMode
 {
     public override string Key => "retake";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
-    public override string Name => "Retake";
+    public override string Name => L.N("Retake");
     public override string Description => $"Retake the site and defuse while attackers hold their post-plant spots. Hold {DefuseKeyText} to defuse (7 s, half at 3.5 s).";
-    public override string Category => "Map";
-    public override string? Subtitle => $"{MapSpot.Map} — Retake";
-    protected override string Side => "DEF";
-    protected override string OtherSide => "ATK";
+    // interpolated (the player's defuse key): translated here, Description stays English
+    public override string DisplayDescription => L.F($"Retake the site and defuse while attackers hold their post-plant spots. Hold {DefuseKeyText} to defuse (7 s, half at 3.5 s).");
+    public override string Category => L.N("Map");
+    public override string? Subtitle => L.F($"{MapSpot.Map} — Retake");
+    protected override string Side => L.N("DEF");
+    protected override string OtherSide => L.N("ATK");
     protected override float SpikeTimerAtStart => 35f;
     protected override float BadgeThreshold => 0.40f;
 
@@ -690,14 +692,14 @@ public sealed class RetakeMode : TacticalMode
         defuseLeft.Add(SpikeLeft);
         retakeTimes.Add(RoundT);
         Score += 300 + (int)(SpikeLeft * 5);
-        EndRound(true, clean ? "SPIKE DEFUSED" : "SPIKE DEFUSED — UNDER FIRE", UiTheme.Good, clean ? "clean defuse" : "ninja defuse");
+        EndRound(true, clean ? L.N("SPIKE DEFUSED") : L.N("SPIKE DEFUSED — UNDER FIRE"), UiTheme.Good, clean ? "clean defuse" : "ninja defuse");
     }
 
     protected override void OnDetonated()
     {
         lostTime++;
         Score -= 50;
-        EndRound(false, "SPIKE DETONATED", UiTheme.Accent, "detonated");
+        EndRound(false, L.N("SPIKE DETONATED"), UiTheme.Accent, "detonated");
     }
 
     public override void OnPlayerDied()
@@ -706,12 +708,12 @@ public sealed class RetakeMode : TacticalMode
         lostDied++;
         Score -= 100;
         DevDeathLog($"entry {entryIdx}");
-        EndRound(false, "YOU DIED", UiTheme.Accent, "died");
+        EndRound(false, L.N("YOU DIED"), UiTheme.Accent, "died");
     }
 
     protected override void OnBotKilled(TacBot bot, bool headshot)
     {
-        if (AliveBots == 0 && Live) G.Banner("SITE CLEAR — DEFUSE!", UiTheme.Good);
+        if (AliveBots == 0 && Live) G.Banner(L.N("SITE CLEAR — DEFUSE!"), UiTheme.Good);
     }
 
     public override string? Prompt
@@ -719,8 +721,8 @@ public sealed class RetakeMode : TacticalMode
         get
         {
             if (G == null || !Live || G.Player.Dead || PlayerDefusing) return null;
-            if (NearSpike) return Defusing ? null : DefuseCheckpoint ? $"Hold {DefuseKeyText} to defuse (resumes from half)" : $"Hold {DefuseKeyText} to defuse";
-            if (Round <= 1 && RoundT < 5f) return "Retake the site — clear the attackers or sneak the defuse";
+            if (NearSpike) return Defusing ? null : DefuseCheckpoint ? L.F($"Hold {DefuseKeyText} to defuse (resumes from half)") : L.F($"Hold {DefuseKeyText} to defuse");
+            if (Round <= 1 && RoundT < 5f) return L.N("Retake the site — clear the attackers or sneak the defuse");
             return null;
         }
     }
@@ -728,23 +730,23 @@ public sealed class RetakeMode : TacticalMode
     public override IEnumerable<string> HudLines()
     {
         if (Site == null) yield break;
-        yield return $"Round {Round}   Won {Won}  Lost {Lost}";
-        if (DefuseCheckpoint && !PlayerDefusing && Live) yield return "Half defused — it resumes from 3.5 s";
+        yield return L.F($"Round {Round}   Won {Won}  Lost {Lost}");
+        if (DefuseCheckpoint && !PlayerDefusing && Live) yield return L.N("Half defused — it resumes from 3.5 s");
     }
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Map", MapSpot.Map);
-        yield return ("Retakes won / lost", $"{Won} / {Lost}");
-        yield return ("Defuses: cleared / under fire", $"{cleanDefuses} / {ninjaDefuses}");
-        if (Lost > 0) yield return ("Lost: died / time", $"{lostDied} / {lostTime}");
-        if (defuseLeft.Count > 0) yield return ("Spike left at defuse", $"{defuseLeft.Average():0.0} s avg");
-        if (retakeTimes.Count > 0) yield return ("Avg retake time", $"{retakeTimes.Average():0.0} s");
-        if (halfRounds > 0 || sticks > 0) yield return ("Half-defuse wins / fakes", $"{halfRounds} / {sticks}");
-        yield return ("Kills / deaths", $"{Kills} / {Deaths}");
-        if (Hits > 0) yield return ("Headshot %", $"{100f * HeadHits / Hits:0}%");
-        yield return ("Accuracy", $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
-        if (KillTimes.Count > 0) yield return ("Avg time to kill", $"{KillTimes.Average():0} ms");
+        yield return (L.N("Map"), MapSpot.Map);
+        yield return (L.N("Retakes won / lost"), $"{Won} / {Lost}");
+        yield return (L.N("Defuses: cleared / under fire"), $"{cleanDefuses} / {ninjaDefuses}");
+        if (Lost > 0) yield return (L.N("Lost: died / time"), $"{lostDied} / {lostTime}");
+        if (defuseLeft.Count > 0) yield return (L.N("Spike left at defuse"), L.F($"{defuseLeft.Average():0.0} s avg"));
+        if (retakeTimes.Count > 0) yield return (L.N("Avg retake time"), $"{retakeTimes.Average():0.0} s");
+        if (halfRounds > 0 || sticks > 0) yield return (L.N("Half-defuse wins / fakes"), $"{halfRounds} / {sticks}");
+        yield return (L.N("Kills / deaths"), $"{Kills} / {Deaths}");
+        if (Hits > 0) yield return (L.N("Headshot %"), $"{100f * HeadHits / Hits:0}%");
+        yield return (L.N("Accuracy"), $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
+        if (KillTimes.Count > 0) yield return (L.N("Avg time to kill"), L.F($"{KillTimes.Average():0} ms"));
         foreach (var l in MovementLines()) yield return l;
     }
 

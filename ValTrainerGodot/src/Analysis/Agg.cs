@@ -47,7 +47,7 @@ static class Agg
         ["head.fsh_pct"] = "head.n_first", ["head.tc_ms"] = "head.n_hit", ["head.nc"] = "head.n_hit",
         ["speed.tier"] = "speed.n", ["speed.score_min"] = "speed.n",
         ["track.reacq_ms"] = "track.reversals", ["track.overrun_deg"] = "track.reversals", ["track.overrun_r"] = "track.reversals", ["track.overrun_excess_deg"] = "track.reversals",
-        ["xhair.below_pct"] = "xhair.n", ["xhair.on_head_pct"] = "xhair.nh", ["xhair.err_deg"] = "xhair.nh", ["xhair.h_deg"] = "xhair.nh",
+        ["xhair.below_pct"] = "xhair.n", ["xhair.on_head_pct"] = "xhair.nh", ["xhair.err_deg"] = "xhair.nh", ["xhair.err_ref_deg"] = "xhair.nh", ["xhair.h_deg"] = "xhair.nh",
         ["move.moving_speed"] = "move.moving", ["move.stop_ms"] = "move.stops", ["move.counter_pct"] = "move.stops",
         ["move.moving_shot_pct"] = "move.shots", ["move.early_shot_pct"] = "move.shots",
         ["spray.delay_ms"] = "spray.delay_n",
@@ -93,26 +93,54 @@ static class Agg
         if (d > 0) m[key] = scale * Get(m, num) / d;
     }
 
+    /// <summary>The runs (indexes into a newest-first list) that make up a family's window: newest runs first until the
+    /// family's last 300 events are covered.</summary>
+    static List<int> Window(List<Dictionary<string, float>> newestFirst, string fam)
+    {
+        var used = new List<int>();
+        float cum = 0;
+        for (int i = 0; i < newestFirst.Count; i++)
+        {
+            var m = newestFirst[i];
+            float n = FamilyN(m, fam);
+            if (n <= 0 && !m.Keys.Any(k => Family(k) == fam)) continue;
+            used.Add(i);
+            cum += n;
+            if (cum >= WindowEvents) break;
+        }
+        return used;
+    }
+
+    /// <summary>
+    /// Where a family's profile numbers come from: the event count (<paramref name="countKey"/>) each drill (base mode key)
+    /// contributes to the family's window, largest first. For the anonymous calibration line ("xhair: deathmatch 372,
+    /// siteclear 24"): the drill mix is what the per-drill factors are fitted on.
+    /// </summary>
+    public static List<(string Mode, float N)> Sources(IEnumerable<(DateTime When, string Mode, Dictionary<string, float> M)> runs, string fam, string countKey)
+    {
+        var list = runs.Where(r => r.M != null && r.M.Count > 0).OrderByDescending(r => r.When).ToList();
+        var by = new Dictionary<string, float>();
+        foreach (int i in Window(list.Select(r => r.M).ToList(), fam))
+        {
+            float n = Get(list[i].M, countKey);
+            if (n <= 0) continue;
+            string b = RunAnalysis.Base(list[i].Mode);
+            by[b] = by.GetValueOrDefault(b) + n;
+        }
+        return by.OrderByDescending(kv => kv.Value).Select(kv => (kv.Key, kv.Value)).ToList();
+    }
+
     /// <summary>Aggregates per-run metric dictionaries (any order) into one profile dictionary.</summary>
     public static Dictionary<string, float> Aggregate(IEnumerable<(DateTime When, Dictionary<string, float> M)> runs, DateTime now)
     {
         var list = runs.Where(r => r.M != null && r.M.Count > 0).OrderByDescending(r => r.When).ToList();
+        var ms = list.Select(r => r.M).ToList();
         var outp = new Dictionary<string, float>();
         var fams = list.SelectMany(r => r.M.Keys).Select(Family).Distinct().ToList();
         foreach (var fam in fams)
         {
             // Newest runs first until the family's last 300 events are covered.
-            var used = new List<(double Rw, Dictionary<string, float> M)>();
-            float cum = 0;
-            foreach (var r in list)
-            {
-                float n = FamilyN(r.M, fam);
-                if (n <= 0 && !r.M.Keys.Any(k => Family(k) == fam)) continue;
-                double age = Math.Max(0, (now - r.When).TotalDays);
-                used.Add((Math.Pow(0.5, age / HalfLifeDays), r.M));
-                cum += n;
-                if (cum >= WindowEvents) break;
-            }
+            var used = Window(ms, fam).Select(i => (Rw: Math.Pow(0.5, Math.Max(0, (now - list[i].When).TotalDays) / HalfLifeDays), M: list[i].M)).ToList();
             var keys = used.SelectMany(u => u.M.Keys).Where(k => Family(k) == fam).Distinct();
             foreach (var key in keys)
             {

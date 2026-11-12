@@ -208,7 +208,7 @@ public sealed class ReplayRecorder
             Blind = s.Blind != null ? s.Blind.Strength : 0f,
         };
         var gun = s.Gun;
-        if (gun != null && gun.Reloading && gun.Def.Reload > 0) p.Reload = Math.Clamp(1f - gun.ReloadLeft / gun.Def.Reload, 0f, 1f);
+        if (gun != null && gun.ReloadProgress >= 0f) p.Reload = gun.ReloadProgress; // partial / shell-by-shell reloads run their own length
         PBits b = 0;
         if (cut) b |= PBits.Cut;
         if (s.AbilityInHand) b |= PBits.AbilityInHand;

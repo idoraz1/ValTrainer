@@ -1,5 +1,6 @@
 using Godot;
 using ValTrainer.Audio;
+using ValTrainer.Core;
 
 namespace ValTrainer.UI;
 
@@ -27,7 +28,7 @@ public static class UiTheme
     {
         Color.Color8(250, 50, 50), Color.Color8(250, 235, 40), Color.Color8(235, 225, 60), Color.Color8(190, 70, 255),
     };
-    public static readonly string[] EnemyColorNames = { "Red", "Yellow (Deuteranopia)", "Yellow (Protanopia)", "Purple (Tritanopia)" };
+    public static readonly string[] EnemyColorNames = { L.N("Red"), L.N("Yellow (Deuteranopia)"), L.N("Yellow (Protanopia)"), L.N("Purple (Tritanopia)") };
 
     public static Font Body = null!;     // Segoe UI semibold — has every glyph (→ — …)
     public static Font Hud = null!;      // Bahnschrift — DIN-like HUD face
@@ -118,38 +119,64 @@ public static class Gfx
     public static void GradPoly(this CanvasItem ci, ReadOnlySpan<Vector2> p, ReadOnlySpan<Color> c) => ci.DrawPolygon(p, c, ReadOnlySpan<Vector2>.Empty, null);
     public static void Polyline(this CanvasItem ci, ReadOnlySpan<Vector2> p, Color c, float w, bool aa = false) => ci.DrawPolyline(p, c, w, aa);
 
-    public static float TextW(Font f, string t, int size) => f.GetStringSize(t, HorizontalAlignment.Left, -1, size).X;
+    // Text helpers translate what they draw (L.T: one dictionary lookup, none in English), so plain English literals
+    // need no wrapping at the call site, and a width measured with TextW matches what Text* draws. Dynamic text simply
+    // has no translation and comes back unchanged; text that must never be looked up goes through L.Raw / TextRaw.
+
+    /// <summary>Width of <paramref name="t"/> as the Text helpers draw it (translated).</summary>
+    public static float TextW(Font f, string t, int size) => RawW(f, L.T(t), size);
+
+    /// <summary>Width of exactly this string (no translation).</summary>
+    public static float RawW(Font f, string t, int size) => f.GetStringSize(t, HorizontalAlignment.Left, -1, size).X;
 
     /// <summary>Baseline that vertically centres capital letters on <paramref name="cy"/>.</summary>
     public static float Mid(float cy, int size) => cy + size * 0.36f;
 
     public static void Text(CanvasItem ci, Font f, string t, float x, float baseline, int size, Color c) =>
+        ci.DrawString(f, new Vector2(x, baseline), L.T(t), HorizontalAlignment.Left, -1, size, c);
+
+    /// <summary><see cref="Text"/> without translation (codes, names, paths, callouts).</summary>
+    public static void TextRaw(CanvasItem ci, Font f, string t, float x, float baseline, int size, Color c) =>
         ci.DrawString(f, new Vector2(x, baseline), t, HorizontalAlignment.Left, -1, size, c);
 
     public static float TextC(CanvasItem ci, Font f, string t, float cx, float baseline, int size, Color c)
     {
-        float w = TextW(f, t, size);
+        t = L.T(t);
+        float w = RawW(f, t, size);
         ci.DrawString(f, new Vector2(cx - w / 2, baseline), t, HorizontalAlignment.Left, -1, size, c);
         return w;
     }
 
     public static float TextR(CanvasItem ci, Font f, string t, float right, float baseline, int size, Color c)
     {
-        float w = TextW(f, t, size);
+        t = L.T(t);
+        float w = RawW(f, t, size);
         ci.DrawString(f, new Vector2(right - w, baseline), t, HorizontalAlignment.Left, -1, size, c);
         return w;
     }
 
-    /// <summary>Text clipped with an ellipsis to <paramref name="maxW"/>.</summary>
+    /// <summary>Text clipped with an ellipsis to <paramref name="maxW"/>. In other languages (longer text) it first
+    /// shrinks the font down to 85% and only then cuts with "…"; English draws exactly as before.</summary>
     public static void TextFit(CanvasItem ci, Font f, string t, float x, float baseline, int size, Color c, float maxW, HorizontalAlignment align = HorizontalAlignment.Left)
     {
-        float w = TextW(f, t, size);
+        t = L.T(t);
+        float w = RawW(f, t, size);
+        if (w > maxW && !L.IsEnglish)
+        {
+            // shrink-before-ellipsis: a slightly smaller font reads better than a cut word
+            int min = Math.Max(8, (int)MathF.Ceiling(size * 0.85f));
+            for (int s = size - 1; s >= min && w > maxW; s--)
+            {
+                size = s;
+                w = RawW(f, t, size);
+            }
+        }
         if (w > maxW)
         {
             int n = t.Length;
-            while (n > 1 && TextW(f, t[..n] + "…", size) > maxW) n--;
+            while (n > 1 && RawW(f, t[..n] + "…", size) > maxW) n--;
             t = t[..n].TrimEnd() + "…";
-            w = TextW(f, t, size);
+            w = RawW(f, t, size);
         }
         float px = align switch { HorizontalAlignment.Center => x + (maxW - w) / 2, HorizontalAlignment.Right => x + maxW - w, _ => x };
         ci.DrawString(f, new Vector2(px, baseline), t, HorizontalAlignment.Left, -1, size, c);

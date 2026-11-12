@@ -173,6 +173,21 @@ $fail = @($r.Text -split "`r?`n" | Where-Object { $_ -match '\[dm-spawncheck\] F
 $why = if ($r.Code -ne 0) { "exit code $($r.Code) ($res) " + ($fail -join "; ") } elseif ($res -notmatch 'RESULT: PASS') { "no PASS result" } else { "" }
 Report "deathmatch spawn check" ($why -eq "") $why $r
 
+# ---- 3d. Progression: XP curve, run XP, stars, coach confirmation, requirements, persistence, challenges, streak, retro ----
+$r = Invoke-Godot "progress-test" (@("--headless", "--path", $Project, "--") + $sandbox + @("--progress-test"))
+$res = ($r.Text -split "`r?`n" | Where-Object { $_ -match '\[progress-test\] RESULT:' } | Select-Object -Last 1)
+$fail = @($r.Text -split "`r?`n" | Where-Object { $_ -match '\[progress-test\] FAIL' })
+$why = if ($r.Code -ne 0) { "exit code $($r.Code) ($res) " + ($fail -join "; ") } elseif ($res -notmatch 'RESULT: PASS') { "no PASS result" } else { "" }
+Report "progress test" ($why -eq "") $why $r
+
+# ---- 3e. Skin audio: every line's sound set plays through the skin pool; gating, bus volume and ducking ----
+$r = Invoke-Godot "skinaudio-test" (@("--headless", "--path", $Project, "--") + $sandbox + @("--skinaudio-test"))
+$res = ($r.Text -split "`r?`n" | Where-Object { $_ -match '\[skinaudio-test\] RESULT:' } | Select-Object -Last 1)
+$fail = @($r.Text -split "`r?`n" | Where-Object { $_ -match '\[skinaudio-test\] FAIL ' })
+$why = if ($r.Code -ne 0) { "exit code $($r.Code) ($res) " + ($fail -join "; ") } elseif ($res -notmatch 'RESULT: PASS') { "no PASS result" } else { "" }
+$detail = if ($res -match '\((.+)\)') { " ($($Matches[1]))" } else { "" }
+Report "skin audio test$detail" ($why -eq "") $why $r
+
 # ---- 4. Smoke test: each drill runs 5 s with the simulated player, then its telemetry must load in the coach ----
 if (-not $SkipSmoke) {
   foreach ($m in $Modes) {

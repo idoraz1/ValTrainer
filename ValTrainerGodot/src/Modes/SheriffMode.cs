@@ -26,8 +26,8 @@ namespace ValTrainer.Modes;
 public sealed class SheriffMode : BotMode
 {
     public override string Key => "sheriff";
-    public override string Name => "Sheriff One-Taps";
-    public override string Description => "One click, one head with the Sheriff at 8–45 m. Past 30 m a head does 145 and won't kill a full shield: tap again. Spamming is punished.";
+    public override string Name => L.N("Sheriff One-Taps");
+    public override string Description => L.N("One click, one head with the Sheriff at 8–45 m. Past 30 m a head does 145 and won't kill a full shield: tap again. Spamming is punished.");
     public override WeaponKind Weapon => WeaponKind.Sheriff;
     /// <summary>The simulated player pursues the agent (peekers move) and taps once the head is under the crosshair.</summary>
     public override string SimKind => "bot";
@@ -59,7 +59,7 @@ public sealed class SheriffMode : BotMode
 
     enum Band { Close, Mid, Long }
     static (float Min, float Max) BandRange(Band b) => b switch { Band.Close => (8f, 15f), Band.Mid => (20f, 28f), _ => (35f, 45f) };
-    static string BandName(Band b) => b switch { Band.Close => "CLOSE", Band.Mid => "MID", _ => "LONG" };
+    static string BandName(Band b) => b switch { Band.Close => L.C("range", "CLOSE"), Band.Mid => L.N("MID"), _ => L.N("LONG") };
 
     // ---------------- cover: pillars at every range ----------------
 
@@ -286,7 +286,7 @@ public sealed class SheriffMode : BotMode
             if (zone == HitZone.Head)
             {
                 if (!tooFast) Score += 20;
-                if (hd > 30f) G.Banner($"{Mathf.Round((G.Weapon ?? Weapons.Sheriff).Damage(0, hd)):0} — 30 M+ HEAD, TAP AGAIN", UiTheme.Warn);
+                if (hd > 30f) G.Banner(L.F($"{Mathf.Round((G.Weapon ?? Weapons.Sheriff).Damage(0, hd)):0} — 30 M+ HEAD, TAP AGAIN"), UiTheme.Warn);
             }
             else Score -= zone == HitZone.Body ? 5 : 10;
             return hd;
@@ -301,12 +301,12 @@ public sealed class SheriffMode : BotMode
         if (tooFast)
         {
             wastedKills++;
-            G.Banner("SPAMMED — NO POINTS", UiTheme.Warn);
+            G.Banner(L.N("SPAMMED — NO POINTS"), UiTheme.Warn);
         }
         else if (oneTap)
         {
             Score += 150 + (int)Mathf.Max(0, (1400 - KillTimes[^1]) / 8);
-            G.Banner("ONE TAP", UiTheme.Good);
+            G.Banner(L.N("ONE TAP"), UiTheme.Good);
         }
         else if (clean2) Score += 130 + (int)Mathf.Max(0, (2000 - KillTimes[^1]) / 10);
         else Score += 50 + (int)Mathf.Max(0, (1400 - KillTimes[^1]) / 16);
@@ -324,25 +324,25 @@ public sealed class SheriffMode : BotMode
     float SpamShare => Shots == 0 ? 0f : (float)spammed / Shots;
 
     public override string? Prompt =>
-        Now < tooFastUntil ? $"Too fast — let the Sheriff recover (≈ {Recovery * 1000:0} ms between taps)"
-        : Shots == 0 ? "One click, one head. Past 30 m a head does 145: tap again once the gun recovers" : null;
+        Now < tooFastUntil ? L.F($"Too fast — let the Sheriff recover (≈ {Recovery * 1000:0} ms between taps)")
+        : Shots == 0 ? L.N("One click, one head. Past 30 m a head does 145: tap again once the gun recovers") : null;
 
     public override IEnumerable<string> HudLines()
     {
         if (Alive(bot) && seen)
-            yield return band == Band.Long ? $"{BandName(band)} {dist:0} m · head 145: not a one-tap" : $"{BandName(band)} {dist:0} m · head 159: one-tap";
-        if (Shots > 0) yield return $"One-taps {oneTaps} · spammed {spammed}";
+            yield return band == Band.Long ? L.F($"{L.T(BandName(band))} {dist:0} m · head 145: not a one-tap") : L.F($"{L.T(BandName(band))} {dist:0} m · head 159: one-tap");
+        if (Shots > 0) yield return L.F($"One-taps {oneTaps} · spammed {spammed}");
     }
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("One-tap kills", nearResolved == 0 ? "—" : $"{OneTapRate * 100:0}%  ({oneTaps}/{nearResolved} close/mid)");
-        yield return ("Long-range kills", longResolved == 0 ? "—" : $"{longKills}/{longResolved}  ·  {longClean} head + tap");
-        yield return ("Headshot %", Hits == 0 ? "—" : $"{100f * HeadHits / Hits:0}%  ({bodyHits + legHits} body/legs)");
-        yield return ("Avg time to kill", KillTimes.Count > 0 ? $"{KillTimes.Average():0} ms" : "—");
-        yield return ("Spammed shots", $"{spammed} of {Shots}" + (wastedKills > 0 ? $"  ({wastedKills} kills wasted)" : ""));
-        yield return ("Accuracy", $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
-        yield return ("Escaped", $"{escaped} of {Resolved}");
+        yield return (L.N("One-tap kills"), nearResolved == 0 ? "—" : L.F($"{OneTapRate * 100:0}%  ({oneTaps}/{nearResolved} close/mid)"));
+        yield return (L.N("Long-range kills"), longResolved == 0 ? "—" : L.F($"{longKills}/{longResolved}  ·  {longClean} head + tap"));
+        yield return (L.N("Headshot %"), Hits == 0 ? "—" : L.F($"{100f * HeadHits / Hits:0}%  ({bodyHits + legHits} body/legs)"));
+        yield return (L.N("Avg time to kill"), KillTimes.Count > 0 ? L.F($"{KillTimes.Average():0} ms") : "—");
+        yield return (L.N("Spammed shots"), wastedKills > 0 ? L.F($"{spammed} of {Shots}  ({wastedKills} kills wasted)") : L.F($"{spammed} of {Shots}"));
+        yield return (L.N("Accuracy"), $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
+        yield return (L.N("Escaped"), L.F($"{escaped} of {Resolved}"));
     }
 
     /// <summary>Median time from first sight of the head to the kill of the close / mid agents (≥ 5 of them; their kill

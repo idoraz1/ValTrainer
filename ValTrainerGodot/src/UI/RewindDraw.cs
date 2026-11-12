@@ -1,5 +1,6 @@
 using Godot;
 using ValTrainer.Analysis;
+using ValTrainer.Core;
 using ValTrainer.Game;
 
 namespace ValTrainer.UI;
@@ -150,9 +151,9 @@ public partial class RewindScreen
         Crosshair(sz);
 
         // captions
-        CaptionPlate(new Vector2(12 * k, 12 * k), zoom == 1 ? "PLAYER'S VIEW · 1×" : "CLOSE-UP · 4×", UiTheme.Text, cs);
-        Gfx.TextR(eye, UiTheme.HudWide, $"{hfov:0}° FOV", sz.X - 14 * k, 12 * k + cs + 6 * k, cs, UiTheme.Faint);
-        Gfx.TextR(eye, UiTheme.HudWide, gridDeg < 1 ? $"GRID {gridDeg:0.0}°" : $"GRID {gridDeg:0}°", sz.X - 14 * k, sz.Y - 14 * k, cs, UiTheme.Faint);
+        CaptionPlate(new Vector2(12 * k, 12 * k), L.T(zoom == 1 ? "PLAYER'S VIEW · 1×" : "CLOSE-UP · 4×"), UiTheme.Text, cs);
+        Gfx.TextR(eye, UiTheme.HudWide, L.F($"{hfov:0}° FOV"), sz.X - 14 * k, 12 * k + cs + 6 * k, cs, UiTheme.Faint);
+        Gfx.TextR(eye, UiTheme.HudWide, gridDeg < 1 ? L.F($"GRID {gridDeg:0.0}°") : L.F($"GRID {gridDeg:0}°"), sz.X - 14 * k, sz.Y - 14 * k, cs, UiTheme.Faint);
 
         var fr0 = f[FrameIndex(t)];
         string status;
@@ -160,16 +161,16 @@ public partial class RewindScreen
         if (cur.Id != 0)
         {
             float err = Mathf.Sqrt(cur.Yaw * cur.Yaw + cur.Pitch * cur.Pitch);
-            if (err <= cur.R) { status = "On the target"; sc = UiTheme.Good; }
-            else status = $"Target {err:0.0}° away";
-            if (!onScreen) status += " (off screen)";
+            if (err <= cur.R) { status = L.T("On the target"); sc = UiTheme.Good; }
+            else status = L.F($"Target {err:0.0}° away");
+            if (!onScreen) status += " " + L.T("(off screen)");
         }
-        else status = shown.Id != 0 ? "No target — last one shown faded" : "No target";
+        else status = L.T(shown.Id != 0 ? "No target — last one shown faded" : "No target");
         float x = 14 * k, y = sz.Y - 14 * k;
         x += Gfx.TextW(UiTheme.Body, status, fs) + 0;
         Gfx.Text(eye, UiTheme.Body, status, 14 * k, y, fs, sc);
         if (fr0.Has(FrameFlags.Firing)) { Gfx.Text(eye, UiTheme.HudWide, "  ·  FIRING", x, y, cs, UiTheme.Accent); x += Gfx.TextW(UiTheme.HudWide, "  ·  FIRING", cs); }
-        if (fr0.Speed > 1f) Gfx.Text(eye, UiTheme.HudWide, $"  ·  MOVING {fr0.Speed:0.0} M/S", x, y, cs, UiTheme.Warn);
+        if (fr0.Speed > 1f) Gfx.Text(eye, UiTheme.HudWide, L.F($"  ·  MOVING {fr0.Speed:0.0} M/S"), x, y, cs, UiTheme.Warn);
         if (cur.Id == 0)
             Gfx.TextC(eye, UiTheme.HudWide, "NO TARGET", centre.X, centre.Y - Mathf.Max(60 * k, sz.Y * 0.18f), UiTheme.Fs(16, k), new Color(UiTheme.Text, 0.55f));
     }
@@ -328,15 +329,15 @@ public partial class RewindScreen
         int cs = UiTheme.Fs(12, k), bs = UiTheme.Fs(15, k);
 
         var (tr, ti) = CurrentTrial();
-        string count = tr == null || ins == null ? "" : $"{(tr.Bot ? "BOT" : "TARGET")} {ti + 1} OF {ins.Trials.Count}";
-        y = Section("THIS ENGAGEMENT", count, x, y, w);
+        string count = tr == null || ins == null ? "" : tr.Bot ? L.F($"BOT {ti + 1} OF {ins.Trials.Count}") : L.F($"TARGET {ti + 1} OF {ins.Trials.Count}");
+        y = Section(L.N("THIS ENGAGEMENT"), count, x, y, w);
 
         // the moment at the playhead
         if (mi >= 0 && mi < moments.Count)
         {
             var m = moments[mi];
             var mc = RewindData.CodeColor(m.Code);
-            string chip = RewindData.CodeName(m.Code).ToUpperInvariant();
+            string chip = L.Upper(L.T(RewindData.CodeName(m.Code)));
             float cw = Gfx.TextW(UiTheme.HudWide, chip, cs) + 14 * k;
             var cr = new Rect2(x, y, Mathf.Min(cw, w * 0.5f), 22 * k);
             view.DrawRect(cr, new Color(mc, 0.16f));
@@ -359,41 +360,43 @@ public partial class RewindScreen
             // 3 × 2 tiles
             float gap = 8 * k, tw = (w - 2 * gap) / 3, th = 64 * k;
             string Ms(float a, float b) => float.IsNaN(a) || float.IsNaN(b) || b < a ? "—" : $"{(b - a) * 1000f:0} ms";
-            Tile(new Rect2(x, y, tw, th), "REACT", Ms(tr.T0, tr.TOnset), null, UiTheme.Text);
-            Tile(new Rect2(x + tw + gap, y, tw, th), "FLICK", Ms(tr.TOnset, tr.TPrimEnd), null, UiTheme.Text);
-            Tile(new Rect2(x + 2 * (tw + gap), y, tw, th), "SETTLE", Ms(tr.TPrimEnd, tr.TOnTarget), null, UiTheme.Text);
+            // captions and values reach the Text helpers through Tile (translated there)
+            Tile(new Rect2(x, y, tw, th), L.N("REACT"), Ms(tr.T0, tr.TOnset), null, UiTheme.Text);
+            Tile(new Rect2(x + tw + gap, y, tw, th), L.N("FLICK"), Ms(tr.TOnset, tr.TPrimEnd), null, UiTheme.Text);
+            Tile(new Rect2(x + 2 * (tw + gap), y, tw, th), L.N("SETTLE"), Ms(tr.TPrimEnd, tr.TOnTarget), null, UiTheme.Text);
             float y2 = y + th + gap;
-            Tile(new Rect2(x, y2, tw, th), "CLICK", Ms(tr.TOnTarget, tr.THit), null, UiTheme.Text);
+            Tile(new Rect2(x, y2, tw, th), L.N("CLICK"), Ms(tr.TOnTarget, tr.THit), null, UiTheme.Text);
             string over = "—";
             var oc = UiTheme.Text;
             if (!float.IsNaN(tr.Gain))
             {
                 float pct = (tr.Gain - 1f) * 100f;
-                over = pct >= 0 ? $"+{pct:0}%" : $"{-pct:0}% short";
+                over = pct >= 0 ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"+{pct:0}%") : L.F($"{-pct:0}% short");
                 oc = Mathf.Abs(pct) <= 10 ? UiTheme.Good : pct > 0 ? UiTheme.Warn : UiTheme.Teal;
             }
-            Tile(new Rect2(x + tw + gap, y2, tw, th), "OVERSHOOT", over, null, oc);
-            string first = "no shot";
+            Tile(new Rect2(x + tw + gap, y2, tw, th), L.N("OVERSHOOT"), over, null, oc);
+            string first = L.N("no shot");
             string? firstSub = null;
             var fc = UiTheme.Dim;
             if (tr.HasFirstShot)
             {
-                if (tr.FirstHit) { first = tr.Head ? "HEAD" : "HIT"; fc = UiTheme.Good; }
+                if (tr.FirstHit) { first = tr.Head ? L.N("HEAD") : L.N("HIT"); fc = UiTheme.Good; }
                 else
                 {
-                    first = "MISS"; fc = RewindData.MissColor;
-                    if (!float.IsNaN(tr.FirstShotErrR)) firstSub = $"{tr.FirstShotErrR:0.0}× radius off";
+                    first = L.N("MISS"); fc = RewindData.MissColor;
+                    if (!float.IsNaN(tr.FirstShotErrR)) firstSub = L.F($"{tr.FirstShotErrR:0.0}× radius off");
                 }
             }
-            Tile(new Rect2(x + 2 * (tw + gap), y2, tw, th), "FIRST SHOT", first, firstSub, fc);
+            Tile(new Rect2(x + 2 * (tw + gap), y2, tw, th), L.N("FIRST SHOT"), first, firstSub, fc);
             y = y2 + th + 12 * k;
 
             // one line describing the engagement
             var parts = new List<string>();
-            if (tr.AmpDeg > 0) parts.Add(float.IsNaN(tr.DirDeg) ? $"{tr.AmpDeg:0.0}° flick" : $"{tr.AmpDeg:0.0}° flick {RewindData.SectorName((int)MathF.Round(tr.DirDeg / 45f))}");
-            parts.Add(tr.Bot ? "bot" : tr.Static ? "still target" : "moving target");
-            if (tr.Corrections > 0) parts.Add($"{tr.Corrections} correction{(tr.Corrections == 1 ? "" : "s")}");
-            parts.Add(tr.Hit ? $"hit after {(tr.THit - tr.T0) * 1000f:0} ms" : "no hit");
+            // independent pieces joined with " · ", each translated
+            if (tr.AmpDeg > 0) parts.Add(float.IsNaN(tr.DirDeg) ? L.F($"{tr.AmpDeg:0.0}° flick") : L.F($"{tr.AmpDeg:0.0}° flick {RewindData.SectorName((int)MathF.Round(tr.DirDeg / 45f))}"));
+            parts.Add(L.T(tr.Bot ? "bot" : tr.Static ? "still target" : "moving target"));
+            if (tr.Corrections > 0) parts.Add(L.P(tr.Corrections, $"{tr.Corrections} correction", $"{tr.Corrections} corrections"));
+            parts.Add(tr.Hit ? L.F($"hit after {(tr.THit - tr.T0) * 1000f:0} ms") : L.T("no hit"));
             int ds = UiTheme.Fs(14, k);
             Gfx.TextFit(view, UiTheme.Body, string.Join(" · ", parts), x, y + ds, ds, UiTheme.Dim, w);
             y += ds + 18 * k;
@@ -405,7 +408,7 @@ public partial class RewindScreen
         if (ins == null) return;
         if (tabs.Count == 0)
         {
-            y = Section("THIS RUN", "", x, y, w);
+            y = Section(L.N("THIS RUN"), "", x, y, w);
             Gfx.Text(view, UiTheme.Body, "No shots or flicks were recorded in this run.", x, y + bs, bs, UiTheme.Dim);
             return;
         }
@@ -531,24 +534,24 @@ public partial class RewindScreen
         {
             // two columns
             float cw = (sw - 16 * k) / 2;
-            Stat(sx, sy, cw, "FIRST BULLET", Pct(fb), $"{I.FirstHits} of {I.FirstShots} hit", fb >= 60 ? UiTheme.Good : UiTheme.Text);
-            Stat(sx + cw + 16 * k, sy, cw, "WHILE MOVING", Pct(I.MovingShotPct), $"{I.MovingShots} of {I.Shots} shots", I.MovingShotPct > 15 ? UiTheme.Warn : UiTheme.Text);
+            Stat(sx, sy, cw, L.N("FIRST BULLET"), Pct(fb), L.F($"{I.FirstHits} of {I.FirstShots} hit"), fb >= 60 ? UiTheme.Good : UiTheme.Text);
+            Stat(sx + cw + 16 * k, sy, cw, L.N("WHILE MOVING"), Pct(I.MovingShotPct), L.F($"{I.MovingShots} of {I.Shots} shots"), I.MovingShotPct > 15 ? UiTheme.Warn : UiTheme.Text);
             return;
         }
-        sy = Stat(sx, sy, sw, "FIRST BULLET", Pct(fb), I.FirstShots > 0 ? $"{I.FirstHits} of {I.FirstShots} first shots hit" : "no first shots", fb >= 60 ? UiTheme.Good : UiTheme.Text);
-        sy = Stat(sx, sy, sw, "SHOTS WHILE MOVING", Pct(I.MovingShotPct), $"{I.MovingShots} of {I.Shots} shots", I.MovingShotPct > 15 ? UiTheme.Warn : UiTheme.Text);
+        sy = Stat(sx, sy, sw, L.N("FIRST BULLET"), Pct(fb), I.FirstShots > 0 ? L.F($"{I.FirstHits} of {I.FirstShots} first shots hit") : L.T("no first shots"), fb >= 60 ? UiTheme.Good : UiTheme.Text);
+        sy = Stat(sx, sy, sw, L.N("SHOTS WHILE MOVING"), Pct(I.MovingShotPct), L.F($"{I.MovingShots} of {I.Shots} shots"), I.MovingShotPct > 15 ? UiTheme.Warn : UiTheme.Text);
         if (sy < c.End.Y - 60 * k && I.Scatter.Count > 0)
-            Stat(sx, sy, sw, "ALL SHOTS", $"{100f * hits / I.Scatter.Count:0}%", $"{hits} of {I.Scatter.Count} hit", UiTheme.Text);
+            Stat(sx, sy, sw, L.N("ALL SHOTS"), $"{100f * hits / I.Scatter.Count:0}%", L.F($"{hits} of {I.Scatter.Count} hit"), UiTheme.Text);
     }
 
     // ---------------- time to hit ----------------
 
     static readonly (string Name, string What, Color C)[] Phases =
     {
-        ("React", "target appears → you start moving", new Color(0.35f, 0.8f, 0.95f)),
-        ("Flick", "the main movement", new Color(0.45f, 0.55f, 1f)),
-        ("Settle", "small corrections until on it", UiTheme.Warn),
-        ("Click", "on the target → the hit", new Color(0.85f, 0.5f, 1f)),
+        (L.N("React"), L.N("target appears → you start moving"), new Color(0.35f, 0.8f, 0.95f)),
+        (L.N("Flick"), L.N("the main movement"), new Color(0.45f, 0.55f, 1f)),
+        (L.N("Settle"), L.N("small corrections until on it"), UiTheme.Warn),
+        (L.N("Click"), L.N("on the target → the hit"), new Color(0.85f, 0.5f, 1f)),
     };
 
     void TtkTab(Rect2 c, TrialInfo? tr)
@@ -566,13 +569,13 @@ public partial class RewindScreen
             if (mine.All(float.IsNaN)) mine = null;
         }
         Gfx.Text(view, UiTheme.HudWide, "MEDIAN TIME TO HIT", x, y + cs, cs, UiTheme.Dim);
-        Gfx.Text(view, UiTheme.Display, $"{total:0} ms", x, y + cs + vs + 2 * k, vs, UiTheme.Text);
-        Gfx.TextR(view, UiTheme.Body, $"over {tk.N} hit{(tk.N == 1 ? "" : "s")}", x + w, y + cs + vs + 2 * k, ns, UiTheme.Dim);
+        Gfx.Text(view, UiTheme.Display, L.F($"{total:0} ms"), x, y + cs + vs + 2 * k, vs, UiTheme.Text);
+        Gfx.TextR(view, UiTheme.Body, L.P(tk.N, $"over {tk.N} hit", $"over {tk.N} hits"), x + w, y + cs + vs + 2 * k, ns, UiTheme.Dim);
         y += cs + vs + 22 * k;
 
         float scale = Mathf.Max(1f, Mathf.Max(med.Where(v => !float.IsNaN(v)).Sum(), mine?.Where(v => !float.IsNaN(v)).Sum() ?? 0));
-        y = Bar(x, y, w, 34 * k, med, scale, "TYPICAL");
-        if (mine != null) y = Bar(x, y + 4 * k, w, 22 * k, mine, scale, "THIS ENGAGEMENT");
+        y = Bar(x, y, w, 34 * k, med, scale, L.N("TYPICAL"));
+        if (mine != null) y = Bar(x, y + 4 * k, w, 22 * k, mine, scale, L.N("THIS ENGAGEMENT"));
         y += 8 * k;
 
         for (int i = 0; i < 4; i++)
@@ -651,9 +654,9 @@ public partial class RewindScreen
             Gfx.TextFit(view, UiTheme.Body, text, sx + 20 * k, sy + ls, ls, UiTheme.Dim, sw - 20 * k);
             sy += ls + 12 * k;
         }
-        Key(OverCol, "mostly overshoot");
-        Key(ShortCol, "mostly short");
-        Key(OkCol, "about right");
+        Key(OverCol, L.N("mostly overshoot"));
+        Key(ShortCol, L.N("mostly short"));
+        Key(OkCol, L.N("about right"));
         sy += 4 * k;
         Gfx.TextFit(view, UiTheme.Body, "length = how many flicks", sx, sy + ls, ls, UiTheme.Faint, sw);
         sy += ls + 8 * k;
@@ -669,9 +672,17 @@ public partial class RewindScreen
             if (I.SectorN[s] < 2 || float.IsNaN(g)) continue;
             if (Mathf.Abs(g - 1f) > worstOff) { worstOff = Mathf.Abs(g - 1f); worst = s; }
         }
-        string summary = worst < 0
-            ? (I.SectorN.Sum() < 6 ? "Not many flicks yet — play longer for a clearer picture." : "Your flicks land about right in every direction.")
-            : $"Flicks {RewindData.SectorName(worst)} {(I.SectorGain[worst] > 1 ? "overshoot" : "fall short")} the most ({(I.SectorGain[worst] - 1f) * 100f:+0;-0}%, {I.SectorN[worst]} flicks).";
+        string summary;
+        if (worst < 0) summary = L.T(I.SectorN.Sum() < 6 ? "Not many flicks yet — play longer for a clearer picture." : "Your flicks land about right in every direction.");
+        else
+        {
+            string dir = RewindData.SectorName(worst);
+            float off = (I.SectorGain[worst] - 1f) * 100f;
+            int fn = I.SectorN[worst];
+            summary = I.SectorGain[worst] > 1
+                ? L.F($"Flicks {dir} overshoot the most ({off:+0;-0}%, {fn} flicks).")
+                : L.F($"Flicks {dir} fall short the most ({off:+0;-0}%, {fn} flicks).");
+        }
         if (sy + bs < c.End.Y) Para(summary, sx, sy, sw, bs, UiTheme.Text, 4);
     }
 
@@ -709,23 +720,25 @@ public partial class RewindScreen
         }
     }
 
-    /// <summary>Word-wrapped paragraph (at most <paramref name="maxLines"/> lines).</summary>
+    /// <summary>Word-wrapped paragraph (at most <paramref name="maxLines"/> lines). Translates <paramref name="text"/> once
+    /// (L.T), then measures and draws the pieces as they are.</summary>
     void Para(string text, float x, float y, float w, int fs, Color c, int maxLines)
     {
+        text = L.T(text);
         var line = "";
         int n = 0;
         foreach (var word in text.Split(' '))
         {
             string tryLine = line.Length == 0 ? word : line + " " + word;
-            if (Gfx.TextW(UiTheme.Body, tryLine, fs) > w && line.Length > 0)
+            if (Gfx.RawW(UiTheme.Body, tryLine, fs) > w && line.Length > 0)
             {
-                Gfx.Text(view, UiTheme.Body, line, x, y + fs, fs, c);
+                Gfx.TextRaw(view, UiTheme.Body, line, x, y + fs, fs, c);
                 y += fs * 1.35f;
                 if (++n >= maxLines) return;
                 line = word;
             }
             else line = tryLine;
         }
-        if (line.Length > 0) Gfx.Text(view, UiTheme.Body, line, x, y + fs, fs, c);
+        if (line.Length > 0) Gfx.TextRaw(view, UiTheme.Body, line, x, y + fs, fs, c);
     }
 }

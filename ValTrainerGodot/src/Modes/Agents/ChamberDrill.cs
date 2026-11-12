@@ -72,10 +72,8 @@ public sealed partial class ChamberMode
         SpawnFeet = holdSpot.Feet;
         var dir = MapSpot.Choke - SpawnFeet;
         SpawnYaw = Mathf.RadToDeg(Mathf.Atan2(dir.X, -dir.Z));
-        G.Respawn(SpawnFeet, SpawnYaw);
+        G.Respawn(SpawnFeet, SpawnYaw); // a fresh magazine each round (the real guns have no reserve), no recoil
         G.Mover.ResetStops();
-        // A fresh magazine each round (the real guns have no reserve).
-        if (G is GameSession { Gun: { } gun }) { gun.Ammo = gun.Def.Mag; gun.ReloadLeft = 0; gun.ResetRecoil(); }
         attackersLeft = Difficulty.Ti(Tier, 3, 3, 4, 4, 5);
         Despawn();
         st = St.Wait; stateT = 0; waitFor = R(0.8f, 1.6f);
@@ -248,7 +246,7 @@ public sealed partial class ChamberMode
         escaped++;
         Score -= 40;
         Event("target_expired", attacker != null ? IdOf(attacker) : 0);
-        G.Banner(why == "out of bullets" ? "Out of bullets" : $"Attacker {why}", UiTheme.Warn);
+        G.Banner(why switch { "out of bullets" => L.N("Out of bullets"), "crossed" => L.N("Attacker crossed"), _ => L.N("Attacker got in") }, UiTheme.Warn);
         Despawn();
         if (why == "out of bullets") { escaped += attackersLeft; attackersLeft = 0; EndRound(false); return; }
         st = St.Wait; stateT = 0; waitFor = R(0.6f, 1.4f);
@@ -256,7 +254,7 @@ public sealed partial class ChamberMode
 
     void EndRound(bool survived)
     {
-        if (survived) { roundsSurvived++; Event("round_won"); G.Banner("Round held", UiTheme.Good); }
+        if (survived) { roundsSurvived++; Event("round_won"); G.Banner(L.N("Round held"), UiTheme.Good); }
         else Event("round_lost");
         Despawn();
         st = St.Between; roundEndIn = 1.4f;
@@ -269,7 +267,7 @@ public sealed partial class ChamberMode
         Score -= 100;
         escaped += attackersLeft + (attacker != null ? 1 : 0);
         attackersLeft = 0;
-        G.Banner("YOU DIED", UiTheme.Accent);
+        G.Banner(L.N("YOU DIED"), UiTheme.Accent);
         if (attacker != null) { var b = attacker; b.GetTree().CreateTimer(0.6).Timeout += () => { if (GodotObject.IsInstanceValid(b)) G.Despawn(b); }; }
         attacker = null; brain = null;
         Event("round_lost");
@@ -311,33 +309,33 @@ public sealed partial class ChamberMode
     {
         if (rounds <= 1)
         {
-            if (Tdf) { yield return "RMB: scope (2.5×) — any body hit kills."; yield return "0.9 shots a second: make the first one count."; }
-            else { yield return "RMB: aim down sights (1.5×, perfect first shot)."; yield return "Space your taps — spamming blooms the spread to 3°."; }
+            if (Tdf) { yield return L.N("RMB: scope (2.5×) — any body hit kills."); yield return L.N("0.9 shots a second: make the first one count."); }
+            else { yield return L.N("RMB: aim down sights (1.5×, perfect first shot)."); yield return L.N("Space your taps — spamming blooms the spread to 3°."); }
         }
-        if (st != St.Between) yield return $"{GunName}: {AmmoLeft} / {MagSize} this round · attackers left {attackersLeft + (attacker != null ? 1 : 0)}";
+        if (st != St.Between) yield return L.F($"{GunName}: {AmmoLeft} / {MagSize} this round · attackers left {attackersLeft + (attacker != null ? 1 : 0)}");
     }
 
     // ------------------------------------------------------------------ results
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Map", $"{MapSpot.Map} {MapSpot.Name}");
-        yield return ("Gun", GunName);
-        yield return ("Kills / attackers", $"{Kills} / {spawned}");
-        if (escaped > 0) yield return ("Got past you", escaped.ToString());
-        if (Kills > 0) yield return ("One-taps", $"{oneTaps} of {Kills}  ({100f * oneTaps / Kills:0}%)");
-        if (shotsPerKill.Count > 0) yield return ("Shots per kill", $"{shotsPerKill.Average():0.0}");
-        if (ttkMs.Count > 0) yield return ("Median time to kill", $"{Median(ttkMs):0} ms");
-        yield return ("Accuracy", $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
-        if (Hits > 0) yield return ("Headshot %", $"{100f * HeadHits / Hits:0}%");
-        if (!Tdf) yield return ("Spam taps (<0.35 s)", spam.ToString());
+        yield return (L.N("Map"), L.Raw($"{MapSpot.Map} {MapSpot.Name}"));
+        yield return (L.N("Gun"), L.Raw(GunName));
+        yield return (L.N("Kills / attackers"), $"{Kills} / {spawned}");
+        if (escaped > 0) yield return (L.N("Got past you"), escaped.ToString());
+        if (Kills > 0) yield return (L.N("One-taps"), L.F($"{oneTaps} of {Kills}  ({100f * oneTaps / Kills:0}%)"));
+        if (shotsPerKill.Count > 0) yield return (L.N("Shots per kill"), $"{shotsPerKill.Average():0.0}");
+        if (ttkMs.Count > 0) yield return (L.N("Median time to kill"), $"{Median(ttkMs):0} ms");
+        yield return (L.N("Accuracy"), $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
+        if (Hits > 0) yield return (L.N("Headshot %"), $"{100f * HeadHits / Hits:0}%");
+        if (!Tdf) yield return (L.N("Spam taps (<0.35 s)"), spam.ToString());
         else
         {
-            if (unscoped > 0) yield return ("Unscoped shots", unscoped.ToString());
-            if (legOnly > 0) yield return ("Leg hits, no kill", legOnly.ToString());
+            if (unscoped > 0) yield return (L.N("Unscoped shots"), unscoped.ToString());
+            if (legOnly > 0) yield return (L.N("Leg hits, no kill"), legOnly.ToString());
         }
-        if (outOfAmmo > 0) yield return ("Ran out of bullets", outOfAmmo.ToString());
-        yield return ("Rounds held / died", $"{roundsSurvived} / {Deaths}");
+        if (outOfAmmo > 0) yield return (L.N("Ran out of bullets"), outOfAmmo.ToString());
+        yield return (L.N("Rounds held / died"), $"{roundsSurvived} / {Deaths}");
         foreach (var l in MovementLines()) yield return l;
     }
 

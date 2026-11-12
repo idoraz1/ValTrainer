@@ -40,9 +40,9 @@ public sealed class SmokeExecuteMode : MapMode
 
     public override string Key => "smokeexec:" + Agent;
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
-    public override string Name => "Smoke Execute";
-    public override string Description => "Place your smokes to cut the defenders' sightlines, then execute onto the site.";
-    public override string Category => "Agents";
+    public override string Name => L.N("Smoke Execute");
+    public override string Description => L.N("Place your smokes to cut the defenders' sightlines, then execute onto the site.");
+    public override string Category => L.N("Agents");
     public override bool Timed => false;
     public override bool Done => finished || (Main.I.Dev && DevDuration is { } d && Now >= d);
     public override string SimKind => "bot";
@@ -286,7 +286,7 @@ public sealed class SmokeExecuteMode : MapMode
         phaseT = 0;
         execStart = Now;
         cur.ExecStart = Now;
-        G.Banner("EXECUTE", UiTheme.Accent);
+        G.Banner(L.N("EXECUTE"), UiTheme.Accent);
     }
 
     void EndRound(bool won, string why)
@@ -308,7 +308,7 @@ public sealed class SmokeExecuteMode : MapMode
         Score += pts;
         rounds.Add(cur);
         Event(won ? "round_won" : "round_lost", cur.ExecTime);
-        if (won) G.Banner($"SITE TAKEN  {cur.ExecTime:0.0}s", UiTheme.Good);
+        if (won) G.Banner(L.F($"SITE TAKEN  {cur.ExecTime:0.0}s"), UiTheme.Good);
         else if (!cur.Died) G.Banner(why, UiTheme.Warn);
         phase = Phase.Summary;
         phaseT = 0;
@@ -321,13 +321,13 @@ public sealed class SmokeExecuteMode : MapMode
         Deaths++;
         Score -= 100;
         cur.Died = true;
-        G.Banner("YOU DIED", UiTheme.Accent);
+        G.Banner(L.N("YOU DIED"), UiTheme.Accent);
         if (Main.I.Dev)
         {
             var killer = defenders.Where(d => !d.Body.Dead && d.Brain.SeesPlayer).Select(d => d.Spot.Name).FirstOrDefault() ?? "?";
             GD.Print(string.Create(CultureInfo.InvariantCulture, $"[smokeexec] t={Now:0.00} died in {phase} at ({Feet.X:0.0}, {Feet.Y:0.0}, {Feet.Z:0.0}), route {Plan.Project(Feet):0.0}/{Plan.ChokeS:0.0} m, shot by {killer}"));
         }
-        EndRound(false, "YOU DIED");
+        EndRound(false, L.N("YOU DIED"));
     }
 
     // =================================================================================================================
@@ -354,7 +354,7 @@ public sealed class SmokeExecuteMode : MapMode
                 if (phase != Phase.Place) break;
                 RecordPath(dt);
                 CheckEntry();
-                if (defenders.Count > 0 && defenders.All(d => d.Body.Dead)) { StartExecute(); EndRound(true, "SITE TAKEN"); break; }
+                if (defenders.Count > 0 && defenders.All(d => d.Body.Dead)) { StartExecute(); EndRound(true, L.N("SITE TAKEN")); break; }
                 if (PlacementComplete || phaseT >= PlaceTime) StartExecute();
                 break;
             case Phase.Execute:
@@ -363,8 +363,8 @@ public sealed class SmokeExecuteMode : MapMode
                 if (Auto) AutoWalk(dt);
                 RecordPath(dt);
                 CheckEntry();
-                if (defenders.Count > 0 && defenders.All(d => d.Body.Dead)) EndRound(true, "SITE TAKEN");
-                else if (Now - execStart > ExecTime) EndRound(false, "TIME");
+                if (defenders.Count > 0 && defenders.All(d => d.Body.Dead)) EndRound(true, L.N("SITE TAKEN"));
+                else if (Now - execStart > ExecTime) EndRound(false, L.N("TIME"));
                 break;
             case Phase.Summary:
                 if (Auto && phaseT > 1.2f) skip = true;
@@ -450,8 +450,8 @@ public sealed class SmokeExecuteMode : MapMode
         cur.EntryAt = Now - cur.Start;
         cur.SmokesAtEntry = roundSmokes.Count;
         cur.SmokesUpAtEntry = roundSmokes.Count(v => v.Up(Now));
-        if (cur.SmokesAtEntry > 0 && cur.SmokesUpAtEntry < cur.SmokesAtEntry) G.Banner("ENTERED BEFORE YOUR SMOKES WERE UP", UiTheme.Warn);
-        else if (cur.SmokesAtEntry == 0) G.Banner("NO SMOKES OUT", UiTheme.Warn);
+        if (cur.SmokesAtEntry > 0 && cur.SmokesUpAtEntry < cur.SmokesAtEntry) G.Banner(L.N("ENTERED BEFORE YOUR SMOKES WERE UP"), UiTheme.Warn);
+        else if (cur.SmokesAtEntry == 0) G.Banner(L.N("NO SMOKES OUT"), UiTheme.Warn);
     }
 
     // =================================================================================================================
@@ -606,39 +606,40 @@ public sealed class SmokeExecuteMode : MapMode
 
     public override IEnumerable<string> HudLines()
     {
-        yield return $"Round {Math.Min(rounds.Count + (phase == Phase.Summary ? 0 : 1), RoundsTotal)} / {RoundsTotal}";
-        if (phase is Phase.Place or Phase.Execute) yield return $"Defenders left: {defenders.Count(d => !d.Body.Dead)}";
+        yield return L.F($"Round {Math.Min(rounds.Count + (phase == Phase.Summary ? 0 : 1), RoundsTotal)} / {RoundsTotal}");
+        if (phase is Phase.Place or Phase.Execute) yield return L.F($"Defenders left: {defenders.Count(d => !d.Body.Dead)}");
     }
 
     public override void Draw2D(CanvasItem canvas, Vector2 size) => ControllerDraw.Draw(canvas, size, this);
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Agent", $"{Kit.Agent} · {Kit.Ability}{(Kit.HasWall ? " + " + Kit.WallAbility : "")}");
-        yield return ("Map", $"{MapSpot.Map} {MapSpot.Name}");
+        yield return (L.N("Agent"), $"{Kit.Agent} · {Kit.Ability}{(Kit.HasWall ? " + " + Kit.WallAbility : "")}");
+        yield return (L.N("Map"), $"{MapSpot.Map} {MapSpot.Name}");
         int won = rounds.Count(r => r.Won);
-        yield return ("Rounds won / lost", $"{won} / {rounds.Count - won}");
+        yield return (L.N("Rounds won / lost"), $"{won} / {rounds.Count - won}");
         if (rounds.Count > 0)
         {
-            yield return ("Sightlines cut", $"{rounds.Average(r => r.Coverage) * 100f:0}%  (standard smokes {StdCoverage * 100f:0}%)");
+            yield return (L.N("Sightlines cut"), L.F($"{rounds.Average(r => r.Coverage) * 100f:0}%  (standard smokes {StdCoverage * 100f:0}%)"));
             var errs = rounds.SelectMany(r => r.Spots).Where(s => !float.IsInfinity(s.Error)).ToList();
             int missed = rounds.Sum(r => r.Spots.Count(s => float.IsInfinity(s.Error)));
-            yield return ("Off the standard spots", errs.Count > 0 ? $"{errs.Average(s => s.Error):0.0} m on average{(missed > 0 ? $" · {missed} not placed" : "")}" : "no smokes placed");
+            yield return (L.N("Off the standard spots"), errs.Count == 0 ? L.T("no smokes placed")
+                : missed > 0 ? L.F($"{errs.Average(s => s.Error):0.0} m on average · {missed} not placed") : L.F($"{errs.Average(s => s.Error):0.0} m on average"));
             int entries = rounds.Count(r => r.EntryAt >= 0);
-            yield return ("Smokes up when you entered", $"{rounds.Count(r => r.AllUpAtEntry)} of {entries} entries");
+            yield return (L.N("Smokes up when you entered"), L.P(entries, $"{rounds.Count(r => r.AllUpAtEntry)} of {entries} entry", $"{rounds.Count(r => r.AllUpAtEntry)} of {entries} entries"));
             var wins = rounds.Where(r => r.Won).ToList();
-            if (wins.Count > 0) yield return ("Avg execute time", $"{wins.Average(r => r.ExecTime):0.0} s");
-            yield return ("Blinded by your smokes", $"{rounds.Sum(r => r.SmokeSaves):0.0} s of enemy sight lines");
+            if (wins.Count > 0) yield return (L.N("Avg execute time"), $"{wins.Average(r => r.ExecTime):0.0} s");
+            yield return (L.N("Blinded by your smokes"), L.F($"{rounds.Sum(r => r.SmokeSaves):0.0} s of enemy sight lines"));
         }
-        yield return ("Kills / deaths", $"{Kills} / {Deaths}");
-        if (Hits > 0) yield return ("Headshot %", $"{100f * HeadHits / Hits:0}%");
+        yield return (L.N("Kills / deaths"), $"{Kills} / {Deaths}");
+        if (Hits > 0) yield return (L.N("Headshot %"), $"{100f * HeadHits / Hits:0}%");
     }
 
     public override IEnumerable<(string Label, Action Act)> ResultButtons()
     {
         if (rounds.Count == 0) yield break;
         if (Main.I.Dev && CmdLine.Has("--smokereplay") && !replayShown) { replayShown = true; Callable.From(OpenReplay).CallDeferred(); } // dev screenshots
-        yield return ("Smoke replay", OpenReplay);
+        yield return (L.N("Smoke replay"), OpenReplay);
     }
     bool replayShown;
 

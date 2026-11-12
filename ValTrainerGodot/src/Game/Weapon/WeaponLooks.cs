@@ -110,7 +110,7 @@ public static class WeaponLooks
     public static (bool Scope, CrosshairView.SniperScope Style) ScopeOf(WeaponKind k) => (Weapons.Get(k)?.Scope == true, For(k).ScopeStyle);
 
     /// <summary>Viewmodel layout of a gun (the Vandal's for None or an unknown gun).</summary>
-    public static VmPose PoseOf(WeaponKind k) => k switch
+    public static VmPose PoseOf(WeaponKind k) => VmMaterials.DevModelName is { Length: > 0 } dm && (dm.StartsWith("phantom") ? k == WeaponKind.Phantom : k == WeaponKind.Vandal) ? VmPose.ModelTest(dm) : k switch
     {
         WeaponKind.Classic => VmPose.Classic,
         WeaponKind.Shorty => VmPose.Shorty,

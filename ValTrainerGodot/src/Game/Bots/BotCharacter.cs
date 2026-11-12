@@ -623,6 +623,7 @@ public partial class BotCharacter : Node3D
         stepPlayer.Stream = steps[Random.Shared.Next(steps.Length)];
         stepPlayer.VolumeDb = Mathf.LinearToDb(Mathf.Max(1e-4f, Sfx.Volume * 1.1f * g));
         stepPlayer.PitchScale = 0.92f + 0.16f * Random.Shared.NextSingle();
+        Sfx.DuckSkin(); // gameplay cue: skin sounds duck under it
         stepPlayer.Play();
     }
 

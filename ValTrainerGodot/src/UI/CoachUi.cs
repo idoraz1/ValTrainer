@@ -14,10 +14,11 @@ namespace ValTrainer.UI;
 /// </summary>
 public static class CoachRank
 {
-    public static readonly string[] Names = { "Iron", "Bronze", "Silver", "Gold", "Platinum", "Diamond", "Ascendant", "Immortal", "Radiant" };
-    public static readonly string[] Short = { "IRON", "BRONZE", "SILVER", "GOLD", "PLAT", "DIAMOND", "ASCENDANT", "IMMORTAL", "RADIANT" };
+    // English data (translated where shown: the Text helpers translate Short / Tiny, Name() translates Names)
+    public static readonly string[] Names = { L.N("Iron"), L.N("Bronze"), L.N("Silver"), L.N("Gold"), L.N("Platinum"), L.N("Diamond"), L.N("Ascendant"), L.N("Immortal"), L.N("Radiant") };
+    public static readonly string[] Short = { L.N("IRON"), L.N("BRONZE"), L.N("SILVER"), L.N("GOLD"), L.N("PLAT"), L.N("DIAMOND"), L.N("ASCENDANT"), L.N("IMMORTAL"), L.N("RADIANT") };
     /// <summary>Ladder labels for narrow ladders (small windows), where the short names would run together.</summary>
-    public static readonly string[] Tiny = { "IRON", "BRNZ", "SILV", "GOLD", "PLAT", "DIA", "ASC", "IMM", "RAD" };
+    public static readonly string[] Tiny = { L.N("IRON"), L.N("BRNZ"), L.N("SILV"), L.N("GOLD"), L.N("PLAT"), L.N("DIA"), L.N("ASC"), L.N("IMM"), L.N("RAD") };
 
     /// <summary>Generic rank palette (no Riot art).</summary>
     public static readonly Color[] Colors =
@@ -49,26 +50,36 @@ public static class CoachRank
         return Math.Clamp(1 + (int)((t - lo) / (0.5f / 3f)), 1, 3);
     }
 
+    /// <summary>"GOLD 2" / "RADIANT", translated (display text: never compare it; use the tier).</summary>
     public static string Name(float t)
     {
         int i = Index(t);
-        return i == 8 ? "RADIANT" : $"{Names[i].ToUpperInvariant()} {Division(t)}";
+        string n = L.Upper(L.T(Names[i]));
+        return i == 8 ? n : n + " " + Division(t).ToString(CultureInfo.InvariantCulture);
     }
 
-    public static string Title(float t) => Rated(t) ? Name(t) : "NOT RATED";
+    public static string Title(float t) => Rated(t) ? Name(t) : L.T("NOT RATED");
 
     /// <summary>
-    /// Uncertainty half-width in tier units, symmetric around the estimate: ±0.15 (about one division either way) even
-    /// with full evidence, because aim mechanics only partly predict rank; wider for low confidence.
+    /// Half-width of the likely range in tier units, symmetric around the estimate: ±0.35 (two divisions either way) even
+    /// with full data, because aim mechanics only partly predict rank; wider with less data (<see cref="Bench.RangeHalfWidth"/>).
     /// </summary>
-    public static float Spread(float conf) => 0.15f + 0.30f * (1f - Mathf.Clamp(conf, 0, 1));
+    public static float Spread(float conf) => Bench.RangeHalfWidth(conf);
 
-    /// <summary>"GOLD 2 – PLATINUM 1" (or one name when the band is narrow).</summary>
+    /// <summary>"GOLD 2 – PLATINUM 1" (or one name when the band is narrow), translated.</summary>
     public static (string Lo, string? Hi) Range(float t, float conf)
     {
+        var (lo, hi) = RangeTiers(t, conf);
+        return (Name(lo), hi is { } h ? Name(h) : null);
+    }
+
+    /// <summary>The tiers at both ends of <see cref="Range"/> (Hi = null when both ends are the same rank and division).</summary>
+    public static (float Lo, float? Hi) RangeTiers(float t, float conf)
+    {
         float u = Spread(conf);
-        string lo = Name(Mathf.Max(t - u, -0.5f)), hi = Name(Mathf.Min(t + u, 4.5f));
-        return lo == hi ? (lo, null) : (lo, hi);
+        float lo = Mathf.Max(t - u, -0.5f), hi = Mathf.Min(t + u, 4.5f);
+        bool same = Index(lo) == Index(hi) && Division(lo) == Division(hi);
+        return same ? (lo, null) : (lo, hi);
     }
 
     public static string RangeText(float t, float conf)
@@ -78,55 +89,57 @@ public static class CoachRank
     }
 
     public static Color Col(float t) => Rated(t) ? Colors[Index(t)] : UiTheme.NoTier;
-    public static Color Col(string name)
-    {
-        for (int i = 0; i < Names.Length; i++) if (name.StartsWith(Names[i], StringComparison.OrdinalIgnoreCase)) return Colors[i];
-        return UiTheme.NoTier;
-    }
 
     /// <summary>The trainer's own emblem for the matching tier band (Rookie = Iron–Bronze … Pro = Radiant).</summary>
     public static int EmblemTier(float t) => Rated(t) ? Math.Clamp((int)MathF.Round(t, MidpointRounding.AwayFromZero), 0, 4) : -1;
 
-    public static string Confidence(float c) => c < 0.5f ? "LOW" : c < 0.75f ? "MEDIUM" : "HIGH";
+    /// <summary>"LOW" / "MEDIUM" / "HIGH": English (translate where shown).</summary>
+    public static string Confidence(float c) => c < 0.5f ? L.N("LOW") : c < 0.75f ? L.N("MEDIUM") : L.N("HIGH");
+    /// <summary>"LITTLE DATA" / "SOME DATA" / "PLENTY OF DATA", translated: the overall's evidence measures how much data
+    /// there is, not how accurate the estimate is (it used to read "HIGH CONFIDENCE"). Same thresholds and bars.</summary>
+    public static string DataCaps(float c) => L.T(Bench.DataLevel(c) switch { 0 => "LITTLE DATA", 1 => "SOME DATA", _ => "PLENTY OF DATA" });
+    /// <summary>"low confidence", translated.</summary>
+    public static string ConfidenceLower(float c) => L.T(c < 0.5f ? "low confidence" : c < 0.75f ? "medium confidence" : "high confidence");
     public static int ConfidenceBars(float c) => c <= 0 ? 0 : c < 0.5f ? 1 : c < 0.75f ? 2 : 3;
     public static Color ConfidenceColor(float c) => c < 0.5f ? UiTheme.Warn : c < 0.75f ? UiTheme.Text : UiTheme.Good;
 }
 
-/// <summary>Display names, descriptions and rating drills of the coach's skills.</summary>
+/// <summary>Display names, descriptions and rating drills of the coach's skills (English: the Text helpers translate
+/// the names; wrap About / names in L.T anywhere else).</summary>
 public static class CoachSkills
 {
     public static string Name(Skill s) => s switch
     {
-        Skill.Flicking => "FLICKING",
-        Skill.Precision => "PRECISION",
-        Skill.Tracking => "TRACKING",
-        Skill.Reaction => "REACTION",
-        Skill.CrosshairPlacement => "CROSSHAIR PLACEMENT",
-        Skill.SprayControl => "SPRAY CONTROL",
-        Skill.Movement => "MOVEMENT",
-        Skill.Utility => "UTILITY",
+        Skill.Flicking => L.N("FLICKING"),
+        Skill.Precision => L.N("PRECISION"),
+        Skill.Tracking => L.N("TRACKING"),
+        Skill.Reaction => L.N("REACTION"),
+        Skill.CrosshairPlacement => L.N("CROSSHAIR PLACEMENT"),
+        Skill.SprayControl => L.N("SPRAY CONTROL"),
+        Skill.Movement => L.N("MOVEMENT"),
+        Skill.Utility => L.N("UTILITY"),
         _ => s.ToString().ToUpperInvariant(),
     };
 
     public static string Short(Skill s) => s switch
     {
-        Skill.Flicking => "FLICK",
-        Skill.Precision => "PRECISION",
-        Skill.CrosshairPlacement => "PLACEMENT",
-        Skill.SprayControl => "SPRAY",
+        Skill.Flicking => L.N("FLICK"),
+        Skill.Precision => L.N("PRECISION"),
+        Skill.CrosshairPlacement => L.N("PLACEMENT"),
+        Skill.SprayControl => L.N("SPRAY"),
         _ => Name(s),
     };
 
     public static string About(Skill s) => s switch
     {
-        Skill.Flicking => "The first big motion onto a target: how fast you start, how fast you get there and how close the flick lands.",
-        Skill.Precision => "Micro-adjustment after the flick: first-shot accuracy, how long you need to settle and how many corrections you make.",
-        Skill.Tracking => "Keeping the crosshair on a strafing target: time on target, lag behind it and how fast you re-acquire after a reversal.",
-        Skill.Reaction => "Raw reaction time to a visual cue (Reaction Test).",
-        Skill.CrosshairPlacement => "Where your crosshair already is when an enemy appears: distance to the head and how far below it you hold.",
-        Skill.SprayControl => "Pulling down against recoil: how far bullets 4–15 drift vertically and sideways, and how early you start pulling.",
-        Skill.Movement => "Stopping before you shoot: counter-strafe use, stop time and shots fired while moving.",
-        Skill.Utility => "Dodging flashes: how fast you turn away from the audio cue and how often you still get blinded.",
+        Skill.Flicking => L.N("The first big motion onto a target: how fast you start, how fast you get there and how close the flick lands."),
+        Skill.Precision => L.N("Micro-adjustment after the flick: first-shot accuracy, how long you need to settle and how many corrections you make."),
+        Skill.Tracking => L.N("Keeping the crosshair on a strafing target: time on target, lag behind it and how fast you re-acquire after a reversal."),
+        Skill.Reaction => L.N("Raw reaction time to a visual cue (Reaction Test)."),
+        Skill.CrosshairPlacement => L.N("Where your crosshair already is when an enemy appears: distance to the head and how far below it you hold."),
+        Skill.SprayControl => L.N("Pulling down against recoil: how far bullets 4–15 drift vertically and sideways, and how early you start pulling."),
+        Skill.Movement => L.N("Stopping before you shoot: counter-strafe use, stop time and shots fired while moving."),
+        Skill.Utility => L.N("Dodging flashes: how fast you turn away from the audio cue and how often you still get blinded."),
         _ => "",
     };
 
@@ -152,7 +165,7 @@ public static class CoachSkills
     };
 
     /// <summary>The engine marks low-confidence findings as Tip, shown as "POSSIBLE".</summary>
-    public static string SeverityName(Severity s) => s switch { Severity.Major => "MAJOR", Severity.Minor => "MINOR", _ => "POSSIBLE" };
+    public static string SeverityName(Severity s) => s switch { Severity.Major => L.N("MAJOR"), Severity.Minor => L.N("MINOR"), _ => L.N("POSSIBLE") };
 }
 
 /// <summary>
@@ -186,7 +199,7 @@ public static class CoachData
     static string Key()
     {
         var app = Main.I;
-        return string.Create(CultureInfo.InvariantCulture, $"{app.Stats.Runs.Count}|{app.Sens:0.0000}|{app.Settings.Dpi}|{FakeVariant}");
+        return string.Create(CultureInfo.InvariantCulture, $"{app.Stats.Runs.Count}|{app.Sens:0.0000}|{app.Settings.Dpi}|{FakeVariant}|{L.Lang}");
     }
 
     /// <summary>Starts the analysis (or keeps the cached / running one if nothing changed). Main thread only.</summary>
@@ -229,8 +242,24 @@ public static class CoachData
         });
     }
 
-    /// <summary>The finished profile of the last <see cref="Request"/>, or null while it's still being built.</summary>
-    public static SkillProfile? Ready => task is { IsCompleted: true } t ? t.Result : null;
+    /// <summary>The finished profile of the last <see cref="Request"/>, or null while it's still being built. The first read
+    /// of a finished real profile hands it to progression (today's coach sample, confirmed ranks; deferred to the main
+    /// loop so progression events never fire inside a caller's draw / update).</summary>
+    public static SkillProfile? Ready
+    {
+        get
+        {
+            if (task is not { IsCompleted: true } t) return null;
+            if (!ReferenceEquals(t, fedTask))
+            {
+                fedTask = t;
+                var done = t.Result;
+                if (!Fake && LastError == null) Callable.From(() => Progression.Progress.OnProfile(done)).CallDeferred();
+            }
+            return t.Result;
+        }
+    }
+    static Task<SkillProfile>? fedTask;
 
     /// <summary>True when the profile has anything to show beyond the empty state.</summary>
     public static bool HasData(SkillProfile p) => p.Skills.Any(CoachRank.Rated) || p.Problems.Count > 0 || CoachRank.Rated(p.OverallTier);
@@ -266,14 +295,15 @@ public static class CoachData
         Main.I.StartMode(make);
     }
 
-    /// <summary>The drills the empty state asks for, how many coached runs each needs and what they rate.</summary>
+    /// <summary>The drills the empty state asks for, how many coached runs each needs and what they rate (English,
+    /// lower case as shown in "Rates flicking · precision"; translated where shown).</summary>
     public static readonly (string Key, int Target, string Rates)[] Starter =
     {
-        ("flick", 2, "Flicking · Precision"),
-        ("tracking", 2, "Tracking"),
-        ("peek", 2, "Crosshair placement"),
-        ("counterstrafe", 1, "Movement"),
-        ("spray_vandal", 1, "Spray control"),
+        ("flick", 2, L.N("flicking · precision")),
+        ("tracking", 2, L.N("tracking")),
+        ("peek", 2, L.N("crosshair placement")),
+        ("counterstrafe", 1, L.N("movement")),
+        ("spray_vandal", 1, L.N("spray control")),
     };
 
     /// <summary>Runs of a drill that carry coach data (metrics or telemetry).</summary>
@@ -319,6 +349,9 @@ public static class CoachData
 /// <summary>Drawing helpers shared by the coach screens.</summary>
 public static class CoachDraw
 {
+    /// <summary>Colour of the player's entered rank (ladder tick, "your rank" strip).</summary>
+    public static readonly Color ActualColor = UiTheme.Teal;
+
     /// <summary>Three "signal" bars for confidence (Low 1 / Medium 2 / High 3). Returns the width used.</summary>
     public static float ConfBars(CanvasItem ci, Vector2 leftMid, float k, float conf, float alpha = 1f)
     {
@@ -348,19 +381,27 @@ public static class CoachDraw
 
     /// <summary>
     /// Iron → Radiant ladder with the tier marker, its uncertainty band and (optionally) labels under each rank.
-    /// <paramref name="tier"/> &lt; -0.5 draws the empty ladder.
+    /// <paramref name="tier"/> &lt; -0.5 draws the empty ladder. <paramref name="actual"/> = the rank the player entered
+    /// (a teal tick with a small triangle under the bar; <see cref="ActualColor"/>).
     /// </summary>
-    public static void Ladder(CanvasItem ci, Rect2 r, float k, float tier, float conf, bool labels, float? reference = null)
+    public static void Ladder(CanvasItem ci, Rect2 r, float k, float tier, float conf, bool labels, float? reference = null, float? actual = null)
     {
         int n = CoachRank.Names.Length;
         float gap = 2 * k, segW = (r.Size.X - gap * (n - 1)) / n;
         bool rated = CoachRank.Rated(tier);
         int cur = rated ? CoachRank.Index(tier) : -1;
         float X(float t) => r.Position.X + (Mathf.Clamp(t, CoachRank.Min, CoachRank.Max) - CoachRank.Min) / (CoachRank.Max - CoachRank.Min) * r.Size.X;
-        int lfs = UiTheme.Fs(Gfx.TextW(UiTheme.Display, "ASCENDANT", UiTheme.Fs(13, k)) > segW - 2 * k ? 11.5f : 13f, k);
+        // the widest label as drawn (translated; ASCENDANT in English)
+        float Widest(int fs)
+        {
+            float m = 0;
+            foreach (var s in CoachRank.Short) m = Mathf.Max(m, Gfx.TextW(UiTheme.Display, s, fs));
+            return m;
+        }
+        int lfs = UiTheme.Fs(Widest(UiTheme.Fs(13, k)) > segW - 2 * k ? 11.5f : 13f, k);
         // the longest name doesn't fit its segment (e.g. 1280×720 where fonts hit their size floor, or 16:10 where the
         // card is narrower): abbreviate the labels wider than their segment, else DIAMOND/ASCENDANT/IMMORTAL run together
-        bool tight = Gfx.TextW(UiTheme.Display, "ASCENDANT", lfs) > segW;
+        bool tight = Widest(lfs) > segW;
         for (int i = 0; i < n; i++)
         {
             var c = CoachRank.Colors[i];
@@ -380,6 +421,12 @@ public static class CoachDraw
         {
             float rx = X(refT);
             ci.DrawRect(new Rect2(rx - 1 * k, r.Position.Y - 5 * k, 2 * k, r.Size.Y + 10 * k), new Color(UiTheme.Text, 0.45f));
+        }
+        if (actual is { } actT && CoachRank.Rated(actT))
+        {
+            float ax = X(actT), by = r.End.Y + 1 * k;
+            ci.DrawRect(new Rect2(ax - 1 * k, r.Position.Y - 2 * k, 2 * k, r.Size.Y + 3 * k), ActualColor);
+            ci.DrawColoredPolygon(new[] { new Vector2(ax, by), new Vector2(ax + 5 * k, by + 7 * k), new Vector2(ax - 5 * k, by + 7 * k) }, ActualColor);
         }
         if (!rated) return;
         float u = CoachRank.Spread(conf);
@@ -474,14 +521,16 @@ public static class CoachDraw
         ci.DrawArc(c, r, a, a + 1.6f, 24, UiTheme.Accent, Mathf.Max(2, 3 * k), true);
     }
 
-    /// <summary>Height of word-wrapped text.</summary>
+    /// <summary>Height of word-wrapped text (translated, like <see cref="Para"/> draws it).</summary>
     public static float TextH(Font f, string text, float width, int fs, int maxLines = -1) =>
-        text.Length == 0 ? 0 : f.GetMultilineStringSize(text, HorizontalAlignment.Left, width, fs, maxLines).Y;
+        text.Length == 0 ? 0 : f.GetMultilineStringSize(L.T(text), HorizontalAlignment.Left, width, fs, maxLines).Y;
 
-    /// <summary>Draws word-wrapped text whose first line's TOP is at <paramref name="top"/>; returns the height.</summary>
+    /// <summary>Draws word-wrapped text whose first line's TOP is at <paramref name="top"/>; returns the height.
+    /// Translates <paramref name="text"/> (L.T) like the Text helpers.</summary>
     public static float Para(CanvasItem ci, Font f, string text, float x, float top, float width, int fs, Color c, int maxLines = -1)
     {
         if (text.Length == 0) return 0;
+        text = L.T(text);
         ci.DrawMultilineString(f, new Vector2(x, top + f.GetAscent(fs)), text, HorizontalAlignment.Left, width, fs, maxLines, c);
         return TextH(f, text, width, fs, maxLines);
     }
@@ -548,7 +597,7 @@ public partial class ProblemHeader : BaseButton
         x += Gfx.TextW(UiTheme.Display, $"#{Index}", ns) + 10 * k;
         Gfx.Text(this, UiTheme.Display, $"#{Index}", pad, Gfx.Mid(cy, ns), ns, new Color(UiTheme.Text, 0.4f));
         x += CoachDraw.Chip(this, CoachSkills.SeverityName(D.Severity), x, cy, k, sc, filled: D.Severity == Severity.Major) + 8 * k;
-        if (Possible) x += CoachDraw.Chip(this, "POSSIBLE", x, cy, k, UiTheme.Dim) + 8 * k;
+        if (Possible) x += CoachDraw.Chip(this, L.N("POSSIBLE"), x, cy, k, UiTheme.Dim) + 8 * k;
         int ts = UiTheme.Fs(12, k);
         Gfx.Text(this, UiTheme.HudWide, CoachSkills.Name(D.Skill), x + 4 * k, Gfx.Mid(cy, ts), ts, UiTheme.Dim);
 
@@ -558,7 +607,7 @@ public partial class ProblemHeader : BaseButton
         if (Expanded) Gfx.ChevronDown(this, new Vector2(ax - 7 * k, cy), 14 * k, -8 * k, -3 * k, chev);
         else Gfx.ChevronDown(this, new Vector2(ax - 7 * k, cy), 14 * k, 8 * k, 3 * k, chev);
         if (D.Samples > 0)
-            Gfx.TextR(this, UiTheme.HudWide, $"{D.Samples} SAMPLES", ax - 24 * k, Gfx.Mid(cy, ts), ts, UiTheme.Faint);
+            Gfx.TextR(this, UiTheme.HudWide, L.P(D.Samples, $"{D.Samples} SAMPLE", $"{D.Samples} SAMPLES"), ax - 24 * k, Gfx.Mid(cy, ts), ts, UiTheme.Faint);
 
         int hs = UiTheme.Fs(27, k);
         Gfx.TextFit(this, UiTheme.Display, D.Title, pad, Gfx.Mid(55 * k, hs), hs, UiTheme.Text, w - pad * 2);
@@ -590,10 +639,15 @@ public partial class SkillRow : BaseButton
         CustomMinimumSize = new Vector2(0, 58 * K);
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
         var drill = CoachSkills.Drills(Skill).FirstOrDefault(CoachData.HasDrill);
-        string rated = Rated
-            ? $"{CoachRank.Name(Rating!.Tier)} · {CoachRank.Confidence(Rating.Confidence).ToLowerInvariant()} confidence ({Rating.Samples} samples)"
-            : "Not rated yet" + (drill != null ? $" — click to play {CoachData.DrillName(drill)}" : "");
-        TooltipText = $"{CoachSkills.Name(Skill)}: {CoachSkills.About(Skill)}\n{rated}";
+        string rated;
+        if (Rated)
+        {
+            var rt = Rating!;
+            string rank = CoachRank.Name(rt.Tier), conf = CoachRank.ConfidenceLower(rt.Confidence);
+            rated = L.P(rt.Samples, $"{rank} · {conf} ({rt.Samples} sample)", $"{rank} · {conf} ({rt.Samples} samples)");
+        }
+        else rated = drill != null ? L.F($"Not rated yet — click to play {L.T(CoachData.DrillName(drill))}") : L.T("Not rated yet");
+        TooltipText = $"{L.T(CoachSkills.Name(Skill))}: {L.T(CoachSkills.About(Skill))}\n{rated}";
         if (!Rated && drill != null)
         {
             MouseDefaultCursorShape = CursorShape.PointingHand;
@@ -617,7 +671,7 @@ public partial class SkillRow : BaseButton
 
         int ns = UiTheme.Fs(21, k), rs = UiTheme.Fs(21, k), hs = UiTheme.Fs(13.5f, k);
         float top = cy - 9 * k;
-        string rank = Rated ? CoachRank.Name(Rating!.Tier) : "NOT RATED";
+        string rank = Rated ? CoachRank.Name(Rating!.Tier) : L.T("NOT RATED");
         float rw = Gfx.TextR(this, UiTheme.Display, rank, w - pad, Gfx.Mid(top, rs), rs, Rated ? rc : UiTheme.Faint);
         float bars = 0;
         if (Rated) bars = CoachDraw.ConfBars(this, new Vector2(w - pad - rw - 26 * k, top), k, Rating!.Confidence) + 10 * k;
@@ -625,7 +679,9 @@ public partial class SkillRow : BaseButton
             w - pad * 2 - rw - bars - 20 * k);
 
         string line = Rated
-            ? (Rating!.Headline.Length > 0 ? Rating.Headline : $"{CoachRank.Confidence(Rating.Confidence)} confidence · {Rating.Samples} samples")
+            ? (Rating!.Headline.Length > 0 ? Rating.Headline
+                : L.P(Rating.Samples, $"{L.T(CoachRank.Confidence(Rating.Confidence))} confidence · {Rating.Samples} sample",
+                    $"{L.T(CoachRank.Confidence(Rating.Confidence))} confidence · {Rating.Samples} samples"))
             : NotRatedLine();
         Gfx.TextFit(this, UiTheme.Body, line, pad, Gfx.Mid(cy + 14 * k, hs), hs, Rated ? UiTheme.Dim : (hover > 0.5f ? UiTheme.Text : UiTheme.Faint), w - pad * 2);
 
@@ -643,13 +699,11 @@ public partial class SkillRow : BaseButton
     {
         // Actionable hint first; a specific engine headline ("12 of 30 flicks…") wins over the generic one.
         var drill = CoachSkills.Drills(Skill).FirstOrDefault(CoachData.HasDrill);
-        if (Rating is { Headline.Length: > 0 } r && !r.Headline.StartsWith("Not enough data", StringComparison.OrdinalIgnoreCase))
-        {
-            // The coach's progress line usually already names the drill to play ("… — play Head Flicks or Spidershot").
-            bool named = r.Headline.Contains(" play ", StringComparison.OrdinalIgnoreCase) || r.Headline.Contains(" take ", StringComparison.OrdinalIgnoreCase);
-            return r.Headline + (drill != null ? (named ? "  ›" : $"  ·  play {CoachData.DrillName(drill)}  ›") : "");
-        }
-        return drill != null ? $"Play {CoachData.DrillName(drill)} to rate this skill  ›" : "Not enough data yet";
+        // The coach's progress line already names the drill to play ("… — play Head Flicks or Spidershot"); a flag says
+        // so, never the (translated) text.
+        // (translated before the arrow is added: the Text helpers would look up "headline  ›")
+        if (Rating is { IsProgress: true, Headline.Length: > 0 } r) return L.T(r.Headline) + (drill != null ? "  ›" : "");
+        return drill != null ? L.F($"Play {L.T(CoachData.DrillName(drill))} to rate this skill  ›") : L.T("Not enough data yet");
     }
 }
 
@@ -673,7 +727,7 @@ public partial class DrillTile : BaseButton
         SizeFlagsHorizontal = SizeFlags.ExpandFill;
         MouseEntered += UiTheme.HoverSound;
         Pressed += () => { UiTheme.ClickSound(); CoachData.StartDrill(Key); };
-        TooltipText = $"Start {CoachData.DrillName(Key)} — rates {Rates.ToLowerInvariant()}";
+        TooltipText = L.F($"Start {L.T(CoachData.DrillName(Key))} — rates {L.T(Rates)}");
     }
 
     public override void _Process(double delta)
@@ -698,7 +752,7 @@ public partial class DrillTile : BaseButton
         float pw = Gfx.TextR(this, UiTheme.Display, prog, right, Gfx.Mid(r.Size.Y / 2 - 6 * k, ps), ps, done ? UiTheme.Good : UiTheme.Text);
         Gfx.TextR(this, UiTheme.HudWide, done ? "DONE" : "RUNS", right, Gfx.Mid(r.Size.Y / 2 + 15 * k, ls), ls, done ? UiTheme.Good : UiTheme.Faint);
         float tw = r.Size.X - pad * 2 - Mathf.Max(pw, 40 * k) - 12 * k;
-        Gfx.TextFit(this, UiTheme.Display, CoachData.DrillName(Key).ToUpperInvariant(), pad, Gfx.Mid(r.Size.Y / 2 - 9 * k, ns), ns, UiTheme.Text, tw);
-        Gfx.TextFit(this, UiTheme.Body, "Rates " + Rates.ToLowerInvariant(), pad, Gfx.Mid(r.Size.Y / 2 + 14 * k, ds), ds, UiTheme.Dim, tw);
+        Gfx.TextFit(this, UiTheme.Display, L.Upper(L.T(CoachData.DrillName(Key))), pad, Gfx.Mid(r.Size.Y / 2 - 9 * k, ns), ns, UiTheme.Text, tw);
+        Gfx.TextFit(this, UiTheme.Body, L.F($"Rates {L.T(Rates)}"), pad, Gfx.Mid(r.Size.Y / 2 + 14 * k, ds), ds, UiTheme.Dim, tw);
     }
 }

@@ -2,6 +2,9 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using ValTrainer.Game;
+using ValTrainer.Game.Skins;
+using ValTrainer.Game.Weapon;
+using ValTrainer.Progression;
 using ValTrainer.Valorant;
 
 namespace ValTrainer.Core;
@@ -31,10 +34,12 @@ public static class CultureCheck
         {
             Directory.CreateDirectory(root);
             CrosshairChecks();
+            CrosshairListChecks();
             ValorantChecks(root);
             CorruptChecks(root);
             DataChecks(root);
             DisplayChecks(fixActive);
+            SkinAudioChecks();
         }
         catch (Exception e) { Fail("unexpected exception", e.ToString()); }
         finally
@@ -104,6 +109,10 @@ public static class CultureCheck
         Check("crosshair dot size 1.5", Near(xh.CenterDotSize, 1.5f), F(xh.CenterDotSize));
         Check("crosshair inner length 4.5 / offset 2.25", Near(xh.Inner.Length, 4.5f) && Near(xh.Inner.Offset, 2.25f), $"{F(xh.Inner.Length)} {F(xh.Inner.Offset)}");
         Check("crosshair outline opacity 0.35", Near(xh.OutlineOpacity, 0.35f), F(xh.OutlineOpacity));
+        Check("one profile -> crosshair list of one (the active one)", p.CrosshairProfiles.Count == 1 && ReferenceEquals(p.CrosshairProfiles[0], p.Crosshair)
+            && p.CrosshairActive == 0, p.CrosshairProfiles.Count.ToString(CultureInfo.InvariantCulture));
+        Check("no VALORANT -> the switcher has VALORANT's default only", p0.CrosshairProfiles.Count == 0
+            && CrosshairList.Build(p0, null, null) is [{ Source: CrosshairSource.Valorant, ActiveInValorant: true } d0] && CrosshairCode.Encode(d0.Profile) == "0");
         KeybindChecks(p, acc);
 
         // Older builds: individual crosshair keys.
@@ -127,6 +136,152 @@ public static class CultureCheck
         Check("no crosshair JSON -> legacy dot-only crosshair + note", cloud.Found && cloud.CrosshairNote != null && dot.CenterDot && !dot.Inner.Show
             && !dot.Outer.Show && dot.Color.B8 == 255 && dot.Color.R8 == 0 && UI.CrosshairView.Raster(dot).Any(r => r.Contains('#')),
             $"{cloud.CrosshairNote} {CrosshairCode.Encode(cloud.Crosshair)}");
+        Check("no crosshair JSON -> the switcher has that one crosshair", cloud.CrosshairProfiles.Count == 1 && ReferenceEquals(cloud.CrosshairProfiles[0], cloud.Crosshair)
+            && CrosshairList.Build(cloud, null, null) is [{ Index: -1, ActiveInValorant: true } one] && one.Tag.Contains("only one", StringComparison.Ordinal));
+
+        // Several profiles (one unnamed, two named "Main", one split), the second active: every one is imported, in order.
+        string multi = "{\"currentProfile\":1,\"profiles\":[" +
+            "{\"profileName\":\"Main\",\"primary\":{\"color\":{\"r\":0,\"g\":255,\"b\":255,\"a\":255},\"bDisplayCenterDot\":true}}," +
+            "{\"profileName\":\"\",\"primary\":{\"color\":{\"r\":0,\"g\":255,\"b\":0,\"a\":255}}}," +
+            "{\"profileName\":\"Main\",\"bUseAdvancedOptions\":true,\"bUsePrimaryCrosshairForADS\":false,\"aDS\":{\"bDisplayCenterDot\":true}}]}";
+        Write(Path.Combine(acc, "Windows", "RiotUserSettings.ini"),
+            "[/Script/ShooterGame.ShooterGameUserSettings]\r\nEAresStringSettingName::SavedCrosshairProfileData=\"" + multi.Replace("\"", "\\\"") + "\"\r\n" +
+            "EAresStringSettingName::CrosshairColor=(R=255,G=0,B=0,A=255)\r\n");
+        var mp = ValorantImporter.Load(ValorantImporter.FindAccounts().FirstOrDefault());
+        Check("several profiles -> all imported in VALORANT's order, the active one drawn", mp.CrosshairProfiles.Count == 3 && mp.CrosshairActive == 1
+            && ReferenceEquals(mp.Crosshair, mp.CrosshairProfiles[1]) && mp.Crosshair.Name == "Profile 2" && mp.CrosshairNote == null
+            && mp.CrosshairProfiles[2].AdsIsOwn && mp.CrosshairProfiles.Select(x => x.ProfileIndex).SequenceEqual(new[] { 0, 1, 2 }),
+            string.Join(",", mp.CrosshairProfiles.Select(x => $"{x.ProfileIndex}:{x.Name}")) + $" active {mp.CrosshairActive}");
+        Check("several profiles -> switcher names told apart", CrosshairList.Build(mp, null, null).Select(e => e.Name).SequenceEqual(new[] { "Main", "Profile 2", "Main (2)" }),
+            string.Join(",", CrosshairList.Build(mp, null, null).Select(e => e.Name)));
+    }
+
+    // ---------------- crosshair switcher (CrosshairList) ----------------
+
+    /// <summary>The switcher's list, pick resolution, saved codes and the binds, on made-up profiles; then the live API
+    /// against a throw-away settings object (the real ones are put back, nothing is saved).</summary>
+    static void CrosshairListChecks()
+    {
+        // VALORANT's profiles: "Main", unnamed, a non-object entry (skipped, index kept), "Main" again; the unnamed one active.
+        const string json = "{\"currentProfile\":1,\"profiles\":[{\"profileName\":\"Main\"},{\"profileName\":\"\",\"primary\":{\"bDisplayCenterDot\":true}},5," +
+                            "{\"profileName\":\"Main\",\"primary\":{\"color\":{\"r\":255,\"g\":0,\"b\":0,\"a\":255}}}]}";
+        var all = CrosshairSettings.AllFromProfileJson(json, out int cur);
+        Check("AllFromProfileJson: 3 profiles, the non-object skipped (index kept), names, active 1", all is { Count: 3 } && cur == 1
+            && all.Select(x => x.Name).SequenceEqual(new[] { "Main", "Profile 2", "Main" }) && all.Select(x => x.ProfileIndex).SequenceEqual(new[] { 0, 1, 3 }),
+            all == null ? "null" : string.Join(",", all.Select(x => $"{x.ProfileIndex}:{x.Name}")) + $" current {cur}");
+        Check("FromProfileJson still returns the active profile", CrosshairSettings.FromProfileJson(json) is { Name: "Profile 2", ProfileIndex: 1 } fp && fp.Primary.CenterDot);
+        Check("active profile not an object -> unreadable (as before)", CrosshairSettings.FromProfileJson(json.Replace("\"currentProfile\":1", "\"currentProfile\":2")) == null);
+        Check("broken JSON -> no profiles", CrosshairSettings.AllFromProfileJson("{\"profiles\":[{", out _) == null);
+
+        var v = new ValorantProfile { Found = true, AccountId = "acc-a", CrosshairProfiles = all!, CrosshairActive = 1 };
+        v.Crosshair = all![1];
+        var finder = CrosshairCode.Decode(CrosshairCode.ProCodes[0].Code)!;
+        finder.Name = "Crosshair Finder";
+        var saved = new List<SavedCrosshair> { new() { Name = "Leo", Code = CrosshairCode.ProCodes[1].Code }, new() { Name = "Dot", Code = " " + CrosshairCode.ProCodes[2].Code + " " } };
+        var list = CrosshairList.Build(v, finder, saved);
+        Check("order: VALORANT profiles, the custom slot, saved codes", list.Select(e => e.Source).SequenceEqual(new[]
+            {
+                CrosshairSource.Valorant, CrosshairSource.Valorant, CrosshairSource.Valorant, CrosshairSource.Custom, CrosshairSource.Saved, CrosshairSource.Saved,
+            }) && list.Select(e => e.Position).SequenceEqual(Enumerable.Range(0, 6)), string.Join(",", list.Select(e => e.Source)));
+        Check("names: duplicates told apart, tags", list.Select(e => e.Name).SequenceEqual(new[] { "Main", "Profile 2", "Main (2)", "Crosshair Finder", "Leo", "Dot" })
+            && list[1].ActiveInValorant && list[1].Tag == "VALORANT 2/3 · active in VALORANT" && list[2].Index == 3 && list[5].Tag == "Saved 2/2",
+            string.Join(" | ", list.Select(e => $"{e.Name} [{e.Tag}]")));
+        Check("Step wraps both ways", CrosshairList.WrapIndex(-1, 6) == 5 && CrosshairList.WrapIndex(6, 6) == 0 && CrosshairList.WrapIndex(2, 6) == 2);
+
+        var st = new AppSettings { SavedCrosshairs = saved };
+        Check("no choice -> VALORANT's active profile (as before 1.19)", CrosshairList.Resolve(list, v, st) == (1, null));
+        CrosshairList.Apply(list[1], st, v);
+        Check("picking VALORANT's active profile stores no choice (follows VALORANT)", st.CrosshairChoice == null && !st.UseFinderCrosshair);
+        CrosshairList.Apply(list[2], st, v);
+        Check("picking another profile stores account, index and name", st.CrosshairChoice is { Kind: "valorant", Account: "acc-a", Index: 3, Name: "Main" }
+            && CrosshairList.Resolve(list, v, st) is (2, { } pk) && ReferenceEquals(pk, list[2].Profile));
+        // VALORANT reordered the profiles: index 3 is now another one, the picked "Main" is found by name.
+        var moved = CrosshairSettings.AllFromProfileJson("{\"currentProfile\":0,\"profiles\":[{\"profileName\":\"Other\"},{\"profileName\":\"x\"},{},{\"profileName\":\"New\"},{\"profileName\":\"Main\"}]}", out _)!;
+        var v2 = new ValorantProfile { Found = true, AccountId = "acc-a", CrosshairProfiles = moved, Crosshair = moved[0] };
+        var l2 = CrosshairList.Build(v2, null, null);
+        Check("a moved / renamed profile resolves by name, else falls back", CrosshairList.Resolve(l2, v2, st) is (4, { Name: "Main" }));
+        var v3 = new ValorantProfile { Found = true, AccountId = "acc-b", CrosshairProfiles = all, Crosshair = all[1] };
+        Check("a pick from another account is ignored (VALORANT's active profile), not deleted",
+            CrosshairList.Resolve(CrosshairList.Build(v3, null, null), v3, st) == (1, null) && st.CrosshairChoice != null);
+        CrosshairList.Apply(list[3], st, v);
+        Check("the custom slot wins through UseFinderCrosshair", st.UseFinderCrosshair && CrosshairList.Resolve(list, v, st).Current == 3);
+        CrosshairList.Apply(list[5], st, v);
+        Check("a saved pick: by its code", !st.UseFinderCrosshair && st.CrosshairChoice is { Kind: "saved" } && CrosshairList.Resolve(list, v, st) is (5, { Name: "Dot" }));
+        saved.RemoveAt(1);
+        Check("a deleted saved pick falls back to VALORANT's active profile", CrosshairList.Resolve(CrosshairList.Build(v, finder, saved), v, st) == (1, null));
+
+        // Saved codes: dedup by the crosshair (not the text, not the NAME section), names, the cap.
+        var s2 = new AppSettings();
+        int a0 = CrosshairList.AddTo(s2, " " + CrosshairCode.ProCodes[0].Code + " ", null, out var m0, out bool added0);
+        int a1 = CrosshairList.AddTo(s2, CrosshairCode.ProCodes[0].Code + ";NAME;\"TenZ\"", null, out var m1, out bool added1);
+        int a2 = CrosshairList.AddTo(s2, "hello", null, out var m2, out _);
+        int a3 = CrosshairList.AddTo(s2, "0;P;c;1;NAME;\"Green \"", null, out _, out _);
+        Check("Add: new code saved trimmed, named \"Code 1\"", a0 == 0 && added0 && m0 == "SAVED ✓" && s2.SavedCrosshairs![0].Code == CrosshairCode.ProCodes[0].Code
+            && s2.SavedCrosshairs[0].Name == "Code 1", $"{a0} {m0} {s2.SavedCrosshairs?[0].Name}");
+        Check("Add: the same crosshair again (with a NAME) is not saved twice", a1 == 0 && !added1 && m1 == "ALREADY SAVED ✓", $"{a1} {m1}");
+        Check("Add: not a code", a2 == -1 && m2 == "NOT A CODE");
+        Check("Add: the name from the code's NAME section", a3 == 1 && s2.SavedCrosshairs![1].Name == "Green", s2.SavedCrosshairs?.ElementAtOrDefault(1)?.Name ?? "null");
+        for (int i = 0; s2.SavedCrosshairs!.Count < CrosshairList.MaxSaved && i < 40; i++) CrosshairList.AddTo(s2, $"0;P;c;5;0l;{i % 20};0o;{i / 20 + 1}", null, out _, out _);
+        int full = CrosshairList.AddTo(s2, "0;P;c;7;h;0", null, out var mf, out _);
+        Check($"Add: at most {CrosshairList.MaxSaved}", s2.SavedCrosshairs.Count == CrosshairList.MaxSaved && full == -1 && mf.StartsWith("LIST FULL", StringComparison.Ordinal),
+            $"{s2.SavedCrosshairs.Count} {mf}");
+
+        // Binds: ValTrainer-only defaults; no VALORANT action name maps to them; a custom bind applies.
+        var kb = Keybinds.Defaults();
+        Check("binds: Previous / Next crosshair default to , and .", kb.Text(GameAction.CrosshairPrev) == "," && kb.Text(GameAction.CrosshairNext) == ".",
+            $"{kb.Text(GameAction.CrosshairPrev)} {kb.Text(GameAction.CrosshairNext)}");
+        Check("binds: no VALORANT action name lands on the crosshair binds", new[] { "NextCrosshair", "CycleCrosshairProfile", "PreviousCrosshair", "CrosshairNext", "Crosshair" }
+            .All(nm => ValorantImporter.ActionOf(nm) is not (GameAction.CrosshairNext or GameAction.CrosshairPrev)));
+        var cp = new ValorantProfile();
+        int ap = cp.ApplyCustomBinds(new Dictionary<string, string> { ["CrosshairNext.primary"] = "mouse:Xbutton2" });
+        Check("binds: custom \"CrosshairNext.primary\": Mouse 5 applies", ap == 1 && cp.Binds[GameAction.CrosshairNext, 0] == InputBinding.Button(Godot.MouseButton.Xbutton2)
+            && cp.Imported.Text(GameAction.CrosshairNext) == ".", cp.Binds.Text(GameAction.CrosshairNext));
+
+        // The live API on a throw-away settings object and import (the real ones are put back; nothing is written).
+        var app = Main.I;
+        if (app == null) { Say("SKIP live crosshair switcher checks: no Main"); return; }
+        var (realSt, realVal) = (app.Settings, app.Valorant);
+        bool ro = AppSettings.ReadOnly;
+        try
+        {
+            AppSettings.ReadOnly = true;
+            string pasted = "  " + CrosshairCode.ProCodes[4].Code + "  ";
+            app.Settings = new AppSettings();
+            app.Valorant = new ValorantProfile { Found = true, AccountId = "acc-a", CrosshairProfiles = all, CrosshairActive = 1, Crosshair = all[1] };
+            Check("live: 3 VALORANT profiles, VALORANT's active one drawn", CrosshairList.All.Count == 3 && CrosshairList.Current == 1 && CrosshairList.Picked == null
+                && ReferenceEquals(CrosshairCode.Effective, all[1]));
+            bool addOk = CrosshairList.Add(pasted, null, out var am);
+            Check("live: a pasted code is saved and drawn; COPY gives the code as saved", addOk && am == "SAVED ✓" && CrosshairList.CurrentEntry.Source == CrosshairSource.Saved
+                && CrosshairCode.EffectiveCode == pasted.Trim() && ReferenceEquals(CrosshairCode.Effective, CrosshairList.CurrentEntry.Profile), CrosshairCode.EffectiveCode);
+            CrosshairList.Step(1);
+            Check("live: Next from the last wraps to the first", CrosshairList.Current == 0 && app.Settings.CrosshairChoice is { Kind: "valorant", Index: 0 }
+                && ReferenceEquals(CrosshairCode.Effective, all[0]) && CrosshairCode.EffectiveCode == CrosshairCode.Encode(all[0]));
+            CrosshairList.Step(-1);
+            CrosshairList.SaveCurrent(out var sm);
+            Check("live: SAVE CURRENT on a saved code saves nothing", sm == "ALREADY SAVED ✓" && app.Settings.SavedCrosshairs!.Count == 1);
+            CrosshairList.Select(2);
+            CrosshairList.SaveCurrent(out var sm2);
+            Check("live: SAVE CURRENT copies a VALORANT profile, named after it, the pick unchanged", sm2 == "SAVED ✓" && app.Settings.SavedCrosshairs!.Count == 2
+                && app.Settings.SavedCrosshairs[1].Name == "Main (2) (VALORANT)" && CrosshairList.Current == 2, $"{sm2} {app.Settings.SavedCrosshairs?.Count}");
+            CrosshairList.Move(1, -1);
+            CrosshairList.Rename(0, "  My main  ");
+            Check("live: reorder and rename", app.Settings.SavedCrosshairs![0].Name == "My main" && app.Settings.SavedCrosshairs[1].Code == pasted.Trim()
+                && CrosshairList.All[3].Name == "My main", string.Join(",", app.Settings.SavedCrosshairs.Select(x => x.Name)));
+            CrosshairList.Select(4);
+            CrosshairList.Remove(1);
+            Check("live: deleting the saved pick goes back to VALORANT's active profile", app.Settings.CrosshairChoice == null && CrosshairList.Current == 1
+                && app.Settings.SavedCrosshairs!.Count == 1);
+            CrosshairList.Remove(0);
+            Check("live: deleting the last saved code leaves no SavedCrosshairs", app.Settings.SavedCrosshairs == null && CrosshairList.All.Count == 3);
+            Check("live: bug report source", CrosshairList.SourceText() == "VALORANT active", CrosshairList.SourceText());
+        }
+        catch (Exception e) { Fail("live crosshair switcher threw", e.ToString()); }
+        finally
+        {
+            app.Settings = realSt;
+            app.Valorant = realVal;
+            AppSettings.ReadOnly = ro;
+        }
     }
 
     // ---------------- crosshair model (codes, profile JSON, legacy keys) ----------------
@@ -280,6 +435,20 @@ public static class CultureCheck
                 $"{F(s2.SensOverride)} {F(s2.Volume)} {F(s2.ViewmodelFov)} q{s2.Quality}");
             Check("settings round trip: custom keybinds", s2.CustomBinds is { Count: 2 } cb && cb["AltFire.primary"] == "mouse:Xbutton1"
                 && CustomBinds.Get(cb, GameAction.Jump, 1) == InputBinding.Button(Godot.MouseButton.WheelDown), Snip(json, "CustomBinds"));
+            Check("settings without a crosshair pick -> none (follows VALORANT as before 1.19)", s2.CrosshairChoice == null && s2.SavedCrosshairs == null);
+            File.WriteAllText(Path.Combine(data, "settings.json"), "{ \"Quality\": 2, \"UseFinderCrosshair\": false }"); // a file from before 1.19
+            var old = AppSettings.Load();
+            Check("settings.json from before 1.19 -> no pick, no saved codes", !old.IsNew && old.CrosshairChoice == null && old.SavedCrosshairs == null && old.Quality == 2);
+            var xs = new AppSettings
+            {
+                CrosshairChoice = new CrosshairChoice { Kind = "valorant", Account = "0123abcd-eu", Index = 3, Name = "Main" },
+                SavedCrosshairs = new() { new SavedCrosshair { Name = "Pro \"dot\"", Code = CrosshairCode.ProCodes[2].Code } },
+            };
+            xs.Save();
+            var xs2 = AppSettings.Load();
+            Check("settings round trip: crosshair pick + saved codes", xs2.CrosshairChoice is { Kind: "valorant", Account: "0123abcd-eu", Index: 3, Name: "Main", Code: null }
+                && xs2.SavedCrosshairs is [{ Name: "Pro \"dot\"" } sx] && sx.Code == CrosshairCode.ProCodes[2].Code,
+                Snip(File.ReadAllText(Path.Combine(data, "settings.json")), "CrosshairChoice"));
 
             // A settings file written by hand on a comma-decimal PC isn't valid JSON for numbers: must not crash.
             File.WriteAllText(Path.Combine(data, "settings.json"), "{ \"SensOverride\": 0,5, \"Quality\": 3 }");
@@ -586,6 +755,410 @@ public static class CultureCheck
         Check("Remember / SetPreferred save", WeaponPicks.PickFor("spider", s3) == WeaponKind.Spectre && WeaponPicks.Preferred(s3) == WeaponKind.Vandal);
         foreach (var key in (s3.WeaponPicks?.Keys ?? Enumerable.Empty<string>()).ToList()) WeaponPicks.Remember(key, null, s3);
         Check("forgetting every pick leaves no empty WeaponPicks", s3.WeaponPicks == null && AppSettings.Load().WeaponPicks == null);
+        SkinChecks();
+    }
+
+    /// <summary>Gun skins (skins-design-1.19.md §2.7, skins2-design-1.19.md §5.4): the catalogue, settings round trip,
+    /// resolution and the lock clamp.</summary>
+    static void SkinChecks()
+    {
+        var ids = GunSkins.All.Select(x => x.Id).ToList();
+        Check("skin catalogue: 15 lines, ids unique, lowercase ASCII, none is 'factory'", ids.Count == 15 && ids.Distinct().Count() == ids.Count
+            && ids.All(id => id.Length > 0 && id.All(c => c is >= 'a' and <= 'z' or >= '0' and <= '9')) && !ids.Contains(GunSkins.FactoryId), string.Join(",", ids));
+        var patterns = Enum.GetValues<SkinPattern>();
+        Check("every line's pattern is a SkinPattern id (the shader's numbers are never reused)", GunSkins.All.All(x => Enum.IsDefined(x.Pattern))
+            && patterns.Select(p => (int)p).Distinct().Count() == patterns.Length);
+        Check("patterned skins have their second colour", GunSkins.All.Where(x => x.Patterned && x.Pattern != SkinPattern.Flake).All(x => x.B != null));
+        SkinCatalogChecks();
+
+        // the resolution rules below are about storage, not locks: everything unlocked (restored after)
+        bool devAll = Progress.DevUnlockAll;
+        Progress.DevUnlockAll = true;
+        try { SkinResolveChecks(); }
+        finally { Progress.DevUnlockAll = devAll; }
+        SkinLockChecks();
+        SkinEquipChecks();
+        KillFxChecks();
+    }
+
+    /// <summary>The collection's equip helpers (GunSkins.TopLevel / LockedItem / ChoiceOf): what EQUIP stores and what a
+    /// locked item says it needs.</summary>
+    static void SkinEquipChecks()
+    {
+        bool devAll = Progress.DevUnlockAll;
+        try
+        {
+            Progress.DevUnlockAll = true;
+            var fd = SkinCatalog.Get("foundry")!;
+            var v0 = fd.Variants[0];
+            Check("equip: the top level is stored as 'highest unlocked', a lower one explicitly, variants kept",
+                GunSkins.TopLevel(fd) == 5 && GunSkins.ChoiceOf(fd, 5, null).ToString() == "foundry" && GunSkins.ChoiceOf(fd, 2, v0).ToString() == $"foundry/{v0.Id}@2"
+                && GunSkins.ChoiceOf(SkinCatalog.Get("carbon")!, 1, null).ToString() == "carbon" && GunSkins.LockedItem(fd, 5, fd.Variants[1]) == null,
+                $"{GunSkins.ChoiceOf(fd, 5, null)} {GunSkins.ChoiceOf(fd, 2, v0)}");
+            Progress.DevUnlockAll = false;
+            if (Progress.Data.Unlocked.Count == 0 && Progress.Xp == 0 && Progress.Stars == 0)
+                Check("equip: a locked line reports itself, a free line nothing; TopLevel 0 when locked",
+                    GunSkins.TopLevel(fd) == 0 && GunSkins.LockedItem(fd, 3, null) == "foundry" && GunSkins.TopLevel(SkinCatalog.Get("desertcamo")!) == 1
+                    && GunSkins.LockedItem(SkinCatalog.Get("desertcamo")!, 1, null) == null, $"{GunSkins.TopLevel(fd)} {GunSkins.LockedItem(fd, 3, null)}");
+        }
+        finally { Progress.DevUnlockAll = devAll; }
+    }
+
+    static void SkinResolveChecks()
+    {
+        var s = new AppSettings { GunSkins = new() { ["Vandal"] = "carbon", ["Sheriff"] = "factory", ["Knife"] = "carbon", ["Phantom"] = "nosuchskin" }, GunSkinAll = "desertcamo" };
+        s.Save();
+        var s2 = AppSettings.Load();
+        Check("settings round trip: GunSkins + GunSkinAll", s2.GunSkinAll == "desertcamo" && s2.GunSkins is { Count: 4 } gs && gs["Vandal"] == "carbon",
+            $"{s2.GunSkinAll} {s2.GunSkins?.Count}");
+        string? v = null, sh = null, ph = null, op = null, hh = null;
+        bool threw = false;
+        try
+        {
+            v = GunSkins.IdFor(WeaponKind.Vandal, s2);       // own entry
+            sh = GunSkins.IdFor(WeaponKind.Sheriff, s2);     // explicit factory under an every-gun skin
+            ph = GunSkins.IdFor(WeaponKind.Phantom, s2);     // unknown id -> every-gun skin
+            op = GunSkins.IdFor(WeaponKind.Operator, s2);    // no entry -> every-gun skin
+            hh = GunSkins.IdFor(WeaponKind.Headhunter, s2);  // Chamber's gun: always factory (gold)
+        }
+        catch { threw = true; }
+        Check("skin resolve: own -> every gun -> factory; unknown id or gun ignored; Chamber stays factory", !threw && v == "carbon" && sh == "factory"
+            && ph == "desertcamo" && op == "desertcamo" && hh == "factory", $"{v} {sh} {ph} {op} {hh}");
+        var empty = new AppSettings();
+        Check("no skin settings: factory, GunSkins.For is null", GunSkins.IdFor(WeaponKind.Vandal, empty) == "factory" && GunSkins.For(WeaponKind.Vandal, empty) == null
+            && GunSkins.Get("CARBON")?.Id == "carbon" && GunSkins.Get(null) == null && GunSkins.Get("factory") == null);
+        // skins-2 choices (v1.19 dev builds) stored before the remake: Carbon / Damascus kept, the rest factory, never a throw
+        var old = new AppSettings
+        {
+            GunSkins = new() { ["Vandal"] = "honeycomb/teal@3", ["Phantom"] = "carbon/aramid", ["Odin"] = "damascus/ladder", ["Spectre"] = "PHOSPHOR.amber@5" },
+            GunSkinAll = "graphite",
+        };
+        string? ov = null, op2 = null, oo = null, os = null, oa = null;
+        bool oldThrew = false;
+        try
+        {
+            ov = GunSkins.IdFor(WeaponKind.Vandal, old); op2 = GunSkins.IdFor(WeaponKind.Phantom, old); oo = GunSkins.IdFor(WeaponKind.Odin, old);
+            os = GunSkins.IdFor(WeaponKind.Spectre, old); oa = GunSkins.IdFor(WeaponKind.Ares, old);
+        }
+        catch { oldThrew = true; }
+        Check("skins-2 stored choices: carbon / damascus survive (variant dropped), every other old id is factory",
+            !oldThrew && ov == "factory" && op2 == "carbon" && oo == "damascus" && os == "factory" && oa == "factory"
+            && GunSkins.StateFor(WeaponKind.Phantom, old) is { Level: 1, Variant: null }, $"{ov} {op2} {oo} {os} {oa}");
+        var fd = SkinCatalog.Get("foundry")!;
+        string v0 = fd.Variants[0].Id;
+        GunSkins.Set(WeaponKind.Odin, "anodized", s2);
+        GunSkins.Set(WeaponKind.Vandal, null, s2);
+        GunSkins.Set(WeaponKind.Bulldog, "desertcamo", s2); // the same as every gun: no entry
+        GunSkins.Set(WeaponKind.Spectre, $"FOUNDRY.{v0}@3", s2); // the skins doc's dev syntax, stored canonical
+        var s3 = AppSettings.Load();
+        Check("Set saves; null removes; the every-gun skin needs no entry", GunSkins.IdFor(WeaponKind.Odin, s3) == "anodized" && GunSkins.OwnId(WeaponKind.Vandal, s3) == null
+            && GunSkins.IdFor(WeaponKind.Vandal, s3) == "desertcamo" && GunSkins.OwnId(WeaponKind.Bulldog, s3) == null);
+        var spectre = GunSkins.StateFor(WeaponKind.Spectre, s3);
+        Check("a line/variant@level choice is stored canonical and resolves to that level and variant", GunSkins.OwnId(WeaponKind.Spectre, s3) == $"foundry/{v0}@3"
+            && spectre is { Level: 3 } st && st.Line.Id == "foundry" && st.Variant?.Id == v0 && st.Has(SkinFeature.KillFx) && !st.Has(SkinFeature.Finisher)
+            && st.Look.Id == $"foundry/{v0}" && st.Look.Animated, $"{GunSkins.OwnId(WeaponKind.Spectre, s3)} {spectre?.Level} {spectre?.Variant?.Id}");
+        GunSkins.SetAll("damascus", s3);
+        var s4 = AppSettings.Load();
+        Check("SetAll clears every per-gun entry", s4.GunSkins == null && s4.GunSkinAll == "damascus" && GunSkins.IdFor(WeaponKind.Sheriff, s4) == "damascus");
+        GunSkins.Set(WeaponKind.Ghost, "factory", s4);
+        Check("factory on one gun under an every-gun skin is kept", GunSkins.IdFor(WeaponKind.Ghost, AppSettings.Load()) == "factory");
+        GunSkins.ResetAll(s4);
+        var s5 = AppSettings.Load();
+        Check("ResetAll clears both fields", s5.GunSkins == null && s5.GunSkinAll == null);
+        string json = File.ReadAllText(Path.Combine(Paths.DataDir, "settings.json"));
+        Check("settings.json keeps both skin fields (null when empty)", json.Contains("\"GunSkins\": null") && json.Contains("\"GunSkinAll\": null"), Snip(json, "GunSkin"));
+        Check("settings.json has the skin effect fields with safe defaults", json.Contains("\"SkinSounds\": true") && json.Contains("\"SkinKillFx\": 2")
+            && json.Contains("\"SkinFinishers\": true") && json.Contains("\"SkinKillCounter\": true") && json.Contains("\"SkinFxVolume\": 0.8"), Snip(json, "SkinSounds"));
+    }
+
+    /// <summary>Skins 3 data (skins3-contracts.md §1–2): tiers, levels, features, effect ids, variants, legacy ids, the choice
+    /// grammar.</summary>
+    static void SkinCatalogChecks()
+    {
+        var lines = SkinCatalog.Lines;
+        int Levels(Edition e) => e == Edition.Apex ? 5 : 1;
+        Check("every line has its tier's level count (Core 1, Signature 1, Apex 5); levels numbered 1..n",
+            lines.All(l => l.MaxLevel == Levels(l.Edition) && l.Levels.Select(x => x.N).SequenceEqual(Enumerable.Range(1, l.MaxLevel))),
+            string.Join(",", lines.Where(l => l.MaxLevel != Levels(l.Edition)).Select(l => l.Id)));
+        Check("tiers: 5 Core, 7 Signature, 3 Apex, in SkinLooks' order, grouped Core → Signature → Apex",
+            lines.Where(l => l.Edition == Edition.Core).Select(l => l.Id).SequenceEqual(SkinLooks.Core)
+            && lines.Where(l => l.Edition == Edition.Signature).Select(l => l.Id).SequenceEqual(SkinLooks.Signature)
+            && lines.Where(l => l.Edition == Edition.Apex).Select(l => l.Id).SequenceEqual(SkinLooks.Apex)
+            && lines.Select(l => l.Edition).SequenceEqual(lines.Select(l => l.Edition).OrderBy(e => e)));
+        var riot = new[] { "select", "deluxe", "premium", "ultra", "exclusive" };
+        Check("no Riot edition names: the tiers are Core, Signature, Apex", Enum.GetNames<Edition>().SequenceEqual(new[] { "Core", "Signature", "Apex" })
+            && Enum.GetValues<Edition>().All(e => !riot.Contains(SkinCatalog.EditionName(e).ToLowerInvariant()) && !riot.Any(r => SkinCatalog.EditionRule(e).ToLowerInvariant().Contains(r))));
+        Check("variant ids unique per line, lowercase ASCII; Apex has 3 with a base name, the others none",
+            lines.All(l => l.Variants.Select(x => x.Id).Distinct().Count() == l.Variants.Count && l.Variants.All(x => ItemIds.IsToken(x.Id))
+                && l.Variants.Count == (l.Edition == Edition.Apex ? 3 : 0) && (l.Edition != Edition.Apex || l.BaseName.Length > 0)));
+        Check("Core: a finish only (no features, no effect ids)", lines.Where(l => l.Edition == Edition.Core).All(l => l.FeaturesAt(1) == SkinFeature.None
+            && new SkinState(l, 1, null) is { Sounds: null, KillFx: null, BulletFx: null, Inspect: null, Banner: null, Tracer: null }));
+        Check("Signature: one level with sounds, hit + kill sounds, bullet FX, kill effect, inspect and banner; every effect id = the line id; no animation, finisher or special reload",
+            lines.Where(l => l.Edition == Edition.Signature).All(l => l.FeaturesAt(1) == SkinCatalog.SignatureFeatures
+                && new SkinState(l, 1, null) is var s && s.Sounds == l.Id && s.BulletFx == l.Id && s.KillFx == l.Id && s.Inspect == l.Id && s.Banner == l.Id
+                && s.Finisher == null && s.ReloadAnim == null && !s.Look.Animated && s.Tracer != null && s.Has(SkinFeature.HitSounds) && s.Has(SkinFeature.KillSounds)));
+        Check("Apex: L2 animated + reactive, L3 sounds + bullet & kill effects, L4 inspect + special reload + banner, L5 finisher + kill counter; ids = the line id",
+            lines.Where(l => l.Edition == Edition.Apex).All(l =>
+                new SkinState(l, 1, null) is { Sounds: null, KillFx: null, BulletFx: null } s1 && !s1.Look.Animated
+                && new SkinState(l, 2, null) is var s2 && s2.Look.Animated && s2.Look.React > 0f && s2.Sounds == null
+                && new SkinState(l, 3, null) is var s3 && s3.Sounds == l.Id && s3.BulletFx == l.Id && s3.KillFx == l.Id && s3.Has(SkinFeature.HitSounds) && s3.Inspect == null && s3.Finisher == null && s3.Look.KillGlow > 0f
+                && new SkinState(l, 4, null) is var s4 && s4.Inspect == l.Id && s4.ReloadAnim == l.Id && s4.Banner == l.Id && s4.Finisher == null && !s4.Look.Counter
+                && new SkinState(l, 5, null) is var s5 && s5.Finisher == l.Id && s5.Look.Counter && s5.Has(SkinFeature.KillCounter)
+                && l.Levels.Select(x => x.Blurb).Distinct().Count() == 5));
+        Check("skins-2 ids: carbon and damascus kept, every other old id is factory (parses to null, no throw)",
+            SkinCatalog.Legacy.Count == 21 && SkinCatalog.Legacy.All(e => e.Key is "carbon" or "damascus"
+                ? SkinChoice.Parse(e.Key) is { } c && c.Line == e.Value && c.Level == 0 && c.Variant == null
+                : e.Value == GunSkins.FactoryId && SkinChoice.Parse(e.Key) == null && SkinChoice.Parse(e.Key + "/teal@3") == null && SkinCatalog.Get(e.Key) == null));
+        var fd = SkinCatalog.Get("foundry")!;
+        string v0 = fd.Variants[0].Id;
+        string P(string s) => SkinChoice.Parse(s)?.ToString() ?? "null";
+        Check("choice grammar: line[/variant][@level], item ids and line.variant@n; unknown parts dropped",
+            P("foundry") == "foundry" && P($" FOUNDRY.{v0.ToUpperInvariant()}@3 ") == $"foundry/{v0}@3" && P("foundry/3") == "foundry@3" && P($"foundry/{v0}") == $"foundry/{v0}"
+            && P("foundry@9") == "foundry@5" && P("carbon/nosuch") == "carbon" && P("carbon@2") == "carbon" && P("glasswork@3") == "glasswork"
+            && P("carbon/aramid") == "carbon" && P("honeycomb/teal@3") == "null" && P("nosuch") == "null" && P("factory") == "null" && P("") == "null",
+            $"{P($" FOUNDRY.{v0.ToUpperInvariant()}@3 ")} {P("foundry/3")} {P("foundry@9")} {P("carbon@2")}");
+        bool ok1 = ItemIds.TryParse("foundry/3", out var l1, out int n1, out var v1), ok2 = ItemIds.TryParse("Foundry/Blueflame", out var l2, out int n2, out var v2);
+        Check("item ids: line, line/n, line/variant", ok1 && l1 == "foundry" && n1 == 3 && v1 == null && ok2 && l2 == "foundry" && n2 == 1 && v2 == "blueflame"
+            && !ItemIds.TryParse("foundry/0", out _, out _, out _) && !ItemIds.TryParse("a b", out _, out _, out _) && !ItemIds.TryParse("", out _, out _, out _)
+            && ItemIds.Level("carbon", 1) == "carbon" && ItemIds.Level("carbon", 2) == "carbon/2" && ItemIds.Variant("carbon", "forged") == "carbon/forged");
+        // clamp: only the base and level 2 of Foundry unlocked
+        var only = new HashSet<string> { "foundry", "foundry/2" };
+        var r = SkinCatalog.Resolve(new SkinChoice("foundry", 5, v0), only.Contains);
+        var r0 = SkinCatalog.Resolve(new SkinChoice("foundry"), only.Contains);
+        Check("resolve clamps: locked level -> highest unlocked below, locked variant -> base palette, locked line -> factory",
+            r is { Level: 2, Variant: null } && r0 is { Level: 2 } && SkinCatalog.Resolve(new SkinChoice("glasswork"), only.Contains) == null, $"{r?.Level} {r?.Variant?.Id} {r0?.Level}");
+    }
+
+    /// <summary>Progression stub (the contract with the skins): requirements, the table, locks, progress.json round trip.</summary>
+    static void SkinLockChecks()
+    {
+        bool devAll = Progress.DevUnlockAll;
+        Progress.DevUnlockAll = false;
+        try
+        {
+            var req = Requirement.Parse("level:30+stars:25+(rankup:overall:1|rankup:skill:3)");
+            var f = new ProgressFacts { Level = 30, Stars = 25, SkillUps = 3 };
+            var f2 = new ProgressFacts { Level = 30, Stars = 25, SkillUps = 2 };
+            Check("requirement grammar: + binds tighter than |, parentheses group", req.Root is ReqAll { Parts.Count: 3 } all && all.Parts[2] is ReqAny { Parts.Count: 2 }
+                && req.Met(f) && !req.Met(f2) && req.Fraction(f2) is > 0.8f and < 1f && req.Root.FirstUnmet(f2)?.Kind == ReqKind.RankupSkill, req.Source);
+            Check("requirement grammar: unknown / malformed terms are never met, empty is free", !Requirement.Parse("bogus:1").Met(f) && !Requirement.Parse("level:").Met(f)
+                && !Requirement.Parse("(level:1").Met(f) && Requirement.Parse("").Met(new ProgressFacts()) && Requirement.Parse("level:1|bogus").Met(new ProgressFacts()));
+            var unknownTerms = Progress.AllItems.SelectMany(id => Progress.RequirementOf(id).Root.Terms()).Where(t => t.Kind == ReqKind.Unknown).Select(t => t.Source).Distinct().ToList();
+            int items = SkinCatalog.Lines.Sum(l => l.MaxLevel + l.Variants.Count);
+            Check("every level and variant has a requirement in the table, all terms understood", Progress.AllItems.Count() == items && unknownTerms.Count == 0,
+                $"{Progress.AllItems.Count()} / {items} {string.Join(",", unknownTerms)}");
+            // stub: a fresh account (level 1, 0 stars) has Core + Factory only
+            bool fresh = Progress.Data.Unlocked.Count == 0 && Progress.Level == 1 && Progress.Stars == 0; // level 1 (the welcome +250 XP stays below level 2)
+            if (fresh)
+            {
+                var core = SkinCatalog.Lines.Where(l => l.Edition == Edition.Core).Select(l => l.Id).ToList();
+                var locked = Progress.AllItems.Where(id => !core.Contains(id)).ToList();
+                var st = Progress.Status("glasswork");
+                Check("fresh account: Factory + Core unlocked, every other item locked with its requirement", Progress.IsUnlocked("factory") && core.All(Progress.IsUnlocked)
+                    && locked.All(id => !Progress.IsUnlocked(id)) && st is { Known: true, Unlocked: false } && st.Text.Length > 0 && st.Progress01 is >= 0f and < 1f
+                    && Progress.Status("foundry/2").Blocker != null && !Progress.IsUnlocked("nosuch") && !Progress.Status("nosuch").Known
+                    && !Progress.IsUnlocked("honeycomb") && !Progress.Status("calibrated").Known, $"{st.Text} {st.ProgressText}");
+                var s = new AppSettings { GunSkins = new() { ["Vandal"] = "glasswork", ["Phantom"] = "desertcamo" }, GunSkinAll = "anodized" };
+                Check("a locked choice shows factory (not the every-gun skin) and is kept", GunSkins.IdFor(WeaponKind.Vandal, s) == "factory" && GunSkins.For(WeaponKind.Vandal, s) == null
+                    && GunSkins.OwnId(WeaponKind.Vandal, s) == "glasswork" && GunSkins.ShowsLess(WeaponKind.Vandal, s) && GunSkins.IdFor(WeaponKind.Phantom, s) == "desertcamo"
+                    && GunSkins.IdFor(WeaponKind.Odin, s) == "anodized" && !GunSkins.ShowsLess(WeaponKind.Odin, s));
+                string? dev = GunSkins.DevSkin;
+                string ov = SkinCatalog.Get("orrery")!.Variants[0].Id;
+                GunSkins.DevSkin = $"orrery.{ov}@5";
+                try { Check("dev --skin ignores locks", GunSkins.StateFor(WeaponKind.Vandal, s) is { Level: 5 } ds && ds.Variant?.Id == ov); }
+                finally { GunSkins.DevSkin = dev; }
+                Progress.DevUnlockAll = true;
+                Check("--progress-unlock-all / --skins-unlock-all unlock everything", Progress.AllItems.All(Progress.IsUnlocked) && GunSkins.IdFor(WeaponKind.Vandal, s) == "glasswork");
+                Progress.DevUnlockAll = false;
+                // supporter codes (Core/Supporter.cs): the dev test key's code unlocks every item; a changed code nothing
+                var app = Main.I?.Settings;
+                if (app != null)
+                {
+                    string? keep = app.SupporterCode;
+                    try
+                    {
+                        string good = Supporter.DevTestCode;
+                        string bad = good[..^1] + (good[^1] == 'A' ? 'B' : 'A');
+                        Check("supporter code: the test code is valid and names its supporter", Supporter.Check(good) is { Name: "Test Supporter" }
+                            && Supporter.Check(good.ToLowerInvariant().Replace("-", " ")) != null);
+                        Check("supporter code: a changed, empty or junk code is not valid", Supporter.Check(bad) == null && Supporter.Check("") == null
+                            && Supporter.Check("VT-HELLO-WORLD") == null && Supporter.Check("not a code !") == null);
+                        app.SupporterCode = bad;
+                        Check("supporter code: an invalid code unlocks nothing", !Supporter.Active && locked.All(id => !Progress.IsUnlocked(id)));
+                        app.SupporterCode = good;
+                        Check("supporter code: a valid code unlocks every skin, level and variant", Supporter.Active && Progress.AllItems.All(Progress.IsUnlocked)
+                            && GunSkins.IdFor(WeaponKind.Vandal, s) == "glasswork");
+                    }
+                    finally { app.SupporterCode = keep; }
+                }
+            }
+            else Say("SKIP stub lock checks: this data dir has progress (dev flags or progress.json)");
+
+            Check("level curve: 500 / 1,100 / 11,000 / 26,600 XP for levels 2 / 3 / 12 / 20, LevelOf inverts it",
+                XpCurve.TotalFor(2) == 500 && XpCurve.TotalFor(3) == 1100 && XpCurve.TotalFor(12) == 11000 && XpCurve.TotalFor(20) == 26600
+                && Enumerable.Range(1, 60).All(n => XpCurve.LevelOf(XpCurve.TotalFor(n)) == n && (n == 1 || XpCurve.LevelOf(XpCurve.TotalFor(n) - 1) == n - 1)));
+            const string newer = "{\"Version\":2,\"MinReader\":1,\"Xp\":5,\"Future\":{\"a\":1},\"Counters\":{\"Runs\":3,\"NewCounter\":2},\"Unlocked\":{\"carbon\":\"2026-11-07T18:00:00\"}}";
+            var pf = ProgressStore.Parse(newer);
+            string back = ProgressStore.Serialize(pf);
+            Check("progress.json round trip keeps unknown fields (root and nested), fills missing objects", pf.Xp == 5 && pf.Counters.Runs == 3 && pf.Unlocked.ContainsKey("carbon")
+                && pf.Unseen != null && back.Contains("\"Future\"") && back.Contains("\"NewCounter\"") && ProgressStore.Parse(back).Extra?.ContainsKey("Future") == true, Snip(back, "Future"));
+            bool corrupt = false;
+            try { ProgressStore.Parse("{\"Xp\": 5,"); } catch (Exception e) { corrupt = Paths.IsCorruptData(e); }
+            Check("truncated progress.json is reported as corrupt (kept as .corrupt, re-derived)", corrupt);
+            Check("dev runs never write progress.json", !ProgressStore.CanWrite && !File.Exists(ProgressStore.FilePath));
+        }
+        finally { Progress.DevUnlockAll = devAll; }
+    }
+
+    /// <summary>Skin sound sets (skins2-design §5.4): every line with sound features has every file it needs
+    /// (assets/audio/skins, tools/sfx/skin_sfx.py), and every gun has a fire-layer class.</summary>
+    static void SkinAudioChecks()
+    {
+        var missing = new List<string>();
+        int files = 0;
+        foreach (var line in SkinCatalog.Lines)
+        {
+            var top = new SkinState(line, line.MaxLevel, null);
+            if (top.Sounds is not { } set) continue;
+            foreach (var f in SkinAudio.Required(top).SelectMany(SkinAudio.FilesOf))
+            {
+                files++;
+                if (!Godot.ResourceLoader.Exists(SkinAudio.PathOf(set, f))) missing.Add($"{set}/{f}");
+            }
+        }
+        Check($"skin sound sets: all {files} files of the lines with sounds exist", files > 0 && missing.Count == 0, string.Join(",", missing.Take(8)));
+        Check("every gun has a skin fire-layer class", Enum.GetValues<WeaponKind>().All(g => SkinAudio.Classes.Contains(SkinAudio.ClassOf(g))));
+    }
+
+    /// <summary>Skin Bullet FX, kill effects, finishers and banners (skins 3): every Signature / Apex line has a bullet / kill
+    /// recipe and a banner style, every Apex line a finisher, every effect id the catalogue names has a recipe, no effect colour
+    /// is ever close to an enemy highlight colour, the drills' finisher classes, and the finisher rule (VALORANT's: only the
+    /// round-winning kill of the last enemy) through a decide-only KillTracker.</summary>
+    static void KillFxChecks()
+    {
+        var fxLines = SkinLooks.Signature.Concat(SkinLooks.Apex).ToList();
+        Check("skins-3 lines: a bullet FX and a kill effect for each Signature / Apex line, a finisher for each Apex line",
+            fxLines.All(id => BulletFx.Get(id) != null && KillFxRecipes.KillIds.Contains(id)) && SkinLooks.Apex.All(KillFxRecipes.FinisherIds.Contains)
+            && KillFxRecipes.KillIds.Length == fxLines.Count && KillFxRecipes.FinisherIds.Length == SkinLooks.Apex.Length && BulletFx.Ids.Count() == fxLines.Count,
+            string.Join(",", fxLines.Where(id => BulletFx.Get(id) == null || !KillFxRecipes.KillIds.Contains(id))));
+        // the catalogue's ids (only its skins-3 lines: the parallel builders merge the new catalogue later)
+        var cat = SkinCatalog.Lines.Where(l => fxLines.Contains(l.Id)).ToList();
+        var levels = cat.SelectMany(l => l.Levels).ToList();
+        var bad = levels.Select(v => v.KillFx).OfType<string>().Where(id => !KillFxRecipes.KillIds.Contains(id))
+            .Concat(levels.Select(v => v.Finisher).OfType<string>().Where(id => !KillFxRecipes.FinisherIds.Contains(id)))
+            .Concat(levels.Select(v => v.BulletFx).OfType<string>().Where(id => BulletFx.Get(id) == null))
+            .Concat(levels.Select(v => v.Banner).OfType<string>().Where(id => !fxLines.Contains(id))).Distinct().ToList();
+        Check($"every effect id of the catalogue's {cat.Count} skins-3 lines has a recipe", bad.Count == 0, string.Join(",", bad));
+        // the dev / test states really carry every recipe
+        var foundry = SkinFxDev.State("foundry", 5);
+        var glass = SkinFxDev.State("glasswork", 1);
+        Check("skins-3 states: Apex L5 has bullet FX, kill FX, finisher and banner; Signature has all but the finisher",
+            foundry is { BulletFx: "foundry", KillFx: "foundry", Finisher: "foundry", Banner: "foundry" } && glass is { BulletFx: "glasswork", KillFx: "glasswork", Finisher: null }
+            && SkinFxDev.State("foundry", 2) is { BulletFx: null, KillFx: null } && SkinFxDev.State("foundry", 3) is { BulletFx: "foundry", Finisher: null });
+        var badColour = new List<string>();
+        foreach (var enemy in ValTrainer.UI.UiTheme.EnemyColors)
+            foreach (var id in fxLines)
+                foreach (var pal in SkinLooks.Variants(id).Select(v => v.Palette ?? SkinLooks.Palette(id)).Prepend(SkinLooks.Palette(id)))
+                {
+                    var (m, a, alt) = KillFxWorld.SafeColors(pal, enemy);
+                    if (KillFxWorld.NearEnemy(m, enemy) || KillFxWorld.NearEnemy(a, enemy) || KillFxWorld.NearEnemy(alt, enemy)) badColour.Add($"{id} vs {enemy.ToHtml(false)}");
+                }
+        Check("effect colours (main, accent, alt) are never within 27° of an enemy highlight colour", badColour.Count == 0, string.Join("; ", badColour));
+        var hive = SkinLooks.Palette("hive");
+        Check("Hive amber swaps to its Alt for a yellow enemy, stays amber for red",
+            KillFxWorld.SafePalette(hive, new Godot.Color("#EEEE33")).Main == hive.Alt && KillFxWorld.SafePalette(hive, new Godot.Color("#FF4655")).Main == hive.Main);
+        var modes = ValTrainer.Modes.ModeRegistry.All.Select(f => f()).ToList();
+        string Kind(string key) => modes.FirstOrDefault(m => m.Key == key)?.KillDrill.ToString() ?? "missing";
+        bool Allowed(string key) => modes.FirstOrDefault(m => m.Key == key)?.SkinFxAllowed ?? true;
+        string[] roundKeys = { "siteclear", "strafeduel", "retake", "postplant", "anchor", "sound", "spray_transfer", "peekduel" };
+        Check("finisher classes: round drills (map, tactical, defense, duels), Deathmatch, Peek rep, Gridshot target; finders measuring, no skin effects",
+            roundKeys.All(k => Kind(k) == "Round") && Kind("deathmatch") == "Deathmatch" && Kind("peek") == "Rep"
+            && Kind("gridshot") == "Target" && Kind("sensfinder") == "Measuring" && Kind("xhairfinder") == "Measuring"
+            && !Allowed("sensfinder") && !Allowed("xhairfinder") && Allowed("gridshot") && Allowed("deathmatch"),
+            string.Join(" ", roundKeys.Concat(new[] { "deathmatch", "peek", "gridshot", "sensfinder", "xhairfinder" }).Select(k => $"{k}={Kind(k)}")));
+        FinisherRuleChecks(foundry);
+    }
+
+    /// <summary>The finisher rule (skins3-contracts §3) through a decide-only KillTracker: last enemy + round_won within the
+    /// window → finisher; enemies alive, late or lost rounds, Deathmatch, 5 kills in one life, rep and measuring drills → none.</summary>
+    static void FinisherRuleChecks(SkinState? apex)
+    {
+        if (apex is not { } st) { Check("finisher rule: an Apex L5 state to test with", false); return; }
+        int alive = 0;
+        KillTracker T(KillDrill d) => new(null, d, () => null, () => Godot.Colors.Red, _ => alive > 0) { State = st, Dry = true };
+        KillInfo K(float time, bool roundWinning = false) =>
+            new(null!, Godot.Vector3.Zero, new Godot.Vector3(0, 1.3f, 0), HitZone.Head, 10f, WeaponKind.Vandal, time) { RoundWinning = roundWinning };
+        var won = new List<string>();
+        void Case(string name, bool expect, Func<int> run)
+        {
+            int n = run();
+            bool ok = expect ? n == 1 : n == 0;
+            Say($"  finisher rule: {name}: {n} finisher(s) {(ok ? "ok" : "WRONG")}");
+            if (!ok) won.Add(name);
+        }
+        Case("round drill, last enemy, round_won 0.05 s later", true, () =>
+        {
+            var t = T(KillDrill.Round); alive = 0;
+            t.OnKill(K(10f)); t.Tick(10.03f); t.OnRoundEnd(new RoundEndInfo(RoundEndKind.RoundWon, 10.05f)); return t.Finishers;
+        });
+        Case("round drill, last enemy, the mode flags the kill round-winning", true, () =>
+        {
+            var t = T(KillDrill.Round); alive = 0;
+            t.OnKill(K(3f, roundWinning: true)); return t.Finishers;
+        });
+        Case("round drill, two kills: the first leaves an enemy alive, the last wins", true, () =>
+        {
+            var t = T(KillDrill.Round);
+            alive = 1; t.OnKill(K(5f));
+            alive = 0; t.OnKill(K(5.6f)); t.OnRoundEnd(new RoundEndInfo(RoundEndKind.RoundWon, 5.6f)); return t.Finishers;
+        });
+        Case("round drill, enemies alive, round_won (a defuse) right after the kill", false, () =>
+        {
+            var t = T(KillDrill.Round); alive = 2;
+            t.OnKill(K(8f)); t.OnRoundEnd(new RoundEndInfo(RoundEndKind.RoundWon, 8.1f)); return t.Finishers;
+        });
+        Case("round drill, last enemy, round_won 0.5 s later (outside the window)", false, () =>
+        {
+            var t = T(KillDrill.Round); alive = 0;
+            t.OnKill(K(2f)); t.Tick(2.2f); t.Tick(2.4f); t.OnRoundEnd(new RoundEndInfo(RoundEndKind.RoundWon, 2.5f)); return t.Finishers;
+        });
+        Case("round drill, last enemy, round lost", false, () =>
+        {
+            var t = T(KillDrill.Round); alive = 0;
+            t.OnKill(K(4f)); t.OnRoundEnd(new RoundEndInfo(RoundEndKind.RoundLost, 4.1f)); return t.Finishers;
+        });
+        Case("Deathmatch: last bot standing, round_won and the match won", false, () =>
+        {
+            var t = T(KillDrill.Deathmatch); alive = 0;
+            t.OnKill(K(30f)); t.OnRoundEnd(new RoundEndInfo(RoundEndKind.RoundWon, 30.05f));
+            t.OnKill(K(31f)); t.OnRoundEnd(new RoundEndInfo(RoundEndKind.MatchWon, 31.05f)); return t.Finishers;
+        });
+        Case("Deathmatch: 5 kills in one life", false, () =>
+        {
+            var t = T(KillDrill.Deathmatch); alive = 3;
+            for (int i = 0; i < 5; i++) t.OnKill(K(1f + i)); return t.Finishers;
+        });
+        Case("rep drill: 5 kills in one life, no rounds", false, () =>
+        {
+            var t = T(KillDrill.Rep); alive = 0;
+            for (int i = 0; i < 5; i++) { t.OnKill(K(1f + i)); t.Tick(1.5f + i); } return t.Finishers;
+        });
+        Case("rep-classed drill that emits round_won: last enemy + round_won", true, () =>
+        {
+            var t = T(KillDrill.Rep); alive = 0;
+            t.OnKill(K(6f)); t.OnRoundEnd(new RoundEndInfo(RoundEndKind.RoundWon, 6.02f)); return t.Finishers;
+        });
+        Case("measuring drill (Sens Finder): last target + round_won", false, () =>
+        {
+            var t = T(KillDrill.Measuring); alive = 0;
+            t.OnKill(K(6f)); t.OnRoundEnd(new RoundEndInfo(RoundEndKind.RoundWon, 6.02f)); return t.Finishers;
+        });
+        Case("a level without the finisher (Apex L4)", false, () =>
+        {
+            var t = new KillTracker(null, KillDrill.Round, () => null, () => Godot.Colors.Red, _ => false) { State = SkinFxDev.State(st.Line.Id, 4), Dry = true };
+            t.OnKill(K(1f)); t.OnRoundEnd(new RoundEndInfo(RoundEndKind.RoundWon, 1.05f)); return t.Finishers;
+        });
+        Check("finisher rule = VALORANT's: only the round-winning kill of the last enemy (12 cases)", won.Count == 0, string.Join("; ", won));
     }
 
     static bool Near(float a, float b) => MathF.Abs(a - b) < 1e-4f;

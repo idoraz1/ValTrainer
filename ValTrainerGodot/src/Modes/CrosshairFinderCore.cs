@@ -1,4 +1,5 @@
 using Godot;
+using ValTrainer.Core;
 using ValTrainer.Maps;
 using ValTrainer.UI;
 using ValTrainer.Valorant;
@@ -84,7 +85,15 @@ public sealed class XfColor
     public readonly List<float> Rt = new();   // detection RT (s) per trial; misses = timeout
     public int Misses;
     public float Score;             // combined (higher = better)
+    /// <summary>English (logs); <see cref="DisplayName"/> for the screen.</summary>
     public string Name => CrosshairCode.ColorName(Color) + (Outline ? " + outline" : "");
+    public string DisplayName => Display(Color, Outline);
+    /// <summary>"Green + outline" in the UI language (a preset name translated, a hex code as it is).</summary>
+    public static string Display(Color c, bool outline)
+    {
+        string n = L.T(CrosshairCode.ColorName(c));
+        return outline ? L.F($"{n} + outline") : n;
+    }
     public float MeanLogRt => Rt.Count == 0 ? float.NaN : Rt.Average(r => Mathf.Log(r));
     public float MedianMs => Rt.Count == 0 ? float.NaN : Rt.OrderBy(r => r).ElementAt(Rt.Count / 2) * 1000f;
 }
@@ -92,7 +101,10 @@ public sealed class XfColor
 /// <summary>A crosshair in the shape tournament.</summary>
 public sealed class XfEntrant
 {
+    /// <summary><see cref="Name"/> / <see cref="Why"/> stay English (logs, the profile name); shown via the Display ones.</summary>
     public string Key = "", Name = "", Why = "";
+    public string DisplayName => L.T(Name);
+    public string DisplayWhy => L.T(Why);
     public CrosshairSettings Xhair = null!;
     public CrosshairCodeExtras Extras = new();
     public bool IsCurrent;
@@ -116,6 +128,7 @@ public sealed class XfBlock
 /// <summary>A head-to-head between two crosshairs: 4 blocks ABBA / BAAB, then "which felt better?".</summary>
 public sealed class XfMatch
 {
+    /// <summary>English key ("SEMI-FINAL 1"), translated where shown.</summary>
     public string Title = "";
     public readonly int[] Entrant = new int[2];
     public readonly char[] Label = new char[2];
@@ -124,6 +137,7 @@ public sealed class XfMatch
     public SfComparison? Result;
     public int Pref = -1;       // 0 / 1 / -1 none
     public int Winner = -1;
+    /// <summary>English key ("performance", logic compares it), translated where shown.</summary>
     public string DecidedBy = "";
     public bool IsCheck;        // final check against the player's own crosshair
 
@@ -203,7 +217,10 @@ public static class XfStats
 /// </summary>
 public static class XfVisibility
 {
+    /// <summary><see cref="Bg.Name"/> is an internal English key ("bind dark wall", "enemy highlight"): logic compares
+    /// it, so translate it only where it is shown.</summary>
     public readonly record struct Bg(string Name, Color Color, float Weight);
+    public const string EnemyHighlight = "enemy highlight";
 
     public static readonly Color EnemyBody = Color.Color8(58, 60, 68);
 
@@ -220,7 +237,7 @@ public static class XfVisibility
                 list.Add(new Bg($"{m.Key} {name} sun", Lighten(c, 1.18f), w * 0.5f));
             }
         }
-        list.Add(new Bg("enemy highlight", enemy, 6f));
+        list.Add(new Bg(EnemyHighlight, enemy, 6f));
         list.Add(new Bg("enemy body", EnemyBody, 2f));
         return list;
     }
@@ -319,7 +336,7 @@ public static class XfShapes
         s.CenterDotOpacity = 1;
         s.Inner = CrosshairCode.DefaultStyle().Inner; // lines off; untouched sub-settings keep the code minimal
         s.Inner.Show = false;
-        return Make("dot", "Dot", "covers the least of the target", s);
+        return Make("dot", L.N("Dot"), L.N("covers the least of the target"), s);
     }
 
     /// <summary>Small static cross 2×4, gap 2 (the most common pro crosshair, e.g. TenZ without firing error).</summary>
@@ -327,7 +344,7 @@ public static class XfShapes
     {
         var s = Base(c, o);
         s.Inner.Thickness = 2; s.Inner.Length = 4; s.Inner.Offset = 2;
-        return Make("cross", "Small cross", "the most common pro shape", s);
+        return Make("cross", L.N("Small cross"), L.N("the most common pro shape"), s);
     }
 
     /// <summary>Framed dot: a dot inside a wider gap, so a far head fits between the lines instead of under them.</summary>
@@ -336,7 +353,7 @@ public static class XfShapes
         var s = Base(c, o);
         s.CenterDot = true; s.CenterDotSize = 2; s.CenterDotOpacity = 1;
         s.Inner.Thickness = 2; s.Inner.Length = 3; s.Inner.Offset = 4;
-        return Make("framed", "Framed dot", "the head sits inside the gap", s);
+        return Make("framed", L.N("Framed dot"), L.N("the head sits inside the gap"), s);
     }
 
     /// <summary>Dynamic cross: a static inner cross plus outer lines that spread with firing error (spray feedback).</summary>
@@ -346,7 +363,7 @@ public static class XfShapes
         s.Inner.Thickness = 2; s.Inner.Length = 4; s.Inner.Offset = 2;
         s.Outer.Show = true; s.Outer.Thickness = 2; s.Outer.Length = 2; s.Outer.Offset = 7;
         s.Outer.Opacity = 0.6f; s.Outer.ShowShootingError = true; s.Outer.FiringErrorScale = 1; s.Outer.ShowMovementError = true;
-        return Make("dynamic", "Dynamic cross", "outer lines show your spread", s, fade: true);
+        return Make("dynamic", L.N("Dynamic cross"), L.N("outer lines show your spread"), s, fade: true);
     }
 
     // VALORANT can't draw a real circle or box: the community "circle" / "hollow square" crosshairs are four very short
@@ -359,7 +376,7 @@ public static class XfShapes
     {
         var s = Base(c, o);
         s.Inner.Thickness = 2; s.Inner.Length = 3; s.Inner.Offset = 0;
-        return Make("plus", "Closed plus", "one solid point that's easy to see", s);
+        return Make("plus", L.N("Closed plus"), L.N("one solid point that's easy to see"), s);
     }
 
     /// <summary>Plus + dot: a closed plus with a 4 px dot on top, a bold centre with short arms.</summary>
@@ -368,7 +385,7 @@ public static class XfShapes
         var s = Base(c, o);
         s.CenterDot = true; s.CenterDotSize = 4; s.CenterDotOpacity = 1;
         s.Inner.Thickness = 2; s.Inner.Length = 4; s.Inner.Offset = 0;
-        return Make("plusdot", "Plus + dot", "a bold centre that stays visible on busy walls", s);
+        return Make("plusdot", L.N("Plus + dot"), L.N("a bold centre that stays visible on busy walls"), s);
     }
 
     /// <summary>Circle (small ring): 1 px lines 4 px thick at offset 2, a 6 px ring around a 4 px hole (the
@@ -377,7 +394,7 @@ public static class XfShapes
     {
         var s = Base(c, o);
         s.Inner.Thickness = o ? 6 : 4; s.Inner.Length = 1; s.Inner.Offset = o ? 3 : 2;
-        return Make("circle", "Circle", "the head sits inside the ring: good for taps and far heads", s);
+        return Make("circle", L.N("Circle"), L.N("the head sits inside the ring: good for taps and far heads"), s);
     }
 
     /// <summary>Circle + dot: an 8 px ring with a 2 px dot in the middle; outlined: a 10 px ring.</summary>
@@ -386,7 +403,7 @@ public static class XfShapes
         var s = Base(c, o);
         s.CenterDot = true; s.CenterDotSize = 2; s.CenterDotOpacity = 1;
         s.Inner.Thickness = o ? 8 : 6; s.Inner.Length = 1; s.Inner.Offset = o ? 4 : 3;
-        return Make("circledot", "Circle + dot", "a dot to aim with, a ring to frame the head", s);
+        return Make("circledot", L.N("Circle + dot"), L.N("a dot to aim with, a ring to frame the head"), s);
     }
 
     /// <summary>Hollow square (box): thickness = 2·(offset + length) closes the corners (the community "medium hollow
@@ -395,7 +412,7 @@ public static class XfShapes
     {
         var s = Base(c, o);
         s.Inner.Thickness = o ? 8 : 6; s.Inner.Length = 1; s.Inner.Offset = o ? 3 : 2;
-        return Make("box", "Hollow square", "a crisp box the head fits inside", s);
+        return Make("box", L.N("Hollow square"), L.N("a crisp box the head fits inside"), s);
     }
 
     /// <summary>Every shape of the pick screen, in card order.</summary>
@@ -481,8 +498,8 @@ public static class XfShapes
     /// profile; <paramref name="tab"/> only names it.</summary>
     public static XfEntrant Current(CrosshairSettings cur, XfTab tab = XfTab.Primary) => new()
     {
-        Key = "current", IsCurrent = true, Why = "what you use now",
-        Name = tab switch { XfTab.Ads => "Your ADS crosshair", XfTab.Sniper => "Your sniper dot", _ => "Your crosshair" },
+        Key = "current", IsCurrent = true, Why = L.N("what you use now"),
+        Name = tab switch { XfTab.Ads => L.N("Your ADS crosshair"), XfTab.Sniper => L.N("Your sniper dot"), _ => L.N("Your crosshair") },
         Xhair = cur, Extras = cur.Extras,
     };
 }

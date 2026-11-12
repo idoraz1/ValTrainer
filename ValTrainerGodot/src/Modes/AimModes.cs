@@ -26,8 +26,8 @@ public sealed class GridshotMode : TrainingMode
 
     public override string Key => "gridshot";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.NoShotguns;
-    public override string Name => "Gridshot";
-    public override string Description => "3 targets on a 3x3 grid. Warm-up for speed and click timing.";
+    public override string Name => L.N("Gridshot");
+    public override string Description => L.N("3 targets on a 3x3 grid. Warm-up for speed and click timing.");
     public override bool SupportsAdaptive => true;
 
     readonly int[] active = new int[3];
@@ -66,7 +66,6 @@ public sealed class GridshotMode : TrainingMode
 
     public override float OnBullet(Vector3 o, Vector3 d, bool accurate)
     {
-        Shots++;
         int best = -1;
         float bestD = float.PositiveInfinity;
         for (int k = 0; k < 3; k++)
@@ -74,8 +73,10 @@ public sealed class GridshotMode : TrainingMode
             float t = targets[k]!.Ray(o, d);
             if (t < bestD && t < G.BulletWallDist) { bestD = t; best = k; }
         }
+        if (best < 0 && IsDoubleClick()) return float.PositiveInfinity;
+        Shots++;
         if (best < 0) { Score -= 25; Adapt?.Miss(); return float.PositiveInfinity; }
-        Hits++;
+        Hits++; MarkHit();
         LastShotZone = HitZone.Body;
         Score += 100;
         KillTimes.Add((Now - lastHit) * 1000f);
@@ -104,8 +105,8 @@ public sealed class FlickMode : TrainingMode
 
     public override string Key => "flick";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.NoShotguns;
-    public override string Name => "Head Flicks";
-    public override string Description => "One real-size head (r 0.14 m). Flick, click, repeat. Higher tiers: farther, wider, timed.";
+    public override string Name => L.N("Head Flicks");
+    public override string Description => L.N("One real-size head (r 0.14 m). Flick, click, repeat. Higher tiers: farther, wider, timed.");
     public override bool UsesHeadshots => false;
     public override bool SupportsAdaptive => true;
 
@@ -151,9 +152,11 @@ public sealed class FlickMode : TrainingMode
 
     public override float OnBullet(Vector3 o, Vector3 d, bool accurate)
     {
-        Shots++;
         float t = target.Ray(o, d);
+        if (float.IsPositiveInfinity(t) && IsDoubleClick()) return t;
+        Shots++;
         if (float.IsPositiveInfinity(t)) { Score -= 20; Adapt?.Miss(); return t; }
+        MarkHit();
         float ms = (Now - target.SpawnTime) * 1000f;
         Hits++; Kills++;
         LastShotZone = HitZone.Head;
@@ -168,9 +171,10 @@ public sealed class FlickMode : TrainingMode
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Accuracy", $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
-        yield return ("Median time to hit", KillTimes.Count > 0 ? $"{Median(KillTimes):0} ms" : "—");
-        if (Adapt != null ? expired > 0 : Difficulty.FlickLifetime(Tier) > 0) yield return ("Expired targets", expired.ToString());
+        yield return (L.N("Accuracy"), $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
+        yield return (L.N("Median time to hit"), KillTimes.Count > 0 ? L.F($"{Median(KillTimes):0} ms") : "—");
+        if (Adapt != null ? expired > 0 : Difficulty.FlickLifetime(Tier) > 0) yield return (L.N("Expired targets"), expired.ToString());
+        if (DoubleClicks > 0) yield return (L.N("Double-clicks ignored"), DoubleClicks.ToString());
         if (AdaptiveResult() is { } ar) yield return ar;
     }
 
@@ -185,8 +189,8 @@ public sealed class SpidershotMode : TrainingMode
 
     public override string Key => "spider";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.NoShotguns;
-    public override string Name => "Spidershot";
-    public override string Description => "Centre target, then a random one. Flick out and back; higher tiers are smaller and wider.";
+    public override string Name => L.N("Spidershot");
+    public override string Description => L.N("Centre target, then a random one. Flick out and back; higher tiers are smaller and wider.");
     public override bool SupportsAdaptive => true;
 
     bool center = true;
@@ -232,9 +236,11 @@ public sealed class SpidershotMode : TrainingMode
 
     public override float OnBullet(Vector3 o, Vector3 d, bool accurate)
     {
-        Shots++;
         float t = target.Ray(o, d);
+        if (float.IsPositiveInfinity(t) && IsDoubleClick()) return t;
+        Shots++;
         if (float.IsPositiveInfinity(t)) { Score -= 20; Adapt?.Miss(); return t; }
+        MarkHit();
         Hits++;
         LastShotZone = HitZone.Body;
         KillTimes.Add((Now - target.SpawnTime) * 1000f);
@@ -255,8 +261,8 @@ public sealed class TrackingMode : TrainingMode
     public override AimFocus? Focus => target != null ? new AimFocus(1, target.GlobalPosition, target.Radius) : null;
 
     public override string Key => "tracking";
-    public override string Name => "Strafe Tracking";
-    public override string Description => "Hold Mouse 1 on a target that A-D strafes like a real player (realistic stops and reversals).";
+    public override string Name => L.N("Strafe Tracking");
+    public override string Description => L.N("Hold Mouse 1 on a target that A-D strafes like a real player (realistic stops and reversals).");
     public override WeaponKind Weapon => WeaponKind.None;
 
     Target target = null!;
@@ -304,8 +310,8 @@ public sealed class TrackingMode : TrainingMode
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("On target while firing", $"{Accuracy * 100:0.0}%");
-        yield return ("Time on target", $"{onTarget:0.0} s of {Duration:0} s");
+        yield return (L.N("On target while firing"), $"{Accuracy * 100:0.0}%");
+        yield return (L.N("Time on target"), L.F($"{onTarget:0.0} s of {Duration:0} s"));
     }
 
     public override int Badge()
@@ -322,9 +328,9 @@ public sealed class TrackingMode : TrainingMode
 public sealed class ReactionMode : TrainingMode
 {
     public override string Key => "reaction";
-    public override string Name => "Reaction Test";
-    public override string Description => "Click the moment the screen flashes. 10 trials; early clicks count as fails.";
-    public override string Category => "Other";
+    public override string Name => L.N("Reaction Test");
+    public override string Description => L.N("Click the moment the screen flashes. 10 trials; early clicks count as fails.");
+    public override string Category => L.N("Other");
     public override bool Timed => false;
     public override bool Is2D => true;
     public override WeaponKind Weapon => WeaponKind.None;
@@ -368,9 +374,9 @@ public sealed class ReactionMode : TrainingMode
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Average reaction", $"{KillTimes.Average():0} ms");
-        yield return ("Best", $"{KillTimes.Min():0} ms");
-        yield return ("Early clicks", early.ToString());
+        yield return (L.N("Average reaction"), L.F($"{KillTimes.Average():0} ms"));
+        yield return (L.N("Best"), L.F($"{KillTimes.Min():0} ms"));
+        yield return (L.N("Early clicks"), early.ToString());
     }
 
     public override int Badge() => KillTimes.Count == 0 ? -1 : Difficulty.BadgeLower(KillTimes.Average(), Difficulty.ReactionMs);
@@ -379,7 +385,7 @@ public sealed class ReactionMode : TrainingMode
     {
         var bg = st switch { St.Go => G.Enemy, St.Early => new Color(0.24f, 0.12f, 0.12f), _ => new Color(0.09f, 0.12f, 0.16f) };
         c.DrawRect(new Rect2(Vector2.Zero, size), bg);
-        string big = st switch { St.Wait => "Wait for it…", St.Go => "CLICK!", St.Show => $"{lastMs:0} ms", _ => "Too early!" };
+        string big = st switch { St.Wait => L.T("Wait for it…"), St.Go => L.T("CLICK!"), St.Show => L.F($"{lastMs:0} ms"), _ => L.T("Too early!") };
         var col = st == St.Go ? Colors.Black : UI.UiTheme.Text;
         float k = size.Y / 1080f;
         void Center(string s, float y, int fs, Color cc)
@@ -388,7 +394,7 @@ public sealed class ReactionMode : TrainingMode
             c.DrawString(UI.UiTheme.Display, new Vector2(size.X / 2 - w / 2, y), s, HorizontalAlignment.Left, -1, fs, cc);
         }
         Center(big, size.Y / 2 + 20 * k, (int)(96 * k), col);
-        Center($"Trial {Math.Min(KillTimes.Count + 1, Trials)} / {Trials}", size.Y / 2 + 90 * k, (int)(30 * k), st == St.Go ? Colors.Black : UI.UiTheme.Dim);
-        if (KillTimes.Count > 0) Center($"Average {KillTimes.Average():0} ms", size.Y / 2 + 130 * k, (int)(26 * k), st == St.Go ? Colors.Black : UI.UiTheme.Dim);
+        Center(L.F($"Trial {Math.Min(KillTimes.Count + 1, Trials)} / {Trials}"), size.Y / 2 + 90 * k, (int)(30 * k), st == St.Go ? Colors.Black : UI.UiTheme.Dim);
+        if (KillTimes.Count > 0) Center(L.F($"Average {KillTimes.Average():0} ms"), size.Y / 2 + 130 * k, (int)(26 * k), st == St.Go ? Colors.Black : UI.UiTheme.Dim);
     }
 }

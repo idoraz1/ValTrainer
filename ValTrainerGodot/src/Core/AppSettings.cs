@@ -10,6 +10,7 @@ public sealed class AppSettings
     public bool UseSensOverride;
     public float SensOverride = 0.4f;
     public int Dpi = 800;              // only used to show eDPI and cm/360
+    public bool SensFinderShort = false; // Sens Finder: the short test (3 steps, lighter rounds; toggled with Q on its intro screen)
     public bool SensFinderMicro = true; // Sens Finder: include the micro-adjustment test in every round (toggled with M on its intro screen)
     public int EnemyColorOverride = -1;
     public int WindowModeOverride = -1;
@@ -30,6 +31,12 @@ public sealed class AppSettings
     public string? FinderCrosshairCode; // VALORANT profile code from the Crosshair Finder ("Use in ValTrainer") or pasted (Settings → Crosshair); VALORANT itself is never changed
     public string? FinderCrosshairTab;  // "primary" / "ads" / "sniper": only that tab of FinderCrosshairCode is used, on top of the live VALORANT import (Crosshair Finder); null = the whole code (a pasted code, results from before 1.6)
     public string? LastFinderCrosshairCode; // the latest Crosshair Finder result, kept so it can be copied any time (Settings → Crosshair)
+    /// <summary>The crosshair picked in ValTrainer when the CUSTOM slot isn't in use (<see cref="UseFinderCrosshair"/> false).
+    /// Null = VALORANT's active profile (the default; follows VALORANT after every re-import). See Valorant.CrosshairList.</summary>
+    public CrosshairChoice? CrosshairChoice;
+    /// <summary>Crosshair codes saved in ValTrainer (Settings → Crosshair: PASTE / SAVE CURRENT), in cycle order, at most
+    /// <see cref="Valorant.CrosshairList.MaxSaved"/>. Null = none.</summary>
+    public List<SavedCrosshair>? SavedCrosshairs;
     /// <summary>Settings → Keybinds: ValTrainer-only overrides on top of the VALORANT import, "Action.primary|secondary" →
     /// "key:Q" / "mouse:Xbutton1" / "none" (see Valorant.CustomBinds). Null = every bind follows VALORANT. VALORANT is never changed.</summary>
     public Dictionary<string, string>? CustomBinds;
@@ -39,6 +46,28 @@ public sealed class AppSettings
     /// <summary>Gun picker: the gun picked per drill, mode key → <see cref="WeaponKind"/> name. Wins over
     /// <see cref="PreferredWeapon"/>. Null = no picks.</summary>
     public Dictionary<string, string>? WeaponPicks;
+    /// <summary>Gun skins: the skin per gun, <see cref="WeaponKind"/> name → equip choice <c>line[/variant][@level]</c>
+    /// (<see cref="Game.Skins.SkinChoice"/>; v1.19-dev plain skin ids are line ids and stay valid; "factory" keeps that gun
+    /// factory under <see cref="GunSkinAll"/>). Wins over GunSkinAll. Null = none. A locked choice is kept and shows factory
+    /// until it unlocks. See <see cref="Game.Weapon.GunSkins"/>.</summary>
+    public Dictionary<string, string>? GunSkins;
+    /// <summary>Gun skins: the choice of every gun without its own entry in <see cref="GunSkins"/>; null = factory.</summary>
+    public string? GunSkinAll;
+    /// <summary>Skin effects (skins2-design §4.9): skin sound layers, equip flourish and escalating kill sounds; false = factory sounds only.</summary>
+    public bool SkinSounds = true;
+    public bool ClassicHitSounds;      // the factory body / headshot sounds even on a skin with its own hit sounds
+    /// <summary>Skin kill effects: 0 off · 1 gun only (the viewmodel pulse) · 2 full (gun + world). See Game.Skins.SkinKillFxMode.</summary>
+    public int SkinKillFx = 2;
+    /// <summary>Skin finishers on round-winning kills (and the lite ones).</summary>
+    public bool SkinFinishers = true;
+    /// <summary>The kill counter digits on skins that have one.</summary>
+    public bool SkinKillCounter = true;
+    /// <summary>Skin effects volume (the "Skin" bus, × master <see cref="Volume"/>), 0..1. Gameplay sounds are never affected.</summary>
+    public float SkinFxVolume = 0.8f;
+    /// <summary>UI language: "en", "fr", "es", "pt-BR", "de"; null = Auto (VALORANT's language → Windows' → English). See Core.L.</summary>
+    public string? Language;
+    /// <summary>The language Auto picked when the one-time "ValTrainer is now in …" notice was shown (null = never shown).</summary>
+    public string? LanguageNotice;
 
     // ---- updates / version (see UpdateCheck, WhatsNew, UpdatesPrompt) ----
     public bool? UpdatesConsent;       // the "Check GitHub for new versions?" answer: null = not asked yet, true = ENABLE UPDATES, false = NOT NOW (or turned off)
@@ -52,6 +81,7 @@ public sealed class AppSettings
     public string? LastSeenVersion;    // version whose "What's new" was shown (or that was installed fresh)
 
     // ---- support reminders (see SupportPrompt) ----
+    public string? SupporterCode;       // Settings → About: a supporter code unlocks every skin (Core/Supporter.cs, checked offline)
     public bool SupportReminders = true; // the "Support ValTrainer" panel may show on its own (first launch, then now and then)
     public long SupportLastShown;      // unix seconds (UTC) it last showed on its own, 0 = never
     public int SupportLaunches;        // launches since then
@@ -100,4 +130,21 @@ public sealed class AppSettings
         try { Paths.TryWriteAllText(FilePath, JsonSerializer.Serialize(this, Json)); }
         catch (Exception e) { Log.Error($"Saving settings failed: {e.Message}"); }
     }
+}
+
+/// <summary>A crosshair picked in ValTrainer's crosshair switcher (<see cref="AppSettings.CrosshairChoice"/>).</summary>
+public sealed class CrosshairChoice
+{
+    public string Kind = "valorant";   // "valorant" | "saved"
+    public string? Account;            // valorant: the account the index belongs to (another account → ignored, not deleted)
+    public int Index;                  // valorant: index in SavedCrosshairProfileData's profiles[]
+    public string? Name;               // valorant: the profile's name when picked (checks the index; found by name if it moved)
+    public string? Code;               // saved: the saved entry's code (survives reorder / rename)
+}
+
+/// <summary>A crosshair code saved in ValTrainer (<see cref="AppSettings.SavedCrosshairs"/>).</summary>
+public sealed class SavedCrosshair
+{
+    public string Name = "";
+    public string Code = "";
 }

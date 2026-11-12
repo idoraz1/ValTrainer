@@ -30,8 +30,8 @@ public abstract class DuelistKit
 
     public abstract string AgentName { get; }
     public abstract Color Color { get; }
-    /// <summary>Short how-to (sentences separated by ". "), shown at the start of the drill.</summary>
-    public abstract string HowTo { get; }
+    /// <summary>Short how-to, one translated sentence per HUD line, shown at the start of the drill.</summary>
+    public abstract string[] HowTo { get; }
     public abstract IEnumerable<KitSlot> Slots { get; }
     public virtual string? Prompt => null;
     public virtual IEnumerable<string> StatusLines() => Array.Empty<string>();

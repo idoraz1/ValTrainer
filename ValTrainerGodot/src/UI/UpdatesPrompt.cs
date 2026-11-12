@@ -80,7 +80,7 @@ public partial class UpdatesPromptPanel : Control
         var vs = GetViewportRect().Size;
         var panel = new VPanel
         {
-            Title = "UPDATES", Caption = $"ValTrainer {AppInfo.Version}", K = k, Fill = new Color(0.07f, 0.11f, 0.15f, 0.97f),
+            Title = "UPDATES", Caption = L.Raw($"ValTrainer {AppInfo.Version}"), K = k, Fill = new Color(0.07f, 0.11f, 0.15f, 0.97f),
             CustomMinimumSize = new Vector2(Mathf.Min(780 * k, vs.X - 80 * k), 0),
         };
         center.AddChild(panel);
@@ -95,28 +95,26 @@ public partial class UpdatesPromptPanel : Control
             {
                 int fs = UiTheme.Fs(40, k);
                 float y = b.Size.Y - 14 * k;
-                const string q1 = "CHECK GITHUB FOR ", q2 = "NEW VERSIONS?";
-                Gfx.Text(b, UiTheme.Display, q1, 0, y, fs, UiTheme.Text);
-                Gfx.Text(b, UiTheme.Display, q2, Gfx.TextW(UiTheme.Display, q1, fs), y, fs, UiTheme.Accent);
+                TwoTone(b, "CHECK GITHUB FOR ", "NEW VERSIONS?", L.N("CHECK GITHUB FOR NEW VERSIONS?"), y, fs, b.Size.X);
             },
         });
-        col.AddChild(Text("ValTrainer can keep itself up to date. If you turn this on, it will:", 16, UiTheme.Dim));
-        Bullet(col, "ask github.com for the latest ValTrainer release, at startup and every 6 hours");
-        Bullet(col, "download a newer version in the background and install it when you restart ValTrainer");
-        Bullet(col, "send nothing about you: no settings, stats, recordings or IDs (GitHub sees an ordinary web request)");
+        col.AddChild(Text(L.T("ValTrainer can keep itself up to date. If you turn this on, it will:"), 16, UiTheme.Dim));
+        Bullet(col, L.T("ask github.com for the latest ValTrainer release, at startup and every 6 hours"));
+        Bullet(col, L.T("download a newer version in the background and install it when you restart ValTrainer"));
+        Bullet(col, L.T("send nothing about you: no settings, stats, recordings or IDs (GitHub sees an ordinary web request)"));
         col.AddChild(new Control { CustomMinimumSize = new Vector2(0, 2 * k), MouseFilter = MouseFilterEnum.Ignore });
-        col.AddChild(Text("Until you say yes, ValTrainer makes no network requests. You can change this any time in Settings → About, where CHECK NOW also checks once.", 14, UiTheme.Faint));
+        col.AddChild(Text(L.T("Until you say yes, ValTrainer makes no network requests. You can change this any time in Settings → About, where CHECK NOW also checks once."), 14, UiTheme.Faint));
         col.AddChild(new Control { CustomMinimumSize = new Vector2(0, 6 * k), MouseFilter = MouseFilterEnum.Ignore });
 
         var foot = new HBoxContainer();
         foot.AddThemeConstantOverride("separation", (int)(14 * k));
         foot.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
         var no = new VButton { Label = "NOT NOW", Kind = VButton.Look.Ghost, K = k, FontPx = 18, CustomMinimumSize = new Vector2(150 * k, 50 * k),
-            TooltipText = "No update checks; you can turn them on later in Settings → About" };
+            TooltipText = L.T("No update checks; you can turn them on later in Settings → About") };
         no.Pressed += () => onAnswer(false);
         foot.AddChild(no);
         var yes = new VButton { Label = "ENABLE UPDATES", Kind = VButton.Look.Primary, K = k, FontPx = 20, CustomMinimumSize = new Vector2(230 * k, 50 * k),
-            TooltipText = "Check GitHub for new versions and download them in the background" };
+            TooltipText = L.T("Check GitHub for new versions and download them in the background") };
         yes.Pressed += () => onAnswer(true);
         foot.AddChild(yes);
         col.AddChild(foot);
@@ -131,12 +129,32 @@ public partial class UpdatesPromptPanel : Control
             };
     }
 
+    /// <summary>A two-colour heading: <paramref name="q1"/> + <paramref name="q2"/> (accent) in English. Other languages
+    /// translate the whole sentence <paramref name="whole"/> (word order differs), put the accent on its last word and
+    /// shrink the font until it fits <paramref name="maxW"/>. Shared with <see cref="SupportPanel"/>.</summary>
+    internal static void TwoTone(CanvasItem b, string q1, string q2, string whole, float y, int fs, float maxW)
+    {
+        var f = UiTheme.Display;
+        if (!L.IsEnglish)
+        {
+            string t = L.T(whole);
+            int sp = t.LastIndexOf(' ');
+            if (sp > 0 && !t[(sp + 1)..].Any(char.IsLetter)) sp = t.LastIndexOf(' ', sp - 1); // "VERSIONS ?" (fr)
+            (q1, q2) = sp > 0 ? (t[..(sp + 1)], t[(sp + 1)..]) : ("", t);
+            while (fs > 12 && Gfx.RawW(f, q1 + q2, fs) > maxW) fs--;
+        }
+        Gfx.TextRaw(b, f, q1, 0, y, fs, UiTheme.Text);
+        Gfx.TextRaw(b, f, q2, Gfx.RawW(f, q1, fs), y, fs, UiTheme.Accent);
+    }
+
+    /// <summary>A wrapping label (<paramref name="s"/> already translated).</summary>
     Label Text(string s, float px, Color c) => new()
     {
         Text = s, AutowrapMode = TextServer.AutowrapMode.WordSmart, SizeFlagsHorizontal = SizeFlags.ExpandFill,
         LabelSettings = UiTheme.Label(UiTheme.Body, px, k, c), MouseFilter = MouseFilterEnum.Ignore, CustomMinimumSize = new Vector2(40 * k, 0),
     };
 
+    /// <summary>A bullet line (<paramref name="s"/> already translated).</summary>
     void Bullet(VBoxContainer col, string s)
     {
         var row = new HBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill };

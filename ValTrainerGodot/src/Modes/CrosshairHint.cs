@@ -1,4 +1,5 @@
 using Godot;
+using ValTrainer.Core;
 using ValTrainer.Maps;
 using ValTrainer.UI;
 using ValTrainer.Valorant;
@@ -30,6 +31,9 @@ public static class CrosshairHint
 
     public enum Verdict { Ok, NearEnemy, NoOutlineFades, FaintOutlineFades }
 
+    /// <summary><see cref="UiTheme.EnemyColorNames"/> as the lower-case word used inside the hint's sentences.</summary>
+    static readonly string[] EnemyWords = { L.N("red"), L.N("yellow"), L.N("yellow"), L.N("purple") };
+
     /// <summary><see cref="Short"/> follows a "Crosshair" label; <see cref="Long"/> is a full sentence or two.</summary>
     public readonly record struct Result(Verdict Verdict, string Short, string Long)
     {
@@ -44,7 +48,8 @@ public static class CrosshairHint
         var v = Main.I.Valorant;
         if (!v.Found) return null;
         int e = Math.Clamp(v.EnemyHighlight, 0, UiTheme.EnemyColors.Length - 1);
-        string enemyName = UiTheme.EnemyColorNames[e].Split(" (")[0].ToLowerInvariant();
+        // the colour word inside a sentence ("the red enemy highlight"), in the UI language
+        string enemyName = L.T(EnemyWords[Math.Min(e, EnemyWords.Length - 1)]);
         var primary = Check(v.Crosshair.Primary, UiTheme.EnemyColors[e], enemyName);
         if (!primary.Ok || !v.Crosshair.AdsIsOwn) return primary;
         var ads = Check(v.Crosshair.Ads, UiTheme.EnemyColors[e], enemyName, ads: true);
@@ -57,26 +62,27 @@ public static class CrosshairHint
         var fill = new Color(s.Color, 1f);
         bool outlineOn = s.HasOutline && s.OutlineThickness > 0;
         bool faint = outlineOn && s.OutlineOpacity < FaintOutline;
-        string who = ads ? "Your VALORANT ADS crosshair" : "Your VALORANT crosshair", pre = ads ? "ADS: " : "";
+        // Short and Long are built in the UI language (map names are names: never translated)
+        string who = L.T(ads ? "Your VALORANT ADS crosshair" : "Your VALORANT crosshair"), pre = ads ? L.T("ADS: ") : "";
 
-        const string Finder = " The Crosshair Finder (Coach) can suggest one that stands out.";
+        string finder = " " + L.T("The Crosshair Finder (Coach) can suggest one that stands out.");
         if (XfVisibility.DeltaE(fill, enemy) < EnemyDeltaE)
-            return new(Verdict.NearEnemy, $"{pre}colour is close to the {enemyName} enemy highlight",
-                $"{who}'s colour is close to the {enemyName} enemy highlight, so it can melt into an enemy's outline right when you're on target." + Finder);
+            return new(Verdict.NearEnemy, L.F($"{pre}colour is close to the {enemyName} enemy highlight"),
+                L.F($"{who}'s colour is close to the {enemyName} enemy highlight, so it can melt into an enemy's outline right when you're on target.") + finder);
 
         if (outlineOn && !faint) return Ok(who);
         var (share, maps) = Fades(fill);
         if (share < FadeShare) return Ok(who);
-        string where = maps.Count switch { 0 => "some map surfaces", 1 => $"parts of {maps[0]}", _ => $"parts of {maps[0]} and {maps[1]}" };
+        string where = maps.Count switch { 0 => L.T("some map surfaces"), 1 => L.F($"parts of {maps[0]}"), _ => L.F($"parts of {maps[0]} and {maps[1]}") };
         return faint
-            ? new(Verdict.FaintOutlineFades, $"{pre}faint outline, fades on {where}",
-                $"{who}'s outline is almost see-through and its colour fades on {where}. A solid outline or another colour helps." + Finder)
-            : new(Verdict.NoOutlineFades, $"{pre}no outline, fades on {where}",
-                $"{who} has no outline and its colour fades on {where}. An outline or another colour helps." + Finder);
+            ? new(Verdict.FaintOutlineFades, L.F($"{pre}faint outline, fades on {where}"),
+                L.F($"{who}'s outline is almost see-through and its colour fades on {where}. A solid outline or another colour helps.") + finder)
+            : new(Verdict.NoOutlineFades, L.F($"{pre}no outline, fades on {where}"),
+                L.F($"{who} has no outline and its colour fades on {where}. An outline or another colour helps.") + finder);
     }
 
-    static Result Ok(string who) => new(Verdict.Ok, "stands out on common map colours",
-        $"{who} stands out on common map colours and isn't close to the enemy highlight.");
+    static Result Ok(string who) => new(Verdict.Ok, L.T("stands out on common map colours"),
+        L.F($"{who} stands out on common map colours and isn't close to the enemy highlight."));
 
     /// <summary>Weighted share of map surfaces (and the enemy body) where the fill alone fades, and the maps where it
     /// fades worst (display names, up to two).</summary>
@@ -86,7 +92,7 @@ public static class CrosshairHint
         var worst = new Dictionary<string, float>();
         foreach (var b in XfVisibility.Backgrounds(Colors.Black))
         {
-            if (b.Name == "enemy highlight") continue; // judged by the ΔE rule above
+            if (b.Name == XfVisibility.EnemyHighlight) continue; // judged by the ΔE rule above (an internal name, never translated)
             w += b.Weight;
             float c = XfVisibility.LineContrast(fill, b.Color);
             if (c >= FadeContrast) continue;

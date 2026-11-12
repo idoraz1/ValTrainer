@@ -37,8 +37,8 @@ public partial class ReplayStage : Node3D
     public bool Failed { get; protected set; }
     /// <summary>0..1 while building.</summary>
     public float LoadProgress { get; protected set; }
-    /// <summary>Plain-English step, e.g. "Building the map…", "Placing bots…".</summary>
-    public string LoadStatus { get; protected set; } = "Loading…";
+    /// <summary>Plain-English step, e.g. "Building the map…", "Placing bots…" (translated where it is drawn).</summary>
+    public string LoadStatus { get; protected set; } = L.N("Loading…");
 
     /// <summary>The replay camera (current, inside the stage's SubViewport). Null until built.</summary>
     public Camera3D? Camera { get; protected set; }
@@ -107,7 +107,7 @@ public partial class ReplayStage : Node3D
     {
         Failed = true;
         FailReason = why;
-        LoadStatus = "3D replay unavailable";
+        LoadStatus = L.N("3D replay unavailable");
         Log.Error($"[rewind3d] {why}");
     }
 
@@ -122,7 +122,7 @@ public partial class ReplayStage : Node3D
         switch (buildStep)
         {
             case 0: // nothing heavy yet: the UI paints its loading state first
-                SetStage("Building the map…", 0.03f);
+                SetStage(L.N("Building the map…"), 0.03f);
                 Prepare();
                 break;
             case 1:
@@ -133,12 +133,12 @@ public partial class ReplayStage : Node3D
                 env = map != null ? Environments.BuildMap(map, q) : Environments.BuildRange(extras, q);
                 solid = env.Solid;
                 Log.Info($"[rewind3d] built {(map?.Key ?? "range")} at quality {q} in {sw.Elapsed.TotalMilliseconds:0} ms");
-                SetStage("Building the map…", 0.4f);
+                SetStage(L.N("Building the map…"), 0.4f);
                 break;
             }
             case 2:
                 AddChild(env!.Root); // enters this SubViewport's own World3D (sky, sun, viewport AA settings)
-                SetStage(puppets!.HasBots ? "Placing bots…" : "Placing targets…", 0.5f);
+                SetStage(puppets!.HasBots ? L.N("Placing bots…") : L.N("Placing targets…"), 0.5f);
                 AddChild(puppets);
                 break;
             case 3:
@@ -148,12 +148,12 @@ public partial class ReplayStage : Node3D
                 bool more = true;
                 while (more && sw.Elapsed.TotalMilliseconds < 12) more = puppets!.PrewarmStep();
                 int total = Math.Max(1, puppets!.PrewarmTotal);
-                SetStage(puppets.HasBots ? "Placing bots…" : "Placing targets…", 0.5f + 0.35f * puppets.Prewarmed / total);
+                SetStage(puppets.HasBots ? L.N("Placing bots…") : L.N("Placing targets…"), 0.5f + 0.35f * puppets.Prewarmed / total);
                 if (more) return; // stay on this step
                 break;
             }
             case 4:
-                SetStage("Preparing effects…", 0.88f);
+                SetStage(L.N("Preparing effects…"), 0.88f);
                 fx = new ReplayFx();
                 AddChild(fx);
                 break;
@@ -163,17 +163,17 @@ public partial class ReplayStage : Node3D
                 cam = new Camera3D { Name = "ReplayCamera", Fov = PlayerView.HipHFov, KeepAspect = Camera3D.KeepAspectEnum.Width, Near = 0.03f, Far = 400f, Current = true };
                 camRig.AddChild(cam); // public Camera is set once Built (the UI projects overlays through it)
                 SetWeapon(WeaponAt(pendingT));
-                SetStage("Preparing effects…", 0.94f);
+                SetStage(L.N("Preparing effects…"), 0.94f);
                 break;
             case 6:
                 // Pose everything once (this frame renders it, compiling any pipeline the session hadn't used yet).
                 SetTimeCore(pendingT, scrubbing: false);
-                SetStage("Preparing effects…", 0.98f);
+                SetStage(L.N("Preparing effects…"), 0.98f);
                 break;
             default:
                 Camera = cam;
                 Built = true;
-                SetStage("Ready", 1f);
+                SetStage(L.N("Ready"), 1f);
                 return;
         }
         buildStep++;

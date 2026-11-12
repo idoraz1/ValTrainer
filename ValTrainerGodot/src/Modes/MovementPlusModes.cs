@@ -16,18 +16,18 @@ public sealed class JumpPeekMode : OpAngleMode
 {
     public override string Key => "jumppeek";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
-    public override string Name => "Jump Peek";
-    public override string Description => "An Operator holds a long angle. Jump-peek to spot him and get back before he shoots; if he misses, swing and kill him during his bolt.";
+    public override string Name => L.N("Jump Peek");
+    public override string Description => L.N("An Operator holds a long angle. Jump-peek to spot him and get back before he shoots; if he misses, swing and kill him during his bolt.");
 
     protected override (string Name, Vector3 Feet)[] Spots { get; } =
     {
-        ("Long", new Vector3(-4f, 0, -36f)),
-        ("Far long", new Vector3(-8.5f, 0, -47f)),
-        ("Heaven", new Vector3(-8.5f, 2.4f, -43f)),
-        ("Crate", new Vector3(3.8f, 0, -34.8f)),
-        ("Right side", new Vector3(8f, 0, -41f)),
-        ("Mid", new Vector3(-1.5f, 0, -27f)),
-        ("Tall crate", new Vector3(8.2f, 0, -27.5f)),
+        (L.N("Long"), new Vector3(-4f, 0, -36f)),
+        (L.N("Far long"), new Vector3(-8.5f, 0, -47f)),
+        (L.N("Heaven"), new Vector3(-8.5f, 2.4f, -43f)),
+        (L.N("Crate"), new Vector3(3.8f, 0, -34.8f)),
+        (L.N("Right side"), new Vector3(8f, 0, -41f)),
+        (L.N("Mid"), new Vector3(-1.5f, 0, -27f)),
+        (L.N("Tall crate"), new Vector3(8.2f, 0, -27.5f)),
     };
 
     int spots, jumpSpots, opShots, dodged, airDodged, plays, safeRounds, finishedRounds, heldFire;
@@ -55,7 +55,7 @@ public sealed class JumpPeekMode : OpAngleMode
         Score += 100;
         if (airborne) { jumpSpots++; Score += 50; }
         Event("spot", Bot != null ? Bot.Head.DistanceTo(G.View.Eye) : 0, airborne ? 1 : 0);
-        G.Banner(airborne ? $"JUMP-SPOT · OP {SpotName.ToUpperInvariant()}" : $"SPOTTED · OP {SpotName.ToUpperInvariant()}",
+        G.Banner(airborne ? L.F($"JUMP-SPOT · OP {SpotLabel}") : L.F($"SPOTTED · OP {SpotLabel}"),
             airborne ? UiTheme.Good : UiTheme.Warn);
     }
 
@@ -66,19 +66,19 @@ public sealed class JumpPeekMode : OpAngleMode
         if (s.Hit)
         {
             Score -= (int)Mathf.Min(s.Damage, 150f);
-            if (s.Zone == HitZone.Legs) G.Banner("LEG SHOT — 120 damage. Shorter peeks!", UiTheme.Warn);
+            if (s.Zone == HitZone.Legs) G.Banner(L.N("LEG SHOT — 120 damage. Shorter peeks!"), UiTheme.Warn);
             return;
         }
         dodged++;
         if (s.TargetAirborne) airDodged++;
         Score += 50;
-        G.Banner("OP MISSED — SWING NOW", UiTheme.Good);
+        G.Banner(L.N("OP MISSED — SWING NOW"), UiTheme.Good);
     }
 
     protected override void OnOpKilled(bool inPunishWindow)
     {
-        if (inPunishWindow) { plays++; Score += 200; G.Banner("PLAY MADE — punished the missed shot", UiTheme.Good); }
-        else { Score += 100; G.Banner("OP DOWN — risky swing, but it worked", UiTheme.Warn); }
+        if (inPunishWindow) { plays++; Score += 200; G.Banner(L.N("PLAY MADE — punished the missed shot"), UiTheme.Good); }
+        else { Score += 100; G.Banner(L.N("OP DOWN — risky swing, but it worked"), UiTheme.Warn); }
         FinishRound();
     }
 
@@ -100,13 +100,13 @@ public sealed class JumpPeekMode : OpAngleMode
     {
         heldFire++;
         Score += 25;
-        if (Between < 0) G.Banner("CLEAN PEEK — he couldn't get the shot off", UiTheme.Good);
+        if (Between < 0) G.Banner(L.N("CLEAN PEEK — he couldn't get the shot off"), UiTheme.Good);
     }
 
     protected override void OnRoundTimeout()
     {
         FinishRound();
-        if (!roundSpotted) G.Banner("NO INFO — the Op repositioned", UiTheme.Warn);
+        if (!roundSpotted) G.Banner(L.N("NO INFO — the Op repositioned"), UiTheme.Warn);
     }
 
     public override void Update(float dt)
@@ -116,16 +116,16 @@ public sealed class JumpPeekMode : OpAngleMode
         if (Between < 0 && roundSpotted && Now - spotAt > 4.5f && !PunishWindow && Op is { SeesPlayer: false })
         {
             FinishRound();
-            G.Banner($"INFO: OP {SpotName.ToUpperInvariant()} — he repositions", UiTheme.Text);
+            G.Banner(L.F($"INFO: OP {SpotLabel} — he repositions"), UiTheme.Text);
             EndRound(0.8f);
         }
     }
 
     public override IEnumerable<string> HudLines()
     {
-        yield return $"Spots {spots} ({jumpSpots} mid-jump) · Op misses {dodged} · Deaths {Deaths}";
-        if (lastExposure >= 0) yield return $"Last peek: seen for {lastExposure * 1000:0} ms{(lastExposureAir ? " (jumping)" : " (on the ground)")}";
-        if (G.Mover is { Grounded: false }) yield return "AIRBORNE — inaccurate";
+        yield return L.F($"Spots {spots} ({jumpSpots} mid-jump) · Op misses {dodged} · Deaths {Deaths}");
+        if (lastExposure >= 0) yield return lastExposureAir ? L.F($"Last peek: seen for {lastExposure * 1000:0} ms (jumping)") : L.F($"Last peek: seen for {lastExposure * 1000:0} ms (on the ground)");
+        if (G.Mover is { Grounded: false }) yield return L.N("AIRBORNE — inaccurate");
     }
 
     public override string? Prompt
@@ -134,22 +134,22 @@ public sealed class JumpPeekMode : OpAngleMode
         {
             if (Between >= 0 || Bot == null) return null;
             var k = Main.I.Valorant;
-            if (PunishWindow) return "He missed — swing out and kill him before he re-chambers";
-            if (roundSpotted) return "Spotted. Re-peek to bait a shot, or wait — he repositions";
-            return $"Jump-peek: {k.KeyRight} + {k.KeyJump} out, {k.KeyLeft} back before you land";
+            if (PunishWindow) return L.N("He missed — swing out and kill him before he re-chambers");
+            if (roundSpotted) return L.N("Spotted. Re-peek to bait a shot, or wait — he repositions");
+            return L.F($"Jump-peek: {k.KeyRight} + {k.KeyJump} out, {k.KeyLeft} back before you land");
         }
     }
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Rounds with the Op spotted and you alive", $"{safeRounds} of {finishedRounds}");
-        yield return ("Spots (mid-jump)", $"{spots} ({jumpSpots})");
-        yield return ("Op shots that missed you", $"{dodged} of {opShots}{(airDodged > 0 ? $" ({airDodged} while airborne)" : "")}");
-        yield return ("Peeks he reacted to but couldn't shoot", heldFire.ToString());
-        yield return ("Plays: kills after a miss", plays.ToString());
-        if (Kills > plays) yield return ("Other kills", (Kills - plays).ToString());
-        yield return ("Damage taken / deaths", $"{DamageTaken:0} / {Deaths}");
-        if (Exposures.Count > 0) yield return ("Avg time seen per peek", $"{Exposures.Average() * 1000:0} ms (shorter = safer)");
+        yield return (L.N("Rounds with the Op spotted and you alive"), L.F($"{safeRounds} of {finishedRounds}"));
+        yield return (L.N("Spots (mid-jump)"), $"{spots} ({jumpSpots})");
+        yield return (L.N("Op shots that missed you"), airDodged > 0 ? L.F($"{dodged} of {opShots} ({airDodged} while airborne)") : L.F($"{dodged} of {opShots}"));
+        yield return (L.N("Peeks he reacted to but couldn't shoot"), heldFire.ToString());
+        yield return (L.N("Plays: kills after a miss"), plays.ToString());
+        if (Kills > plays) yield return (L.N("Other kills"), (Kills - plays).ToString());
+        yield return (L.N("Damage taken / deaths"), $"{DamageTaken:0} / {Deaths}");
+        if (Exposures.Count > 0) yield return (L.N("Avg time seen per peek"), L.F($"{Exposures.Average() * 1000:0} ms (shorter = safer)"));
         foreach (var l in MovementLines()) yield return l;
     }
 
@@ -201,18 +201,18 @@ public sealed class JigglePeekMode : OpAngleMode
 {
     public override string Key => "jigglepeek";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
-    public override string Name => "Jiggle Peek";
-    public override string Description => "Shoulder-peek an Operator to bait his shot without showing your head, then wide-swing during his bolt and kill him.";
+    public override string Name => L.N("Jiggle Peek");
+    public override string Description => L.N("Shoulder-peek an Operator to bait his shot without showing your head, then wide-swing during his bolt and kill him.");
     protected override float RoundTime => 16f;
 
     protected override (string Name, Vector3 Feet)[] Spots { get; } =
     {
-        ("Close", new Vector3(-3.5f, 0, -12.5f)),
-        ("Deep", new Vector3(-8.5f, 0, -22.5f)),
-        ("Right", new Vector3(6.2f, 0, -16f)),
-        ("Mid", new Vector3(-1f, 0, -19.5f)),
-        ("Left", new Vector3(-10.6f, 0, -15.5f)),
-        ("Crate", new Vector3(-5.4f, 0, -23.2f)),
+        (L.C("spot", "Close"), new Vector3(-3.5f, 0, -12.5f)), // translated now (each run builds the drill): "Close" alone is a button tooltip
+        (L.N("Deep"), new Vector3(-8.5f, 0, -22.5f)),
+        (L.N("Right"), new Vector3(6.2f, 0, -16f)),
+        (L.N("Mid"), new Vector3(-1f, 0, -19.5f)),
+        (L.N("Left"), new Vector3(-10.6f, 0, -15.5f)),
+        (L.N("Crate"), new Vector3(-5.4f, 0, -23.2f)),
     };
 
     int baits, punishes, riskyWins, hitsTaken, cleanPeeks, peeks, finishedRounds, heldFire, ignored;
@@ -236,14 +236,14 @@ public sealed class JigglePeekMode : OpAngleMode
         baits++;
         baitedThisRound = true;
         Score += 50;
-        G.Banner("BAITED — WIDE SWING NOW", UiTheme.Good);
+        G.Banner(L.N("BAITED — WIDE SWING NOW"), UiTheme.Good);
     }
 
     protected override void OnOpKilled(bool inPunishWindow)
     {
         finishedRounds++;
-        if (inPunishWindow) { punishes++; Score += 200; G.Banner("PUNISHED", UiTheme.Good); }
-        else { riskyWins++; Score += 75; G.Banner("KILL — but he wasn't baited (risky)", UiTheme.Warn); }
+        if (inPunishWindow) { punishes++; Score += 200; G.Banner(L.N("PUNISHED"), UiTheme.Good); }
+        else { riskyWins++; Score += 75; G.Banner(L.N("KILL — but he wasn't baited (risky)"), UiTheme.Warn); }
     }
 
     public override void OnPlayerDied()
@@ -253,7 +253,7 @@ public sealed class JigglePeekMode : OpAngleMode
         base.OnPlayerDied();
     }
 
-    protected override void OnRoundTimeout() { finishedRounds++; G.Banner("TIME — he repositions", UiTheme.Warn); }
+    protected override void OnRoundTimeout() { finishedRounds++; G.Banner(L.N("TIME — he repositions"), UiTheme.Warn); }
 
     public override void Update(float dt)
     {
@@ -269,7 +269,7 @@ public sealed class JigglePeekMode : OpAngleMode
         if (PunishWindow) { headSeen = false; return; } // the swing after a bait isn't a jiggle
         peeks++;
         if (!headSeen) cleanPeeks++;
-        lastPeekNote = headSeen ? "head shown" : "shoulder only";
+        lastPeekNote = headSeen ? L.N("head shown") : L.N("shoulder only");
         headSeen = false;
         if (!ReactedThisPeek && Op is { State: OpBotBrain.St.Holding })
         {
@@ -278,8 +278,8 @@ public sealed class JigglePeekMode : OpAngleMode
             if (Now > noteCooldown)
             {
                 noteCooldown = Now + 2.5f;
-                G.Banner(Op.ShoulderSight ? "NO REACTION — too quick for him: show the shoulder a bit longer"
-                                          : "NO REACTION — this Op ignores a lone shoulder: show a bit more of you", UiTheme.Warn);
+                G.Banner(Op.ShoulderSight ? L.N("NO REACTION — too quick for him: show the shoulder a bit longer")
+                                          : L.N("NO REACTION — this Op ignores a lone shoulder: show a bit more of you"), UiTheme.Warn);
             }
         }
     }
@@ -289,14 +289,14 @@ public sealed class JigglePeekMode : OpAngleMode
         if (PunishWindow) return;
         heldFire++;
         autoHold += 0.03f;
-        if (Now > noteCooldown) { noteCooldown = Now + 2.5f; G.Banner("HE HELD FIRE — you hid too early: stay out a touch longer", UiTheme.Warn); }
+        if (Now > noteCooldown) { noteCooldown = Now + 2.5f; G.Banner(L.N("HE HELD FIRE — you hid too early: stay out a touch longer"), UiTheme.Warn); }
     }
 
     public override IEnumerable<string> HudLines()
     {
-        yield return $"Baits {baits} · Punishes {punishes} · Deaths {Deaths}";
-        if (lastExposure >= 0) yield return $"Last peek: seen for {lastExposure * 1000:0} ms · {lastPeekNote}";
-        if (Op != null && Op.State == OpBotBrain.St.Cycling) yield return $"Op re-chambering: {Mathf.Max(0, Op.ReadyAt - Now):0.0} s";
+        yield return L.F($"Baits {baits} · Punishes {punishes} · Deaths {Deaths}");
+        if (lastExposure >= 0) yield return L.F($"Last peek: seen for {lastExposure * 1000:0} ms · {L.T(lastPeekNote)}");
+        if (Op != null && Op.State == OpBotBrain.St.Cycling) yield return L.F($"Op re-chambering: {Mathf.Max(0, Op.ReadyAt - Now):0.0} s");
     }
 
     public override string? Prompt
@@ -305,22 +305,22 @@ public sealed class JigglePeekMode : OpAngleMode
         {
             if (Between >= 0 || Bot == null) return null;
             var k = Main.I.Valorant;
-            if (PunishWindow) return $"Baited! Wide-swing ({k.KeyRight}), stop, kill him before he re-chambers";
+            if (PunishWindow) return L.F($"Baited! Wide-swing ({k.KeyRight}), stop, kill him before he re-chambers");
             if (Op is { State: OpBotBrain.St.Engaging }) return null;
-            return $"Tap {k.KeyRight} to show a shoulder, {k.KeyLeft} back — bait the shot without showing your head";
+            return L.F($"Tap {k.KeyRight} to show a shoulder, {k.KeyLeft} back — bait the shot without showing your head");
         }
     }
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Punishes (kills after a bait)", $"{punishes} of {finishedRounds} rounds");
-        yield return ("Baits (Op shots that missed)", baits.ToString());
-        yield return ("Kills without a bait (risky)", riskyWins.ToString());
-        yield return ("Times the Op hit you", hitsTaken.ToString());
-        yield return ("Clean shoulder peeks", $"{cleanPeeks} of {peeks}");
-        yield return ("Peeks he ignored / reacted to but held fire", $"{ignored} / {heldFire}");
-        if (Exposures.Count > 0) yield return ("Avg time seen per peek", $"{Exposures.Average() * 1000:0} ms");
-        yield return ("Damage taken / deaths", $"{DamageTaken:0} / {Deaths}");
+        yield return (L.N("Punishes (kills after a bait)"), L.P(finishedRounds, $"{punishes} of {finishedRounds} round", $"{punishes} of {finishedRounds} rounds"));
+        yield return (L.N("Baits (Op shots that missed)"), baits.ToString());
+        yield return (L.N("Kills without a bait (risky)"), riskyWins.ToString());
+        yield return (L.N("Times the Op hit you"), hitsTaken.ToString());
+        yield return (L.N("Clean shoulder peeks"), L.F($"{cleanPeeks} of {peeks}"));
+        yield return (L.N("Peeks he ignored / reacted to but held fire"), $"{ignored} / {heldFire}");
+        if (Exposures.Count > 0) yield return (L.N("Avg time seen per peek"), L.F($"{Exposures.Average() * 1000:0} ms"));
+        yield return (L.N("Damage taken / deaths"), $"{DamageTaken:0} / {Deaths}");
         foreach (var l in MovementLines()) yield return l;
     }
 

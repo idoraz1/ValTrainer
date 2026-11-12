@@ -101,28 +101,27 @@ public partial class SupportPanel : Control
             {
                 int fs = UiTheme.Fs(40, k);
                 float y = b.Size.Y - 14 * k;
-                const string q1 = "ENJOYING ", q2 = "VALTRAINER?";
-                Gfx.Text(b, UiTheme.Display, q1, 0, y, fs, UiTheme.Text);
-                Gfx.Text(b, UiTheme.Display, q2, Gfx.TextW(UiTheme.Display, q1, fs), y, fs, UiTheme.Accent);
+                UpdatesPromptPanel.TwoTone(b, "ENJOYING ", "VALTRAINER?", L.N("ENJOYING VALTRAINER?"), y, fs, b.Size.X);
             },
         });
-        col.AddChild(Text("ValTrainer is free and open source, with no ads, no account and nothing tracked. It's made by one developer in their spare time.", 16, UiTheme.Text));
-        col.AddChild(Text("If it helps your game, you can buy me a coffee. It keeps new drills, agents and fixes coming. Everything stays free either way.", 16, UiTheme.Dim));
+        col.AddChild(Text(L.T("ValTrainer is free and open source, with no ads, no account and nothing tracked. It's made by one developer in their spare time."), 16, UiTheme.Text));
+        col.AddChild(Text(L.T("If it helps your game, you can buy me a coffee. It keeps new drills, agents and fixes coming. Everything stays free either way."), 16, UiTheme.Dim));
+        col.AddChild(Text(L.T("As a thank-you, supporters unlock every skin at once, new ones too: Settings → About → Get my code, with the email you donated with. Skins can still be earned by playing."), 15, UiTheme.Accent));
         col.AddChild(new Control { CustomMinimumSize = new Vector2(0, 4 * k), MouseFilter = MouseFilterEnum.Ignore });
 
         var jars = new HBoxContainer();
         jars.AddThemeConstantOverride("separation", (int)(14 * k));
         var bmc = new VButton { Label = "BUY ME A COFFEE", Kind = VButton.Look.Primary, K = k, FontPx = 20,
-            CustomMinimumSize = new Vector2(0, 56 * k), SizeFlagsHorizontal = SizeFlags.ExpandFill, TooltipText = "Opens buymeacoffee.com/idoraz1 in your browser" };
+            CustomMinimumSize = new Vector2(0, 56 * k), SizeFlagsHorizontal = SizeFlags.ExpandFill, TooltipText = L.F($"Opens {AppInfo.BuyMeACoffeeUrl.Replace("https://", "")} in your browser") };
         bmc.Pressed += () => Open(AppInfo.BuyMeACoffeeUrl);
         jars.AddChild(bmc);
         var kofi = new VButton { Label = "KO-FI", Kind = VButton.Look.Secondary, K = k, FontPx = 20,
-            CustomMinimumSize = new Vector2(0, 56 * k), SizeFlagsHorizontal = SizeFlags.ExpandFill, TooltipText = "Opens ko-fi.com/idoraz1 in your browser" };
+            CustomMinimumSize = new Vector2(0, 56 * k), SizeFlagsHorizontal = SizeFlags.ExpandFill, TooltipText = L.F($"Opens {AppInfo.KofiUrl.Replace("https://", "")} in your browser") };
         kofi.Pressed += () => Open(AppInfo.KofiUrl);
         jars.AddChild(kofi);
         col.AddChild(jars);
 
-        col.AddChild(Text("Payments happen on Buy Me a Coffee or Ko-fi in your browser. ValTrainer never sees them.", 14, UiTheme.Faint));
+        col.AddChild(Text(L.T("Payments happen on Buy Me a Coffee or Ko-fi in your browser. ValTrainer never sees them."), 14, UiTheme.Faint));
         col.AddChild(new Control { CustomMinimumSize = new Vector2(0, 4 * k), MouseFilter = MouseFilterEnum.Ignore });
 
         var foot = new HBoxContainer();
@@ -130,7 +129,7 @@ public partial class SupportPanel : Control
         if (automatic)
         {
             var never = new VButton { Label = "DON'T SHOW AGAIN", Kind = VButton.Look.Ghost, K = k, FontPx = 16, CustomMinimumSize = new Vector2(200 * k, 46 * k),
-                TooltipText = "No more reminders. The SUPPORT button on the menu stays; Settings → About turns reminders back on" };
+                TooltipText = L.T("No more reminders. The SUPPORT button on the menu stays; Settings → About turns reminders back on") };
             never.Pressed += () => { SupportPrompt.TurnOff(); Close(); };
             foot.AddChild(never);
         }
@@ -170,6 +169,7 @@ public partial class SupportPanel : Control
         onClose();
     }
 
+    /// <summary>A wrapping label (<paramref name="s"/> already translated).</summary>
     Label Text(string s, float px, Color c) => new()
     {
         Text = s, AutowrapMode = TextServer.AutowrapMode.WordSmart, SizeFlagsHorizontal = SizeFlags.ExpandFill,

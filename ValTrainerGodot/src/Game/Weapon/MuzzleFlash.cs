@@ -84,16 +84,32 @@ public partial class MuzzleFlash : Node3D
 
     float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
 
+    float skinScale = 1f;
+    /// <summary>The star's size at the last shot (the skin overlay matches it).</summary>
+    internal float StarSize => size;
+
+    /// <summary>Skins 3 Bullet FX (src/Game/Skins/BulletFx.cs): the worn line's flash colours, light colour and size
+    /// (its own overlay is drawn on top by <c>SkinMuzzle</c>). Factory: never called.</summary>
+    internal void SetSkinTint(Color core, Color edge, float scale)
+    {
+        starMat.SetShaderParameter("core_color", core);
+        starMat.SetShaderParameter("edge_color", edge);
+        sideMat.SetShaderParameter("core_color", core);
+        sideMat.SetShaderParameter("edge_color", edge);
+        light.LightColor = edge.Lerp(core, 0.4f);
+        skinScale = scale;
+    }
+
     public void Fire()
     {
         t = 0f;
-        size = 0.16f * baseScale * R(0.8f, 1.2f);
+        size = 0.16f * baseScale * skinScale * R(0.8f, 1.2f);
         star.Scale = Vector3.One * size;
         starMat.SetShaderParameter("rot", R(0, Mathf.Tau));
         starMat.SetShaderParameter("seed", R(0, 100));
         sideMat.SetShaderParameter("seed", R(0, 100));
         float w = 0.1f * baseScale * R(0.8f, 1.15f);
-        side.Scale = new Vector3(w, w, 0.28f * baseScale * R(0.7f, 1.25f) * (suppressed ? 0.35f : 1f));
+        side.Scale = new Vector3(w, w, 0.28f * baseScale * skinScale * R(0.7f, 1.25f) * (suppressed ? 0.35f : 1f));
         side.Rotation = new Vector3(0, 0, R(0, Mathf.Pi));
         light.Visible = true;
     }

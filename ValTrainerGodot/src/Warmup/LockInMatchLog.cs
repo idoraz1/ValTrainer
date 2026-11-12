@@ -25,8 +25,8 @@ public static class LockInMatchLog
     public const int MinGroup = 3;
     public const double AskWithinHours = 6, MinGapMinutes = 20;
 
-    public const string Question = "How did your first match after Lock-In go?";
-    public const string HandoffLine = "Next time you open ValTrainer it asks how your match went (optional).";
+    public static readonly string Question = L.N("How did your first match after Lock-In go?");
+    public static readonly string HandoffLine = L.N("Next time you open ValTrainer it asks how your match went (optional).");
 
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
     /// <summary>When this run of the app started: a Lock-In that ended before it means the app was closed in between.</summary>
@@ -114,14 +114,14 @@ public static class LockInMatchLog
 
     static (string Section, Group[] Rows)[] Sections(List<WarmupRecord> rated) => new[]
     {
-        ("ENERGY", new[]
+        (L.N("ENERGY"), new[]
         {
-            Stat("Low (1–3)", rated.Where(r => r.Energy <= 3)),
-            Stat("Mid (4–6)", rated.Where(r => r.Energy is >= 4 and <= 6)),
-            Stat("High (7–9)", rated.Where(r => r.Energy >= 7)),
+            Stat(L.N("Low (1–3)"), rated.Where(r => r.Energy <= 3)),
+            Stat(L.N("Mid (4–6)"), rated.Where(r => r.Energy is >= 4 and <= 6)),
+            Stat(L.N("High (7–9)"), rated.Where(r => r.Energy >= 7)),
         }),
-        ("BREATHING", new[] { Stat("With", rated.Where(r => r.Breathed)), Stat("Without", rated.Where(r => !r.Breathed)) }),
-        ("ROUTINE", new[] { Stat("Full routine", rated.Where(FullRoutine)), Stat("Ended early", rated.Where(r => !FullRoutine(r))) }),
+        (L.N("BREATHING"), new[] { Stat(L.N("With"), rated.Where(r => r.Breathed)), Stat(L.N("Without"), rated.Where(r => !r.Breathed)) }),
+        (L.N("ROUTINE"), new[] { Stat(L.N("Full routine"), rated.Where(FullRoutine)), Stat(L.N("Ended early"), rated.Where(r => !FullRoutine(r))) }),
     };
 
     /// <summary>Height <see cref="DrawReadout"/> needs for these records (progress: short; the readout: taller).</summary>
@@ -139,24 +139,26 @@ public static class LockInMatchLog
         int hs = UiTheme.Fs(13, k), ls = UiTheme.Fs(11, k);
         float hy = Gfx.Mid(y + 10 * k, hs);
         Gfx.Text(c, UiTheme.HudWide, "WHAT WORKS FOR YOU", x0, hy, hs, UiTheme.Text);
+        // the right-hand count fits beside the heading (translations run longer)
+        float headW = Gfx.TextW(UiTheme.HudWide, "WHAT WORKS FOR YOU", hs) + 12 * k;
 
         if (rated.Count < ReadoutMin)
         {
-            Gfx.TextR(c, UiTheme.HudWide, $"{rated.Count} OF {ReadoutMin} MATCHES RATED", x0 + w, hy, ls, UiTheme.Dim);
+            Gfx.TextFit(c, UiTheme.HudWide, L.F($"{rated.Count} OF {ReadoutMin} MATCHES RATED"), x0 + headW, hy, ls, UiTheme.Dim, w - headW, HorizontalAlignment.Right);
             float cg = 3 * k, cw = (w - cg * (ReadoutMin - 1)) / ReadoutMin;
             for (int i = 0; i < ReadoutMin; i++)
                 c.DrawRect(new Rect2(x0 + i * (cw + cg), y + 26 * k, cw, 7 * k), i < rated.Count ? UiTheme.Teal : new Color(UiTheme.Text, 0.08f));
             string line = rated.Count == 0
-                ? "After a Lock-In, the menu asks how your first match went. One tap, optional."
-                : "Rate your first match after a Lock-In when the menu asks.";
+                ? L.T("After a Lock-In, the menu asks how your first match went. One tap, optional.")
+                : L.T("Rate your first match after a Lock-In when the menu asks.");
             Gfx.TextFit(c, UiTheme.Body, line, x0, y + 60 * k, UiTheme.Fs(14, k), UiTheme.Dim, w);
-            Gfx.TextFit(c, UiTheme.Body, $"At {ReadoutMin}, you see what goes with your better matches.",
+            Gfx.TextFit(c, UiTheme.Body, L.F($"At {ReadoutMin}, you see what goes with your better matches."),
                 x0, y + 82 * k, UiTheme.Fs(13, k), UiTheme.Faint, w);
             return;
         }
 
         int wins = rated.Count(q => q.Match == "W"), losses = rated.Count(q => q.Match == "L"), draws = rated.Count(q => q.Match == "D");
-        Gfx.TextR(c, UiTheme.HudWide, $"{rated.Count} RATED · {wins}W {losses}L {draws}D", x0 + w, hy, ls, UiTheme.Dim);
+        Gfx.TextFit(c, UiTheme.HudWide, L.F($"{rated.Count} RATED · {wins}W {losses}L {draws}D"), x0 + headW, hy, ls, UiTheme.Dim, w - headW, HorizontalAlignment.Right);
 
         // columns sized from the text (the panel can be narrow): section · group · matches · won · felt locked in
         var sections = Sections(rated);
@@ -294,9 +296,9 @@ public partial class MatchLogPrompt : Control
 
     public override void _Ready()
     {
-        foreach (var (key, tip) in new[] { ("W", "Won"), ("L", "Lost"), ("D", "Draw") })
+        foreach (var (key, tip) in new[] { ("W", L.N("Won")), ("L", L.N("Lost")), ("D", L.N("Draw")) })
         {
-            var b = new VButton { Kind = VButton.Look.Select, K = k, Label = key, FontPx = 20, Selected = rec.Match == key, TooltipText = tip };
+            var b = new VButton { Kind = VButton.Look.Select, K = k, Label = key, FontPx = 20, Selected = rec.Match == key, TooltipText = L.T(tip) };
             b.Pressed += () => Pick(key, 0);
             AddChild(b);
             results.Add((b, key));
@@ -307,13 +309,13 @@ public partial class MatchLogPrompt : Control
             var b = new VButton
             {
                 Kind = VButton.Look.Select, K = k, Label = i.ToString(CultureInfo.InvariantCulture), FontPx = 19, Selected = rec.Felt == i,
-                TooltipText = i == 1 ? "1: not at all" : i == 5 ? "5: completely" : $"{i} of 5",
+                TooltipText = i == 1 ? L.T("1: not at all") : i == 5 ? L.T("5: completely") : L.F($"{i} of 5"),
             };
             b.Pressed += () => Pick(null, v);
             AddChild(b);
             felt.Add(b);
         }
-        skip = new VButton { Kind = VButton.Look.Ghost, K = k, Label = "SKIP", FontPx = 14, TooltipText = "Don't ask about this Lock-In again" };
+        skip = new VButton { Kind = VButton.Look.Ghost, K = k, Label = "SKIP", FontPx = 14, TooltipText = L.T("Don't ask about this Lock-In again") };
         skip.Pressed += Close;
         AddChild(skip);
         Layout();
@@ -358,7 +360,7 @@ public partial class MatchLogPrompt : Control
         foreach (var (b, key) in results) b.SetSelected(rec.Match == key);
         for (int i = 0; i < felt.Count; i++) felt[i].SetSelected(rec.Felt == i + 1);
         skip.Label = "DONE";
-        skip.TooltipText = "Close";
+        skip.TooltipText = L.T("Close");
         skip.QueueRedraw();
         QueueRedraw();
         if (rec.Match.Length > 0 && rec.Felt > 0) GetTree().CreateTimer(1.2).Timeout += () => { if (IsInstanceValid(this)) Close(); };
@@ -383,10 +385,10 @@ public partial class MatchLogPrompt : Control
         Gfx.Text(this, UiTheme.HudWide, "FELT LOCKED IN?", FeltX, Gfx.Mid(54 * k, ls), ls, UiTheme.Faint);
         Gfx.TextR(this, UiTheme.HudWide, "1 – 5", w - pad, Gfx.Mid(54 * k, ls), ls, UiTheme.Faint);
         bool done = rec.Match.Length > 0 && rec.Felt > 0;
-        string foot = done ? "Saved. Thanks." : "Optional. Saved on this PC only.";
+        string foot = done ? L.T("Saved. Thanks.") : L.T("Optional. Saved on this PC only.");
         Gfx.Text(this, UiTheme.Body, foot, pad, Gfx.Mid(128 * k, fs), fs, done ? UiTheme.Text : UiTheme.Faint);
         int n = LockInMatchLog.RatedCount(WarmupStore.I.Warmups);
-        string prog = n >= LockInMatchLog.ReadoutMin ? $"{n} RATED · SEE LOCK IN" : $"{n} OF {LockInMatchLog.ReadoutMin} RATED";
+        string prog = n >= LockInMatchLog.ReadoutMin ? L.F($"{n} RATED · SEE LOCK IN") : L.F($"{n} OF {LockInMatchLog.ReadoutMin} RATED");
         Gfx.TextR(this, UiTheme.HudWide, prog, w - pad, Gfx.Mid(128 * k, ls), ls, UiTheme.Faint);
     }
 }

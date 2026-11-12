@@ -18,6 +18,10 @@ public static class Boot
     /// <summary>The OS/user culture the process started with (diagnostics only).</summary>
     public static string SystemCulture { get; private set; } = "";
 
+    /// <summary>The Windows display language the process started with ("fr-FR"): the second choice of the "Auto" UI
+    /// language (see <see cref="LangDetect"/>). Recorded before the invariant culture replaces it.</summary>
+    public static string SystemUiCulture { get; private set; } = "";
+
     /// <summary>The culture the app runs in: invariant, unless a dev run forced another one with --culture.</summary>
     public static CultureInfo Culture { get; private set; } = CultureInfo.InvariantCulture;
 
@@ -29,6 +33,7 @@ public static class Boot
         if (done) return;
         done = true;
         SystemCulture = CultureInfo.CurrentCulture.Name;
+        SystemUiCulture = CultureInfo.CurrentUICulture.Name;
         var culture = CultureInfo.InvariantCulture;
         // Plain .NET args (no Godot API this early); they hold the whole command line, engine and user args alike.
         string[] args;

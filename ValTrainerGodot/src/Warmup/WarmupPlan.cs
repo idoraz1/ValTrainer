@@ -11,27 +11,28 @@ public enum ShiftMode { Off, HighToNormal, LowToNormal }
 /// <summary>Lock-In phases, in order (timeline, cards and summary). Check-in and Lock in aren't drills.</summary>
 public enum Phase { CheckIn, Activation, Calibration, Mechanics, Deathmatch, LockIn }
 
+/// <summary>Phase names and blurbs: English (also logged), translated where shown.</summary>
 public static class Phases
 {
     public static string Name(Phase p) => p switch
     {
-        Phase.CheckIn => "CHECK-IN",
-        Phase.Activation => "ACTIVATION",
-        Phase.Calibration => "CALIBRATION",
-        Phase.Mechanics => "MECHANICS",
-        Phase.Deathmatch => "DEATHMATCH",
-        _ => "LOCK IN",
+        Phase.CheckIn => L.N("CHECK-IN"),
+        Phase.Activation => L.N("ACTIVATION"),
+        Phase.Calibration => L.N("CALIBRATION"),
+        Phase.Mechanics => L.N("MECHANICS"),
+        Phase.Deathmatch => L.N("DEATHMATCH"),
+        _ => L.N("LOCK IN"),
     };
 
     /// <summary>One short line per phase (setup timeline).</summary>
     public static string Blurb(Phase p) => p switch
     {
-        Phase.CheckIn => "how you feel",
-        Phase.Activation => "easy start, one tier down",
-        Phase.Calibration => "adapts to ~80% hits",
-        Phase.Mechanics => "bots and movement",
-        Phase.Deathmatch => "last minute easier",
-        _ => "goal and cue",
+        Phase.CheckIn => L.N("how you feel"),
+        Phase.Activation => L.N("easy start, one tier down"),
+        Phase.Calibration => L.N("adapts to ~80% hits"),
+        Phase.Mechanics => L.N("bots and movement"),
+        Phase.Deathmatch => L.N("last minute easier"),
+        _ => L.N("goal and cue"),
     };
 }
 
@@ -56,17 +57,17 @@ public sealed record WarmupPreset(string Key, string Name, string Blurb, int Shi
 public static class WarmupPresets
 {
     // Cues point at the target or the crosshair (external focus), never at the hand or wrist.
-    public const string CueTrack = "Keep the crosshair on the target's head. Smooth, no rushing.";
-    const string CueGrid = "Find a rhythm. Land on each target, then click.";
-    const string CueSpider = "Out to the target, back to the centre. Land on it, then click.";
-    public const string CueFlick = "One motion to the head. Stop on it, then click.";
-    const string CueFlick2 = "Crisp flicks at your real speed. Land on the head first.";
-    const string CueBots = "Crosshair at head height. Let it meet the target, then shoot.";
-    const string CueCounter = "Come to a full stop, then shoot. Moving shots miss.";
-    const string CuePeek = "Crosshair on the edge at head height before they appear.";
-    const string CueDuel = "Swing wide with the crosshair at head height. Stop, then shoot.";
-    const string CueSpray = "Pull the crosshair down against the pattern. The first bullets matter most.";
-    public const string CueDm = "Play it like the first round: crosshair at head height, one angle at a time.";
+    public static readonly string CueTrack = L.N("Keep the crosshair on the target's head. Smooth, no rushing.");
+    static readonly string CueGrid = L.N("Find a rhythm. Land on each target, then click.");
+    static readonly string CueSpider = L.N("Out to the target, back to the centre. Land on it, then click.");
+    public static readonly string CueFlick = L.N("One motion to the head. Stop on it, then click.");
+    static readonly string CueFlick2 = L.N("Crisp flicks at your real speed. Land on the head first.");
+    static readonly string CueBots = L.N("Crosshair at head height. Let it meet the target, then shoot.");
+    static readonly string CueCounter = L.N("Come to a full stop, then shoot. Moving shots miss.");
+    static readonly string CuePeek = L.N("Crosshair on the edge at head height before they appear.");
+    static readonly string CueDuel = L.N("Swing wide with the crosshair at head height. Stop, then shoot.");
+    static readonly string CueSpray = L.N("Pull the crosshair down against the pattern. The first bullets matter most.");
+    public static readonly string CueDm = L.N("Play it like the first round: crosshair at head height, one angle at a time.");
 
     static WarmupStepDef Act(string mode, string cue) => new(mode, 60, cue, Phase.Activation, TierOffset: -1);
     static WarmupStepDef Cal(string mode, string cue) => new(mode, 60, cue, Phase.Calibration, Adaptive: true);
@@ -77,7 +78,7 @@ public static class WarmupPresets
 
     public static readonly WarmupPreset[] All =
     {
-        new("short", "Short", "A quick Lock-In when time is tight", 0, new[]
+        new("short", L.N("Short"), L.N("A quick Lock-In when time is tight"), 0, new[]
         {
             Act("tracking", CueTrack),
             Cal("flick", CueFlick),
@@ -85,7 +86,7 @@ public static class WarmupPresets
             Mech("strafebots", CueBots),
             Dm(120, 45),
         }),
-        new("standard", "Lock-In", "The full Lock-In before ranked", 0, new[]
+        new("standard", L.N("Lock-In"), L.N("The full Lock-In before ranked"), 0, new[]
         {
             Act("tracking", CueTrack),
             Act("gridshot", CueGrid),
@@ -96,7 +97,7 @@ public static class WarmupPresets
             Mech("counterstrafe", CueCounter),
             Dm(180, 60),
         }),
-        new("training", "Training day", "Every skill, then a long deathmatch", 3, new[]
+        new("training", L.N("Training day"), L.N("Every skill, then a long deathmatch"), 3, new[]
         {
             Act("tracking", CueTrack),
             Act("gridshot", CueGrid),
@@ -111,7 +112,7 @@ public static class WarmupPresets
             Mech("peek", CuePeek),
             Mech("peekduel", CueDuel),
             Dm(300, 60),
-        }) { Note = "for practice days, not right before ranked" },
+        }) { Note = L.N("for practice days, not right before ranked") },
     };
 
     /// <summary>Preset keys from before Lock-In (warm-up history): Quick → Short, Pro → Training day.</summary>
@@ -149,23 +150,25 @@ public static class WarmupDrills
     }
 
     public static string Name(string key) => Proto(key)?.Name ?? key;
+    /// <summary>The drill's name in the UI language (<see cref="Name"/> stays English: logs, keys).</summary>
+    public static string DisplayName(string key) => Proto(key)?.DisplayName ?? key;
     public static string Category(string key) => Proto(key)?.Category ?? "Aim";
     public static bool CanAdapt(string key) => Proto(key)?.SupportsAdaptive ?? false;
 
     public static string Short(string key) => key switch
     {
-        "tracking" => "TRACK",
-        "gridshot" => "GRID",
-        "spider" => "SPIDER",
-        "flick" => "FLICK",
-        "strafebots" => "BOTS",
-        "counterstrafe" => "C-STRAFE",
-        "peek" => "PEEK",
-        "peekduel" => "DUELS",
-        "spray_vandal" => "SPRAY",
-        "deathmatch" => "DM",
-        "reaction" => "REACT",
-        _ => Agents.AgentRoutines.ShortLabel(key) ?? Name(key).ToUpperInvariant(),
+        "tracking" => L.N("TRACK"),
+        "gridshot" => L.N("GRID"),
+        "spider" => L.N("SPIDER"),
+        "flick" => L.N("FLICK"),
+        "strafebots" => L.N("BOTS"),
+        "counterstrafe" => L.N("C-STRAFE"),
+        "peek" => L.N("PEEK"),
+        "peekduel" => L.N("DUELS"),
+        "spray_vandal" => L.N("SPRAY"),
+        "deathmatch" => L.N("DM"),
+        "reaction" => L.N("REACT"),
+        _ => Agents.AgentRoutines.ShortLabel(key) ?? L.Upper(DisplayName(key)),
     };
 
     /// <summary>A factory for the drill. A mode with a "duration…" constructor parameter (deathmatch) is built with the
@@ -222,6 +225,7 @@ public sealed class PlannedStep
     /// <summary>Deathmatch finisher: the bots get easier for the last N seconds (0 = off).</summary>
     public float EaseLast;
     public string Name => WarmupDrills.Name(Mode);
+    public string DisplayName => WarmupDrills.DisplayName(Mode);
     public string Short => WarmupDrills.Short(Mode);
     /// <summary>The run is played one tier below the player's (activation).</summary>
     public bool Easier => Tier < Main.I.Tier;
@@ -305,8 +309,10 @@ public sealed class WarmupPlan
         return $"{s / 60}:{s % 60:00}";
     }
 
-    public static string Minutes(float secs) => $"{Math.Max(1, (int)MathF.Round(secs / 60f))} MIN";
+    public static int WholeMinutes(float secs) => Math.Max(1, (int)MathF.Round(secs / 60f));
+    public static string Minutes(float secs) => L.F($"{WholeMinutes(secs)} MIN");
 
+    /// <summary>English (log line).</summary>
     public string ShiftLabel => Shift switch
     {
         ShiftMode.HighToNormal => $"+{ShiftPct}% → your sens",

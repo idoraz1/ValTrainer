@@ -24,7 +24,7 @@ namespace ValTrainer.Modes;
 /// </summary>
 public abstract partial class InitiatorDrill : MapMode
 {
-    public override string Category => "Agents";
+    public override string Category => L.N("Agents");
     public override string SimKind => "bot";
     public override float Duration => 120f;
     public override string? Subtitle => $"{Ability.Agent} · {Ability.Ability}  —  {MapSpot.Map} {MapSpot.Name}";
@@ -149,7 +149,7 @@ public abstract partial class InitiatorDrill : MapMode
     {
         Deaths++;
         Score -= 100;
-        EndRound(false, "YOU DIED", UiTheme.Accent);
+        EndRound(false, L.N("YOU DIED"), UiTheme.Accent);
     }
 
     // ------------------------------------------------------------------ frame
@@ -168,9 +168,9 @@ public abstract partial class InitiatorDrill : MapMode
         UpdateDefenders(dt);
         if (between > 0) return; // died this frame
         if (defenders.Count > 0 && defenders.All(d => !d.Alive))
-            EndRound(true, $"SITE CLEAR  {RoundT:0.0}s", UiTheme.Good);
+            EndRound(true, L.F($"SITE CLEAR  {RoundT:0.0}s"), UiTheme.Good);
         else if (RoundT > RoundTime)
-            EndRound(false, "TIME", UiTheme.Warn);
+            EndRound(false, L.N("TIME"), UiTheme.Warn);
     }
 
     // ------------------------------------------------------------------ casting
@@ -269,13 +269,13 @@ public abstract partial class InitiatorDrill : MapMode
             case UtilEventKind.Fizzle:
                 fizzles++;
                 Event("util_fizzle", (int)Ability.Kind);
-                if (u is Blindside) G.Banner("No wall hit — the shard faded", UiTheme.Dim);
-                else if (u is ReconBolt or Haunt) G.Banner("Lost it off the map", UiTheme.Dim);
+                if (u is Blindside) G.Banner(L.N("No wall hit — the shard faded"), UiTheme.Dim);
+                else if (u is ReconBolt or Haunt) G.Banner(L.N("Lost it off the map"), UiTheme.Dim);
                 break;
             case UtilEventKind.Destroyed:
                 destroyedUtil++;
                 Event("util_destroyed", (int)Ability.Kind);
-                G.Banner($"They shot your {Ability.Ability}", UiTheme.Warn);
+                G.Banner(L.F($"They shot your {Ability.Ability}"), UiTheme.Warn);
                 if (u is LeerEye)
                     foreach (var d in Touched(u)) d.Brain.NearsightUntil = Mathf.Min(d.Brain.NearsightUntil, Now + 0.25f);
                 break;
@@ -356,8 +356,11 @@ public abstract partial class InitiatorDrill : MapMode
             Event("self_flash", ps);
         }
         G.SoundAt(FlashSlug is { } slug ? slug + "_pop" : "flashpop", pop, maxRange: 50f, floor: 0.6f);
-        string who = full + part == 0 ? "Nobody flashed" : $"{full + part} FLASHED" + (part > 0 ? $" ({part} partial)" : "");
-        G.Banner(pg is BlindGrade.Flashed or BlindGrade.Partial ? $"{who} · you flashed yourself" : who,
+        int n = full + part;
+        string who = n == 0 ? L.T("Nobody flashed")
+            : part > 0 ? L.P(n, $"{n} FLASHED ({part} partial)", $"{n} FLASHED ({part} partial)")
+            : L.P(n, $"{n} FLASHED", $"{n} FLASHED");
+        G.Banner(pg is BlindGrade.Flashed or BlindGrade.Partial ? L.F($"{who} · you flashed yourself") : who,
             pg is BlindGrade.Flashed or BlindGrade.Partial ? UiTheme.Accent : full + part > 0 ? UiTheme.Good : UiTheme.Dim);
         Event("flash_pop", full + part, ps);
     }
@@ -387,7 +390,7 @@ public abstract partial class InitiatorDrill : MapMode
         Event("bot_revealed", count, haunt ? 1 : 0);
         AbilitySfx.PlayAt(G, "recon_ping", at, 0.9f, maxRange: 60f, floor: 0.7f);
         if (count > 0) AbilitySfx.Play(G, "reveal", 0.6f);
-        G.Banner(count == 0 ? "Scan: nobody seen" : $"{count} REVEALED", count == 0 ? UiTheme.Dim : UiTheme.Good);
+        G.Banner(count == 0 ? L.N("Scan: nobody seen") : L.P(count, $"{count} REVEALED", $"{count} REVEALED"), count == 0 ? UiTheme.Dim : UiTheme.Good);
     }
 
     void UtilHit(Defender d, bool full, float seconds, string ev, bool nearsight = false)
@@ -571,7 +574,7 @@ public abstract partial class InitiatorDrill : MapMode
             if (Ability.Kind == UtilKind.Curveball && roundKills % 2 == 0 && Kit.Charges < Ability.Charges)
             {
                 Kit.AddCharge();
-                G.Banner("Curveball recharged (2 kills)", UiTheme.Teal);
+                G.Banner(L.F($"{Ability.Ability} recharged (2 kills)"), UiTheme.Teal);
             }
         }
         return dist;
@@ -587,10 +590,11 @@ public abstract partial class InitiatorDrill : MapMode
             if (Kit.RefusalT > 0 && Kit.Refusal != null) return Kit.Refusal;
             return Kit.State switch
             {
-                AbilityKit.Phase.Equipping or AbilityKit.Phase.Equipped => Ability.Alt != null ? $"{Ability.Primary}   ·   {Ability.Alt}" : Ability.Primary,
-                AbilityKit.Phase.Charging => $"Release LMB to shoot   ·   RMB: bounces ({Kit.Bounces})",
-                AbilityKit.Phase.Steering => $"Steering — {Kit.KeyText} to pop it",
-                _ => utils.Any(u => u.CanRecast) ? Ability.Kind == UtilKind.Haunt ? $"{Kit.KeyText}: drop the watcher now" : $"{Kit.KeyText}: pop the flash" : null,
+                // English hints, translated by the HUD; the two-part one is joined here, so each part is translated now
+                AbilityKit.Phase.Equipping or AbilityKit.Phase.Equipped => Ability.Alt != null ? L.T(Ability.Primary) + "   ·   " + L.T(Ability.Alt) : Ability.Primary,
+                AbilityKit.Phase.Charging => L.F($"Release LMB to shoot   ·   RMB: bounces ({Kit.Bounces})"),
+                AbilityKit.Phase.Steering => L.F($"Steering — {Kit.KeyText} to pop it"),
+                _ => utils.Any(u => u.CanRecast) ? Ability.Kind == UtilKind.Haunt ? L.F($"{Kit.KeyText}: drop the watcher now") : L.F($"{Kit.KeyText}: pop the flash") : null,
             };
         }
     }
@@ -599,8 +603,9 @@ public abstract partial class InitiatorDrill : MapMode
     {
         if (between > 0) yield break;
         if (!castThisRun && rounds <= 2)
+            // one English sentence per line (each one is a catalogue entry, see InitiatorAbility.All); the HUD translates them
             foreach (var s in Ability.HowTo.Split(". ", StringSplitOptions.RemoveEmptyEntries)) yield return s.TrimEnd('.') + ".";
-        yield return $"Defenders left: {defenders.Count(d => d.Alive)}";
+        yield return L.F($"Defenders left: {defenders.Count(d => d.Alive)}");
         foreach (var l in StatusLines()) yield return l;
     }
 
@@ -632,16 +637,16 @@ public abstract partial class InitiatorDrill : MapMode
         // name + state
         int ns = UiTheme.Fs(18, k), ss = UiTheme.Fs(12, k);
         float tx = key.End.X + 12 * k;
-        Gfx.Text(c, UiTheme.HudWide, Ability.Ability.ToUpperInvariant(), tx, Gfx.Mid(r.Position.Y + 22 * k, ns), ns, UiTheme.Text);
+        Gfx.TextRaw(c, UiTheme.HudWide, Ability.Ability.ToUpperInvariant(), tx, Gfx.Mid(r.Position.Y + 22 * k, ns), ns, UiTheme.Text);
         string state = Kit.State switch
         {
-            AbilityKit.Phase.Equipping => "EQUIPPING…",
-            AbilityKit.Phase.Equipped => "READY TO CAST",
-            AbilityKit.Phase.Charging => $"CHARGE {ReconBolt.BarsFor(Kit.ChargeHeld)}/3 · BOUNCES {Kit.Bounces}",
-            AbilityKit.Phase.Steering => "STEERING",
-            _ => utils.Any(u => !u.Done && u is not PlasmaShot) ? "OUT" : ready ? "READY" : "NO CHARGES",
+            AbilityKit.Phase.Equipping => L.N("EQUIPPING…"),
+            AbilityKit.Phase.Equipped => L.N("READY TO CAST"),
+            AbilityKit.Phase.Charging => L.F($"CHARGE {ReconBolt.BarsFor(Kit.ChargeHeld)}/3 · BOUNCES {Kit.Bounces}"),
+            AbilityKit.Phase.Steering => L.N("STEERING"),
+            _ => utils.Any(u => !u.Done && u is not PlasmaShot) ? L.C("ability", "OUT") : ready ? L.C("ability", "READY") : L.N("NO CHARGES"),
         };
-        if (Ability.Kind == UtilKind.ReconBolt && Kit.State == AbilityKit.Phase.Equipped) state = $"READY · BOUNCES {Kit.Bounces}";
+        if (Ability.Kind == UtilKind.ReconBolt && Kit.State == AbilityKit.Phase.Equipped) state = L.F($"READY · BOUNCES {Kit.Bounces}");
         Gfx.Text(c, UiTheme.HudWide, state, tx, Gfx.Mid(r.Position.Y + 44 * k, ss), ss, Kit.State != AbilityKit.Phase.Ready ? accent : UiTheme.Dim);
         // charges (pips)
         for (int i = 0; i < Ability.Charges; i++)
@@ -689,7 +694,7 @@ public abstract partial class InitiatorDrill : MapMode
             bool blind = d.Brain.IsBlind(Now), dazed = d.Brain.IsDazed(Now), near = d.Brain.IsNearsighted(Now);
             if (!(blind || dazed || near) || !G.LineOfSight(G.View.Eye, d.Body.Head)) continue;
             if (!OnScreen(cam, d.Body.Head + Vector3.Up * 0.45f, size, out var h)) continue;
-            string tag = blind ? $"BLIND {d.Brain.BlindUntil - Now:0.0}" : near ? "NEARSIGHTED" : "DAZED";
+            string tag = blind ? L.F($"BLIND {d.Brain.BlindUntil - Now:0.0}") : near ? L.N("NEARSIGHTED") : L.N("DAZED");
             var tc = blind ? new Color(1f, 0.97f, 0.85f) : near ? new Color(0.8f, 0.6f, 1f) : UiTheme.Warn;
             float w = Gfx.TextW(UiTheme.HudWide, tag, fs) + 12 * k;
             c.DrawRect(new Rect2(h.X - w / 2, h.Y - fs - 4 * k, w, fs + 8 * k), new Color(0, 0, 0, 0.45f));
@@ -711,16 +716,16 @@ public abstract partial class InitiatorDrill : MapMode
 
     protected IEnumerable<(string, string)> CommonResultLines()
     {
-        yield return ("Map", $"{MapSpot.Map} {MapSpot.Name}");
-        yield return ("Agent", $"{Ability.Agent} — {Ability.Ability}");
-        yield return ("Rounds won / lost", $"{won} / {lost}");
-        if (clearTimes.Count > 0) yield return ("Avg clear time", $"{clearTimes.Average():0.0} s");
+        yield return (L.N("Map"), L.Raw($"{MapSpot.Map} {MapSpot.Name}"));
+        yield return (L.N("Agent"), L.Raw($"{Ability.Agent} — {Ability.Ability}"));
+        yield return (L.N("Rounds won / lost"), $"{won} / {lost}");
+        if (clearTimes.Count > 0) yield return (L.N("Avg clear time"), $"{clearTimes.Average():0.0} s");
     }
 
     protected IEnumerable<(string, string)> DuelResultLines()
     {
-        yield return ("Kills / deaths", $"{Kills} / {Deaths}");
-        if (Hits > 0) yield return ("Headshot %", $"{100f * HeadHits / Hits:0}%");
+        yield return (L.N("Kills / deaths"), $"{Kills} / {Deaths}");
+        if (Hits > 0) yield return (L.N("Headshot %"), $"{100f * HeadHits / Hits:0}%");
         foreach (var l in MovementLines()) yield return l;
     }
 

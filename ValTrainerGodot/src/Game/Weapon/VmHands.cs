@@ -86,7 +86,7 @@ public static class VmHands
         var fa = new Transform3D(VmMesh.Look(-elbow, Mathf.Abs(elbow.Y) > 0.95f ? Vector3.Forward : Vector3.Up), Vector3.Zero);
         mg.Tube(0.0f, 0.0285f, 0.068f, 0.031f, 1.18f, 0.86f, X(fa), caps: false, seg: 16);
         mp.Tube(0.026f, 0.0315f, 0.048f, 0.032f, 1.18f, 0.87f, X(fa), caps: false, seg: 16);
-        ms.Tube(0.062f, 0.034f, 0.062f + s.ForearmLen, 0.054f, 1.1f, 0.94f, X(fa), caps: false, seg: 16);
+        ms.Tube(0.062f, 0.034f, 0.062f + s.ForearmLen, 0.046f, 1.1f, 0.94f, X(fa), caps: false, seg: 16); // slimmer toward the elbow
         ma.Tube(0.058f, 0.0365f, 0.084f, 0.0375f, 1.1f, 0.94f, X(fa), caps: true, seg: 16);
 
         var mesh = new ArrayMesh();

@@ -52,15 +52,15 @@ public sealed partial class DeathmatchMode : MapMode
     static int KillsFor(float seconds) => Math.Max(5, (int)Mathf.Round(seconds / 10f));
 
     public override string Key => "deathmatch";
-    public override string Name => "Deathmatch";
-    public override string Description => "Free-for-all against bots at your tier on a VALORANT map. They hunt you and shoot back; respawn and keep fighting.";
+    public override string Name => L.N("Deathmatch");
+    public override string Description => L.N("Free-for-all against bots at your tier on a VALORANT map. They hunt you and shoot back; respawn and keep fighting.");
     public override bool Timed => true;
     public override float Duration => duration;
     public override WeaponKind Weapon => weapon;
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
     public override bool GunOnRespawn => true; // VALORANT: a new loadout comes out on your next life
     public override bool Done => winner != null;
-    public override string? Subtitle => $"{MapSpot.Map} — Deathmatch · first to {killTarget}";
+    public override string? Subtitle => L.F($"{MapSpot.Map} — Deathmatch · first to {killTarget}");
     public int KillTarget => killTarget;
 
     // ---------------- state ----------------
@@ -189,8 +189,8 @@ public sealed partial class DeathmatchMode : MapMode
         var skill = BotSkillNow;
         foreach (var b in bots) b.SetSkill(skill);
         float left = G.RunLength - Now;
-        string when = Mathf.Abs(G.EaseLastSeconds - 60f) < 8f ? "LAST MINUTE" : $"LAST {Mathf.Round(G.EaseLastSeconds)} SECONDS";
-        G.Banner($"{when} · FINISH STRONG", UiTheme.Good);
+        string when = Mathf.Abs(G.EaseLastSeconds - 60f) < 8f ? L.T("LAST MINUTE") : L.F($"LAST {Mathf.Round(G.EaseLastSeconds)} SECONDS");
+        G.Banner(L.F($"{when} · FINISH STRONG"), UiTheme.Good);
         G.Sound("go", 0.6f);
         Log.Info($"[dm] finisher: bots eased to tier {Math.Max(0, Tier - 1)}{(Tier == 0 ? " (slower Rookie)" : "")} at {Now:0.0}s, {left:0} s left " +
                  $"(react {skill.ReactMs:0} ms, first-shot hit {skill.PHit1:0.00})");
@@ -268,11 +268,7 @@ public sealed partial class DeathmatchMode : MapMode
         if (pick.RingSeen) ringSeenSpawns++;
         G.Mover.ResetStops();
         G.Player.ProtectedUntil = Now + SpawnProtection;
-        if (G is GameSession s)
-        {
-            s.ApplyNextLifeGun(); // a gun picked in the buy menu comes out now
-            if (s.Gun != null) { s.Gun.Ammo = s.Gun.Def.Mag; s.Gun.ReloadLeft = 0; }
-        }
+        if (G is GameSession s) s.ApplyNextLifeGun(); // a gun picked in the buy menu comes out now (G.Respawn refilled the old one)
         playerRespawnAt = -1f;
         playerSpawnedAt = Now;
         revealUntil = Now + RevealTime; // VALORANT: respawning pulses every enemy on your minimap
@@ -300,8 +296,8 @@ public sealed partial class DeathmatchMode : MapMode
             if (d < bd) { bd = d; killer = b; }
         }
         if (killer != null) { killer.Kills++; killer.ForgetPlayer(); }
-        AddFeed($"{killer?.Name ?? "?"} killed You");
-        G.Banner($"KILLED BY {killer?.Name.ToUpperInvariant() ?? "A BOT"}", UiTheme.Accent);
+        AddFeed(L.F($"{killer?.Name ?? "?"} killed You"));
+        G.Banner(L.F($"KILLED BY {killer?.Name.ToUpperInvariant() ?? L.T("A BOT")}"), UiTheme.Accent);
         DropPack(PlayerFeet);
     }
 
@@ -316,14 +312,14 @@ public sealed partial class DeathmatchMode : MapMode
             Score += 100 + (headshot ? 50 : 0);
             if (headshot) headKills++;
             // VALORANT DM: every kill reloads your gun.
-            if (G is GameSession s && s.Gun != null) { s.Gun.Ammo = s.Gun.Def.Mag; s.Gun.ReloadLeft = 0; }
-            AddFeed($"You killed {victim.Name}{(headshot ? " · headshot" : "")}");
+            G.RefillGun();
+            AddFeed(headshot ? L.F($"You killed {victim.Name} · headshot") : L.F($"You killed {victim.Name}"));
         }
         else
         {
             killer.Kills++;
             botBotKills++;
-            AddFeed($"{killer.Name} killed {victim.Name}");
+            AddFeed(L.F($"{killer.Name} killed {victim.Name}"));
         }
         DropPack(feet);
     }
@@ -422,17 +418,17 @@ public sealed partial class DeathmatchMode : MapMode
 
     public override IEnumerable<string> HudLines()
     {
-        yield return $"Kills {Kills} / {killTarget}   Deaths {Deaths}   K/D {KD:0.00}";
+        yield return L.F($"Kills {Kills} / {killTarget}   Deaths {Deaths}   K/D {KD:0.00}");
         var top = bots.OrderByDescending(b => b.Kills).FirstOrDefault();
-        if (top != null) yield return top.Kills > Kills ? $"Leader: {top.Name} ({top.Kills})" : top.Kills == Kills ? $"Tied for the lead ({Kills})" : $"You lead by {Kills - top.Kills}";
-        if (PlayerAlive && Now < G.Player.ProtectedUntil) yield return "Spawn protection";
-        if (eased) yield return "Finish strong · bots are easier now";
+        if (top != null) yield return top.Kills > Kills ? L.F($"Leader: {top.Name} ({top.Kills})") : top.Kills == Kills ? L.F($"Tied for the lead ({Kills})") : L.F($"You lead by {Kills - top.Kills}");
+        if (PlayerAlive && Now < G.Player.ProtectedUntil) yield return L.N("Spawn protection");
+        if (eased) yield return L.N("Finish strong · bots are easier now");
         if (camBot >= 0 && camBot < bots.Count) yield return "[botcam] " + bots[camBot].DebugLine;
         for (int i = feed.Count - 1, n = 0; i >= 0 && n < 4; i--)
             if (Now - feed[i].T < 5f) { yield return feed[i].Text; n++; }
     }
 
-    public override string? Prompt => G.Player.Dead && playerRespawnAt > 0 ? $"Respawning in {Mathf.Max(0, playerRespawnAt - Now):0.0}s" : null;
+    public override string? Prompt => G.Player.Dead && playerRespawnAt > 0 ? L.F($"Respawning in {Mathf.Max(0, playerRespawnAt - Now):0.0}s") : null;
 
     /// <summary>Respawn reveal: red markers around the crosshair toward every living enemy (fades over 2 s).</summary>
     public override void Draw2D(CanvasItem canvas, Vector2 size)
@@ -461,17 +457,18 @@ public sealed partial class DeathmatchMode : MapMode
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Map", $"{MapSpot.Map} {MapSpot.Name}");
-        yield return ("Kills / deaths", $"{Kills} / {Deaths}  (K/D {KD:0.00})");
-        yield return ("Placement", winner == "You" ? $"1st of {bots.Count + 1} — first to {killTarget}" : $"{Ordinal(Placement)} of {bots.Count + 1}" + (winner != null ? $" ({winner} reached {killTarget})" : ""));
-        if (Hits > 0) yield return ("Headshot %", $"{100f * HeadHits / Hits:0}%  ({headKills} headshot kills)");
-        yield return ("Accuracy", $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
-        if (KillTimes.Count > 0) yield return ("Avg time to kill", $"{KillTimes.Average():0} ms from first sight");
-        if (packsTaken > 0) yield return ("Health packs", packsTaken.ToString());
+        yield return (L.N("Map"), $"{MapSpot.Map} {MapSpot.Name}");
+        yield return (L.N("Kills / deaths"), $"{Kills} / {Deaths}  (K/D {KD:0.00})");
+        yield return (L.N("Placement"), winner == "You" ? L.F($"1st of {bots.Count + 1} — first to {killTarget}")
+            : winner != null ? L.F($"{Ordinal(Placement)} of {bots.Count + 1} ({winner} reached {killTarget})") : L.F($"{Ordinal(Placement)} of {bots.Count + 1}"));
+        if (Hits > 0) yield return (L.N("Headshot %"), L.F($"{100f * HeadHits / Hits:0}%  ({headKills} headshot kills)"));
+        yield return (L.N("Accuracy"), $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
+        if (KillTimes.Count > 0) yield return (L.N("Avg time to kill"), L.F($"{KillTimes.Average():0} ms from first sight"));
+        if (packsTaken > 0) yield return (L.N("Health packs"), packsTaken.ToString());
         foreach (var l in MovementLines()) yield return l;
     }
 
-    static string Ordinal(int n) => n switch { 1 => "1st", 2 => "2nd", 3 => "3rd", _ => $"{n}th" };
+    static string Ordinal(int n) => n switch { 1 => L.T("1st"), 2 => L.T("2nd"), 3 => L.T("3rd"), _ => L.F($"{n}th") };
 
     /// <summary>Kill share vs the tier's bots: 50% (K/D 1.0) matches the tier, 70%+ (K/D 2.3) earns the next one.</summary>
     public override int Badge()

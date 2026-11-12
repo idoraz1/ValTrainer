@@ -72,6 +72,9 @@ public sealed class CrosshairSettings
     /// <summary>Everything else a crosshair code holds (fade, spectated, colour provenance, unknown keys / sections), so
     /// <see cref="CrosshairCode.Encode"/> reproduces the profile without loss.</summary>
     public CrosshairCodeExtras Extras = new();
+    /// <summary>Index of this profile in VALORANT's SavedCrosshairProfileData "profiles" array; -1 when it isn't one of
+    /// them (a code, the legacy keys, VALORANT's default).</summary>
+    public int ProfileIndex = -1;
 
     /// <summary>True when VALORANT draws the ADS tab while aiming down sights (advanced options on, copy primary off).</summary>
     public bool AdsIsOwn => UseAdvancedOptions && !UsePrimaryForAds;
@@ -105,50 +108,74 @@ public sealed class CrosshairSettings
     /// <c>focusMode</c> (console only, all zeros on PC) is never read.</summary>
     public static CrosshairSettings? FromProfileJson(string json)
     {
+        var all = AllFromProfileJson(json, out int current);
+        return all?.FirstOrDefault(p => p.ProfileIndex == current);
+    }
+
+    /// <summary>Every profile of Valorant's SavedCrosshairProfileData JSON, in VALORANT's order (null if the JSON isn't
+    /// readable or holds no profile). Each one's <see cref="ProfileIndex"/> is its index in "profiles" and its
+    /// <see cref="Name"/> is profileName, or "Profile N" when that is empty. An entry that isn't an object is skipped (its
+    /// index stays reserved), and so is one that fails to parse. <paramref name="current"/> = "currentProfile", clamped to
+    /// the array.</summary>
+    public static List<CrosshairSettings>? AllFromProfileJson(string json, out int current)
+    {
+        current = 0;
         try
         {
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
             var profiles = root.GetProperty("profiles");
             if (profiles.ValueKind != JsonValueKind.Array || profiles.GetArrayLength() == 0) return null;
-            int idx = Math.Clamp(Int(root, "currentProfile", 0), 0, profiles.GetArrayLength() - 1);
-            var p = profiles[idx];
-            if (p.ValueKind != JsonValueKind.Object) return null;
-
-            var c = new CrosshairSettings
+            current = Math.Clamp(Int(root, "currentProfile", 0), 0, profiles.GetArrayLength() - 1);
+            var list = new List<CrosshairSettings>();
+            int idx = 0;
+            foreach (var p in profiles.EnumerateArray())
             {
-                Name = p.TryGetProperty("profileName", out var n) && n.ValueKind == JsonValueKind.String && n.GetString() is { } nm
-                       && !string.IsNullOrWhiteSpace(nm) ? nm : $"Profile {idx + 1}",
-                UsePrimaryForAds = Bool(p, "bUsePrimaryCrosshairForADS", true),
-                UseAdvancedOptions = Bool(p, "bUseAdvancedOptions", false),
-                ScaleToResolution = Bool(p, "bScaleToResolution", false),
-            };
-            c.Extras.AdvancedOptions = c.UseAdvancedOptions;
-            c.Extras.OverrideAllPrimary = Bool(p, "bUseCustomCrosshairOnAllPrimary", false);
-            if (p.TryGetProperty("primary", out var prim) && prim.ValueKind == JsonValueKind.Object)
-            {
-                c.Primary = Style(prim, c.Extras.Primary);
-                c.Extras.Primary.Fade = Bool(prim, "bFadeCrosshairWithFiringError", true);
-                c.Extras.Primary.ShowSpectated = Bool(prim, "bShowSpectatedPlayerCrosshair", true);
+                // one broken profile never costs the others (or the active one)
+                if (p.ValueKind == JsonValueKind.Object)
+                    try { list.Add(OneProfile(p, idx)); } catch { /* skipped, index kept */ }
+                idx++;
             }
-            if (p.TryGetProperty("aDS", out var ads) && ads.ValueKind == JsonValueKind.Object)
-                c.Ads = Style(ads, c.Extras.Ads); // the aDS fade / spectated flags are always false and unused: recent exports omit them
-            if (p.TryGetProperty("sniper", out var sn) && sn.ValueKind == JsonValueKind.Object)
-            {
-                c.SniperDot = Bool(sn, "bDisplayCenterDot", true);
-                c.SniperDotSize = Float(sn, "centerDotSize", 1);
-                c.SniperDotOpacity = Float(sn, "centerDotOpacity", 0.75f);
-                c.Extras.SniperCustom = Bool(sn, "bUseCustomCenterDotColor", false);
-                c.SniperDotColor = c.Extras.SniperCustom
-                    ? Col(sn, "centerDotColorCustom", Colors.White)
-                    : Col(sn, "centerDotColor", c.SniperDotColor);
-            }
-            return c;
+            return list.Count > 0 ? list : null;
         }
         catch
         {
             return null;
         }
+    }
+
+    static CrosshairSettings OneProfile(JsonElement p, int idx)
+    {
+        var c = new CrosshairSettings
+        {
+            Name = p.TryGetProperty("profileName", out var n) && n.ValueKind == JsonValueKind.String && n.GetString() is { } nm
+                   && !string.IsNullOrWhiteSpace(nm) ? nm : $"Profile {idx + 1}",
+            ProfileIndex = idx,
+            UsePrimaryForAds = Bool(p, "bUsePrimaryCrosshairForADS", true),
+            UseAdvancedOptions = Bool(p, "bUseAdvancedOptions", false),
+            ScaleToResolution = Bool(p, "bScaleToResolution", false),
+        };
+        c.Extras.AdvancedOptions = c.UseAdvancedOptions;
+        c.Extras.OverrideAllPrimary = Bool(p, "bUseCustomCrosshairOnAllPrimary", false);
+        if (p.TryGetProperty("primary", out var prim) && prim.ValueKind == JsonValueKind.Object)
+        {
+            c.Primary = Style(prim, c.Extras.Primary);
+            c.Extras.Primary.Fade = Bool(prim, "bFadeCrosshairWithFiringError", true);
+            c.Extras.Primary.ShowSpectated = Bool(prim, "bShowSpectatedPlayerCrosshair", true);
+        }
+        if (p.TryGetProperty("aDS", out var ads) && ads.ValueKind == JsonValueKind.Object)
+            c.Ads = Style(ads, c.Extras.Ads); // the aDS fade / spectated flags are always false and unused: recent exports omit them
+        if (p.TryGetProperty("sniper", out var sn) && sn.ValueKind == JsonValueKind.Object)
+        {
+            c.SniperDot = Bool(sn, "bDisplayCenterDot", true);
+            c.SniperDotSize = Float(sn, "centerDotSize", 1);
+            c.SniperDotOpacity = Float(sn, "centerDotOpacity", 0.75f);
+            c.Extras.SniperCustom = Bool(sn, "bUseCustomCenterDotColor", false);
+            c.SniperDotColor = c.Extras.SniperCustom
+                ? Col(sn, "centerDotColorCustom", Colors.White)
+                : Col(sn, "centerDotColor", c.SniperDotColor);
+        }
+        return c;
     }
 
     /// <summary>Older Valorant builds (and accounts whose profiles live only in Riot's cloud) keep the primary crosshair as

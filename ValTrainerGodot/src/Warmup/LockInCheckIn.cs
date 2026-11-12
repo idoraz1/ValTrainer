@@ -1,4 +1,5 @@
 using Godot;
+using ValTrainer.Core;
 using ValTrainer.UI;
 
 namespace ValTrainer.Warmup;
@@ -167,8 +168,8 @@ public partial class LockInCheckIn : ScreenBase
         var col = (VBoxContainer)root.GetChild(0);
 
         var head = HBox(16 * k);
-        string who = run.Plan.Preset.Key.StartsWith(Agents.AgentRoutines.Prefix) ? $"LOCK IN AS {run.Plan.Preset.Name.ToUpperInvariant()}" : run.Plan.Preset.Name.ToUpperInvariant();
-        var title = Heading("CHECK-IN", $"{who} · 30 SECONDS · HOW YOU FEEL RIGHT NOW · NOTHING HERE IS SCORED");
+        string who = run.Plan.Preset.Key.StartsWith(Agents.AgentRoutines.Prefix) ? L.F($"LOCK IN AS {L.Upper(run.Plan.Preset.Name)}") : L.Upper(L.T(run.Plan.Preset.Name));
+        var title = Heading("CHECK-IN", L.F($"{who} · 30 SECONDS · HOW YOU FEEL RIGHT NOW · NOTHING HERE IS SCORED"));
         title.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         head.AddChild(title);
         var back = Btn("BACK", VButton.Look.Secondary, Back, 160, 52, 22);
@@ -194,14 +195,14 @@ public partial class LockInCheckIn : ScreenBase
             left.AddChild(b);
             return b;
         }
-        Bar("ENERGY", "how wound up you feel", "FLAT", "WIRED", c.Energy, v =>
+        Bar(L.N("ENERGY"), L.N("how wound up you feel"), L.N("FLAT"), L.N("WIRED"), c.Energy, v =>
         {
             c.Energy = v;
             if (!breathTouched) SetBreath(LockInText.WantsBreathing(v) ? BreathDefault : 0, false);
             lines?.QueueRedraw();
         });
         left.AddChild(Spacer(0, 4 * k));
-        Bar("CONFIDENCE", "how sure your aim feels today", "SHAKY", "SURE", c.Confidence, v => c.Confidence = v);
+        Bar(L.N("CONFIDENCE"), L.N("how sure your aim feels today"), L.N("SHAKY"), L.N("SURE"), c.Confidence, v => c.Confidence = v);
         left.AddChild(Spacer(0, 4 * k));
 
         var opts = HBox(10 * k);
@@ -228,9 +229,9 @@ public partial class LockInCheckIn : ScreenBase
         {
             var b = new VButton
             {
-                Kind = VButton.Look.Select, K = k, Label = secs == 0 ? "OFF" : $"{secs} S", FontPx = 17, Selected = c.BreathSeconds == secs,
+                Kind = VButton.Look.Select, K = k, Label = secs == 0 ? "OFF" : L.F($"{secs} S"), FontPx = 17, Selected = c.BreathSeconds == secs,
                 CustomMinimumSize = new Vector2(0, 58 * k), SizeFlagsHorizontal = SizeFlags.ExpandFill,
-                TooltipText = secs == 0 ? "No breathing guide" : $"{secs} s of slow breathing (4 s in, 6 s out) before your goal card",
+                TooltipText = secs == 0 ? L.T("No breathing guide") : L.F($"{secs} s of slow breathing (4 s in, 6 s out) before your goal card"),
             };
             int s = secs;
             b.Pressed += () => SetBreath(s, true);
@@ -245,14 +246,14 @@ public partial class LockInCheckIn : ScreenBase
         var right = VBox(10 * k);
         right.CustomMinimumSize = new Vector2(760 * k, 0);
         body.AddChild(right);
-        goalBox = PickRow(right, "ONE GOAL FOR YOUR GAMES", "something you do, not a result", 2, LockInText.Goals, goalChips, goalPick, PickGoal, 2);
-        goalEdit = Field(right, "Or type your own goal", LockInText.MaxGoal, LockInText.Goals.Contains(c.Goal) ? "" : c.Goal, t =>
+        goalBox = PickRow(right, L.N("ONE GOAL FOR YOUR GAMES"), L.N("something you do, not a result"), 2, LockInText.Goals, goalChips, goalPick, PickGoal, 2);
+        goalEdit = Field(right, L.N("Or type your own goal"), LockInText.MaxGoal, LockInText.Goals.Contains(c.Goal) ? "" : c.Goal, t =>
         {
             foreach (var (b, g) in goalChips) b.SetSelected(t.Trim().Length == 0 && g == goalPick);
         });
         right.AddChild(Spacer(0, 14 * k));
-        cueBox = PickRow(right, "ONE CUE WORD", "say it before a fight", 3, LockInText.Cues, cueChips, cuePick, PickCue, 3);
-        cueEdit = Field(right, "Or type your own cue", LockInText.MaxCue, LockInText.Cues.Contains(c.Cue) ? "" : c.Cue, t =>
+        cueBox = PickRow(right, L.N("ONE CUE WORD"), L.N("say it before a fight"), 3, LockInText.Cues, cueChips, cuePick, PickCue, 3);
+        cueEdit = Field(right, L.N("Or type your own cue"), LockInText.MaxCue, LockInText.Cues.Contains(c.Cue) ? "" : c.Cue, t =>
         {
             foreach (var (b, q) in cueChips) b.SetSelected(t.Trim().Length == 0 && q == cuePick);
         });
@@ -309,7 +310,7 @@ public partial class LockInCheckIn : ScreenBase
         float k = K;
         var e = new LineEdit
         {
-            PlaceholderText = placeholder, MaxLength = max, Text = text, CustomMinimumSize = new Vector2(0, 46 * k),
+            PlaceholderText = L.T(placeholder), MaxLength = max, Text = text, CustomMinimumSize = new Vector2(0, 46 * k),
             SizeFlagsHorizontal = SizeFlags.ExpandFill, ContextMenuEnabled = false,
         };
         LockInText.StyleField(e, k);
@@ -326,6 +327,7 @@ public partial class LockInCheckIn : ScreenBase
         void Line(string text, Color col, int size, Color mark)
         {
             d.DrawRect(new Rect2(0, y - 15 * k, 3 * k, 28 * k), mark);
+            text = L.T(text);
             d.DrawMultilineString(UiTheme.Body, new Vector2(16 * k, y + 2 * k), text, HorizontalAlignment.Left, w - 16 * k, size, 2, col);
             y += (Gfx.TextW(UiTheme.Body, text, size) > w - 16 * k ? 2 : 1) * size * 1.3f + 16 * k;
         }

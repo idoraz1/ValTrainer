@@ -39,14 +39,14 @@ public sealed partial class CrosshairFinderMode : TrainingMode
 
     public override string Key => "xhairfinder";
     public override bool PreviewDemo => false; // your own picks between crosshairs: only a person can play it
-    public override string Name => "Crosshair Finder";
-    public override string Description => "Try dot, cross, plus, circle and box crosshairs in real drills (hip fire, ADS or the sniper scope); get the one you see and shoot best with as a VALORANT code.";
-    public override string Category => "Coach";
+    public override string Name => L.N("Crosshair Finder");
+    public override string Description => L.N("Try dot, cross, plus, circle and box crosshairs in real drills (hip fire, ADS or the sniper scope); get the one you see and shoot best with as a VALORANT code.");
+    public override string Category => L.N("Coach");
     public override WeaponKind Weapon => WeaponKind.Vandal;
     public override bool Timed => false;
     public override bool Done => done;
     public override bool ShowScore => false;
-    public override string? Subtitle => "Visibility + shape test";
+    public override string? Subtitle => L.N("Visibility + shape test");
 
     enum Ph { Intro, Header, VisWait, VisShow, VisFeedback, VisResult, Pick, Rest, Trial, Pref, Summary }
     enum TK { Flick, Micro, Kill }
@@ -106,7 +106,9 @@ public sealed partial class CrosshairFinderMode : TrainingMode
     readonly Target[] prefT = new Target[3];
     int simPref = -1;
     bool aborted;
-    string abortWhy = "";
+    float abortAcc; // the aborted match's accuracy (0–1)
+    /// <summary>Why the run stopped early (result screen).</summary>
+    string AbortWhy => L.F($"Accuracy fell to {abortAcc * 100:0}% (below {cfg.MinAccuracy * 100:0}%). Take a break and run it again later; this result is provisional.");
 
     // ---- result ----
     XfEntrant? result;
@@ -185,12 +187,20 @@ public sealed partial class CrosshairFinderMode : TrainingMode
         StartHeader(1);
     }
 
-    /// <summary>Short description of the player's crosshair in a tab (log and start screen).</summary>
+    /// <summary>Short description of the player's crosshair in a tab (log; English).</summary>
     string CurrentLook(XfTab t) => t switch
     {
         XfTab.Sniper => XfDot.Describe(cur.SniperDotFor()) + (cur.SniperIsOwn ? "" : " (VALORANT's default)"),
         XfTab.Ads when !cur.AdsIsOwn => "copies your primary",
         _ => CrosshairCode.ColorName(XfTabs.Style(t, cur).Color),
+    };
+
+    /// <summary><see cref="CurrentLook"/> in the UI language (start screen).</summary>
+    string CurrentLookText(XfTab t) => t switch
+    {
+        XfTab.Sniper => cur.SniperIsOwn ? XfDot.DisplayDescribe(cur.SniperDotFor()) : L.F($"{XfDot.DisplayDescribe(cur.SniperDotFor())} (VALORANT's default)"),
+        XfTab.Ads when !cur.AdsIsOwn => L.T("copies your primary"),
+        _ => L.T(CrosshairCode.ColorName(XfTabs.Style(t, cur).Color)),
     };
 
     void RunSelfTest()
@@ -237,8 +247,8 @@ public sealed partial class CrosshairFinderMode : TrainingMode
         // A pause (Esc / focus loss) inside a timed trial invalidates it.
         if (realGap > dt + 0.75f)
         {
-            if (phase is Ph.VisWait or Ph.VisShow) { Notice("Trial restarted after the pause"); StartVisTrial(); return; }
-            if (phase == Ph.Trial) { Notice("Round restarted after the pause"); StartRest(blockIdx); return; }
+            if (phase is Ph.VisWait or Ph.VisShow) { Notice(L.N("Trial restarted after the pause")); StartVisTrial(); return; }
+            if (phase == Ph.Trial) { Notice(L.N("Round restarted after the pause")); StartRest(blockIdx); return; }
         }
 
         switch (phase)
@@ -262,7 +272,7 @@ public sealed partial class CrosshairFinderMode : TrainingMode
                     falseStarts++;
                     // requeue this trial later (a few times at most, then it's simply dropped)
                     if (falseStarts <= 6) { var t = visQueue[visIdx]; visQueue.Add((t.Cond, t.Scene, rng.Next())); }
-                    VisFeedback("TOO EARLY · wait for it");
+                    VisFeedback(L.N("TOO EARLY · wait for it"));
                 }
                 else if (phaseT >= fore)
                 {
@@ -283,7 +293,7 @@ public sealed partial class CrosshairFinderMode : TrainingMode
                     c.Rt.Add(rt);
                     if (!hit) c.Misses++;
                     Event("xhair_vis", visQueue[visIdx].Cond, hit ? rt * 1000f : -1f);
-                    VisFeedback(hit ? $"{rt * 1000f:0} ms" : "MISSED");
+                    VisFeedback(hit ? $"{rt * 1000f:0} ms" : L.N("MISSED"));
                 }
                 break;
             }
@@ -317,6 +327,7 @@ public sealed partial class CrosshairFinderMode : TrainingMode
         }
     }
 
+    /// <summary>A short warning (English; the pick screen and the HUD translate it).</summary>
     void Notice(string s) { notice = s; noticeUntil = Now + 4f; }
 
     void StartHeader(int p)
@@ -384,6 +395,7 @@ public sealed partial class CrosshairFinderMode : TrainingMode
         G.TrialCrosshair = Hidden;
     }
 
+    /// <summary>Part 1 feedback: English ("MISSED"; logic checks its prefix), translated where drawn.</summary>
     void VisFeedback(string text)
     {
         visFeedback = text;
@@ -427,7 +439,6 @@ public sealed partial class CrosshairFinderMode : TrainingMode
     int PickedCount => sel.Count(b => b);
     /// <summary>The recommended candidates (picked when the pick screen opens).</summary>
     string[] Defaults => tab == XfTab.Sniper ? XfDots.Defaults : XfShapes.Defaults;
-    string ShapeWord => tab == XfTab.Sniper ? "dot" : "shape";
     int StartCard => shapes.Count;
 
     /// <summary>Card <paramref name="i"/> (the last index is START) on the plane: centre and size (right / up, in units
@@ -545,8 +556,13 @@ public sealed partial class CrosshairFinderMode : TrainingMode
             StartBracket();
             return float.PositiveInfinity;
         }
-        if (sel[i] && PickedCount <= 2) { Notice($"Keep at least 2 {ShapeWord}s"); G.Sound("fail", 0.4f); }
-        else if (!sel[i] && PickedCount >= 4) { Notice($"Up to 4 {ShapeWord}s: shoot a picked one to drop it first"); G.Sound("fail", 0.4f); }
+        bool dots = tab == XfTab.Sniper;
+        if (sel[i] && PickedCount <= 2) { Notice(dots ? L.N("Keep at least 2 dots") : L.N("Keep at least 2 shapes")); G.Sound("fail", 0.4f); }
+        else if (!sel[i] && PickedCount >= 4)
+        {
+            Notice(dots ? L.N("Up to 4 dots: shoot a picked one to drop it first") : L.N("Up to 4 shapes: shoot a picked one to drop it first"));
+            G.Sound("fail", 0.4f);
+        }
         else
         {
             sel[i] = !sel[i];
@@ -590,19 +606,19 @@ public sealed partial class CrosshairFinderMode : TrainingMode
     {
         var m = new XfMatch();
         int mi = matches.Count;
-        if (mi >= BracketMatches) { m.Title = "FINAL CHECK"; m.IsCheck = true; m.Entrant[0] = Winner(BracketMatches - 1); m.Entrant[1] = nPick; }
+        if (mi >= BracketMatches) { m.Title = L.N("FINAL CHECK"); m.IsCheck = true; m.Entrant[0] = Winner(BracketMatches - 1); m.Entrant[1] = nPick; }
         else if (nPick >= 4)
         {
-            if (mi == 0) { m.Title = "SEMI-FINAL 1"; m.Entrant[0] = 0; m.Entrant[1] = 1; }
-            else if (mi == 1) { m.Title = "SEMI-FINAL 2"; m.Entrant[0] = 2; m.Entrant[1] = 3; }
-            else { m.Title = "FINAL"; m.Entrant[0] = Winner(0); m.Entrant[1] = Winner(1); }
+            if (mi == 0) { m.Title = L.N("SEMI-FINAL 1"); m.Entrant[0] = 0; m.Entrant[1] = 1; }
+            else if (mi == 1) { m.Title = L.N("SEMI-FINAL 2"); m.Entrant[0] = 2; m.Entrant[1] = 3; }
+            else { m.Title = L.N("FINAL"); m.Entrant[0] = Winner(0); m.Entrant[1] = Winner(1); }
         }
         else if (nPick == 3)
         {
-            if (mi == 0) { m.Title = "SEMI-FINAL"; m.Entrant[0] = 1; m.Entrant[1] = 2; }
-            else { m.Title = "FINAL"; m.Entrant[0] = 0; m.Entrant[1] = Winner(0); }
+            if (mi == 0) { m.Title = L.N("SEMI-FINAL"); m.Entrant[0] = 1; m.Entrant[1] = 2; }
+            else { m.Title = L.N("FINAL"); m.Entrant[0] = 0; m.Entrant[1] = Winner(0); }
         }
-        else { m.Title = "FINAL"; m.Entrant[0] = 0; m.Entrant[1] = 1; }
+        else { m.Title = L.N("FINAL"); m.Entrant[0] = 0; m.Entrant[1] = 1; }
         bool aIs0 = rng.Next(2) == 0;
         m.Label[0] = aIs0 ? 'A' : 'B';
         m.Label[1] = aIs0 ? 'B' : 'A';
@@ -883,13 +899,13 @@ public sealed partial class CrosshairFinderMode : TrainingMode
         {
             // the new crosshair (cond 0) has to hold up against yours (cond 1): yours wins only if clearly better,
             // or if it's close and you preferred it
-            if (t0 <= -1) { m.Winner = 1; m.DecidedBy = "performance"; }
-            else if (t0 < 1 && pref == 1) { m.Winner = 1; m.DecidedBy = "your preference"; }
-            else { m.Winner = 0; m.DecidedBy = t0 >= 1 ? "performance" : pref == 0 ? "your preference" : "held up"; }
+            if (t0 <= -1) { m.Winner = 1; m.DecidedBy = L.N("performance"); }
+            else if (t0 < 1 && pref == 1) { m.Winner = 1; m.DecidedBy = L.N("your preference"); }
+            else { m.Winner = 0; m.DecidedBy = t0 >= 1 ? L.N("performance") : pref == 0 ? L.N("your preference") : L.N("held up"); }
         }
-        else if (Math.Abs(t0) >= 1) { m.Winner = t0 > 0 ? 0 : 1; m.DecidedBy = "performance"; }
-        else if (pref >= 0) { m.Winner = pref; m.DecidedBy = "your preference"; }
-        else { m.Winner = cmp.D >= 0 ? 0 : 1; m.DecidedBy = "slight edge"; }
+        else if (Math.Abs(t0) >= 1) { m.Winner = t0 > 0 ? 0 : 1; m.DecidedBy = L.N("performance"); }
+        else if (pref >= 0) { m.Winner = pref; m.DecidedBy = L.N("your preference"); }
+        else { m.Winner = cmp.D >= 0 ? 0 : 1; m.DecidedBy = L.N("slight edge"); }
         Event("xhair_match", matches.Count - 1, (float)t0);
         Event("xhair_pref", matches.Count - 1, pref);
         GD.Print($"[xf] {m.Title} result: d={cmp.D:+0.000;-0.000} SE={cmp.Se:0.000} t={t0:+0.00;-0.00} (flick {cmp.DFlick:+0.00;-0.00} micro {cmp.DTrack:+0.00;-0.00}) acc={m.Accuracy * 100:0}% pref={(pref < 0 ? "none" : m.Label[pref].ToString())} -> {EntrantOf(m.Winner).Name} ({m.DecidedBy})");
@@ -899,8 +915,8 @@ public sealed partial class CrosshairFinderMode : TrainingMode
         if (m.Accuracy < cfg.MinAccuracy && !simPlayer)
         {
             aborted = true;
-            abortWhy = $"Accuracy fell to {m.Accuracy * 100:0}% (below {cfg.MinAccuracy * 100:0}%). Take a break and run it again later; this result is provisional.";
-            GD.Print($"[xf] ABORT: {abortWhy}");
+            abortAcc = m.Accuracy;
+            GD.Print($"[xf] ABORT: accuracy fell to {m.Accuracy * 100:0}% (below {cfg.MinAccuracy * 100:0}%), result provisional");
             Finish();
             return;
         }
@@ -942,66 +958,90 @@ public sealed partial class CrosshairFinderMode : TrainingMode
         phaseT = 0;
     }
 
-    string ResultName => result == null ? "" : result.IsCurrent ? result.Name
-        : $"{CrosshairCode.ColorName(XfTabs.ColorOf(tab, result.Xhair))} {result.Name.ToLowerInvariant()}";
+    /// <summary>The result's name for the screen ("Green small cross"), in the UI language.</summary>
+    string ResultName
+    {
+        get
+        {
+            if (result == null) return "";
+            if (result.IsCurrent) return result.DisplayName;
+            string colour = XfColor.Display(XfTabs.ColorOf(tab, result.Xhair), false);
+            string shape = L.IsEnglish ? result.Name.ToLowerInvariant() : result.DisplayName;
+            // "{0} {1}" = colour, shape. A key of its own (with a context, since "{0} {1}" has no words) so translators
+            // can reorder it ("{1} {0}"); the colour and the shape name are translated on their own.
+            string fmt = L.C("crosshair result: colour, shape", "{0} {1}");
+            try { return string.Format(CultureInfo.InvariantCulture, fmt, colour, shape); }
+            catch (FormatException) { return colour + " " + shape; }
+        }
+    }
 
-    /// <summary>What importing the code changes in VALORANT (result screen).</summary>
+    /// <summary>What importing the code changes in VALORANT (result screen; the draw helper translates it).</summary>
     string ChangeNote => tab switch
     {
-        XfTab.Ads => "Only your ADS crosshair changes. After import, Use Advanced Options is on and Copy Primary Crosshair is off.",
-        XfTab.Sniper => "Only your sniper scope dot changes. After import, Use Advanced Options is on.",
+        XfTab.Ads => L.N("Only your ADS crosshair changes. After import, Use Advanced Options is on and Copy Primary Crosshair is off."),
+        XfTab.Sniper => L.N("Only your sniper scope dot changes. After import, Use Advanced Options is on."),
         _ => cur.UseAdvancedOptions && !cur.UsePrimaryForAds
-            ? "Only your primary crosshair changes. Your ADS crosshair and sniper dot stay as they are."
-            : "Only your primary crosshair changes (your ADS crosshair copies it). Your sniper dot stays as it is.",
+            ? L.N("Only your primary crosshair changes. Your ADS crosshair and sniper dot stay as they are.")
+            : L.N("Only your primary crosshair changes (your ADS crosshair copies it). Your sniper dot stays as it is."),
     };
 
     public override IEnumerable<string> HudLines()
     {
         if (phase is Ph.VisWait or Ph.VisShow or Ph.VisFeedback)
-            yield return $"Visibility · {Math.Min(visIdx + 1, visQueue.Count)} / {visQueue.Count}";
+            yield return L.F($"Visibility · {Math.Min(visIdx + 1, visQueue.Count)} / {visQueue.Count}");
         else if (phase is Ph.Rest or Ph.Trial or Ph.Pref && match != null)
         {
-            yield return $"{Title(match.Title)} · round {Math.Min(blockIdx + 1, match.Order.Length)} / {match.Order.Length}";
-            if (phase == Ph.Trial) yield return $"Crosshair {block?.Label} · target {Math.Min(trialIdx + 1, seq.Count)} / {seq.Count}";
+            yield return L.F($"{Title(match.Title)} · round {Math.Min(blockIdx + 1, match.Order.Length)} / {match.Order.Length}");
+            if (phase == Ph.Trial) yield return L.F($"Crosshair {block?.Label} · target {Math.Min(trialIdx + 1, seq.Count)} / {seq.Count}");
         }
         if (Now < noticeUntil) yield return notice;
     }
 
-    static string Title(string s) => s.Length == 0 ? s : s[0] + s[1..].ToLowerInvariant();
+    /// <summary>A match title ("SEMI-FINAL 1") in sentence case ("Semi-final 1"), translated.</summary>
+    static string Title(string s) => L.T(s switch
+    {
+        "FINAL CHECK" => L.N("Final check"),
+        "SEMI-FINAL 1" => L.N("Semi-final 1"),
+        "SEMI-FINAL 2" => L.N("Semi-final 2"),
+        "SEMI-FINAL" => L.N("Semi-final"),
+        "FINAL" => L.N("Final"),
+        _ => s.Length == 0 ? s : s[0] + s[1..].ToLowerInvariant(),
+    });
 
     public override string? Prompt => phase switch
     {
-        Ph.VisWait or Ph.VisShow when visIdx < 3 => "Click the moment you see the crosshair",
-        Ph.Trial when trialLive && seq[trialIdx] == TK.Kill && doneBlocks < 2 => "Kill the agent",
-        Ph.Trial when trialLive && doneBlocks < 2 => "Flick to the head and shoot it",
+        Ph.VisWait or Ph.VisShow when visIdx < 3 => L.N("Click the moment you see the crosshair"),
+        Ph.Trial when trialLive && seq[trialIdx] == TK.Kill && doneBlocks < 2 => L.N("Kill the agent"),
+        Ph.Trial when trialLive && doneBlocks < 2 => L.N("Flick to the head and shoot it"),
         _ => null,
     };
 
-    /// <summary>Short values (≤ 24 chars); the code itself, the bracket and the colour test are on the summary screen.</summary>
+    /// <summary>Short values (≤ 24 chars in English); the code itself, the bracket and the colour test are on the summary screen.</summary>
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
         if (phase != Ph.Summary || result == null) yield break;
-        if (aborted) yield return ("Result", "provisional (fatigue)");
-        yield return ("Tested", tab switch { XfTab.Ads => "ADS crosshair", XfTab.Sniper => "sniper scope dot", _ => "primary crosshair" });
-        yield return (tab == XfTab.Sniper ? "Dot" : "Crosshair", keepCurrent ? "keep yours" : Short(ResultName));
+        if (aborted) yield return (L.N("Result"), L.N("provisional (fatigue)"));
+        yield return (L.N("Tested"), tab switch { XfTab.Ads => L.N("ADS crosshair"), XfTab.Sniper => L.N("sniper scope dot"), _ => L.N("primary crosshair") });
+        yield return (tab == XfTab.Sniper ? L.N("Dot") : L.N("Crosshair"), keepCurrent ? L.N("keep yours") : Short(ResultName));
         bool outline = tab != XfTab.Sniper && XfTabs.Style(tab, result.Xhair).HasOutline;
-        yield return ("Colour", Short($"{CrosshairCode.ColorName(XfTabs.ColorOf(tab, result.Xhair))}{(outline ? " + outline" : "")}"));
-        if (chosen != null && !float.IsNaN(chosen.MedianMs)) yield return ("Spotted in", $"{chosen.MedianMs:0} ms (median)");
+        yield return (L.N("Colour"), Short(XfColor.Display(XfTabs.ColorOf(tab, result.Xhair), outline)));
+        if (chosen != null && !float.IsNaN(chosen.MedianMs)) yield return (L.N("Spotted in"), L.F($"{chosen.MedianMs:0} ms (median)"));
         var fin = matches.LastOrDefault(m => m.Result != null);
-        if (fin != null) yield return ("Decided by", fin.DecidedBy);
-        yield return ("In VALORANT", keepCurrent ? "nothing to change" : "Import Profile Code");
-        if (!keepCurrent) yield return ("Code changes", $"{XfTabs.Name(tab)} tab only");
-        if (!keepCurrent && tab != XfTab.Primary) yield return ("Advanced Options", "on after import");
-        yield return ("Code", "Copy it with the button");
+        if (fin != null) yield return (L.N("Decided by"), fin.DecidedBy);
+        yield return (L.N("In VALORANT"), keepCurrent ? L.N("nothing to change") : L.N("Import Profile Code"));
+        if (!keepCurrent) yield return (L.N("Code changes"), L.F($"{XfTabs.DisplayName(tab)} tab only"));
+        if (!keepCurrent && tab != XfTab.Primary) yield return (L.N("Advanced Options"), L.N("on after import"));
+        yield return (L.N("Code"), L.N("Copy it with the button"));
     }
 
-    static string Short(string s) => s.Length <= 24 ? s : s[..23] + "…";
+    /// <summary>Cuts English values at 24 characters; translations are left to the results screen's fit (shrink, then "…").</summary>
+    static string Short(string s) => s.Length <= 24 || !L.IsEnglish ? s : s[..23] + "…";
 
     public override IEnumerable<(string Label, Action Act)> ResultButtons()
     {
         if (phase != Ph.Summary || result == null) yield break;
         string c = code;
-        yield return ("Copy VALORANT code", () =>
+        yield return (L.N("Copy VALORANT code"), () =>
         {
             DisplayServer.ClipboardSet(c);
             GD.Print("[xf] code copied to the clipboard");
@@ -1010,7 +1050,7 @@ public sealed partial class CrosshairFinderMode : TrainingMode
         // live VALORANT import (CrosshairCode.ApplyTab), so later changes to the other tabs in VALORANT still show.
         string tabName = CrosshairCode.TabName(tab switch { XfTab.Ads => CrosshairView.Mode.Ads, XfTab.Sniper => CrosshairView.Mode.Sniper, _ => CrosshairView.Mode.Primary });
         if (!keepCurrent && !aborted)
-            yield return ("Use in ValTrainer", () =>
+            yield return (L.N("Use in ValTrainer"), () =>
             {
                 var s = Main.I.Settings;
                 s.UseFinderCrosshair = true;
@@ -1019,7 +1059,7 @@ public sealed partial class CrosshairFinderMode : TrainingMode
                 s.Save(); // no-op in --dev (AppSettings.ReadOnly)
             });
         // Undoes "Use in ValTrainer" if it was clicked; otherwise nothing changes.
-        yield return ("Keep my crosshair", () =>
+        yield return (L.N("Keep my crosshair"), () =>
         {
             var s = Main.I.Settings;
             if (s.UseFinderCrosshair == origUse && s.FinderCrosshairCode == origCode && s.FinderCrosshairTab == origTab) return;

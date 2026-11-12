@@ -9,7 +9,7 @@ namespace ValTrainer.Modes;
 public abstract class MovementMode : BotMode
 {
     public override bool Movement => true;
-    public override string Category => "Movement";
+    public override string Category => L.N("Movement");
     protected int MovingShots;
 
     protected void CountShot(bool accurate)
@@ -20,10 +20,10 @@ public abstract class MovementMode : BotMode
 
     protected IEnumerable<(string, string)> MovementLines()
     {
-        yield return ("Shots while moving", $"{MovingShots} of {Shots}");
+        yield return (L.N("Shots while moving"), L.F($"{MovingShots} of {Shots}"));
         var m = G.Mover;
-        if (m.CounterStopTimesMs.Count > 0) yield return ("Avg counter-strafe stop", $"{m.CounterStopTimesMs.Average():0} ms");
-        if (m.ReleaseStopTimesMs.Count > 0) yield return ("Avg stop by releasing keys", $"{m.ReleaseStopTimesMs.Average():0} ms");
+        if (m.CounterStopTimesMs.Count > 0) yield return (L.N("Avg counter-strafe stop"), L.F($"{m.CounterStopTimesMs.Average():0} ms"));
+        if (m.ReleaseStopTimesMs.Count > 0) yield return (L.N("Avg stop by releasing keys"), L.F($"{m.ReleaseStopTimesMs.Average():0} ms"));
     }
 
     // The HUD shows the last stop time under the speed meter.
@@ -36,8 +36,8 @@ public sealed class CounterStrafeMode : MovementMode
 
     public override string Key => "counterstrafe";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
-    public override string Name => "Counter-Strafe";
-    public override string Description => "Strafe A/D. A bot appears while you run: tap the opposite key to stop, then one-tap.";
+    public override string Name => L.N("Counter-Strafe");
+    public override string Description => L.N("Strafe A/D. A bot appears while you run: tap the opposite key to stop, then one-tap.");
 
     public override IEnumerable<Box> ExtraSolids => new[]
     {
@@ -96,13 +96,13 @@ public sealed class CounterStrafeMode : MovementMode
         return dist;
     }
 
-    public override string? Prompt => bot == null && G.Mover.Speed < G.Mover.RunMax * 0.8f ? "Keep strafing A / D — a bot appears while you're running" : null;
+    public override string? Prompt => bot == null && G.Mover.Speed < G.Mover.RunMax * 0.8f ? L.N("Keep strafing A / D — a bot appears while you're running") : null;
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
         foreach (var l in base.ResultLines()) yield return l;
         foreach (var l in MovementLines()) yield return l;
-        yield return ("Bots that timed out", timeouts.ToString());
+        yield return (L.N("Bots that timed out"), timeouts.ToString());
     }
 
     public override int Badge()
@@ -119,8 +119,8 @@ public sealed class PeekDuelMode : MovementMode
 
     public override string Key => "peekduel";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
-    public override string Name => "Peek Duels";
-    public override string Description => "Swing out from a corner vs a bot holding the angle. It shoots back — stop, hit first, get back.";
+    public override string Name => L.N("Peek Duels");
+    public override string Description => L.N("Swing out from a corner vs a bot holding the angle. It shoots back — stop, hit first, get back.");
     public override Vector3 StartFeet => new(0.4f, 0, 0);
     public override float StartYaw => 6f;
 
@@ -167,7 +167,7 @@ public sealed class PeekDuelMode : MovementMode
         switch (st)
         {
             case St.ToCover:
-                if (G.View.Eye.X <= HiddenX) { st = St.Delay; stateT = 0; delay = R(0.3f, 0.9f); G.Player.Reset(); }
+                if (G.View.Eye.X <= HiddenX) { st = St.Delay; stateT = 0; delay = R(0.3f, 0.9f); G.Player.Reset(); G.RefillGun(); }
                 break;
             case St.Delay:
                 if (G.View.Eye.X > HiddenX) st = St.ToCover;
@@ -196,7 +196,7 @@ public sealed class PeekDuelMode : MovementMode
         losses++; Deaths++; Score -= 75;
         if (Main.I.Dev) GD.Print($"[peekduel] you died at {Now:0.0}s");
         Event("round_lost");
-        G.Banner("YOU DIED — they hit first", UI.UiTheme.Accent);
+        G.Banner(L.N("YOU DIED — they hit first"), UI.UiTheme.Accent);
         if (bot != null) { var b = bot; b.GetTree().CreateTimer(0.6).Timeout += () => G.Despawn(b); }
         bot = null; brain = null;
         st = St.After; stateT = 0;
@@ -222,16 +222,16 @@ public sealed class PeekDuelMode : MovementMode
 
     public override string? Prompt => st switch
     {
-        St.ToCover => "Back behind the corner (A) for the next duel",
-        St.Live when brain is { SeesPlayer: false } => "Swing out (D), counter-strafe, shoot",
+        St.ToCover => L.N("Back behind the corner (A) for the next duel"),
+        St.Live when brain is { SeesPlayer: false } => L.N("Swing out (D), counter-strafe, shoot"),
         _ => null,
     };
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Duels won / lost", $"{wins} / {losses}");
-        if (KillTimes.Count > 0) yield return ("Median time to kill", $"{Median(KillTimes):0} ms");
-        if (Hits > 0) yield return ("Headshot %", $"{100f * HeadHits / Hits:0}%");
+        yield return (L.N("Duels won / lost"), $"{wins} / {losses}");
+        if (KillTimes.Count > 0) yield return (L.N("Median time to kill"), L.F($"{Median(KillTimes):0} ms"));
+        if (Hits > 0) yield return (L.N("Headshot %"), $"{100f * HeadHits / Hits:0}%");
         foreach (var l in MovementLines()) yield return l;
     }
 

@@ -76,7 +76,7 @@ public static class CrosshairCode
         Color.Color8(255, 255, 255), Color.Color8(0, 255, 0), Color.Color8(127, 255, 0), Color.Color8(223, 255, 0),
         Color.Color8(255, 255, 0), Color.Color8(0, 255, 255), Color.Color8(255, 0, 255), Color.Color8(255, 0, 0),
     };
-    public static readonly string[] PresetNames = { "White", "Green", "Yellow Green", "Green Yellow", "Yellow", "Cyan", "Pink", "Red" };
+    public static readonly string[] PresetNames = { L.N("White"), L.N("Green"), L.N("Yellow Green"), L.N("Green Yellow"), L.N("Yellow"), L.N("Cyan"), L.N("Pink"), L.N("Red") };
 
     /// <summary>Preset index of a colour (exact RGB, opaque), or -1.</summary>
     public static int PresetIndex(Color c)
@@ -517,13 +517,21 @@ public static class CrosshairCode
             if (DevOverride is { } dev) return Encode(dev);
             if (s.UseFinderCrosshair && Finder is { } f && !string.IsNullOrWhiteSpace(s.FinderCrosshairCode))
                 return TabFromName(s.FinderCrosshairTab) != null ? Encode(f) : s.FinderCrosshairCode!.Trim(); // one tab on the live import / the pasted code as is
+            if (CrosshairList.Picked is { } picked)
+            {
+                // the switcher's pick: a saved code as it was saved (like a pasted one), a VALORANT profile as VALORANT exports it
+                var e = CrosshairList.CurrentEntry;
+                if (e.Source == CrosshairSource.Saved && s.SavedCrosshairs is { } sv && e.Index >= 0 && e.Index < sv.Count) return sv[e.Index].Code.Trim();
+                try { return Encode(picked); } catch { return "0"; }
+            }
             try { return Encode(Main.I.Valorant.Crosshair); } catch { return "0"; } // "0" = VALORANT's default crosshair
         }
     }
 
-    /// <summary>The crosshair drills use: ValTrainer's own code when Settings → Crosshair is CUSTOM, else VALORANT's.</summary>
+    /// <summary>The crosshair drills use: ValTrainer's own code when Settings → Crosshair is CUSTOM, else the crosshair
+    /// picked in the switcher (<see cref="CrosshairList"/>), else VALORANT's active profile.</summary>
     public static CrosshairSettings Effective =>
-        DevOverride ?? (Main.I.Settings.UseFinderCrosshair && Finder is { } f ? f : Main.I.Valorant.Crosshair);
+        DevOverride ?? (Main.I.Settings.UseFinderCrosshair && Finder is { } f ? f : CrosshairList.Picked ?? Main.I.Valorant.Crosshair);
 
     // =====================================================================================
     // Self-test (dev: --dev --culture-test, which tools/selftest.ps1 runs; also --dev --mode xhairfinder --xftest)

@@ -44,8 +44,12 @@ public static partial class Updater
     static readonly int[] RetryMinutes = { 1, 5, 15, 30, 60 };
 
     public static State Status { get; private set; } = State.Off;
-    /// <summary>Why updates are off / why the last download failed (Settings → About).</summary>
+    /// <summary>Why updates are off / why the last download failed, in English (logs, bug reports). Settings → About shows
+    /// <see cref="DisplayMessage"/>.</summary>
     public static string? Message { get; private set; }
+    /// <summary><see cref="Message"/> in the UI language (null when there's none).</summary>
+    public static string? DisplayMessage => Message == null ? null : messageUi?.Invoke() ?? L.T(Message);
+    static Func<string>? messageUi;
     /// <summary>Version being downloaded / ready / failed.</summary>
     public static string? Target => st.Version;
     /// <summary>Download progress 0..1 (Downloading).</summary>
@@ -84,12 +88,12 @@ public static partial class Updater
     {
         if (inited) return;
         inited = true;
-        string? off = DetectKind();
+        string? off = DetectKind(out var offUi);
         dir = ResolveDir();
         if (Kind == InstallKind.Portable) CleanPortableLeftovers();
         if (off == null && CmdLine.Dev && !(CmdLine.Has("--update-allow-dev") && Paths.DataDirOverridden))
             off = "off in --dev runs (test with --update-allow-dev and --data-dir)";
-        if (off != null) { Set(State.Off, off); Log.Info($"Updater: {off}"); return; }
+        if (off != null) { Set(State.Off, off, offUi); Log.Info($"Updater: {off}"); return; }
 
         st = LoadState();
         if (st.Version != null && SemVer.Compare(AppInfo.Version, st.Version) >= 0)
@@ -227,7 +231,9 @@ public static partial class Updater
         if (url == null || sums == null || !UpdateAssets.Trusted(url, AppInfo.GitHubRepo, UpdateCheck.Source)
             || !UpdateAssets.Trusted(sums, AppInfo.GitHubRepo, UpdateCheck.Source))
         {
-            Set(State.Idle, $"No {(portable ? "portable zip" : "installer")} in release {st.Version}");
+            string? v = st.Version;
+            Set(State.Idle, $"No {(portable ? "portable zip" : "installer")} in release {v}",
+                () => portable ? L.F($"No portable zip in release {v}") : L.F($"No installer in release {v}"));
             return;
         }
         int throttle = int.TryParse(CmdLine.DevAfter("--update-throttle"), out var kb) && kb > 0 ? kb : 0;
@@ -266,7 +272,7 @@ public static partial class Updater
                 st.LastError = j.Error;
                 Log.Error($"Updater: {j.Error} (bad download {st.BadDownloads} of {MaxBadDownloads}; the file was deleted)");
                 if (st.BadDownloads >= MaxBadDownloads) GiveUp($"The download of {st.Version} was damaged");
-                else { SaveState(); retryAt = DateTime.UtcNow.AddSeconds(5); Set(State.Idle, "Download damaged · trying again"); }
+                else { SaveState(); retryAt = DateTime.UtcNow.AddSeconds(5); Set(State.Idle, L.N("Download damaged · trying again")); }
                 break;
             case Job.Result.Cancelled:
                 break;
@@ -274,7 +280,7 @@ public static partial class Updater
                 int m = RetryMinutes[Math.Min(transientFailures++, RetryMinutes.Length - 1)];
                 retryAt = DateTime.UtcNow.AddMinutes(m);
                 Log.Info($"Updater: download paused: {j.Error}; retrying in {m} min");
-                Set(State.Idle, $"Download paused · retrying in {m} min");
+                Set(State.Idle, $"Download paused · retrying in {m} min", () => L.F($"Download paused · retrying in {m} min"));
                 break;
         }
     }
@@ -304,7 +310,7 @@ public static partial class Updater
             TryDelete(a.File);
             Log.Error($"Updater: not installing {st.Version}: {a.Error}");
             if (st.BadDownloads >= MaxBadDownloads) GiveUp($"The update to {st.Version} was damaged");
-            else { SaveState(); Set(State.Idle, "Update file damaged · downloading again"); retryAt = DateTime.UtcNow.AddSeconds(5); }
+            else { SaveState(); Set(State.Idle, L.N("Update file damaged · downloading again")); retryAt = DateTime.UtcNow.AddSeconds(5); }
             return;
         }
         st.Attempts++;
@@ -344,10 +350,13 @@ public static partial class Updater
         CleanOtherFiles();
     }
 
-    static void Set(State s, string? msg)
+    /// <summary><paramref name="ui"/>: the message in the UI language (null = <paramref name="msg"/> is a catalogued
+    /// literal, looked up with L.T, or not translated).</summary>
+    static void Set(State s, string? msg, Func<string>? ui = null)
     {
         Status = s;
         Message = msg;
+        messageUi = ui;
         UpdateCheck.Bump();
     }
 
@@ -409,17 +418,18 @@ public static partial class Updater
         try { if (File.Exists(path)) File.Delete(path); } catch (Exception e) { Log.Info($"Updater: couldn't delete {path} ({Log.Describe(e)})"); }
     }
 
-    /// <summary>What Settings → About shows under UPDATES.</summary>
+    /// <summary>What Settings → About shows under UPDATES (in the UI language).</summary>
     public static string? StatusLine => Status switch
     {
-        State.Downloading => $"Downloading {st.Version}… {Progress * 100:0}%",
-        State.Ready => $"{st.Version} is ready — restart to update",
-        State.Applying => $"Installing {st.Version}…",
-        State.Failed => "Update failed — open the release page",
-        State.Idle when Message != null && UpdateCheck.Offered != null => Message,
+        State.Downloading => L.F($"Downloading {st.Version}… {Progress * 100:0}%"),
+        State.Ready => L.F($"{st.Version} is ready — restart to update"),
+        State.Applying => L.F($"Installing {st.Version}…"),
+        State.Failed => L.T("Update failed — open the release page"),
+        State.Idle when Message != null && UpdateCheck.Offered != null => DisplayMessage,
         _ => null,
     };
 
+    /// <summary>English (logs, bug reports).</summary>
     public static string KindName => Kind switch
     {
         InstallKind.InstalledUser => "installed for this user",

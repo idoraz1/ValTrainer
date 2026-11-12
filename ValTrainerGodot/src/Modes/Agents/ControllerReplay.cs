@@ -1,4 +1,5 @@
 using Godot;
+using ValTrainer.Core;
 using ValTrainer.Game.Fx;
 using ValTrainer.UI;
 
@@ -112,8 +113,8 @@ public partial class ControllerReplay : CanvasLayer
         var tag = new Rect2(inner.Position, new Vector2(Gfx.TextW(UiTheme.HudWide, "SMOKE REPLAY", hs) + 18 * k, 22 * k));
         view.DrawRect(tag, UiTheme.Accent);
         Gfx.Text(view, UiTheme.HudWide, "SMOKE REPLAY", tag.Position.X + 9 * k, Gfx.Mid(tag.GetCenter().Y, hs), hs, UiTheme.Text);
-        string res = r.Won ? $"SITE TAKEN · {r.ExecTime:0.0} S" : r.Result;
-        Gfx.TextFit(view, UiTheme.Display, $"ROUND {r.Index} — {res}", inner.Position.X, inner.Position.Y + 66 * k, ts, UiTheme.Text, inner.Size.X);
+        string res = r.Won ? L.F($"SITE TAKEN · {r.ExecTime:0.0} S") : L.T(r.Result);
+        Gfx.TextFit(view, UiTheme.Display, L.F($"ROUND {r.Index} — {res}"), inner.Position.X, inner.Position.Y + 66 * k, ts, UiTheme.Text, inner.Size.X);
         Gfx.TextFit(view, UiTheme.HudWide, $"{m.Kit.Agent.ToUpperInvariant()} · {m.Spot.Map.ToUpperInvariant()} {m.Spot.Name.ToUpperInvariant()}", inner.Position.X, inner.Position.Y + 92 * k, ss, UiTheme.Dim, inner.Size.X);
         float y = ControllerDraw.RoundStats(view, k, m, r, inner.Position.X, inner.Position.Y + 136 * k, inner.Size.X);
         y += 6 * k;
@@ -125,9 +126,9 @@ public partial class ControllerReplay : CanvasLayer
         prevBtn = new Rect2(inner.Position.X, by, bw, bh);
         nextBtn = new Rect2(inner.Position.X + bw + 12 * k, by, bw, bh);
         closeBtn = new Rect2(inner.Position.X + 2 * (bw + 12 * k), by, bw, bh);
-        Button(view, prevBtn, "◀  PREV", round > 0, k);
-        Button(view, nextBtn, "NEXT  ▶", round + 1 < m.Rounds.Count, k);
-        Button(view, closeBtn, "CLOSE (ESC)", true, k, accent: true);
+        Button(view, prevBtn, L.N("◀  PREV"), round > 0, k);
+        Button(view, nextBtn, L.N("NEXT  ▶"), round + 1 < m.Rounds.Count, k);
+        Button(view, closeBtn, L.N("CLOSE (ESC)"), true, k, accent: true);
     }
 
     static float Legend(CanvasItem ci, float k, float x, float y, int fs)
@@ -138,10 +139,10 @@ public partial class ControllerReplay : CanvasLayer
             Gfx.Text(ci, UiTheme.Body, text, x + 36 * k, y, fs, UiTheme.Dim);
             y += fs * 1.6f;
         }
-        Item(c => TacticalMap.DashedCircle(ci, c, 9 * k, Colors.White, 1.5f * k, 10), "standard smoke spot");
-        Item(c => { ci.DrawCircle(c, 9 * k, new Color(0.8f, 0.8f, 0.8f, 0.35f)); ci.DrawArc(c, 9 * k, 0, Mathf.Tau, 20, Colors.White, 1.5f * k, true); }, "your smoke");
-        Item(c => ci.DrawLine(c - new Vector2(12 * k, 0), c + new Vector2(12 * k, 0), new Color(1f, 0.32f, 0.36f), 2 * k), "open sightline  ·  green = cut by your smoke");
-        Item(c => TacticalMap.Arrow(ci, c, Vector2.Up, 8 * k, new Color(0.35f, 0.85f, 1f)), "you (path)");
+        Item(c => TacticalMap.DashedCircle(ci, c, 9 * k, Colors.White, 1.5f * k, 10), L.N("standard smoke spot"));
+        Item(c => { ci.DrawCircle(c, 9 * k, new Color(0.8f, 0.8f, 0.8f, 0.35f)); ci.DrawArc(c, 9 * k, 0, Mathf.Tau, 20, Colors.White, 1.5f * k, true); }, L.N("your smoke"));
+        Item(c => ci.DrawLine(c - new Vector2(12 * k, 0), c + new Vector2(12 * k, 0), new Color(1f, 0.32f, 0.36f), 2 * k), L.N("open sightline  ·  green = cut by your smoke"));
+        Item(c => TacticalMap.Arrow(ci, c, Vector2.Up, 8 * k, new Color(0.35f, 0.85f, 1f)), L.N("you (path)"));
         return y;
     }
 

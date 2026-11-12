@@ -412,6 +412,23 @@ public static class WeaponCheck
             Check("shell-by-shell reload, a trigger pull interrupts it", reloading && mid == w.Mag - 1 && !p.G.Reloading && p.G.Ammo == w.Mag - 2 && p.Volleys.Count == 3,
                 $"after {F(w.ReloadPerRound * 1.2f, "0.00")} s: {mid}/{w.Mag} loaded, still reloading {reloading}; the pull fired ({p.Volleys.Count - 2} shot) and stopped the reload ({p.G.Ammo}/{w.Mag})");
         }
+        {
+            // A respawn / new round mid-reload (GameSession.Respawn): a full magazine at once, the reload dropped (a
+            // shell-by-shell one too: no stale rounds load afterwards), and the next pull fires.
+            var p = new Rig(w);
+            for (int i = 0; i < p.Frames(10f) && p.Volleys.Count < 2; i++) p.Step(held: true, pressed: true);
+            p.Idle(w.Interval + 0.1f);
+            p.G.StartReload(true);
+            p.Idle(p.G.ReloadLeft * 0.5f);
+            bool wasReloading = p.G.Reloading;
+            p.G.Refill();
+            bool refilled = p.G.Ammo == w.Mag && p.G.Reserve == w.Reserve && !p.G.Reloading && p.G.ReloadProgress == -1f;
+            if (w.ReloadPerRound > 0f) p.Idle(2f * w.ReloadPerRound);
+            int idle = p.G.Ammo;
+            p.Step(held: true, pressed: true);
+            Check("refill mid-reload (respawn)", wasReloading && refilled && idle == w.Mag && p.Volleys.Count == 3 && p.G.Ammo == w.Mag - 1,
+                $"reloading {wasReloading} -> refilled {refilled}, {idle}/{w.Mag} after idling, the next pull fired {p.Volleys.Count - 2} shot ({p.G.Ammo}/{w.Mag})");
+        }
     }
 
     static void Equip(WeaponDef w)

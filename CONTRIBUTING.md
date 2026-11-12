@@ -208,6 +208,26 @@ ValTrainerGodot/         the Godot project
 CHANGELOG.md             player-facing changes per version
 ```
 
+## Translations
+
+ValTrainer's text is in `ValTrainerGodot/translations/<code>.json` (`fr`, `es`, `pt-BR`, `de`). Each key is the English
+text and each value is its translation. The first versions were machine-translated, so corrections from players are
+the most useful contribution here.
+
+- **To fix a line:** edit the value in the language's file, never the key. Keep every placeholder exactly as it is
+  (`{0}`, `{1:0.0}`, `{0:0}%`); you can move it within the sentence. Plural entries have a `one` and an `other` form.
+  Agent, ability, gun, map and rank names stay in English, as in VALORANT.
+- **To try it without building:** put your edited file in `%APPDATA%\ValTrainer\translations\` and pick the language in
+  Settings → General. It's merged on top of the built-in file.
+- **Before opening a PR:** run `py tools\i18n\check.py <code>`. It reports broken placeholders, missing or stale keys
+  and lines much longer than the English. Then add your name to `translators` in the file's `_meta`.
+- **When you change English text in the code:** wrap it as described in `ValTrainerGodot/docs/research/i18n-howto.md`
+  (`L.T`, `L.F`, `L.P`, …). Then run `py tools\i18n\extract.py` to update `en.json`, and commit both. Missing
+  translations simply show in English.
+- **A new language:** copy `en.json` to `<code>.json`, fill in `_meta`, translate, and add the code to the list in
+  `src/Core/L.cs`. The app uses Windows fonts, which cover Latin, Cyrillic and Vietnamese. Languages like
+  Japanese or Korean would need a bundled font with a CC0 or similarly open licence.
+
 ## Branches, commits and pull requests
 
 - **`main` is always releasable.** Don't push half-finished work to it; CI must be green.

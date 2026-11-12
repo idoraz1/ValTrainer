@@ -262,7 +262,7 @@ public partial class RewindScreen : CanvasLayer
 
     // ---- tabs: 0 shots, 1 time to hit, 2 flick directions (only those with data) ----
 
-    static readonly string[] TabNames = { "SHOTS", "TIME TO HIT", "DIRECTIONS" };
+    static readonly string[] TabNames = { L.N("SHOTS"), L.N("TIME TO HIT"), L.N("DIRECTIONS") };
 
     bool HasTab(int i) => ins != null && i switch
     {
@@ -344,7 +344,8 @@ public partial class RewindScreen : CanvasLayer
         tx = tag.End.X + 10 * k;
         if (focusCode != null)
         {
-            string f = (Focused ? "ONLY: " : "NONE IN THIS RUN: ") + RewindData.CodeName(focusCode).ToUpperInvariant();
+            string cn = L.Upper(L.T(RewindData.CodeName(focusCode)));
+            string f = Focused ? L.F($"ONLY: {cn}") : L.F($"NONE IN THIS RUN: {cn}");
             float maxW = Mathf.Max(60 * k, right - 240 * k - tx);
             var fr = new Rect2(tx, top, Mathf.Min(maxW, Gfx.TextW(UiTheme.HudWide, f, hs) + 18 * k), 22 * k);
             view.DrawRect(fr, new Color(UiTheme.Warn, 0.14f));
@@ -354,29 +355,29 @@ public partial class RewindScreen : CanvasLayer
 
         // close
         var close = new Rect2(right - 210 * k, top + 6 * k, 210 * k, 50 * k);
-        Button(close, "CLOSE  (ESC)", Close, accent: true, fs: 15);
+        Button(close, L.N("CLOSE  (ESC)"), Close, accent: true, fs: 15);
 
-        string title = RewindData.ModeName(run.Mode).ToUpperInvariant();
+        string title = L.Upper(L.T(RewindData.ModeName(run.Mode)));
         float titleBase = top + 78 * k;
         float tw = Mathf.Min(Gfx.TextW(UiTheme.Display, title, ts), (right - left) * 0.4f);
         Gfx.TextFit(view, UiTheme.Display, title, left, titleBase, ts, UiTheme.Text, tw + 1);
-        string sub = string.Create(Inv, $"{dur:0.0} S RUN · {When(run.When)}");
+        string sub = L.F($"{dur:0.0} S RUN · {When(run.When)}");
         Gfx.Text(view, UiTheme.HudWide, sub, left + tw + 16 * k, titleBase, ss, UiTheme.Dim);
         float subEnd = left + tw + 16 * k + Gfx.TextW(UiTheme.HudWide, sub, ss);
 
         // moment label (right, before the close button)
         string label;
         Color lc;
-        if (ins == null) { label = "Analysing the run…"; lc = UiTheme.Dim; }
+        if (ins == null) { label = L.T("Analysing the run…"); lc = UiTheme.Dim; }
         else if (mi >= 0 && mi < moments.Count)
         {
             var m = moments[mi];
-            label = $"Moment {mi + 1} of {moments.Count}: {m.Label}";
+            label = L.F($"Moment {mi + 1} of {moments.Count}: {L.T(m.Label)}");
             lc = RewindData.CodeColor(m.Code);
         }
-        else if (focusCode != null && moments.Count == 0) { label = "No example of this in this run"; lc = UiTheme.Dim; }
-        else if (moments.Count > 0) { label = $"{moments.Count} moment{(moments.Count == 1 ? "" : "s")} · ← → to jump"; lc = UiTheme.Dim; }
-        else { label = "No moments found in this run"; lc = UiTheme.Faint; }
+        else if (focusCode != null && moments.Count == 0) { label = L.T("No example of this in this run"); lc = UiTheme.Dim; }
+        else if (moments.Count > 0) { int n = moments.Count; label = L.P(n, $"{n} moment · ← → to jump", $"{n} moments · ← → to jump"); lc = UiTheme.Dim; }
+        else { label = L.T("No moments found in this run"); lc = UiTheme.Faint; }
         int ls = UiTheme.Fs(30, k);
         float lx = subEnd + 30 * k, lw = close.Position.X - 24 * k - lx;
         if (lw > 80 * k) Gfx.TextFit(view, UiTheme.Display, label, lx, titleBase, ls, lc, lw, HorizontalAlignment.Right);
@@ -384,7 +385,7 @@ public partial class RewindScreen : CanvasLayer
 
     static string When(DateTime w)
     {
-        if (w.Date == DateTime.Today) return "TODAY " + w.ToString("HH:mm", Inv);
+        if (w.Date == DateTime.Today) return L.F($"TODAY {w:HH:mm}");
         return w.ToString("MMM d HH:mm", Inv).ToUpperInvariant();
     }
 
@@ -513,14 +514,15 @@ public partial class RewindScreen : CanvasLayer
         float ly = tr.End.Y + 48 * k;
         var legend = new (string Text, Color C, int Kind)[]
         {
-            ("coach moment", UiTheme.Warn, 0), ("kill", UiTheme.Good, 0), ("death", UiTheme.Accent, 0), ("miss", RewindData.CodeColor("MISS"), 0),
-            ("hit / miss shot", RewindData.HitColor, 1), ("target / bot", UiTheme.Text, 2),
+            // drawn and measured by the Text helpers (translated there)
+            (L.N("coach moment"), UiTheme.Warn, 0), (L.N("kill"), UiTheme.Good, 0), (L.N("death"), UiTheme.Accent, 0), (L.N("miss"), RewindData.CodeColor("MISS"), 0),
+            (L.N("hit / miss shot"), RewindData.HitColor, 1), (L.N("target / bot"), UiTheme.Text, 2),
         };
         float legendW = 0;
         foreach (var (text, _, _) in legend) legendW += 18 * k + Gfx.TextW(UiTheme.Body, text, ls) + 16 * k;
         float lx0 = legendW <= tr.Size.X ? tr.End.X - legendW + 16 * k : tr.End.X;
         int hs = UiTheme.Fs(11, k);
-        const string hints = "SPACE PLAY · 1 2 3 SPEED · ← → MOMENT · Z ZOOM · V 2D/3D · TAB CHARTS · ESC CLOSE";
+        string hints = L.T("SPACE PLAY · 1 2 3 SPEED · ← → MOMENT · Z ZOOM · V 2D/3D · TAB CHARTS · ESC CLOSE");
         const string shortHints = "SPACE · 1 2 3 · ← → · Z · V · TAB · ESC";
         float room = lx0 - tr.Position.X - 24 * k;
         string hint = Gfx.TextW(UiTheme.HudWide, hints, hs) <= room ? hints : shortHints;

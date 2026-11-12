@@ -8,7 +8,9 @@ public enum Skill { Flicking, Precision, Tracking, Reaction, CrosshairPlacement,
 
 public enum Severity { Tip, Minor, Major }
 
-/// <summary>A detected problem with evidence, the reason it happens, how to fix it and which drills train it.</summary>
+/// <summary>A detected problem with evidence, the reason it happens, how to fix it and which drills train it. The texts are
+/// in the UI language of the moment the coach ran (L); <see cref="Id"/>, <see cref="Skill"/> and <see cref="Drills"/> are
+/// the keys to compare.</summary>
 public sealed record Diagnosis(
     string Id, Skill Skill, Severity Severity,
     string Title,        // "Over-flicking: your flicks travel too far"
@@ -19,7 +21,12 @@ public sealed record Diagnosis(
     int Samples);
 
 /// <summary>Rank estimate for one skill. Tier is continuous: 0 = Rookie … 4 = Pro, -1 = below Rookie / not enough data.</summary>
-public sealed record SkillRating(Skill Skill, float Tier, float Confidence, int Samples, string Headline);
+public sealed record SkillRating(Skill Skill, float Tier, float Confidence, int Samples, string Headline)
+{
+    /// <summary>Not rated yet and <see cref="Headline"/> is the progress line, which names the drill that fills the sample
+    /// ("12 of 30 flicks (5°+) — play Head Flicks or Spidershot"). The UI checks this, never the (translated) text.</summary>
+    public bool IsProgress { get; init; }
+}
 
 /// <summary>Sensitivity recommendation (in Valorant's own sens units at the user's DPI).</summary>
 public sealed record SensAdvice(
@@ -38,6 +45,13 @@ public sealed class SkillProfile
     public SensAdvice? Sens;
     public int RunsAnalyzed;
     public DateTime Updated = DateTime.Now;
+    /// <summary>The calibration the estimate was made with (<see cref="Bench.Calibration"/>; 0 = a hand-made profile).</summary>
+    public int Calibration;
+    /// <summary>Robust weighted mean of the skill tiers before the shrink toward the median player (NaN = none).</summary>
+    public float RawMean = float.NaN;
+    /// <summary>Which drills fed crosshair placement and movement (base mode key → events in the window), for the
+    /// anonymous calibration line (<see cref="CoachCalibration.Line"/>).</summary>
+    public List<(string Mode, float N)> XhairSources = new(), MoveSources = new();
 }
 
 /// <summary>Post-run review shown on the results screen.</summary>
@@ -78,6 +92,7 @@ public static class Coach
     public static SkillProfile BuildProfile(StatsStore stats, float currentSens, int dpi)
     {
         var runs = new List<SensAdvisor.RunInfo>();
+        var modes = new List<string>(); // runs[i]'s drill
         int analysed = 0;
         SensAdvisor.FinderResult? finder = null;
         // Own snapshot (callers may run this on a worker thread while the game appends runs), newest first so the
@@ -99,7 +114,11 @@ public static class Coach
                 m = FromFile(r.TelemetryFile!); // bounded: ≈10–40 ms per file, cached
                 analysed++;
             }
-            if (m != null && m.Count > 0) runs.Add(new SensAdvisor.RunInfo(r.When, r.Sens, RunAnalysis.Normalize(r.Mode, r.Tier, m, r.Weapon)));
+            if (m != null && m.Count > 0)
+            {
+                runs.Add(new SensAdvisor.RunInfo(r.When, r.Sens, RunAnalysis.Normalize(r.Mode, r.Tier, m, r.Weapon)));
+                modes.Add(r.Mode);
+            }
         }
         var agg = Agg.Aggregate(runs.Select(r => (r.When, r.M)), DateTime.Now);
         int tierGuess = (int)MathF.Round((float)all.Take(20).Where(r => r.Tier >= 0).Select(r => r.Tier).DefaultIfEmpty(1).Average());
@@ -113,7 +132,12 @@ public static class Coach
             Strengths = a.Strengths.Where(s => s.Score >= 0.5f || a.Overall < 0).Take(4).Select(s => s.Text).ToList(),
             RunsAnalyzed = runs.Count,
             Updated = DateTime.Now,
+            Calibration = Bench.Calibration,
+            RawMean = a.RawMean,
         };
+        var withMode = runs.Select((x, i) => (x.When, modes[i], x.M)).ToList();
+        p.XhairSources = Agg.Sources(withMode, "xhair", "xhair.nh");
+        p.MoveSources = Agg.Sources(withMode, "move", "move.stops");
         p.Sens = SensAdvisor.Advise(runs, currentSens, dpi, a.RefTier, finder);
         return p;
     }
@@ -126,13 +150,17 @@ public static class Coach
     /// <summary>cm per 360° turn: 13063 / (sens · dpi).</summary>
     public static float Cm360(float sens, int dpi) => SensAdvisor.Cm360(sens, dpi);
 
-    /// <summary>Plain-language name of a skill.</summary>
+    /// <summary>Plain-language name of a skill, in English (CLI output); translate where it is shown (L.T or a draw helper).</summary>
     public static string SkillName(Skill s) => s switch
     {
-        Skill.CrosshairPlacement => "Crosshair placement",
-        Skill.SprayControl => "Spray control",
-        Skill.Precision => "Precision (micro-adjustment)",
-        Skill.Utility => "Utility (flashes)",
+        Skill.Flicking => L.N("Flicking"),
+        Skill.Precision => L.N("Precision (micro-adjustment)"),
+        Skill.Tracking => L.N("Tracking"),
+        Skill.Reaction => L.N("Reaction"),
+        Skill.CrosshairPlacement => L.N("Crosshair placement"),
+        Skill.SprayControl => L.N("Spray control"),
+        Skill.Movement => L.N("Movement"),
+        Skill.Utility => L.N("Utility (flashes)"),
         _ => s.ToString(),
     };
 

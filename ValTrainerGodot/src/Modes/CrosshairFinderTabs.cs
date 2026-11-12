@@ -1,4 +1,5 @@
 using Godot;
+using ValTrainer.Core;
 using ValTrainer.UI;
 using ValTrainer.Valorant;
 
@@ -28,14 +29,21 @@ public static class XfDot
         c.DrawCircle(centre, Mathf.Max(1.5f, d.Size * 2.5f) * zoom, new Color(d.Color, d.Opacity));
     }
 
+    /// <summary>English, for the log (<see cref="DisplayDescribe"/> for the screen).</summary>
     public static string Describe(SniperDotStyle d) => !d.Show ? "no dot"
         : $"{CrosshairCode.ColorName(d.Color)} dot, size {CrosshairCode.Fmt(d.Size)}, opacity {CrosshairCode.Fmt(d.Opacity)}";
+
+    /// <summary><see cref="Describe"/> in the UI language.</summary>
+    public static string DisplayDescribe(SniperDotStyle d) => !d.Show ? L.T("no dot")
+        : L.F($"{L.T(CrosshairCode.ColorName(d.Color))} dot, size {CrosshairCode.Fmt(d.Size)}, opacity {CrosshairCode.Fmt(d.Opacity)}");
 }
 
 /// <summary>Per-tab helpers: what the tab looks like, and how a result is merged into the player's whole profile.</summary>
 public static class XfTabs
 {
-    public static string Name(XfTab t) => t switch { XfTab.Ads => "ADS", XfTab.Sniper => "Sniper", _ => "Primary" };
+    /// <summary>English (logs); <see cref="DisplayName"/> for the screen.</summary>
+    public static string Name(XfTab t) => t switch { XfTab.Ads => L.N("ADS"), XfTab.Sniper => L.N("Sniper"), _ => L.N("Primary") };
+    public static string DisplayName(XfTab t) => L.T(Name(t));
 
     /// <summary>The crosshair VALORANT draws for this tab (ADS: its own only with Use Advanced Options on and Copy
     /// Primary Crosshair off; otherwise the primary).</summary>
@@ -261,13 +269,13 @@ public static class XfDots
     /// <summary>Every dot of the pick screen, in card order.</summary>
     public static List<XfEntrant> All(Color c) => new()
     {
-        Make("fine", "Fine dot", "a pinpoint, like most pros use", c, 0.6f, 1f),
-        Make("solid", "Solid dot", "default size, fully solid", c, 1f, 1f),
-        Make("standard", "Standard dot", "VALORANT's default size and opacity", c, 1f, 0.75f),
-        Make("medium", "Medium dot", "a little bigger, easy to find", c, 1.5f, 1f),
-        Make("big", "Big dot", "stays visible on busy backgrounds", c, 2f, 1f),
-        Make("soft", "Soft big dot", "big but see-through: the head stays visible", c, 2f, 0.5f),
-        Make("none", "No dot", "only the scope's own lines", c, 1f, 0.75f, on: false),
+        Make("fine", L.N("Fine dot"), L.N("a pinpoint, like most pros use"), c, 0.6f, 1f),
+        Make("solid", L.N("Solid dot"), L.N("default size, fully solid"), c, 1f, 1f),
+        Make("standard", L.N("Standard dot"), L.N("VALORANT's default size and opacity"), c, 1f, 0.75f),
+        Make("medium", L.N("Medium dot"), L.N("a little bigger, easy to find"), c, 1.5f, 1f),
+        Make("big", L.N("Big dot"), L.N("stays visible on busy backgrounds"), c, 2f, 1f),
+        Make("soft", L.N("Soft big dot"), L.N("big but see-through: the head stays visible"), c, 2f, 0.5f),
+        Make("none", L.N("No dot"), L.N("only the scope's own lines"), c, 1f, 0.75f, on: false),
     };
 
     /// <summary>The recommended four (pre-selected).</summary>

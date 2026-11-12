@@ -1,6 +1,7 @@
 using System.Globalization;
 using Godot;
 using ValTrainer.Analysis;
+using ValTrainer.Core;
 using ValTrainer.Game;
 
 namespace ValTrainer.UI;
@@ -80,13 +81,21 @@ public partial class ProfileScreen : ScreenBase
 
         left.AddChild(new DrawBox
         {
-            CustomMinimumSize = new Vector2(0, 250 * k), OnDraw = d => DrawRank(d, p), MouseFilter = MouseFilterEnum.Pass,
-            TooltipText = "An aim-only estimate: ValTrainer rates your mechanics (aim, movement, flash dodging).\nYour in-game rank also depends on game sense, comms and utility.",
+            CustomMinimumSize = new Vector2(0, 268 * k), OnDraw = d => DrawRank(d, p), MouseFilter = MouseFilterEnum.Pass,
+            TooltipText = L.T("An aim-only estimate: ValTrainer rates your mechanics (aim, movement, flash dodging).\nYour in-game rank also depends on game sense, comms and utility."),
         });
         left.AddChild(SkillsPanel(p));
+        right.AddChild(RankGapPanel(p));
         right.AddChild(ProblemsPanel(p));
         right.AddChild(SensPanel(p));
+        if (Main.I.Dev && Core.CmdLine.Has("--rank-picker") && !devPickerDone)
+        {
+            devPickerDone = true; // dev screenshots: --screen profile --rank-picker
+            Callable.From(OpenRankPicker).CallDeferred();
+        }
     }
+
+    static bool devPickerDone;
 
     // ---------------- header / loading ----------------
 
@@ -99,7 +108,7 @@ public partial class ProfileScreen : ScreenBase
         head.AddChild(title);
         if (CoachData.Fake && !Core.CmdLine.Showcase)
         {
-            var tag = Lbl($"DEV · FAKE COACH DATA ({CoachData.FakeVariant!.ToUpperInvariant()})", UiTheme.HudWide, 13, UiTheme.Warn);
+            var tag = Lbl(L.Raw($"DEV · FAKE COACH DATA ({CoachData.FakeVariant!.ToUpperInvariant()})"), UiTheme.HudWide, 13, UiTheme.Warn); // dev only
             tag.SizeFlagsVertical = SizeFlags.ShrinkCenter;
             head.AddChild(tag);
         }
@@ -152,10 +161,11 @@ public partial class ProfileScreen : ScreenBase
 
         float x0 = 268 * k, right = r.Size.X - 32 * k, tw = right - x0;
         int cs = UiTheme.Fs(14, k), ms = UiTheme.Fs(12, k);
-        const string caption = "ESTIMATED RANK · AIM ONLY";
+        string caption = L.T("ESTIMATED RANK · AIM ONLY");
         Gfx.Text(d, UiTheme.HudWide, caption, x0, Gfx.Mid(46 * k, cs), cs, UiTheme.Dim);
-        string runs = $"{p.RunsAnalyzed} RUN{(p.RunsAnalyzed == 1 ? "" : "S")} · {When(p.Updated)}";
-        string meta = p.RunsAnalyzed > 0 ? "BASED ON " + runs : "NO COACHED RUNS YET";
+        string whenText = When(p.Updated);
+        string runs = L.P(p.RunsAnalyzed, $"{p.RunsAnalyzed} RUN · {whenText}", $"{p.RunsAnalyzed} RUNS · {whenText}");
+        string meta = p.RunsAnalyzed > 0 ? L.F($"BASED ON {runs}") : L.T("NO COACHED RUNS YET");
         // Narrow (4:3 / 5:4) windows: shorten, or drop, the caption rather than overlap "ESTIMATED RANK".
         float room = tw - Gfx.TextW(UiTheme.HudWide, caption, cs) - 16 * k;
         if (Gfx.TextW(UiTheme.HudWide, meta, ms) > room && p.RunsAnalyzed > 0) meta = runs;
@@ -165,52 +175,224 @@ public partial class ProfileScreen : ScreenBase
         int fs = UiTheme.Fs(15, k);
         if (ranked)
         {
-            var (lo, hi) = CoachRank.Range(t, p.OverallConfidence);
+            var (lo, hi) = CoachRank.RangeTiers(t, p.OverallConfidence);
             RangeTitle(d, lo, hi, x0, 114 * k, tw, k);
             float y = 148 * k;
             float bw = CoachDraw.ConfBars(d, new Vector2(x0, y), k, p.OverallConfidence);
-            string conf = $"{CoachRank.Confidence(p.OverallConfidence)} CONFIDENCE";
+            string conf = CoachRank.DataCaps(p.OverallConfidence); // how much data, not how accurate (was "HIGH CONFIDENCE")
             float cw = Gfx.TextW(UiTheme.HudWide, conf, fs);
             Gfx.Text(d, UiTheme.HudWide, conf, x0 + bw + 10 * k, Gfx.Mid(y, fs), fs, CoachRank.ConfidenceColor(p.OverallConfidence));
             float nx = x0 + bw + 10 * k + cw + 14 * k;
-            Gfx.TextFit(d, UiTheme.Body, $"·   most likely {Pretty(CoachRank.Name(t))}", nx, Gfx.Mid(y, fs), fs, UiTheme.Dim, right - nx);
+            Gfx.TextFit(d, UiTheme.Body, L.F($"·   most likely {Pretty(t)}"), nx, Gfx.Mid(y, fs), fs, UiTheme.Dim, right - nx);
         }
         else
         {
             Gfx.Text(d, UiTheme.Display, "UNRANKED", x0, 114 * k, UiTheme.Fs(64, k), UiTheme.Dim);
             int rated = p.Skills.Count(CoachRank.Rated);
-            int need = CoachData.RunsNeeded();
+            int need = CoachData.RunsNeeded(), more = need > 0 ? need : 3;
             string msg = rated == 0
-                ? $"Not enough data yet — the coach needs about {(need > 0 ? need : 3)} more runs."
-                : $"{rated} of 8 skills rated — 4 with medium confidence unlock your overall rank.";
+                ? L.P(more, $"Not enough data yet — the coach needs about {more} more run.", $"Not enough data yet — the coach needs about {more} more runs.")
+                : L.F($"{rated} of 8 skills rated — 4 with medium confidence unlock your overall rank.");
             Gfx.TextFit(d, UiTheme.Body, msg, x0, Gfx.Mid(148 * k, fs), fs, UiTheme.Dim, tw);
         }
-        CoachDraw.Ladder(d, new Rect2(x0, 182 * k, tw, 12 * k), k, ranked ? t : -1, p.OverallConfidence, true);
+        CoachDraw.Ladder(d, new Rect2(x0, 182 * k, tw, 12 * k), k, ranked ? t : -1, p.OverallConfidence, true,
+            actual: ActualRank.IsSet ? ActualRank.Tier(ActualRank.Value) : null);
+        if (ranked)
+        {
+            int ns = UiTheme.Fs(13, k);
+            Gfx.TextFit(d, UiTheme.Body, "Aim only: your rank also depends on game sense, utility and teamwork.", x0, Gfx.Mid(242 * k, ns), ns, UiTheme.Faint, tw);
+        }
     }
 
-    static void RangeTitle(CanvasItem d, string lo, string? hi, float x, float baseline, float maxW, float k)
+    /// <summary>"GOLD 2  –  PLATINUM 1" from the range's tiers (the names translated, each in its rank colour).</summary>
+    static void RangeTitle(CanvasItem d, float loT, float? hiT, float x, float baseline, float maxW, float k)
     {
         const string sep = "  –  ";
+        string lo = CoachRank.Name(loT);
+        string? hi = hiT is { } h ? CoachRank.Name(h) : null;
         var f = UiTheme.Display;
         int fs = UiTheme.Fs(66, k);
         float W(int s) => Gfx.TextW(f, lo, s) + (hi == null ? 0 : Gfx.TextW(f, sep, s) + Gfx.TextW(f, hi, s));
         while (fs > 20 && W(fs) > maxW) fs -= 2;
-        Gfx.Text(d, f, lo, x, baseline, fs, CoachRank.Col(lo));
+        Gfx.Text(d, f, lo, x, baseline, fs, CoachRank.Col(loT));
         if (hi == null) return;
         x += Gfx.TextW(f, lo, fs);
         Gfx.Text(d, f, sep, x, baseline, fs, UiTheme.Faint);
         x += Gfx.TextW(f, sep, fs);
-        Gfx.Text(d, f, hi, x, baseline, fs, CoachRank.Col(hi));
+        Gfx.Text(d, f, hi, x, baseline, fs, CoachRank.Col(hiT!.Value));
     }
 
-    static string Pretty(string rank) => rank.Length == 0 ? rank : rank[0] + rank[1..].ToLowerInvariant();
+    /// <summary>"Gold 2" / "Radiant" (translated rank name, not upper case).</summary>
+    static string Pretty(float t)
+    {
+        int i = CoachRank.Index(t);
+        string n = L.T(CoachRank.Names[i]);
+        return i == 8 ? n : n + " " + CoachRank.Division(t).ToString(Inv);
+    }
 
     static string When(DateTime u)
     {
         var age = DateTime.Now - u;
-        if (age.TotalMinutes < 1) return "JUST NOW";
-        if (u.Date == DateTime.Today) return "TODAY " + u.ToString("HH:mm", Inv);
+        if (age.TotalMinutes < 1) return L.T("JUST NOW");
+        if (u.Date == DateTime.Today) return L.F($"TODAY {u:HH:mm}");
         return u.ToString("MMM d", Inv).ToUpperInvariant();
+    }
+
+    // ---------------- your actual rank (gap view) ----------------
+
+    /// <summary>
+    /// "Your VALORANT rank": the rank the player entered next to the estimate, as a gap (aim ahead of / behind the rank →
+    /// what to train). It never changes the estimate. Plus the anonymous calibration line to paste on Discord.
+    /// </summary>
+    Control RankGapPanel(SkillProfile p)
+    {
+        float k = K;
+        var panel = new VPanel { K = k, Pad = 18 };
+        var h = HBox(18 * k);
+        panel.AddChild(h);
+        var info = VBox(4 * k);
+        info.SizeFlagsHorizontal = SizeFlags.ExpandFill;
+        h.AddChild(info);
+
+        int rank = ActualRank.Value;
+        bool set = rank >= 0, ranked = CoachData.HasOverall(p);
+        var row = HBox(10 * k);
+        info.AddChild(row);
+        var tick = new DrawBox
+        {
+            CustomMinimumSize = new Vector2(12 * k, 18 * k), SizeFlagsVertical = SizeFlags.ShrinkCenter,
+            OnDraw = d =>
+            {
+                var c = new Vector2(6 * k, d.Size.Y / 2);
+                d.DrawColoredPolygon(new[] { c + new Vector2(0, -6 * k), c + new Vector2(6 * k, 5 * k), c + new Vector2(-6 * k, 5 * k) },
+                    set ? CoachDraw.ActualColor : new Color(UiTheme.Text, 0.25f));
+            },
+        };
+        row.AddChild(tick);
+        var cap = Lbl("YOUR VALORANT RANK", UiTheme.HudWide, 13, UiTheme.Dim);
+        cap.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        row.AddChild(cap);
+        if (set)
+        {
+            float rt = ActualRank.Tier(rank);
+            var name = Lbl(CoachRank.Name(rt), UiTheme.Display, 24, CoachRank.Col(rt));
+            name.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            row.AddChild(name);
+            if (ActualRank.SetOn is { } on)
+            {
+                bool stale = ActualRank.Stale;
+                string date = on.ToString("MMM d", Inv).ToUpperInvariant();
+                var when = Lbl(stale ? L.F($"SET {date} · STILL RIGHT?") : L.F($"SET {date}"), UiTheme.HudWide, 12, stale ? UiTheme.Warn : UiTheme.Faint);
+                when.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+                row.AddChild(when);
+            }
+        }
+
+        if (set && ranked && CoachCalibration.Gap(p, rank) is { } gap)
+        {
+            var gc = gap.Kind == CoachCalibration.GapKind.Matches ? UiTheme.Good : UiTheme.Warn;
+            info.AddChild(Lbl(CoachCalibration.Headline(gap), UiTheme.HudWide, 15, gc));
+            info.AddChild(Para(CoachCalibration.Advice(gap), UiTheme.Body, 15, new Color(UiTheme.Text, 0.85f)));
+        }
+        else
+        {
+            string msg = !set
+                ? L.T("Enter your rank to see whether your aim is ahead of or behind it, and what to train. It never changes the estimate.")
+                : L.T("Your aim isn't rated yet: play a few more runs to compare it with your rank.");
+            info.AddChild(Para(msg, UiTheme.Body, 15, UiTheme.Dim));
+        }
+
+        var buttons = VBox(6 * k);
+        buttons.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+        h.AddChild(buttons);
+        var setBtn = Btn(set ? "CHANGE RANK" : "SET YOUR RANK", set ? VButton.Look.Secondary : VButton.Look.Primary, OpenRankPicker, 230, 44, 17);
+        setBtn.TooltipText = L.T("Your rank stays on this PC. The coach only compares it with your aim; it never changes the estimate.");
+        buttons.AddChild(setBtn);
+        if (ranked)
+        {
+            VButton? copy = null;
+            copy = Btn("COPY CALIBRATION LINE", VButton.Look.Ghost, () =>
+            {
+                DisplayServer.ClipboardSet(CoachCalibration.Line(p, ActualRank.Value, ActualRank.SetOn));
+                copy!.Label = "COPIED";
+                copy.QueueRedraw();
+            }, 230, 34, 14);
+            copy.TitleFont = UiTheme.HudWide;
+            copy.TooltipText = L.T("Copies one anonymous line (your rank and skill numbers, no names) to paste in #coach-calibration on the ValTrainer Discord. It helps calibrate the rank estimate.");
+            buttons.AddChild(copy);
+        }
+        return panel;
+    }
+
+    Control? picker;
+
+    /// <summary>Rank picker overlay: Iron 1 … Immortal 3, Radiant, or "don't say" (clears it).</summary>
+    void OpenRankPicker()
+    {
+        if (picker != null && IsInstanceValid(picker)) return;
+        float k = K;
+        var overlay = new Control { MouseFilter = MouseFilterEnum.Stop };
+        overlay.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        var dim = new DrawBox { MouseFilter = MouseFilterEnum.Ignore, OnDraw = d => d.DrawRect(new Rect2(Vector2.Zero, d.Size), new Color(0, 0, 0, 0.6f)) };
+        dim.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        overlay.AddChild(dim);
+        var center = new CenterContainer { MouseFilter = MouseFilterEnum.Ignore };
+        center.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        overlay.AddChild(center);
+        var panel = new VPanel { Title = "YOUR VALORANT RANK", Caption = L.T("stays on this PC"), K = k, Fill = new Color(0.07f, 0.11f, 0.15f, 0.98f) };
+        center.AddChild(panel);
+        var v = VBox(12 * k);
+        panel.AddChild(v);
+        v.AddChild(Para(L.T("Pick your current competitive rank. The coach shows how your aim compares with it."), UiTheme.Body, 15, UiTheme.Dim));
+        var grid = new GridContainer { Columns = 4 };
+        grid.AddThemeConstantOverride("h_separation", (int)(8 * k));
+        grid.AddThemeConstantOverride("v_separation", (int)(6 * k));
+        v.AddChild(grid);
+        int cur = ActualRank.Value;
+        void Pick(int r)
+        {
+            ActualRank.Set(r);
+            ClosePicker();
+            Rebuild();
+        }
+        for (int g = 0; g < 8; g++)
+        {
+            var name = Lbl(L.Upper(L.T(CoachRank.Names[g])), UiTheme.Display, 22, CoachRank.Colors[g]);
+            name.CustomMinimumSize = new Vector2(190 * k, 0);
+            name.SizeFlagsVertical = SizeFlags.ShrinkCenter;
+            grid.AddChild(name);
+            for (int dv = 1; dv <= 3; dv++)
+            {
+                int r = ActualRank.Make(g, dv);
+                var b = Btn(L.Raw(dv.ToString(Inv)), VButton.Look.Select, () => Pick(r), 84, 40, 19);
+                b.Selected = r == cur;
+                grid.AddChild(b);
+            }
+        }
+        var bottom = HBox(10 * k);
+        v.AddChild(bottom);
+        var rad = Btn(L.Upper(L.T(CoachRank.Names[8])), VButton.Look.Select, () => Pick(ActualRank.Radiant), 190, 44, 19);
+        rad.Selected = cur == ActualRank.Radiant;
+        bottom.AddChild(rad);
+        bottom.AddChild(Expander());
+        var clear = Btn("DON'T SAY", VButton.Look.Secondary, () => Pick(ActualRank.None), 150, 44, 17);
+        clear.TooltipText = L.T("Unranked, or you'd rather not say: removes the rank");
+        bottom.AddChild(clear);
+        bottom.AddChild(Btn("CANCEL", VButton.Look.Ghost, ClosePicker, 120, 44, 17));
+        picker = overlay;
+        AddChild(overlay);
+    }
+
+    void ClosePicker()
+    {
+        if (picker != null && IsInstanceValid(picker)) picker.QueueFree();
+        picker = null;
+    }
+
+    protected override void Back()
+    {
+        if (picker != null && IsInstanceValid(picker)) { ClosePicker(); return; }
+        base.Back();
     }
 
     // ---------------- skills ----------------
@@ -219,7 +401,7 @@ public partial class ProfileScreen : ScreenBase
     {
         float k = K;
         int rated = p.Skills.Count(CoachRank.Rated);
-        var panel = new VPanel { Title = "SKILL BREAKDOWN", Caption = $"{rated} of 8 rated · hover a skill for details", K = k, SizeFlagsVertical = SizeFlags.ExpandFill };
+        var panel = new VPanel { Title = "SKILL BREAKDOWN", Caption = L.F($"{rated} of 8 rated · hover a skill for details"), K = k, SizeFlagsVertical = SizeFlags.ExpandFill };
         var h = HBox(14 * k);
         panel.AddChild(h);
         h.AddChild(new DrawBox { CustomMinimumSize = new Vector2(388 * k, 0), OnDraw = d => DrawRadar(d, p) });
@@ -252,7 +434,7 @@ public partial class ProfileScreen : ScreenBase
         int ls = UiTheme.Fs(12, k);
         float ly = c.Y + R + 62 * k;
         if (ly > d.Size.Y - 4 * k) return;
-        string legend = CoachData.HasOverall(p) ? "dashed ring = your overall rank" : "centre = Iron · rim = Radiant";
+        string legend = L.T(CoachData.HasOverall(p) ? "dashed ring = your overall rank" : "centre = Iron · rim = Radiant");
         Gfx.TextC(d, UiTheme.Body, legend, d.Size.X / 2, ly, ls, UiTheme.Faint);
     }
 
@@ -265,7 +447,7 @@ public partial class ProfileScreen : ScreenBase
         var panel = new VPanel
         {
             Title = any || overall ? "WHAT TO FIX" : "GET RATED",
-            Caption = any ? $"{p.Problems.Count} found · most important first · click to expand" : null,
+            Caption = any ? L.F($"{p.Problems.Count} found · most important first · click to expand") : null,
             K = k, SizeFlagsVertical = SizeFlags.ExpandFill,
         };
         var scroll = new ScrollContainer { HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled, SizeFlagsVertical = SizeFlags.ExpandFill };
@@ -284,7 +466,7 @@ public partial class ProfileScreen : ScreenBase
             list.AddChild(GetRated(p, any || p.Skills.Any(CoachRank.Rated)));
         }
         else if (!any)
-            list.AddChild(Para("No problems found in your recent runs — solid fundamentals. Keep playing: the coach re-checks after every run.",
+            list.AddChild(Para(L.T("No problems found in your recent runs — solid fundamentals. Keep playing: the coach re-checks after every run."),
                 UiTheme.Body, 16, UiTheme.Text));
 
         if (p.Strengths.Count > 0)
@@ -354,10 +536,10 @@ public partial class ProfileScreen : ScreenBase
             row.AddChild(Spacer(4 * k, 0));
             foreach (var key in drills)
             {
-                string name = CoachData.DrillName(key).ToUpperInvariant();
+                string name = L.Upper(L.T(CoachData.DrillName(key)));
                 float w = Gfx.TextW(UiTheme.Display, name, UiTheme.Fs(18, k)) / k + 60;
                 var b = Btn(name, VButton.Look.Secondary, () => CoachData.StartDrill(key, CoachData.FocusFrom(d)), Mathf.Max(150, w), 42, 18);
-                b.TooltipText = $"Start {CoachData.DrillName(key)} now";
+                b.TooltipText = L.F($"Start {L.T(CoachData.DrillName(key))} now");
                 row.AddChild(b);
             }
             row.AddChild(Spacer(8 * k, 0));
@@ -371,7 +553,7 @@ public partial class ProfileScreen : ScreenBase
         VButton? sm = null;
         sm = Btn("SHOW ME", VButton.Look.Ghost, () => ShowMe(d, sm!, status), 130, 42, 17);
         sm.TitleFont = UiTheme.HudWide;
-        sm.TooltipText = "Replay a moment from your recent runs where this happened";
+        sm.TooltipText = L.T("Replay a moment from your recent runs where this happened");
         row.AddChild(sm);
         row.AddChild(status);
         v.AddChild(row);
@@ -394,7 +576,7 @@ public partial class ProfileScreen : ScreenBase
     void ShowMe(Diagnosis d, VButton b, Label status)
     {
         if (search != null) return;
-        string drill = (d.Drills ?? Array.Empty<string>()).Where(CoachData.HasDrill).Select(CoachData.DrillName).FirstOrDefault() ?? "a few drills";
+        string drill = (d.Drills ?? Array.Empty<string>()).Where(CoachData.HasDrill).Select(CoachData.DrillName).FirstOrDefault() is { } dn ? L.T(dn) : L.T("a few drills");
         b.Disabled = true;
         b.Label = "SEARCHING…";
         b.QueueRedraw();
@@ -420,7 +602,7 @@ public partial class ProfileScreen : ScreenBase
         searchFor = null;
         if (IsInstanceValid(sf.Btn)) { sf.Btn.Disabled = false; sf.Btn.Label = "SHOW ME"; sf.Btn.QueueRedraw(); }
         if (found is { } f) RewindScreen.Open(Main.I, f.Run, f.Ins, sf.Code); // not a child: a resize rebuilds this screen
-        else if (IsInstanceValid(sf.Status)) sf.Status.Text = $"No recorded example yet. Play {sf.Drill}.";
+        else if (IsInstanceValid(sf.Status)) sf.Status.Text = L.F($"No recorded example yet. Play {sf.Drill}.");
     }
 
     Control GetRated(SkillProfile p, bool partial)
@@ -429,8 +611,10 @@ public partial class ProfileScreen : ScreenBase
         var v = VBox(10 * k);
         int need = CoachData.RunsNeeded();
         if (partial) v.AddChild(new SectionLabel { Text = "UNLOCK YOUR OVERALL RANK", K = k });
+        int more = need > 0 ? need : 3;
         v.AddChild(Para(
-            $"Play Head Flicks, Strafe Tracking, Peek Practice, Counter-Strafe and Vandal Spray a few times — the coach needs about {(need > 0 ? need : 3)} more run{(need == 1 ? "" : "s")} to estimate your rank. Every run is analysed automatically.",
+            L.P(more, $"Play Head Flicks, Strafe Tracking, Peek Practice, Counter-Strafe and Vandal Spray a few times — the coach needs about {more} more run to estimate your rank. Every run is analysed automatically.",
+                $"Play Head Flicks, Strafe Tracking, Peek Practice, Counter-Strafe and Vandal Spray a few times — the coach needs about {more} more runs to estimate your rank. Every run is analysed automatically."),
             UiTheme.Body, 16, UiTheme.Text));
         var grid = new GridContainer { Columns = 2, SizeFlagsHorizontal = SizeFlags.ExpandFill };
         grid.AddThemeConstantOverride("h_separation", (int)(10 * k));
@@ -439,7 +623,7 @@ public partial class ProfileScreen : ScreenBase
             if (CoachData.HasDrill(key))
                 grid.AddChild(new DrillTile { Key = key, Target = target, Rates = rates, Runs = CoachData.CoachedRuns(key), K = k });
         v.AddChild(grid);
-        if (Main.I.Dev && CoachData.LastError is { } err) v.AddChild(Para($"Coach error: {err}", UiTheme.Body, 13, UiTheme.Warn));
+        if (Main.I.Dev && CoachData.LastError is { } err) v.AddChild(Para(L.Raw($"Coach error: {err}"), UiTheme.Body, 13, UiTheme.Warn)); // dev only
         return v;
     }
 
@@ -453,7 +637,7 @@ public partial class ProfileScreen : ScreenBase
         var panel = new VPanel
         {
             Title = "SENSITIVITY",
-            Caption = has ? $"recommendation · {CoachRank.Confidence(a!.Confidence).ToLowerInvariant()} confidence" : "not enough data yet",
+            Caption = has ? L.F($"recommendation · {CoachRank.ConfidenceLower(a!.Confidence)}") : "not enough data yet",
             K = k,
         };
         var v = VBox(10 * k);
@@ -461,7 +645,7 @@ public partial class ProfileScreen : ScreenBase
         v.AddChild(new DrawBox { CustomMinimumSize = new Vector2(0, 112 * k), OnDraw = d => DrawSens(d, p) });
         string reason = has
             ? a!.Reason
-            : "Not enough flick and tracking data for a recommendation yet. Play Head Flicks and Strafe Tracking a few times — or run the Sens Finder for a direct blind A/B test.";
+            : L.T("Not enough flick and tracking data for a recommendation yet. Play Head Flicks and Strafe Tracking a few times — or run the Sens Finder for a direct blind A/B test.");
         if (reason.Length > 0) v.AddChild(Para(reason, UiTheme.Body, 15, new Color(UiTheme.Text, 0.85f)));
 
         var row = HBox(12 * k);
@@ -474,10 +658,10 @@ public partial class ProfileScreen : ScreenBase
             row.AddChild(tb);
         }
         var finder = Btn("RUN SENS FINDER", VButton.Look.Secondary, () => CoachData.StartDrill("sensfinder"), 220, 48, 19);
-        finder.TooltipText = "Blind A/B test of sensitivities with flicks + tracking (about 15 minutes)";
+        finder.TooltipText = L.T("Blind A/B test of sensitivities with flicks + tracking (about 15 minutes)");
         finder.Disabled = !CoachData.HasDrill("sensfinder");
         row.AddChild(finder);
-        var note = Para("ValTrainer can't change Valorant's settings — set it in Valorant: Settings → General → Mouse → Sensitivity.",
+        var note = Para(L.T("ValTrainer can't change Valorant's settings — set it in Valorant: Settings → General → Mouse → Sensitivity."),
             UiTheme.Body, 12.5f, UiTheme.Faint);
         note.SizeFlagsVertical = SizeFlags.ShrinkCenter;
         row.AddChild(note);
@@ -500,8 +684,8 @@ public partial class ProfileScreen : ScreenBase
         b.Label = on ? "ACTIVE IN VALTRAINER" : "TRY IT IN VALTRAINER";
         b.Sub = on ? "click to switch back" : null;
         b.TooltipText = on
-            ? "ValTrainer is using the recommended sens. Click to go back to your previous sens."
-            : $"Use {Rounded(a.RecommendedSens).ToString("0.000", Inv)} in ValTrainer's drills (your Valorant settings stay unchanged)";
+            ? L.T("ValTrainer is using the recommended sens. Click to go back to your previous sens.")
+            : L.F($"Use {Rounded(a.RecommendedSens):0.000} in ValTrainer's drills (your Valorant settings stay unchanged)");
         b.QueueRedraw();
     }
 
@@ -539,10 +723,10 @@ public partial class ProfileScreen : ScreenBase
         {
             Gfx.Text(d, UiTheme.HudWide, caption, x, Gfx.Mid(10 * k, cap), cap, UiTheme.Dim);
             Gfx.Text(d, UiTheme.Display, sens.ToString("0.000", Inv), x - 2 * k, 76 * k, big, c);
-            Gfx.Text(d, UiTheme.Body, $"{sens * dpi:0} eDPI · {cm:0.0} cm/360", x, Gfx.Mid(100 * k, sub), sub, UiTheme.Dim);
+            Gfx.Text(d, UiTheme.Body, L.F($"{sens * dpi:0} eDPI · {cm:0.0} cm/360"), x, Gfx.Mid(100 * k, sub), sub, UiTheme.Dim);
         }
 
-        Block(0, has ? "CURRENT" : "CURRENT · " + (app.Settings.UseSensOverride ? "VALTRAINER" : "FROM VALORANT"), cur, curCm, UiTheme.Text);
+        Block(0, has ? L.T("CURRENT") : app.Settings.UseSensOverride ? L.T("CURRENT · VALTRAINER") : L.T("CURRENT · FROM VALORANT"), cur, curCm, UiTheme.Text);
         float colW = 190 * k, ax = colW + 46 * k, rx = colW + 104 * k;
         float? recCm = null;
         if (has)
@@ -569,10 +753,10 @@ public partial class ProfileScreen : ScreenBase
                 d.DrawRect(new Rect2(ax - 14 * k, ay + 4 * k, 28 * k, 5 * k), dc);
             }
             int ps = UiTheme.Fs(20, k), ls = UiTheme.Fs(11, k);
-            string pct = dir == "keep" || cur <= 0 ? "KEEP" : $"{(rec / cur - 1f) * 100f:+0;-0}%";
+            string pct = dir == "keep" || cur <= 0 ? L.T("KEEP") : string.Create(Inv, $"{(rec / cur - 1f) * 100f:+0;-0}%");
             Gfx.TextC(d, UiTheme.Display, pct, ax, Gfx.Mid(80 * k, ps), ps, dc);
-            if (dir != "keep") Gfx.TextC(d, UiTheme.HudWide, dir.ToUpperInvariant(), ax, Gfx.Mid(100 * k, ls), ls, UiTheme.Faint);
-            string capText = dir != "keep" ? "RECOMMENDED" : a.Confidence < 0.5f ? "KEEP FOR NOW" : "KEEP YOUR SENS";
+            if (dir != "keep") Gfx.TextC(d, UiTheme.HudWide, dir == "lower" ? "LOWER" : dir == "higher" ? "HIGHER" : L.Raw(dir.ToUpperInvariant()), ax, Gfx.Mid(100 * k, ls), ls, UiTheme.Faint);
+            string capText = L.T(dir != "keep" ? "RECOMMENDED" : a.Confidence < 0.5f ? "KEEP FOR NOW" : "KEEP YOUR SENS");
             Block(rx, capText, rec, rcm, dir == "keep" ? UiTheme.Text : UiTheme.Good);
         }
         else
@@ -609,8 +793,8 @@ public partial class ProfileScreen : ScreenBase
             else Gfx.TextR(d, UiTheme.HudWide, label, x + 3 * k, Gfx.Mid(by - 24 * k, ls), ls, c);
         }
         bool recRight = recCm is { } rc0 && rc0 >= curCm;
-        Marker(curCm, "NOW", UiTheme.Text, recCm == null || !recRight);
-        if (recCm is { } rc) Marker(rc, "NEW", UiTheme.Good, recRight);
+        Marker(curCm, L.T("NOW"), UiTheme.Text, recCm == null || !recRight);
+        if (recCm is { } rc) Marker(rc, L.C("sens", "NEW"), UiTheme.Good, recRight); // the new sens ("NEW" alone: a new drill)
     }
 
     // ---------------- small builders ----------------

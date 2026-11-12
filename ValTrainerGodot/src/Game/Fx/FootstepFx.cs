@@ -109,6 +109,7 @@ public static class FootstepFx
         bool occ = Occluded(g, feet);
         if (occ) { gain *= 0.7f; Muffled++; }
         Played++;
+        Sfx.DuckSkin(); // gameplay cue: skin sounds duck under it
         var p = pool[next = (next + 1) % pool.Count];
         p.Stream = steps[Random.Shared.Next(steps.Length)];
         p.Bus = occ ? MuffledBus : "Master";

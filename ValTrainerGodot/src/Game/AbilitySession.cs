@@ -30,5 +30,6 @@ public partial class GameSession
             viewmodel = Viewmodel.Create(weaponDef.Kind, Main.I.Settings.LeftHandedWeapon);
             cam.AddChild(viewmodel);
         }
+        if (skinState is { } skin && weaponDef != null) Skins.SkinAudio.PlayEquip(skin, weaponDef.Kind); // the skin's equip flourish sound
     }
 }

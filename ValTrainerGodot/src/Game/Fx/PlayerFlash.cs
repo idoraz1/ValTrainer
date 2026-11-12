@@ -1,4 +1,5 @@
 using Godot;
+using ValTrainer.Core;
 
 namespace ValTrainer.Game.Fx;
 
@@ -239,24 +240,25 @@ public sealed class Flashpoint : OrbFlash
 
     public override bool VisibleToEnemies => emerged;
 
-    /// <summary>Finds the wall Breach's charge would burn through along <paramref name="dir"/> (null reason = valid).</summary>
+    /// <summary>Finds the wall Breach's charge would burn through along <paramref name="dir"/> (null reason = valid; the reason is
+    /// English, translated where it is shown).</summary>
     public static string? Aim(IReadOnlyList<Box> solid, Vector3 eye, Vector3 dir, out Vector3 entry, out Vector3 exit)
     {
         dir = dir.Normalized();
         entry = exit = eye;
         float t = Collision.FirstHit(eye, dir, solid, out int i);
-        if (i < 0 || t > MaxRange) return "No wall within 35 m";
+        if (i < 0 || t > MaxRange) return L.N("No wall within 35 m");
         entry = eye + dir * t;
         for (float s = 0.05f; s <= MaxThickness; s += 0.05f)
         {
             var p = entry + dir * s;
             if (Inside(p, solid, 0f)) continue;
             exit = p + dir * 0.25f;
-            if (Inside(exit, solid, 0f) || OffMap(exit, solid)) return "Nothing on the other side";
-            if (Collision.FirstHit(exit, Vector3.Down, solid) > 8f) return "Nothing on the other side";
+            if (Inside(exit, solid, 0f) || OffMap(exit, solid)) return L.N("Nothing on the other side");
+            if (Collision.FirstHit(exit, Vector3.Down, solid) > 8f) return L.N("Nothing on the other side");
             return null;
         }
-        return "Wall too thick (max 10 m)";
+        return L.N("Wall too thick (max 10 m)");
     }
 
     public override void Update(float dt, UtilInput input)

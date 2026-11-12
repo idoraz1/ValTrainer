@@ -29,28 +29,35 @@ public static partial class Updater
     /// <summary>Full path of the running ValTrainer.exe.</summary>
     static string ExePath = "";
 
-    /// <summary>Sets <see cref="Kind"/>; returns why this copy can't update itself (null when it can).
+    /// <summary>Sets <see cref="Kind"/>; returns why this copy can't update itself (null when it can), in English (logged);
+    /// <paramref name="ui"/> builds an interpolated reason in the UI language (null for plain catalogued literals).
     /// Installed: install.ini (written by Setup) names the AppId, and Windows' uninstall entry for that AppId must point
     /// at this very folder. Portable: an exported exe with the game packed inside (no ValTrainer.pck / data folder next
     /// to it) in a folder we can write to.</summary>
-    static string? DetectKind()
+    static string? DetectKind(out Func<string>? ui)
     {
+        ui = null;
         try
         {
-            if (!OS.HasFeature("template") || OS.HasFeature("editor")) { Kind = InstallKind.Source; return "running from the Godot editor"; }
+            if (!OS.HasFeature("template") || OS.HasFeature("editor")) { Kind = InstallKind.Source; return L.N("running from the Godot editor"); }
             ExePath = Path.GetFullPath(System.Environment.ProcessPath ?? OS.GetExecutablePath());
             string exeDir = Path.GetDirectoryName(ExePath)!;
             string marker = Path.Combine(exeDir, MarkerName);
             if (File.Exists(marker))
             {
                 var (appId, mode) = ReadMarker(marker);
-                if (appId == null) { Kind = InstallKind.Unknown; return $"{MarkerName} is damaged; use the installer from the release page"; }
+                if (appId == null)
+                {
+                    Kind = InstallKind.Unknown;
+                    ui = () => L.F($"{MarkerName} is damaged; use the installer from the release page");
+                    return $"{MarkerName} is damaged; use the installer from the release page";
+                }
                 bool admin = mode == "admin";
                 string? loc = InstallLocation(appId, admin);
                 if (loc == null || !SamePath(loc, exeDir))
                 {
                     Kind = InstallKind.Unknown;
-                    return "this copy isn't the installation Windows knows about; use the installer from the release page";
+                    return L.N("this copy isn't the installation Windows knows about; use the installer from the release page");
                 }
                 Kind = admin ? InstallKind.InstalledAdmin : InstallKind.InstalledUser;
                 return null;
@@ -58,16 +65,22 @@ public static partial class Updater
             if (File.Exists(Path.ChangeExtension(ExePath, ".pck")) || Directory.Exists(Path.Combine(exeDir, "data_ValTrainer_windows_x86_64")))
             {
                 Kind = InstallKind.Unknown; // e.g. installed by a Setup from before automatic updates
-                return "installed by an older Setup; install the next update by hand once, later ones are automatic";
+                return L.N("installed by an older Setup; install the next update by hand once, later ones are automatic");
             }
             Kind = InstallKind.Portable;
-            if (!CanWrite(exeDir)) return $"can't write to {exeDir}; download new versions by hand";
+            if (!CanWrite(exeDir))
+            {
+                ui = () => L.F($"can't write to {exeDir}; download new versions by hand");
+                return $"can't write to {exeDir}; download new versions by hand";
+            }
             return null;
         }
         catch (Exception e)
         {
             Kind = InstallKind.Unknown;
-            return $"can't tell how ValTrainer was installed ({Log.Describe(e)})";
+            string why = Log.Describe(e);
+            ui = () => L.F($"can't tell how ValTrainer was installed ({why})");
+            return $"can't tell how ValTrainer was installed ({why})";
         }
     }
 

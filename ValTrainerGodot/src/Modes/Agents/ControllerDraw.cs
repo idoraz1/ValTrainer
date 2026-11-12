@@ -1,5 +1,6 @@
 using System.Globalization;
 using Godot;
+using ValTrainer.Core;
 using ValTrainer.Game;
 using ValTrainer.Game.Fx;
 using ValTrainer.Maps;
@@ -20,6 +21,8 @@ static class ControllerDraw
     static readonly Color Cut = new(0.45f, 0.95f, 0.7f);
     static readonly Color PathCol = new(0.35f, 0.85f, 1f);
     static readonly Color Panel = new(0.04f, 0.07f, 0.1f, 0.9f);
+    /// <summary>Astra's ultimate: ability names stay English (a format argument, never part of a key).</summary>
+    const string AstralFormUp = "ASTRAL FORM";
 
     public static void Draw(CanvasItem ci, Vector2 size, SmokeExecuteMode m)
     {
@@ -171,7 +174,7 @@ static class ControllerDraw
         {
             var c = map.ToScreen(m.Spot.Choke);
             Gfx.Diamond(ci, c, 6 * k, 6 * k, UiTheme.Warn);
-            TacticalMap.Label(ci, "ENTRY", c + new Vector2(0, -13 * k), UiTheme.Fs(11, k), UiTheme.Warn);
+            TacticalMap.Label(ci, L.T("ENTRY"), c + new Vector2(0, -13 * k), UiTheme.Fs(11, k), UiTheme.Warn);
         }
 
         // path of a played round
@@ -241,6 +244,7 @@ static class ControllerDraw
         return (new Rect2(left, top, mapW, bottom - top), new Rect2(left + mapW + 26 * k, top, total - mapW - 26 * k, bottom - top));
     }
 
+    /// <summary>Word-wraps already translated <paramref name="text"/> (measured as is, never looked up).</summary>
     public static List<string> Wrap(Font f, string text, int fs, float maxW)
     {
         var lines = new List<string>();
@@ -250,7 +254,7 @@ static class ControllerDraw
             foreach (var w in para.Split(' '))
             {
                 var t = line.Length == 0 ? w : line + " " + w;
-                if (Gfx.TextW(f, t, fs) > maxW && line.Length > 0) { lines.Add(line); line = w; }
+                if (Gfx.RawW(f, t, fs) > maxW && line.Length > 0) { lines.Add(line); line = w; }
                 else line = t;
             }
             lines.Add(line);
@@ -258,9 +262,10 @@ static class ControllerDraw
         return lines;
     }
 
+    /// <summary>A wrapped paragraph of already translated text.</summary>
     static float Para(CanvasItem ci, Font f, string text, float x, float y, int fs, float maxW, Color c, float lh = 1.32f)
     {
-        foreach (var l in Wrap(f, text, fs, maxW)) { Gfx.Text(ci, f, l, x, y, fs, c); y += fs * lh; }
+        foreach (var l in Wrap(f, text, fs, maxW)) { Gfx.TextRaw(ci, f, l, x, y, fs, c); y += fs * lh; }
         return y;
     }
 
@@ -293,7 +298,7 @@ static class ControllerDraw
 
         Gfx.Plate(ci, info, 18 * k, Panel, new Color(UiTheme.Text, 0.12f));
         var inner = info.Grow(-26 * k);
-        Header(ci, k, inner, $"ROUND {m.Current.Index} / 5", "EXECUTE PLAN", $"{m.Kit.Agent.ToUpperInvariant()} · {m.Spot.Map.ToUpperInvariant()} {m.Spot.Name.ToUpperInvariant()}");
+        Header(ci, k, inner, L.F($"ROUND {m.Current.Index} / 5"), L.N("EXECUTE PLAN"), $"{m.Kit.Agent.ToUpperInvariant()} · {m.Spot.Map.ToUpperInvariant()} {m.Spot.Name.ToUpperInvariant()}");
         float x = inner.Position.X, y = inner.Position.Y + 136 * k, w = inner.Size.X;
         int bs = UiTheme.Fs(17, k), ss = UiTheme.Fs(13, k), ns = UiTheme.Fs(22, k);
         Gfx.Text(ci, UiTheme.HudWide, "CUT THESE SIGHTLINES", x, y, ss, UiTheme.Accent);
@@ -301,20 +306,22 @@ static class ControllerDraw
         for (int i = 0; i < m.Assigned.Count; i++)
         {
             var s = m.Assigned[i];
-            Gfx.Text(ci, UiTheme.Display, $"{i + 1}  {s.Name.ToUpperInvariant()}", x, y, ns, UiTheme.Text);
+            Gfx.TextRaw(ci, UiTheme.Display, $"{i + 1}  {s.Name.ToUpperInvariant()}", x, y, ns, UiTheme.Text);
             y += 24 * k;
-            string covers = s.Covers.Count > 0 ? "blinds " + string.Join(", ", s.Covers.Select(c => c.Name)) : "cuts the angles onto the entry";
+            string covers = s.Covers.Count > 0 ? L.F($"blinds {string.Join(", ", s.Covers.Select(c => c.Name))}") : L.T("cuts the angles onto the entry");
             y = Para(ci, UiTheme.Body, covers, x + 26 * k, y, bs, w - 26 * k, UiTheme.Dim) + 6 * k;
         }
         if (m.Kit.HasWall && m.Assigned.Count > 0)
-            y = Para(ci, UiTheme.Body, $"Use your {m.Kit.WallAbility} for the angles the {(m.Kit.Placing == SmokePlacing.Throw ? "orb" : m.Kit.Ability)} doesn't cover.", x, y + 4 * k, bs, w, UiTheme.Dim) + 6 * k;
+            y = Para(ci, UiTheme.Body, m.Kit.Placing == SmokePlacing.Throw
+                ? L.F($"Use your {m.Kit.WallAbility} for the angles the orb doesn't cover.")
+                : L.F($"Use your {m.Kit.WallAbility} for the angles the {m.Kit.Ability} doesn't cover."), x, y + 4 * k, bs, w, UiTheme.Dim) + 6 * k;
         if (m.Plan.Derived)
-            y = Para(ci, UiTheme.Body, "No standard smokes are set for this map yet: the plan smokes the defender spots that see the most of your entry.", x, y + 4 * k, UiTheme.Fs(14, k), w, UiTheme.Faint) + 4 * k;
+            y = Para(ci, UiTheme.Body, L.T("No standard smokes are set for this map yet: the plan smokes the defender spots that see the most of your entry."), x, y + 4 * k, UiTheme.Fs(14, k), w, UiTheme.Faint) + 4 * k;
         y += 14 * k;
         Gfx.Text(ci, UiTheme.HudWide, "YOUR KIT", x, y, ss, UiTheme.Accent);
         y += 26 * k;
-        y = Para(ci, UiTheme.Body, $"{m.Kit.Ability}: {m.Kit.Summary}", x, y, bs, w, UiTheme.Text) + 4 * k;
-        y = Para(ci, UiTheme.Body, m.Kit.HowTo, x, y, UiTheme.Fs(15, k), w, UiTheme.Dim) + 10 * k;
+        y = Para(ci, UiTheme.Body, m.Kit.Ability + ": " + m.Kit.Summary(m.Kit), x, y, bs, w, UiTheme.Text) + 4 * k;
+        y = Para(ci, UiTheme.Body, m.Kit.HowTo(m.Kit), x, y, UiTheme.Fs(15, k), w, UiTheme.Dim) + 10 * k;
         Gfx.Text(ci, UiTheme.HudWide, "LEGEND", x, y, ss, UiTheme.Accent);
         y += 24 * k;
         ci.DrawLine(new Vector2(x, y - 5 * k), new Vector2(x + 30 * k, y - 5 * k), Open, 2 * k);
@@ -331,7 +338,7 @@ static class ControllerDraw
         var bar = new Rect2(x, inner.End.Y - 44 * k, w, 6 * k);
         ci.DrawRect(bar, new Color(1, 1, 1, 0.1f));
         ci.DrawRect(new Rect2(bar.Position, new Vector2(w * Mathf.Clamp(m.PhaseFrac, 0, 1), bar.Size.Y)), UiTheme.Accent);
-        Gfx.Text(ci, UiTheme.HudWide, $"PLACEMENT STARTS IN {Mathf.CeilToInt(left)}  ·  CLICK / SPACE TO START NOW", x, inner.End.Y - 12 * k, UiTheme.Fs(14, k), UiTheme.Text);
+        Gfx.Text(ci, UiTheme.HudWide, L.F($"PLACEMENT STARTS IN {Mathf.CeilToInt(left)}  ·  CLICK / SPACE TO START NOW"), x, inner.End.Y - 12 * k, UiTheme.Fs(14, k), UiTheme.Text);
     }
 
     // =================================================================================================================
@@ -367,13 +374,13 @@ static class ControllerDraw
                 ci.DrawArc(c, m.Kit.Radius * px, 0, Mathf.Tau, 48, m.Kit.Look.Rim, Mathf.Max(2f, 2.5f * k), true);
                 TacticalMap.Label(ci, (i + 1).ToString(Inv), c, UiTheme.Fs(16, k), UiTheme.Text, UiTheme.Display);
             }
-            title = $"{m.Kit.Ability.ToUpperInvariant()}  ·  {md.Charges - md.Marks.Count} OF {md.Charges} LEFT TO MARK";
-            help = "CLICK mark / remove   ·   RIGHT-CLICK launch   ·   " + Key(m.Kit.SmokeKey) + " put away";
+            title = L.F($"{m.Kit.Ability.ToUpperInvariant()}  ·  {md.Charges - md.Marks.Count} OF {md.Charges} LEFT TO MARK");
+            help = L.F($"CLICK mark / remove   ·   RIGHT-CLICK launch   ·   {Key(m.Kit.SmokeKey)} put away");
         }
         else if (astral)
         {
-            title = $"ASTRAL FORM  ·  {m.StarsLeft} STAR{(m.StarsLeft == 1 ? "" : "S")} LEFT";
-            help = $"CLICK place / take back a star   ·   RIGHT-CLICK or {Key(GameAction.Ultimate)} return   ·   then look at a star + {Key(GameAction.Ability2)} = Nebula";
+            title = L.P(m.StarsLeft, $"{AstralFormUp}  ·  {m.StarsLeft} STAR LEFT", $"{AstralFormUp}  ·  {m.StarsLeft} STARS LEFT");
+            help = L.F($"CLICK place / take back a star   ·   RIGHT-CLICK or {Key(GameAction.Ultimate)} return   ·   then look at a star + {Key(GameAction.Ability2)} = {m.Kit.Ability}");
         }
         else if (a is AimAbility aim)
         {
@@ -381,8 +388,8 @@ static class ControllerDraw
             ci.DrawLine(map.ToScreen(m.Feet), c, new Color(0.5f, 0.75f, 1f, 0.6f), 1.5f * k, true);
             ci.DrawCircle(c, m.Kit.Radius * px, new Color(0.45f, 0.7f, 1f, 0.2f));
             ci.DrawArc(c, m.Kit.Radius * px, 0, Mathf.Tau, 48, new Color(0.55f, 0.8f, 1f), 2.5f * k, true);
-            title = $"{m.Kit.Ability.ToUpperInvariant()}  ·  OVERHEAD  ·  {aim.Distance:0} M";
-            help = "AIM moves the marker   ·   HOLD CLICK out / RIGHT-CLICK in   ·   " + Key(m.Kit.SmokeKey) + " throw   ·   R normal view";
+            title = L.F($"{m.Kit.Ability.ToUpperInvariant()}  ·  OVERHEAD  ·  {aim.Distance:0} M");
+            help = L.F($"AIM moves the marker   ·   HOLD CLICK out / RIGHT-CLICK in   ·   {Key(m.Kit.SmokeKey)} throw   ·   R normal view");
         }
         else { title = a.Name.ToUpperInvariant(); help = ""; }
 
@@ -399,14 +406,17 @@ static class ControllerDraw
             ci.DrawLine(cur + new Vector2(-12 * k, 0), cur + new Vector2(12 * k, 0), col, 1.5f * k);
             ci.DrawLine(cur + new Vector2(0, -12 * k), cur + new Vector2(0, 12 * k), col, 1.5f * k);
             if (spot is { } sp)
-                TacticalMap.Label(ci, $"{new Vector2(sp.X - m.Feet.X, sp.Z - m.Feet.Z).Length():0} M{(sp.Y - m.Feet.Y > 1.5f ? " · HIGH" : "")}", cur + new Vector2(0, r + 12 * k), UiTheme.Fs(12, k), col);
+            {
+                float dist = new Vector2(sp.X - m.Feet.X, sp.Z - m.Feet.Z).Length();
+                TacticalMap.Label(ci, sp.Y - m.Feet.Y > 1.5f ? L.F($"{dist:0} M · HIGH") : $"{dist:0} M", cur + new Vector2(0, r + 12 * k), UiTheme.Fs(12, k), col);
+            }
         }
 
         int ts = UiTheme.Fs(26, k), hs = UiTheme.Fs(15, k);
         Gfx.TextC(ci, UiTheme.Display, title, size.X / 2, mr.Position.Y - 16 * k, ts, UiTheme.Text);
         Gfx.TextC(ci, UiTheme.HudWide, help, size.X / 2, mr.End.Y + 30 * k, hs, UiTheme.Dim);
         if (m.CurrentPhase == SmokeExecuteMode.Phase.Place)
-            Gfx.TextC(ci, UiTheme.HudWide, $"PLACEMENT TIME {Mathf.Max(0, m.PhaseLeft):0.0} S", size.X / 2, mr.End.Y + 54 * k, hs, m.PhaseLeft < 3 ? UiTheme.Accent : UiTheme.Warn);
+            Gfx.TextC(ci, UiTheme.HudWide, L.F($"PLACEMENT TIME {Mathf.Max(0, m.PhaseLeft):0.0} S"), size.X / 2, mr.End.Y + 54 * k, hs, m.PhaseLeft < 3 ? UiTheme.Accent : UiTheme.Warn);
     }
 
     /// <summary>The player's bind for an action, for key caps and help lines ("E", "MOUSE 4").</summary>
@@ -443,7 +453,7 @@ static class ControllerDraw
         var g = m.Game;
         // phase bar under the top bar
         bool place = m.CurrentPhase == SmokeExecuteMode.Phase.Place;
-        string label = place ? "PLACE YOUR SMOKES" : "EXECUTE";
+        string label = L.T(place ? "PLACE YOUR SMOKES" : "EXECUTE");
         float left = Mathf.Max(0, m.PhaseLeft);
         int fs = UiTheme.Fs(17, k);
         float cx = size.X / 2, y = 116 * k, bw = 360 * k;
@@ -467,7 +477,7 @@ static class ControllerDraw
             var kr = new Rect2(panel.Position.X + 10 * k, ry + 4 * k, 26 * k, 26 * k);
             ci.DrawRect(kr, a.Equipped ? m.Kit.Look.Rim : new Color(1, 1, 1, 0.12f));
             Gfx.TextC(ci, UiTheme.HudWide, InputBinding.Cap(Key(a.HotKey)), kr.GetCenter().X, Gfx.Mid(kr.GetCenter().Y, ks), ks, a.Equipped ? new Color(0.05f, 0.05f, 0.08f) : UiTheme.Text);
-            Gfx.Text(ci, UiTheme.HudWide, a.Name.ToUpperInvariant(), kr.End.X + 10 * k, Gfx.Mid(kr.GetCenter().Y, ns), ns, a.Spent ? UiTheme.Faint : UiTheme.Text);
+            Gfx.TextRaw(ci, UiTheme.HudWide, a.Name.ToUpperInvariant(), kr.End.X + 10 * k, Gfx.Mid(kr.GetCenter().Y, ns), ns, a.Spent ? UiTheme.Faint : UiTheme.Text);
             Gfx.TextR(ci, UiTheme.HudWide, a.Status, panel.End.X - 10 * k, Gfx.Mid(kr.GetCenter().Y, ns), ns, a.Spent ? UiTheme.Faint : m.Kit.Look.Rim);
             ry += rowH;
         }
@@ -478,7 +488,7 @@ static class ControllerDraw
             ci.DrawRect(fb, new Color(1, 1, 1, 0.12f));
             ci.DrawRect(new Rect2(fb.Position, new Vector2(fb.Size.X * f, fb.Size.Y)), m.Fuel.Fuel < ViperFuel.Min ? UiTheme.Accent : m.Kit.Look.Rim);
             ci.DrawRect(new Rect2(fb.Position.X + fb.Size.X * ViperFuel.Min / 100f, fb.Position.Y - 3 * k, 2 * k, fb.Size.Y + 6 * k), UiTheme.Text);
-            Gfx.Text(ci, UiTheme.HudWide, $"FUEL {m.Fuel.Fuel:0}", fb.Position.X, fb.Position.Y - 6 * k, UiTheme.Fs(12, k), UiTheme.Dim);
+            Gfx.Text(ci, UiTheme.HudWide, L.F($"FUEL {m.Fuel.Fuel:0}"), fb.Position.X, fb.Position.Y - 6 * k, UiTheme.Fs(12, k), UiTheme.Dim);
         }
 
         // Astra: stars on screen (through walls), the one E would hit is ringed
@@ -493,11 +503,11 @@ static class ControllerDraw
                 if (s == target)
                 {
                     ci.DrawArc(sp, 18 * k, 0, Mathf.Tau, 32, UiTheme.Text, 2 * k, true);
-                    Gfx.TextC(ci, UiTheme.HudWide, neb.Charges > 0 ? "E  NEBULA   ·   F  DISSIPATE" : "F  DISSIPATE", sp.X, sp.Y + 38 * k, UiTheme.Fs(13, k), UiTheme.Text);
+                    Gfx.TextC(ci, UiTheme.HudWide, L.Raw(neb.Charges > 0 ? "E  NEBULA   ·   F  DISSIPATE" : "F  DISSIPATE"), sp.X, sp.Y + 38 * k, UiTheme.Fs(13, k), UiTheme.Text);
                 }
             }
             if (m.Stars.Count == 0 && m.StarsLeft > 0)
-                Gfx.TextC(ci, UiTheme.HudWide, "X  ASTRAL FORM — PLACE YOUR STARS", size.X / 2, size.Y * 0.64f, UiTheme.Fs(16, k), UiTheme.Warn);
+                Gfx.TextC(ci, UiTheme.HudWide, L.F($"X  {AstralFormUp} — PLACE YOUR STARS"), size.X / 2, size.Y * 0.64f, UiTheme.Fs(16, k), UiTheme.Warn);
         }
 
         // Omen / Harbor: marker distance and an inset map
@@ -506,7 +516,7 @@ static class ControllerDraw
         {
             var c = size / 2;
             Gfx.TextC(ci, UiTheme.HudWide, $"{aim.Distance:0} M", c.X, c.Y + 46 * k, UiTheme.Fs(16, k), aim.InRange ? UiTheme.Text : UiTheme.Accent);
-            Gfx.TextC(ci, UiTheme.HudWide, $"HOLD CLICK OUT · HOLD RIGHT-CLICK IN · {Key(m.Kit.SmokeKey)} THROW · R OVERHEAD", c.X, c.Y + 70 * k, UiTheme.Fs(13, k), UiTheme.Dim);
+            Gfx.TextC(ci, UiTheme.HudWide, L.F($"HOLD CLICK OUT · HOLD RIGHT-CLICK IN · {Key(m.Kit.SmokeKey)} THROW · R OVERHEAD"), c.X, c.Y + 70 * k, UiTheme.Fs(13, k), UiTheme.Dim);
             var inset = new Rect2(size.X - 400 * k, 150 * k, 370 * k, 300 * k);
             ci.DrawRect(inset, new Color(0.03f, 0.05f, 0.08f, 0.75f));
             m.TMap.Fit(inset.Grow(-8 * k));
@@ -531,7 +541,7 @@ static class ControllerDraw
                 foreach (var p in ScreenAbility.Line(g.Solid, g.View.Eye, g.View.Yaw, m.WorldBounds))
                     if (Project(ci, p + Vector3.Up * 0.1f, out var sp)) ci.DrawCircle(sp, 3f * k, new Color(m.Kit.Look.Rim, 0.75f));
             }
-            if (abil.OfType<TideAbility>().FirstOrDefault(a => a.Equipped) is { } tide && tide.Status != "FLOWING")
+            if (abil.OfType<TideAbility>().FirstOrDefault(a => a.Equipped) is { } tide && !tide.Running)
             {
                 float yr = Mathf.DegToRad(g.View.Yaw);
                 var dir = new Vector3(Mathf.Sin(yr), 0, -Mathf.Cos(yr));
@@ -555,7 +565,7 @@ static class ControllerDraw
         {
             var gases = abil.OfType<ViperGas>().ToList();
             if (gases.Count > 0 && gases.All(x => x.Deployed && !x.On) && m.Fuel.Fuel >= ViperFuel.Min)
-                Gfx.TextC(ci, UiTheme.HudWide, $"{string.Join(" / ", gases.Select(x => Key(x.HotKey)))}  SWITCH YOUR GAS ON", size.X / 2, size.Y * 0.64f, UiTheme.Fs(16, k), UiTheme.Warn);
+                Gfx.TextC(ci, UiTheme.HudWide, L.F($"{string.Join(" / ", gases.Select(x => Key(x.HotKey)))}  SWITCH YOUR GAS ON"), size.X / 2, size.Y * 0.64f, UiTheme.Fs(16, k), UiTheme.Warn);
         }
     }
 
@@ -594,11 +604,11 @@ static class ControllerDraw
         });
         Gfx.Plate(ci, info, 18 * k, Panel, new Color(UiTheme.Text, 0.12f));
         var inner = info.Grow(-26 * k);
-        string res = r.Won ? $"SITE TAKEN · {r.ExecTime:0.0} S" : r.Result;
-        Header(ci, k, inner, $"ROUND {r.Index} / 5", res, $"{m.Kit.Agent.ToUpperInvariant()} · {m.Kit.Ability.ToUpperInvariant()}");
+        string res = r.Won ? L.F($"SITE TAKEN · {r.ExecTime:0.0} S") : L.T(r.Result);
+        Header(ci, k, inner, L.F($"ROUND {r.Index} / 5"), res, $"{m.Kit.Agent.ToUpperInvariant()} · {m.Kit.Ability.ToUpperInvariant()}");
         RoundStats(ci, k, m, r, inner.Position.X, inner.Position.Y + 136 * k, inner.Size.X);
         bool last = m.Rounds.Count >= 5;
-        Gfx.Text(ci, UiTheme.HudWide, last ? $"RESULTS IN {Mathf.CeilToInt(Mathf.Max(0, m.PhaseLeft))}  ·  CLICK TO CONTINUE" : $"NEXT ROUND IN {Mathf.CeilToInt(Mathf.Max(0, m.PhaseLeft))}  ·  CLICK TO CONTINUE",
+        Gfx.Text(ci, UiTheme.HudWide, last ? L.F($"RESULTS IN {Mathf.CeilToInt(Mathf.Max(0, m.PhaseLeft))}  ·  CLICK TO CONTINUE") : L.F($"NEXT ROUND IN {Mathf.CeilToInt(Mathf.Max(0, m.PhaseLeft))}  ·  CLICK TO CONTINUE"),
             inner.Position.X, inner.End.Y - 12 * k, UiTheme.Fs(14, k), UiTheme.Text);
     }
 
@@ -609,7 +619,7 @@ static class ControllerDraw
         Gfx.Text(ci, UiTheme.HudWide, "SIGHTLINES CUT", x, y, ss, UiTheme.Accent);
         y += 34 * k;
         Gfx.Text(ci, UiTheme.Display, $"{r.Coverage * 100:0}%", x, y, big, r.Coverage >= m.StdCoverage - 0.08f ? UiTheme.Good : UiTheme.Warn);
-        Gfx.Text(ci, UiTheme.Body, $"standard smokes: {m.StdCoverage * 100:0}%", x + 90 * k, y - 4 * k, bs, UiTheme.Dim);
+        Gfx.Text(ci, UiTheme.Body, L.F($"standard smokes: {m.StdCoverage * 100:0}%"), x + 90 * k, y - 4 * k, bs, UiTheme.Dim);
         y += 12 * k;
         var bar = new Rect2(x, y, w, 6 * k);
         ci.DrawRect(bar, new Color(1, 1, 1, 0.1f));
@@ -620,19 +630,19 @@ static class ControllerDraw
         y += 28 * k;
         foreach (var s in r.Spots)
         {
-            string v = float.IsInfinity(s.Error) ? "not placed" : $"{s.Error:0.0} m off{(s.ByWall ? " (wall)" : "")}";
-            Gfx.Text(ci, UiTheme.Body, s.Name, x, y, bs, UiTheme.Text);
+            string v = float.IsInfinity(s.Error) ? L.T("not placed") : s.ByWall ? L.F($"{s.Error:0.0} m off (wall)") : L.F($"{s.Error:0.0} m off");
+            Gfx.TextRaw(ci, UiTheme.Body, s.Name, x, y, bs, UiTheme.Text);
             Gfx.TextR(ci, UiTheme.Body, v, x + w, y, bs, s.Good ? UiTheme.Good : float.IsInfinity(s.Error) || s.Error > 6 ? UiTheme.Accent : UiTheme.Warn);
             y += 26 * k;
         }
         y += 10 * k;
         void Row(string a, string b, Color c) { Gfx.Text(ci, UiTheme.Body, a, x, y, bs, UiTheme.Dim); Gfx.TextR(ci, UiTheme.Body, b, x + w, y, bs, c); y += 26 * k; }
         if (r.EntryAt >= 0)
-            Row("Smokes up when you entered", $"{r.SmokesUpAtEntry} / {r.SmokesAtEntry}", r.AllUpAtEntry ? UiTheme.Good : UiTheme.Warn);
-        else Row("Entered the site", "no", UiTheme.Warn);
-        Row("Kills", $"{r.Kills} / {r.Defenders}", r.Kills == r.Defenders ? UiTheme.Good : UiTheme.Text);
-        Row("Enemy sight blocked by smoke", $"{r.SmokeSaves:0.0} s", UiTheme.Text);
-        Row("Round points", $"+{r.Points}", UiTheme.Text);
+            Row(L.N("Smokes up when you entered"), $"{r.SmokesUpAtEntry} / {r.SmokesAtEntry}", r.AllUpAtEntry ? UiTheme.Good : UiTheme.Warn);
+        else Row(L.N("Entered the site"), L.C("answer", "no"), UiTheme.Warn);
+        Row(L.N("Kills"), $"{r.Kills} / {r.Defenders}", r.Kills == r.Defenders ? UiTheme.Good : UiTheme.Text);
+        Row(L.N("Enemy sight blocked by smoke"), $"{r.SmokeSaves:0.0} s", UiTheme.Text);
+        Row(L.N("Round points"), $"+{r.Points}", UiTheme.Text);
         return y;
     }
 }

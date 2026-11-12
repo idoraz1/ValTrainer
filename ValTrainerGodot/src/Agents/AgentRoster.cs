@@ -1,3 +1,5 @@
+using ValTrainer.Core;
+
 namespace ValTrainer.Agents;
 
 public enum AgentRole { Duelist, Initiator, Controller, Sentinel }
@@ -29,219 +31,219 @@ public static class AgentRoster
     public static readonly AgentInfo[] All =
     {
         // ---------------- duelists ----------------
-        new("iso", "Iso", "IS", AgentRole.Duelist, "Duel specialist who shields up and takes fights one enemy at a time.", new[]
+        new("iso", "Iso", "IS", AgentRole.Duelist, L.N("Duel specialist who shields up and takes fights one enemy at a time."), new[]
         {
-            A("C", "Contingency", "Pushes a bulletproof wall of energy ahead of you."),
-            A("Q", "Undercut", "A bolt that slips through walls and leaves enemies vulnerable."),
-            A("E", "Double Tap", "Focus for a one-hit shield; shoot the orbs your kills drop to keep it.", "mobility:iso", "popup"),
-            A("X", "Kill Contract", "Drags you and one enemy into an arena for a one-on-one.", "peekduel"),
+            A("C", "Contingency", L.N("Pushes a bulletproof wall of energy ahead of you.")),
+            A("Q", "Undercut", L.N("A bolt that slips through walls and leaves enemies vulnerable.")),
+            A("E", "Double Tap", L.N("Focus for a one-hit shield; shoot the orbs your kills drop to keep it."), "mobility:iso", "popup"),
+            A("X", "Kill Contract", L.N("Drags you and one enemy into an arena for a one-on-one."), "peekduel"),
         }),
-        new("jett", "Jett", "JE", AgentRole.Duelist, "Nimble entry duelist: dash in, win the opening duel, get out before the trade.", new[]
+        new("jett", "Jett", "JE", AgentRole.Duelist, L.N("Nimble entry duelist: dash in, win the opening duel, get out before the trade."), new[]
         {
-            A("C", "Cloudburst", "A quick puff of smoke you can bend while it flies; it fades fast."),
-            A("Q", "Updraft", "Pops you straight up for high angles or a drop from above."),
-            A("E", "Tailwind", "Prime it, then burst a short way in the direction you're moving.", "mobility:jett"),
-            A("X", "Blade Storm", "Precise throwing knives; every kill hands the knives back.", "flick"),
-            A("", "Drift", "Hold jump while falling to glide down slowly."),
+            A("C", "Cloudburst", L.N("A quick puff of smoke you can bend while it flies; it fades fast.")),
+            A("Q", "Updraft", L.N("Pops you straight up for high angles or a drop from above.")),
+            A("E", "Tailwind", L.N("Prime it, then burst a short way in the direction you're moving."), "mobility:jett"),
+            A("X", "Blade Storm", L.N("Precise throwing knives; every kill hands the knives back."), "flick"),
+            A("", "Drift", L.N("Hold jump while falling to glide down slowly.")),
         }) { Extra = new[] { "operator" } },
-        new("neon", "Neon", "NE", AgentRole.Duelist, "Sprinting duelist who closes the distance before defenders can line up a shot.", new[]
+        new("neon", "Neon", "NE", AgentRole.Duelist, L.N("Sprinting duelist who closes the distance before defenders can line up a shot."), new[]
         {
-            A("C", "Fast Lane", "Two electric walls race along the floor and cut off vision."),
-            A("Q", "Relay Bolt", "A bolt that bounces once and concusses where it hits."),
-            A("E", "High Gear", "Sprint flat out and slide once it's charged; kills refill the slide.", "mobility:neon"),
-            A("X", "Overdrive", "Top speed plus a lightning beam that stays accurate while you run.", "tracking"),
+            A("C", "Fast Lane", L.N("Two electric walls race along the floor and cut off vision.")),
+            A("Q", "Relay Bolt", L.N("A bolt that bounces once and concusses where it hits.")),
+            A("E", "High Gear", L.N("Sprint flat out and slide once it's charged; kills refill the slide."), "mobility:neon"),
+            A("X", "Overdrive", L.N("Top speed plus a lightning beam that stays accurate while you run."), "tracking"),
         }),
-        new("phoenix", "Phoenix", "PH", AgentRole.Duelist, "Self-reliant duelist who flashes for himself and heals in his own flames.", new[]
+        new("phoenix", "Phoenix", "PH", AgentRole.Duelist, L.N("Self-reliant duelist who flashes for himself and heals in his own flames."), new[]
         {
-            A("C", "Blaze", "A bending wall of flame that blocks sight and burns whoever crosses it."),
-            A("Q", "Hot Hands", "A fireball that leaves a burning patch on the floor."),
-            A("E", "Curveball", "A flash that hooks left or right around a corner before it pops.", "flashpeek:phoenix"),
-            A("X", "Run It Back", "Fight freely: die during it and you're back at your marker.", "peekduel"),
-            A("", "Heating Up", "Your own fire heals you instead of hurting you."),
+            A("C", "Blaze", L.N("A bending wall of flame that blocks sight and burns whoever crosses it.")),
+            A("Q", "Hot Hands", L.N("A fireball that leaves a burning patch on the floor.")),
+            A("E", "Curveball", L.N("A flash that hooks left or right around a corner before it pops."), "flashpeek:phoenix"),
+            A("X", "Run It Back", L.N("Fight freely: die during it and you're back at your marker."), "peekduel"),
+            A("", "Heating Up", L.N("Your own fire heals you instead of hurting you.")),
         }),
-        new("raze", "Raze", "RA", AgentRole.Duelist, "Explosive duelist who blasts into a site and flushes out its corners.", new[]
+        new("raze", "Raze", "RA", AgentRole.Duelist, L.N("Explosive duelist who blasts into a site and flushes out its corners."), new[]
         {
-            A("C", "Boom Bot", "A rolling bot that chases the first enemy it spots and explodes."),
-            A("Q", "Blast Pack", "A sticky charge: set it off to launch yourself or hurt enemies.", "mobility:raze"),
-            A("E", "Paint Shells", "A cluster grenade that splits into more blasts."),
-            A("X", "Showstopper", "A rocket launcher with huge splash damage."),
+            A("C", "Boom Bot", L.N("A rolling bot that chases the first enemy it spots and explodes.")),
+            A("Q", "Blast Pack", L.N("A sticky charge: set it off to launch yourself or hurt enemies."), "mobility:raze"),
+            A("E", "Paint Shells", L.N("A cluster grenade that splits into more blasts.")),
+            A("X", "Showstopper", L.N("A rocket launcher with huge splash damage.")),
         }),
-        new("reyna", "Reyna", "RE", AgentRole.Duelist, "Snowballing duelist: every kill fuels a heal or an escape.", new[]
+        new("reyna", "Reyna", "RE", AgentRole.Duelist, L.N("Snowballing duelist: every kill fuels a heal or an escape."), new[]
         {
-            A("C", "Leer", "A fragile eye that nearsights every enemy who looks at it.", "flashpeek:reyna"),
-            A("Q", "Devour", "Eat a soul orb from a kill to heal up fast."),
-            A("E", "Dismiss", "Eat a soul orb to turn intangible and reposition.", "mobility:reyna"),
-            A("X", "Empress", "A frenzy of faster shooting and reloading; soul orbs never run out.", "switch"),
+            A("C", "Leer", L.N("A fragile eye that nearsights every enemy who looks at it."), "flashpeek:reyna"),
+            A("Q", "Devour", L.N("Eat a soul orb from a kill to heal up fast.")),
+            A("E", "Dismiss", L.N("Eat a soul orb to turn intangible and reposition."), "mobility:reyna"),
+            A("X", "Empress", L.N("A frenzy of faster shooting and reloading; soul orbs never run out."), "switch"),
         }),
-        new("waylay", "Waylay", "WA", AgentRole.Duelist, "Light-speed duelist who dashes in, strikes and zips back to safety.", new[]
+        new("waylay", "Waylay", "WA", AgentRole.Duelist, L.N("Light-speed duelist who dashes in, strikes and zips back to safety."), new[]
         {
-            A("C", "Saturate", "A burst of light that badly slows movement and firing nearby."),
-            A("Q", "Lightspeed", "Up to two quick forward dashes; aim the first one up to gain height.", "mobility:waylay"),
-            A("E", "Refract", "Drop a beacon, then rush back to it while nothing can hurt you.", "mobility:waylay"),
-            A("X", "Convergent Paths", "An afterimage beam slows enemies, then you get a big speed boost."),
+            A("C", "Saturate", L.N("A burst of light that badly slows movement and firing nearby.")),
+            A("Q", "Lightspeed", L.N("Up to two quick forward dashes; aim the first one up to gain height."), "mobility:waylay"),
+            A("E", "Refract", L.N("Drop a beacon, then rush back to it while nothing can hurt you."), "mobility:waylay"),
+            A("X", "Convergent Paths", L.N("An afterimage beam slows enemies, then you get a big speed boost.")),
         }),
-        new("yoru", "Yoru", "YO", AgentRole.Duelist, "Trickster duelist who fakes, teleports and flashes to strike from odd angles.", new[]
+        new("yoru", "Yoru", "YO", AgentRole.Duelist, L.N("Trickster duelist who fakes, teleports and flashes to strike from odd angles."), new[]
         {
-            A("C", "Fakeout", "A decoy that runs like you and flashes whoever shoots it."),
-            A("Q", "Blindside", "A flash that ricochets off a wall before it pops.", "flashpeek:yoru"),
-            A("E", "Gatecrash", "Send a tether ahead and teleport to it when the moment is right.", "mobility:yoru"),
-            A("X", "Dimensional Drift", "Slip into another dimension: unseen and untouchable while you scout."),
+            A("C", "Fakeout", L.N("A decoy that runs like you and flashes whoever shoots it.")),
+            A("Q", "Blindside", L.N("A flash that ricochets off a wall before it pops."), "flashpeek:yoru"),
+            A("E", "Gatecrash", L.N("Send a tether ahead and teleport to it when the moment is right."), "mobility:yoru"),
+            A("X", "Dimensional Drift", L.N("Slip into another dimension: unseen and untouchable while you scout.")),
         }),
 
         // ---------------- initiators ----------------
-        new("breach", "Breach", "BR", AgentRole.Initiator, "Breaching initiator who flashes and stuns straight through walls.", new[]
+        new("breach", "Breach", "BR", AgentRole.Initiator, L.N("Breaching initiator who flashes and stuns straight through walls."), new[]
         {
-            A("C", "Aftershock", "A charge that goes through a wall and bursts three times on the far side.", "postplant"),
-            A("Q", "Flashpoint", "A flash fired through a wall that pops on the other side.", "flashpeek:breach"),
-            A("E", "Fault Line", "A charged quake that dazes everyone along a long strip.", "siteclear"),
-            A("X", "Rolling Thunder", "A wide cone of quakes that throws enemies up and dazes them.", "siteclear"),
+            A("C", "Aftershock", L.N("A charge that goes through a wall and bursts three times on the far side."), "postplant"),
+            A("Q", "Flashpoint", L.N("A flash fired through a wall that pops on the other side."), "flashpeek:breach"),
+            A("E", "Fault Line", L.N("A charged quake that dazes everyone along a long strip."), "siteclear"),
+            A("X", "Rolling Thunder", L.N("A wide cone of quakes that throws enemies up and dazes them."), "siteclear"),
         }),
-        new("fade", "Fade", "FA", AgentRole.Initiator, "Hunter initiator who reveals, chases down and pins enemies in place.", new[]
+        new("fade", "Fade", "FA", AgentRole.Initiator, L.N("Hunter initiator who reveals, chases down and pins enemies in place."), new[]
         {
-            A("C", "Prowler", "A creature that chases an enemy or a trail and nearsights on contact.", "recon:fade"),
-            A("Q", "Seize", "A thrown snare that drops and pins nearby enemies, deafening and decaying them.", "siteclear"),
-            A("E", "Haunt", "A thrown watcher that reveals the enemies it sees and leaves trails to them.", "recon:fade"),
-            A("X", "Nightfall", "A wave of nightmare that marks, deafens and decays everyone it hits.", "siteclear"),
+            A("C", "Prowler", L.N("A creature that chases an enemy or a trail and nearsights on contact."), "recon:fade"),
+            A("Q", "Seize", L.N("A thrown snare that drops and pins nearby enemies, deafening and decaying them."), "siteclear"),
+            A("E", "Haunt", L.N("A thrown watcher that reveals the enemies it sees and leaves trails to them."), "recon:fade"),
+            A("X", "Nightfall", L.N("A wave of nightmare that marks, deafens and decays everyone it hits."), "siteclear"),
         }),
-        new("gekko", "Gekko", "GK", AgentRole.Initiator, "Initiator whose reusable creature buddies flash, stun and even plant for him.", new[]
+        new("gekko", "Gekko", "GK", AgentRole.Initiator, L.N("Initiator whose reusable creature buddies flash, stun and even plant for him."), new[]
         {
-            A("C", "Mosh Pit", "A thrown creature that spreads out and blows up after a moment.", "postplant"),
-            A("Q", "Wingman", "A buddy that runs ahead to concuss the first enemy, or plants and defuses.", "siteclear"),
-            A("E", "Dizzy", "A buddy that soars forward and blinds enemies with plasma.", "flashpeek:gekko"),
-            A("X", "Thrash", "Pilot a creature into the enemy, then pounce to detain everyone close by."),
+            A("C", "Mosh Pit", L.N("A thrown creature that spreads out and blows up after a moment."), "postplant"),
+            A("Q", "Wingman", L.N("A buddy that runs ahead to concuss the first enemy, or plants and defuses."), "siteclear"),
+            A("E", "Dizzy", L.N("A buddy that soars forward and blinds enemies with plasma."), "flashpeek:gekko"),
+            A("X", "Thrash", L.N("Pilot a creature into the enemy, then pounce to detain everyone close by.")),
         }),
-        new("kayo", "KAY/O", "KO", AgentRole.Initiator, "Robot initiator who shuts down enemy abilities and flashes the way in.", new[]
+        new("kayo", "KAY/O", "KO", AgentRole.Initiator, L.N("Robot initiator who shuts down enemy abilities and flashes the way in."), new[]
         {
-            A("C", "FRAG/ment", "A sticky grenade that pulses damage, deadliest at its centre.", "postplant"),
-            A("Q", "FLASH/drive", "A flash grenade: a full throw, or a quick lob that pops sooner.", "flashpeek:kayo"),
-            A("E", "ZERO/point", "A knife that suppresses abilities and reveals enemies in its blast.", "siteclear"),
-            A("X", "NULL/cmd", "Overload to suppress everyone nearby; teammates can bring you back up."),
+            A("C", "FRAG/ment", L.N("A sticky grenade that pulses damage, deadliest at its centre."), "postplant"),
+            A("Q", "FLASH/drive", L.N("A flash grenade: a full throw, or a quick lob that pops sooner."), "flashpeek:kayo"),
+            A("E", "ZERO/point", L.N("A knife that suppresses abilities and reveals enemies in its blast."), "siteclear"),
+            A("X", "NULL/cmd", L.N("Overload to suppress everyone nearby; teammates can bring you back up.")),
         }),
-        new("skye", "Skye", "SK", AgentRole.Initiator, "Nature initiator who scouts with a tiger and flashes with guiding birds.", new[]
+        new("skye", "Skye", "SK", AgentRole.Initiator, L.N("Nature initiator who scouts with a tiger and flashes with guiding birds."), new[]
         {
-            A("C", "Regrowth", "Heals nearby teammates while you channel it."),
-            A("Q", "Trailblazer", "Steer a tiger that pounces on an enemy and concusses them.", "siteclear"),
-            A("E", "Guiding Light", "Steer a hawk and burst it into a flash; you hear if it caught someone.", "flashpeek:skye"),
-            A("X", "Seekers", "Three seekers chase down the closest enemies and nearsight them."),
+            A("C", "Regrowth", L.N("Heals nearby teammates while you channel it.")),
+            A("Q", "Trailblazer", L.N("Steer a tiger that pounces on an enemy and concusses them."), "siteclear"),
+            A("E", "Guiding Light", L.N("Steer a hawk and burst it into a flash; you hear if it caught someone."), "flashpeek:skye"),
+            A("X", "Seekers", L.N("Three seekers chase down the closest enemies and nearsight them.")),
         }),
-        new("sova", "Sova", "SO", AgentRole.Initiator, "Recon initiator who finds enemies with arrows and a drone before the team commits.", new[]
+        new("sova", "Sova", "SO", AgentRole.Initiator, L.N("Recon initiator who finds enemies with arrows and a drone before the team commits."), new[]
         {
-            A("C", "Owl Drone", "Fly a drone and tag an enemy with a revealing dart.", "recon:sova"),
-            A("Q", "Shock Bolt", "An arrow that bursts with electric damage where it lands.", "postplant"),
-            A("E", "Recon Bolt", "An arrow that pulses and reveals every enemy in its sight.", "recon:sova"),
-            A("X", "Hunter's Fury", "Up to three long energy blasts that go through walls."),
-            A("", "Uncanny Marksman", "Arrows can bounce off walls; hold fire to send them farther."),
+            A("C", "Owl Drone", L.N("Fly a drone and tag an enemy with a revealing dart."), "recon:sova"),
+            A("Q", "Shock Bolt", L.N("An arrow that bursts with electric damage where it lands."), "postplant"),
+            A("E", "Recon Bolt", L.N("An arrow that pulses and reveals every enemy in its sight."), "recon:sova"),
+            A("X", "Hunter's Fury", L.N("Up to three long energy blasts that go through walls.")),
+            A("", "Uncanny Marksman", L.N("Arrows can bounce off walls; hold fire to send them farther.")),
         }),
-        new("tejo", "Tejo", "TE", AgentRole.Initiator, "Ballistics initiator who scouts with a drone and pounds positions with missiles.", new[]
+        new("tejo", "Tejo", "TE", AgentRole.Initiator, L.N("Ballistics initiator who scouts with a drone and pounds positions with missiles."), new[]
         {
-            A("C", "Stealth Drone", "Fly a drone, then pulse it to suppress and reveal enemies.", "siteclear"),
-            A("Q", "Special Delivery", "A sticky grenade that concusses and hurts; it can bounce once.", "siteclear"),
-            A("E", "Guided Salvo", "Pick up to two spots on a map and send missiles there.", "postplant"),
-            A("X", "Armageddon", "Calls a long line of explosions along a path you draw.", "retake"),
+            A("C", "Stealth Drone", L.N("Fly a drone, then pulse it to suppress and reveal enemies."), "siteclear"),
+            A("Q", "Special Delivery", L.N("A sticky grenade that concusses and hurts; it can bounce once."), "siteclear"),
+            A("E", "Guided Salvo", L.N("Pick up to two spots on a map and send missiles there."), "postplant"),
+            A("X", "Armageddon", L.N("Calls a long line of explosions along a path you draw."), "retake"),
         }),
 
         // ---------------- controllers ----------------
-        new("astra", "Astra", "AS", AgentRole.Controller, "Cosmic controller who places stars across the map and turns them into smokes, pulls or stuns.", new[]
+        new("astra", "Astra", "AS", AgentRole.Controller, L.N("Cosmic controller who places stars across the map and turns them into smokes, pulls or stuns."), new[]
         {
-            A("C", "Gravity Well", "A star becomes a well that pulls players in, then leaves them vulnerable."),
-            A("Q", "Nova Pulse", "A star becomes a short pulse that concusses."),
-            A("E", "Nebula / Dissipate", "A star becomes a smoke, or fades into a brief fake one and comes back.", "smokeexec:astra"),
-            A("X", "Astral Form / Cosmic Divide", "Place stars from above; the ultimate draws a long wall that stops bullets and sound."),
-            A("", "Astral Form", "Your stars are placed from a top-down view of the map."),
+            A("C", "Gravity Well", L.N("A star becomes a well that pulls players in, then leaves them vulnerable.")),
+            A("Q", "Nova Pulse", L.N("A star becomes a short pulse that concusses.")),
+            A("E", "Nebula / Dissipate", L.N("A star becomes a smoke, or fades into a brief fake one and comes back."), "smokeexec:astra"),
+            A("X", "Astral Form / Cosmic Divide", L.N("Place stars from above; the ultimate draws a long wall that stops bullets and sound.")),
+            A("", "Astral Form", L.N("Your stars are placed from a top-down view of the map.")),
         }),
-        new("brimstone", "Brimstone", "BM", AgentRole.Controller, "Veteran controller who calls in smokes, fire and an orbital strike from above.", new[]
+        new("brimstone", "Brimstone", "BM", AgentRole.Controller, L.N("Veteran controller who calls in smokes, fire and an orbital strike from above."), new[]
         {
-            A("C", "Stim Beacon", "Drops a beacon that speeds up teammates' movement and firing."),
-            A("Q", "Incendiary", "A launched grenade that leaves a burning zone.", "postplant"),
-            A("E", "Sky Smoke", "Pick spots on a map and drop long-lasting smokes there.", "smokeexec:brimstone"),
-            A("X", "Orbital Strike", "Calls a lingering laser down onto a spot you choose.", "postplant"),
+            A("C", "Stim Beacon", L.N("Drops a beacon that speeds up teammates' movement and firing.")),
+            A("Q", "Incendiary", L.N("A launched grenade that leaves a burning zone."), "postplant"),
+            A("E", "Sky Smoke", L.N("Pick spots on a map and drop long-lasting smokes there."), "smokeexec:brimstone"),
+            A("X", "Orbital Strike", L.N("Calls a lingering laser down onto a spot you choose."), "postplant"),
         }),
-        new("clove", "Clove", "CL", AgentRole.Controller, "Immortal controller who keeps smoking after death and fights back from it.", new[]
+        new("clove", "Clove", "CL", AgentRole.Controller, L.N("Immortal controller who keeps smoking after death and fights back from it."), new[]
         {
-            A("C", "Pick-me-up", "Drain a fallen enemy you hurt for speed and temporary health."),
-            A("Q", "Meddle", "A fragment that erupts and decays everyone caught inside."),
-            A("E", "Ruse", "Set smokes from a map view; it works even after you die.", "smokeexec:clove"),
-            A("X", "Not Dead Yet", "Revive after dying; get a kill or assist quickly or fall again.", "peekduel"),
+            A("C", "Pick-me-up", L.N("Drain a fallen enemy you hurt for speed and temporary health.")),
+            A("Q", "Meddle", L.N("A fragment that erupts and decays everyone caught inside.")),
+            A("E", "Ruse", L.N("Set smokes from a map view; it works even after you die."), "smokeexec:clove"),
+            A("X", "Not Dead Yet", L.N("Revive after dying; get a kill or assist quickly or fall again."), "peekduel"),
         }),
-        new("harbor", "Harbor", "HA", AgentRole.Controller, "Water controller who covers pushes with moving walls and a bulletproof dome.", new[]
+        new("harbor", "Harbor", "HA", AgentRole.Controller, L.N("Water controller who covers pushes with moving walls and a bulletproof dome."), new[]
         {
-            A("C", "Storm Surge", "A whirlpool that slows and nearsights players caught in it."),
-            A("Q", "High Tide", "A steerable water wall along the floor that blocks sight and slows.", "smokeexec:harbor"),
-            A("E", "Cove", "A water smoke you can shield so it stops bullets.", "smokeexec:harbor"),
-            A("X", "Reckoning", "A surge of water that nearsights and slows the enemies it hits."),
+            A("C", "Storm Surge", L.N("A whirlpool that slows and nearsights players caught in it.")),
+            A("Q", "High Tide", L.N("A steerable water wall along the floor that blocks sight and slows."), "smokeexec:harbor"),
+            A("E", "Cove", L.N("A water smoke you can shield so it stops bullets."), "smokeexec:harbor"),
+            A("X", "Reckoning", L.N("A surge of water that nearsights and slows the enemies it hits.")),
         }),
-        new("miks", "Miks", "MI", AgentRole.Controller, "Sound-powered controller who smokes, stims his team and rattles defenders.", new[]
+        new("miks", "Miks", "MI", AgentRole.Controller, L.N("Sound-powered controller who smokes, stims his team and rattles defenders."), new[]
         {
-            A("C", "M-pulse", "A device whose sound waves either concuss enemies or heal players."),
-            A("Q", "Harmonize", "A combat stim and speed boost for you and a teammate, refreshed by kills."),
-            A("E", "Waveform", "Mark spots on a map view and raise smokes there.", "smokeexec:miks"),
-            A("X", "Bassquake", "A charged sonic blast that knocks back, deafens and slows."),
+            A("C", "M-pulse", L.N("A device whose sound waves either concuss enemies or heal players.")),
+            A("Q", "Harmonize", L.N("A combat stim and speed boost for you and a teammate, refreshed by kills.")),
+            A("E", "Waveform", L.N("Mark spots on a map view and raise smokes there."), "smokeexec:miks"),
+            A("X", "Bassquake", L.N("A charged sonic blast that knocks back, deafens and slows.")),
         }),
-        new("omen", "Omen", "OM", AgentRole.Controller, "Shadowy controller who smokes from afar and teleports to unexpected angles.", new[]
+        new("omen", "Omen", "OM", AgentRole.Controller, L.N("Shadowy controller who smokes from afar and teleports to unexpected angles."), new[]
         {
-            A("C", "Shrouded Step", "A short teleport to a spot you can see."),
-            A("Q", "Paranoia", "A shadow that passes through walls and nearsights everyone it touches.", "flashpeek:omen"),
-            A("E", "Dark Cover", "Long-range smokes you can even send through walls.", "smokeexec:omen"),
-            A("X", "From the Shadows", "Teleport anywhere on the map."),
+            A("C", "Shrouded Step", L.N("A short teleport to a spot you can see.")),
+            A("Q", "Paranoia", L.N("A shadow that passes through walls and nearsights everyone it touches."), "flashpeek:omen"),
+            A("E", "Dark Cover", L.N("Long-range smokes you can even send through walls."), "smokeexec:omen"),
+            A("X", "From the Shadows", L.N("Teleport anywhere on the map.")),
         }),
-        new("viper", "Viper", "VI", AgentRole.Controller, "Toxic controller who walls off space with gas that wears enemies down.", new[]
+        new("viper", "Viper", "VI", AgentRole.Controller, L.N("Toxic controller who walls off space with gas that wears enemies down."), new[]
         {
-            A("C", "Snake Bite", "A canister that leaves a damaging acid pool.", "postplant"),
-            A("Q", "Poison Cloud", "A gas emitter you switch on and off, fuelled by your toxin.", "smokeexec:viper"),
-            A("E", "Toxic Screen", "A long gas wall that runs straight through walls, toggled with fuel.", "smokeexec:viper"),
-            A("X", "Viper's Pit", "A huge toxic cloud that hides you and drains enemies inside.", "postplant"),
-            A("", "Toxic", "Your gas eats away at enemies' health while they stay in it."),
+            A("C", "Snake Bite", L.N("A canister that leaves a damaging acid pool."), "postplant"),
+            A("Q", "Poison Cloud", L.N("A gas emitter you switch on and off, fuelled by your toxin."), "smokeexec:viper"),
+            A("E", "Toxic Screen", L.N("A long gas wall that runs straight through walls, toggled with fuel."), "smokeexec:viper"),
+            A("X", "Viper's Pit", L.N("A huge toxic cloud that hides you and drains enemies inside."), "postplant"),
+            A("", "Toxic", L.N("Your gas eats away at enemies' health while they stay in it.")),
         }),
 
         // ---------------- sentinels ----------------
-        new("chamber", "Chamber", "CH", AgentRole.Sentinel, "Marksman sentinel with his own custom guns and a teleport to escape.", new[]
+        new("chamber", "Chamber", "CH", AgentRole.Sentinel, L.N("Marksman sentinel with his own custom guns and a teleport to escape."), new[]
         {
-            A("C", "Trademark", "A trap that slows enemies who walk into its range.", "anchor:chamber"),
-            A("Q", "Headhunter", "A heavy pistol with a scope: precise, and deadly to the head.", "chamber:headhunter"),
-            A("E", "Rendezvous", "An anchor you can teleport back to while you're in range.", "anchor:chamber"),
-            A("X", "Tour De Force", "A custom sniper that kills with one upper-body hit and slows around the kill.", "chamber:tdf", "operator"),
+            A("C", "Trademark", L.N("A trap that slows enemies who walk into its range."), "anchor:chamber"),
+            A("Q", "Headhunter", L.N("A heavy pistol with a scope: precise, and deadly to the head."), "chamber:headhunter"),
+            A("E", "Rendezvous", L.N("An anchor you can teleport back to while you're in range."), "anchor:chamber"),
+            A("X", "Tour De Force", L.N("A custom sniper that kills with one upper-body hit and slows around the kill."), "chamber:tdf", "operator"),
         }) { Extra = new[] { "operator" } },
-        new("cypher", "Cypher", "CY", AgentRole.Sentinel, "Spy sentinel who watches flanks with tripwires, cages and a camera.", new[]
+        new("cypher", "Cypher", "CY", AgentRole.Sentinel, L.N("Spy sentinel who watches flanks with tripwires, cages and a camera."), new[]
         {
-            A("C", "Trapwire", "A hidden tripwire that reveals and holds whoever crosses it.", "anchor:cypher"),
-            A("Q", "Cyber Cage", "A remote cage that blocks sight and slows enemies passing through.", "anchor:cypher"),
-            A("E", "Spycam", "A wall camera you look through and fire a tracking dart from.", "anchor:cypher"),
-            A("X", "Neural Theft", "Uses a dead enemy to show where their whole team is.", "retake"),
+            A("C", "Trapwire", L.N("A hidden tripwire that reveals and holds whoever crosses it."), "anchor:cypher"),
+            A("Q", "Cyber Cage", L.N("A remote cage that blocks sight and slows enemies passing through."), "anchor:cypher"),
+            A("E", "Spycam", L.N("A wall camera you look through and fire a tracking dart from."), "anchor:cypher"),
+            A("X", "Neural Theft", L.N("Uses a dead enemy to show where their whole team is."), "retake"),
         }),
-        new("deadlock", "Deadlock", "DL", AgentRole.Sentinel, "Nanowire sentinel who stops pushes cold with barriers, nets and sound sensors.", new[]
+        new("deadlock", "Deadlock", "DL", AgentRole.Sentinel, L.N("Nanowire sentinel who stops pushes cold with barriers, nets and sound sensors."), new[]
         {
-            A("C", "GravNet", "A grenade that forces everyone inside to crouch and move slowly.", "anchor:deadlock"),
-            A("Q", "Sonic Sensor", "A sensor that concusses an area when it hears steps, shots or loud noise.", "anchor:deadlock", "sound"),
-            A("E", "Barrier Mesh", "A disc that grows barriers to block movement through a path.", "anchor:deadlock"),
-            A("X", "Annihilation", "Cocoons the first enemy hit and drags them to their death unless freed."),
+            A("C", "GravNet", L.N("A grenade that forces everyone inside to crouch and move slowly."), "anchor:deadlock"),
+            A("Q", "Sonic Sensor", L.N("A sensor that concusses an area when it hears steps, shots or loud noise."), "anchor:deadlock", "sound"),
+            A("E", "Barrier Mesh", L.N("A disc that grows barriers to block movement through a path."), "anchor:deadlock"),
+            A("X", "Annihilation", L.N("Cocoons the first enemy hit and drags them to their death unless freed.")),
         }),
-        new("killjoy", "Killjoy", "KJ", AgentRole.Sentinel, "Gadget sentinel whose turret, alarm bot and swarm grenades lock a site down.", new[]
+        new("killjoy", "Killjoy", "KJ", AgentRole.Sentinel, L.N("Gadget sentinel whose turret, alarm bot and swarm grenades lock a site down."), new[]
         {
-            A("C", "Nanoswarm", "A hidden grenade you set off to release a damaging swarm.", "anchor:killjoy"),
-            A("Q", "ALARMBOT", "A bot that hunts enemies in range and leaves them vulnerable.", "anchor:killjoy"),
-            A("E", "TURRET", "A turret that shoots at enemies in its field of view.", "anchor:killjoy"),
-            A("X", "Lockdown", "After a wind-up, detains every enemy in a large radius.", "retake"),
+            A("C", "Nanoswarm", L.N("A hidden grenade you set off to release a damaging swarm."), "anchor:killjoy"),
+            A("Q", "ALARMBOT", L.N("A bot that hunts enemies in range and leaves them vulnerable."), "anchor:killjoy"),
+            A("E", "TURRET", L.N("A turret that shoots at enemies in its field of view."), "anchor:killjoy"),
+            A("X", "Lockdown", L.N("After a wind-up, detains every enemy in a large radius."), "retake"),
         }),
-        new("sage", "Sage", "SA", AgentRole.Sentinel, "Support sentinel who walls, slows and heals, and can bring a teammate back.", new[]
+        new("sage", "Sage", "SA", AgentRole.Sentinel, L.N("Support sentinel who walls, slows and heals, and can bring a teammate back."), new[]
         {
-            A("C", "Barrier Orb", "Raises a tall, sturdy wall to block a path or boost a teammate up.", "anchor:sage"),
-            A("Q", "Slow Orb", "Bursts into a field that slows everyone walking through it.", "anchor:sage"),
-            A("E", "Healing Orb", "Heals a teammate, or yourself, over a few seconds."),
-            A("X", "Resurrection", "Brings a fallen teammate back to life."),
+            A("C", "Barrier Orb", L.N("Raises a tall, sturdy wall to block a path or boost a teammate up."), "anchor:sage"),
+            A("Q", "Slow Orb", L.N("Bursts into a field that slows everyone walking through it."), "anchor:sage"),
+            A("E", "Healing Orb", L.N("Heals a teammate, or yourself, over a few seconds.")),
+            A("X", "Resurrection", L.N("Brings a fallen teammate back to life.")),
         }),
-        new("veto", "Veto", "VE", AgentRole.Sentinel, "Counter-utility sentinel who deletes enemy abilities and forces honest gunfights.", new[]
+        new("veto", "Veto", "VE", AgentRole.Sentinel, L.N("Counter-utility sentinel who deletes enemy abilities and forces honest gunfights."), new[]
         {
-            A("C", "Crosscut", "A vortex you can teleport to when you look at it in range.", "anchor:veto"),
-            A("Q", "Chokehold", "A thrown trap that grabs the first enemy to step in and holds them.", "anchor:veto"),
-            A("E", "Interceptor", "Once switched on, it destroys enemy utility thrown near it.", "anchor:veto"),
-            A("X", "Evolution", "Full mutation: combat stim, regeneration and immunity to debuffs.", "peekduel"),
+            A("C", "Crosscut", L.N("A vortex you can teleport to when you look at it in range."), "anchor:veto"),
+            A("Q", "Chokehold", L.N("A thrown trap that grabs the first enemy to step in and holds them."), "anchor:veto"),
+            A("E", "Interceptor", L.N("Once switched on, it destroys enemy utility thrown near it."), "anchor:veto"),
+            A("X", "Evolution", L.N("Full mutation: combat stim, regeneration and immunity to debuffs."), "peekduel"),
         }),
-        new("vyse", "Vyse", "VY", AgentRole.Sentinel, "Liquid-metal sentinel who traps, cuts off and disarms attackers.", new[]
+        new("vyse", "Vyse", "VY", AgentRole.Sentinel, L.N("Liquid-metal sentinel who traps, cuts off and disarms attackers."), new[]
         {
-            A("C", "Razorvine", "A hidden nest you trigger into a field that slows and cuts.", "anchor:vyse"),
-            A("Q", "Shear", "A hidden trap that raises a wall behind the first enemy through.", "anchor:vyse"),
-            A("E", "Arc Rose", "A hidden flower you trigger to flash everyone looking at it.", "anchor:vyse"),
-            A("X", "Steel Garden", "A burst of metal thorns that jams enemies' main weapons.", "retake"),
+            A("C", "Razorvine", L.N("A hidden nest you trigger into a field that slows and cuts."), "anchor:vyse"),
+            A("Q", "Shear", L.N("A hidden trap that raises a wall behind the first enemy through."), "anchor:vyse"),
+            A("E", "Arc Rose", L.N("A hidden flower you trigger to flash everyone looking at it."), "anchor:vyse"),
+            A("X", "Steel Garden", L.N("A burst of metal thorns that jams enemies' main weapons."), "retake"),
         }),
     };
 
@@ -269,10 +271,10 @@ public static class AgentRoles
 
     public static string Summary(AgentRole r) => r switch
     {
-        AgentRole.Duelist => "Takes the first fight: makes space with movement and wins the opening duel.",
-        AgentRole.Initiator => "Finds and flushes defenders with recon, flashes and stuns, then trades in behind.",
-        AgentRole.Controller => "Cuts sightlines with smokes and walls so fights happen where the team wants them.",
-        _ => "Locks down a site or a flank with traps and holds angles on their own.",
+        AgentRole.Duelist => L.N("Takes the first fight: makes space with movement and wins the opening duel."),
+        AgentRole.Initiator => L.N("Finds and flushes defenders with recon, flashes and stuns, then trades in behind."),
+        AgentRole.Controller => L.N("Cuts sightlines with smokes and walls so fights happen where the team wants them."),
+        _ => L.N("Locks down a site or a flank with traps and holds angles on their own."),
     };
 
     /// <summary>General drills for the role, most important first (agent pages list them; missing keys are skipped).</summary>

@@ -96,6 +96,7 @@ public static class AbilitySfx
     public static void Play(IGame g, string name, float vol = 1f, float pitch = 1f)
     {
         if (!Ready(g) || !streams.TryGetValue(name, out var s)) return;
+        Sfx.DuckSkin(); // gameplay cue: skin sounds duck under it
         var p = p2[n2 = (n2 + 1) % p2.Count];
         p.Stream = s;
         p.VolumeDb = Mathf.LinearToDb(Mathf.Max(1e-4f, Sfx.Volume * vol));
@@ -109,6 +110,7 @@ public static class AbilitySfx
         if (!Ready(g) || !streams.TryGetValue(name, out var s)) return;
         float d = pos.DistanceTo(g.View.Eye);
         if (d > maxRange) return;
+        Sfx.DuckSkin(); // gameplay cue: skin sounds duck under it
         float k = Mathf.Clamp((d - 2f) / (maxRange - 2f), 0f, 1f);
         float gain = (floor + (1 - floor) * (1 - k) * (1 - k)) * (k < 0.9f ? 1f : (1 - k) / 0.1f);
         var p = p3[n3 = (n3 + 1) % p3.Count];

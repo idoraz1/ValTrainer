@@ -29,8 +29,8 @@ public sealed class StrafeDuelMode : MovementMode
 {
     public override string Key => "strafeduel";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
-    public override string Name => "Strafe Duels";
-    public override string Description => "Strafe A/D. A bot appears that moves like a player (ADAD, crouch, stop-shots) and shoots back. Counter-strafe and hit first.";
+    public override string Name => L.N("Strafe Duels");
+    public override string Description => L.N("Strafe A/D. A bot appears that moves like a player (ADAD, crouch, stop-shots) and shoots back. Counter-strafe and hit first.");
     public override string SimKind => "bot";
     public override float Duration => 90f;
 
@@ -129,7 +129,7 @@ public sealed class StrafeDuelMode : MovementMode
 
     void SpawnDuel()
     {
-        G.Player.Reset(); // every duel starts at 100 HP + 50 shield
+        G.Player.Reset(); G.RefillGun(); // every duel starts at 100 HP + 50 shield and a full magazine
         float anchor = Mathf.Clamp(G.View.Eye.X + R(-4, 4), -5.5f, 5.5f);
         laneLo = Mathf.Max(-9f, anchor - HalfLane); laneHi = Mathf.Min(9f, anchor + HalfLane);
         var (d0, d1) = Depth;
@@ -158,7 +158,7 @@ public sealed class StrafeDuelMode : MovementMode
     {
         losses++; Deaths++; Score -= 75;
         Event("round_lost"); Dev("you died");
-        G.Banner("YOU DIED — they stopped and hit first", UI.UiTheme.Accent);
+        G.Banner(L.N("YOU DIED — they stopped and hit first"), UI.UiTheme.Accent);
         if (bot != null && GodotObject.IsInstanceValid(bot)) { var b = bot; b.GetTree().CreateTimer(0.6).Timeout += () => { if (GodotObject.IsInstanceValid(b)) G.Despawn(b); }; }
         EndDuel();
     }
@@ -214,27 +214,27 @@ public sealed class StrafeDuelMode : MovementMode
     }
 
     public override string? Prompt => st == St.Wait && G.Mover.Speed < G.Mover.RunMax * 0.8f
-        ? "Keep strafing A / D — a duel starts while you're running" : null;
+        ? L.N("Keep strafing A / D — a duel starts while you're running") : null;
 
     public override IEnumerable<string> HudLines()
     {
-        yield return $"Won {wins} · lost {losses} · timed out {timeouts}";
-        if (st == St.Live) yield return $"HP {G.Player.Hp:0} + shield {G.Player.Shield:0}";
+        yield return L.F($"Won {wins} · lost {losses} · timed out {timeouts}");
+        if (st == St.Live) yield return L.F($"HP {G.Player.Hp:0} + shield {G.Player.Shield:0}");
     }
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Duels won / lost / timed out", $"{wins} / {losses} / {timeouts}");
-        if (KillTimes.Count > 0) yield return ("Median time to kill", $"{Median(KillTimes):0} ms");
-        yield return ("Accuracy", $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
-        if (firstShots > 0) yield return ("First-shot accuracy", $"{100f * firstShotHits / firstShots:0}% of duels ({firstShotHits}/{firstShots})");
-        if (Hits > 0) yield return ("Headshot %", $"{100f * HeadHits / Hits:0}%");
+        yield return (L.N("Duels won / lost / timed out"), $"{wins} / {losses} / {timeouts}");
+        if (KillTimes.Count > 0) yield return (L.N("Median time to kill"), L.F($"{Median(KillTimes):0} ms"));
+        yield return (L.N("Accuracy"), $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
+        if (firstShots > 0) yield return (L.N("First-shot accuracy"), L.F($"{100f * firstShotHits / firstShots:0}% of duels ({firstShotHits}/{firstShots})"));
+        if (Hits > 0) yield return (L.N("Headshot %"), $"{100f * HeadHits / Hits:0}%");
         if (errAll.Count > 0)
             // Median crosshair-to-head angle at the moment of each shot; the moving-bot part is the tracking under strafes.
-            yield return ("Aim error at shot", $"{Median(errAll):0.0}°" + (errMoving.Count > 0 ? $" (moving bot {Median(errMoving):0.0}°)" : ""));
+            yield return (L.N("Aim error at shot"), errMoving.Count > 0 ? L.F($"{Median(errAll):0.0}° (moving bot {Median(errMoving):0.0}°)") : $"{Median(errAll):0.0}°");
         foreach (var l in MovementLines()) yield return l;
-        var seen = Enumerable.Range(0, patSeen.Length).Where(i => patSeen[i] > 0).Select(i => $"{StrafePlanner.PatShort[i]} {patSeen[i]}");
-        if (patSeen.Sum() > 0) yield return ("Bot moves", string.Join(", ", seen));
+        var seen = Enumerable.Range(0, patSeen.Length).Where(i => patSeen[i] > 0).Select(i => $"{L.T(StrafePlanner.PatShort[i])} {patSeen[i]}");
+        if (patSeen.Sum() > 0) yield return (L.N("Bot moves"), string.Join(", ", seen));
     }
 
     public override int Badge()

@@ -62,7 +62,7 @@ public partial class WarmupScreen : ScreenBase
 
         var head = HBox(16 * k);
         var tier = Difficulty.Get(Main.I.Tier);
-        var title = Heading("LOCK IN", $"A SHORT ROUTINE BEFORE RANKED · {tier.Name.ToUpperInvariant()} TIER · EVERYTHING AT YOUR REAL SENS · ENDS WITH YOUR GOAL AND CUE");
+        var title = Heading("LOCK IN", L.F($"A SHORT ROUTINE BEFORE RANKED · {L.Upper(tier.DisplayName)} TIER · EVERYTHING AT YOUR REAL SENS · ENDS WITH YOUR GOAL AND CUE"));
         title.SizeFlagsHorizontal = SizeFlags.ExpandFill;
         head.AddChild(title);
         var back = Btn("BACK", VButton.Look.Secondary, Main.I.ShowMenu, 160, 52, 22);
@@ -88,9 +88,9 @@ public partial class WarmupScreen : ScreenBase
             var pp = WarmupPlan.Build(p, ShiftMode.Off, 0, Main.I.Sens, false);
             var b = new VButton
             {
-                Kind = VButton.Look.Select, K = k, Label = p.Name.ToUpperInvariant(),
-                Sub = $"≈{WarmupPlan.Minutes(pp.EstimatedSeconds)} · {p.Steps.Length} DRILLS" + (p.Key == WarmupPresets.DefaultKey ? " · DEFAULT" : ""),
-                TooltipText = p.Blurb + (p.Note.Length > 0 ? $" ({p.Note})" : ""),
+                Kind = VButton.Look.Select, K = k, Label = L.Upper(L.T(p.Name)),
+                Sub = L.F($"≈{WarmupPlan.Minutes(pp.EstimatedSeconds)} · {p.Steps.Length} DRILLS") + (p.Key == WarmupPresets.DefaultKey ? " · " + L.T("DEFAULT") : ""),
+                TooltipText = L.T(p.Blurb) + (p.Note.Length > 0 ? " (" + L.T(p.Note) + ")" : ""),
                 FontPx = 26, SubPx = 13, CustomMinimumSize = new Vector2(0, 72 * k), SizeFlagsHorizontal = SizeFlags.ExpandFill,
                 Selected = p.Key == plan.Preset.Key,
             };
@@ -105,10 +105,11 @@ public partial class WarmupScreen : ScreenBase
             OnDraw = d =>
             {
                 int fs = UiTheme.Fs(16, k);
-                float w = Gfx.TextW(UiTheme.Body, plan.Preset.Blurb + ".", fs);
-                Gfx.Text(d, UiTheme.Body, plan.Preset.Blurb + ".", 0, Gfx.Mid(d.Size.Y / 2, fs), fs, UiTheme.Text);
+                string blurb = L.T(plan.Preset.Blurb) + ".";
+                float w = Gfx.TextW(UiTheme.Body, blurb, fs);
+                Gfx.Text(d, UiTheme.Body, blurb, 0, Gfx.Mid(d.Size.Y / 2, fs), fs, UiTheme.Text);
                 if (plan.Preset.Note.Length > 0)
-                    Gfx.TextFit(d, UiTheme.HudWide, "  ·  " + plan.Preset.Note.ToUpperInvariant(), w, Gfx.Mid(d.Size.Y / 2, UiTheme.Fs(14, k)), UiTheme.Fs(14, k), UiTheme.Warn, d.Size.X - w);
+                    Gfx.TextFit(d, UiTheme.HudWide, "  ·  " + L.Upper(L.T(plan.Preset.Note)), w, Gfx.Mid(d.Size.Y / 2, UiTheme.Fs(14, k)), UiTheme.Fs(14, k), UiTheme.Warn, d.Size.X - w);
             },
         });
 
@@ -116,7 +117,7 @@ public partial class WarmupScreen : ScreenBase
         var chartPanel = new VPanel
         {
             Title = "TIMELINE", K = k,
-            Caption = $"{plan.Steps.Count} drills · {WarmupPlan.Clock(plan.PlaySeconds)} play · ≈{WarmupPlan.Minutes(plan.EstimatedSeconds).ToLowerInvariant()} in total",
+            Caption = L.F($"{plan.Steps.Count} drills · {WarmupPlan.Clock(plan.PlaySeconds)} play · ≈{WarmupPlan.WholeMinutes(plan.EstimatedSeconds)} min in total"),
         };
         left.AddChild(chartPanel);
         chartPanel.AddChild(new DrawBox
@@ -140,9 +141,9 @@ public partial class WarmupScreen : ScreenBase
                 b.Pressed += () => { Store.ShiftMode = m; Store.Save(); Callable.From(Rebuild).CallDeferred(); };
                 row.AddChild(b);
             }
-            ShiftBtn("OFF", "default · every drill at your sens", ShiftMode.Off);
-            ShiftBtn("HIGHER → YOUR SENS", "start a little faster", ShiftMode.HighToNormal);
-            ShiftBtn("LOWER → YOUR SENS", "start a little slower", ShiftMode.LowToNormal);
+            ShiftBtn(L.N("OFF"), L.N("default · every drill at your sens"), ShiftMode.Off);
+            ShiftBtn(L.N("HIGHER → YOUR SENS"), L.N("start a little faster"), ShiftMode.HighToNormal);
+            ShiftBtn(L.N("LOWER → YOUR SENS"), L.N("start a little slower"), ShiftMode.LowToNormal);
             row.AddChild(Spacer(10 * k, 0));
             foreach (int pct in WarmupPresets.ShiftOptions)
             {
@@ -190,7 +191,7 @@ public partial class WarmupScreen : ScreenBase
         honest.CustomMinimumSize = new Vector2(440 * k, 0);
         wv.AddChild(honest);
 
-        var hist = new VPanel { Title = "YOUR LOCK-INS", K = k, Caption = Store.Warmups.Count == 0 ? "none yet" : $"{Store.Warmups.Count} saved", SizeFlagsVertical = SizeFlags.ExpandFill };
+        var hist = new VPanel { Title = "YOUR LOCK-INS", K = k, Caption = Store.Warmups.Count == 0 ? "none yet" : L.F($"{Store.Warmups.Count} saved"), SizeFlagsVertical = SizeFlags.ExpandFill };
         right.AddChild(hist);
         var hv = VBox(14 * k);
         hist.AddChild(hv);
@@ -200,12 +201,12 @@ public partial class WarmupScreen : ScreenBase
 
     static readonly (string, string)[] Notes =
     {
-        ("SHORT AND AT YOUR REAL SENS",
-         "A warm-up wakes up skill you already have. About 10 to 15 minutes at the sens you play with is enough; longer mostly adds fatigue."),
-        ("SIMPLE TO GAME-LIKE",
-         "Easy drills first, then drills that adapt to keep you near 8 of 10 hits, then bots and a deathmatch. Its last minute is easier, so the session ends on a good note."),
-        ("CARRY IT INTO THE MATCH",
-         "The effect fades after a 5 to 15 minute break, so queue right away. One goal and one cue word give you something simple to come back to each round."),
+        (L.N("SHORT AND AT YOUR REAL SENS"),
+         L.N("A warm-up wakes up skill you already have. About 10 to 15 minutes at the sens you play with is enough; longer mostly adds fatigue.")),
+        (L.N("SIMPLE TO GAME-LIKE"),
+         L.N("Easy drills first, then drills that adapt to keep you near 8 of 10 hits, then bots and a deathmatch. Its last minute is easier, so the session ends on a good note.")),
+        (L.N("CARRY IT INTO THE MATCH"),
+         L.N("The effect fades after a 5 to 15 minute break, so queue right away. One goal and one cue word give you something simple to come back to each round.")),
     };
 
     void DrawHistory(DrawBox d)
@@ -220,8 +221,8 @@ public partial class WarmupScreen : ScreenBase
         }
         var lastW = Store.Warmups[^1];
         Gfx.Text(d, UiTheme.HudWide, "LAST", 0, Gfx.Mid(14 * k, ls), ls, UiTheme.Faint);
-        string lastText = $"{lastW.When:MMM d, HH:mm} · {WarmupPresets.Get(lastW.Preset).Name}" +
-                          (lastW.Readiness >= 0 ? $" · {lastW.Readiness:0}% of usual" : "") + (lastW.Cue.Length > 0 ? $" · cue \"{lastW.Cue}\"" : "");
+        string lastText = $"{lastW.When:MMM d, HH:mm} · {L.T(WarmupPresets.Get(lastW.Preset).Name)}" +
+                          (lastW.Readiness >= 0 ? " · " + L.F($"{lastW.Readiness:0}% of usual") : "") + (lastW.Cue.Length > 0 ? " · " + L.F($"cue \"{L.T(lastW.Cue)}\"") : "");
         Gfx.TextFit(d, UiTheme.Body, lastText, 54 * k, Gfx.Mid(14 * k, fs), fs, UiTheme.Text, d.Size.X - 54 * k);
         if (list.Count >= 2)
         {

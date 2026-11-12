@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Godot;
+using ValTrainer.Core;
 using ValTrainer.Game;
 using ValTrainer.Game.Bots;
 using ValTrainer.Maps;
@@ -7,7 +8,11 @@ using ValTrainer.Maps;
 namespace ValTrainer.Modes;
 
 /// <summary>A post-plant position: where an attacker plays after the plant (feet on a nav node) and its peek node.</summary>
-public sealed record PostSpot(string Kind, string Name, Vector3 Feet, bool Crouch, Vector3 Peek);
+public sealed record PostSpot(string Kind, string Name, Vector3 Feet, bool Crouch, Vector3 Peek)
+{
+    /// <summary><see cref="Name"/> (English: "Crossfire · Hell") in the UI language: the kind translated, the map callout kept.</summary>
+    public string DisplayName => Name.StartsWith(Kind, StringComparison.Ordinal) ? L.T(Kind) + Name[Kind.Length..] : L.T(Name);
+}
 
 /// <summary>
 /// Geometry for the post-plant / retake drills on one map and plant spot, computed once from the map blockout and its
@@ -43,7 +48,7 @@ public sealed class TacticalSite
     public readonly float BuildMs;
     public readonly List<string> Warnings = new();
 
-    public static readonly string[] Kinds = { "On site", "Off-angle", "Crossfire" };
+    public static readonly string[] Kinds = { L.N("On site"), L.N("Off-angle"), L.N("Crossfire") };
 
     static readonly ConcurrentDictionary<string, TacticalSite> Cache = new();
     static readonly ConcurrentDictionary<string, Vector3[]> PlantCache = new();
@@ -198,7 +203,7 @@ public sealed class TacticalSite
         {
             // Nothing qualified (odd geometry): play next to the spike.
             var p = nav.Pos[nav.Nearest(spike + new Vector3(2.5f, 0, 0))];
-            Spots[0] = new[] { new PostSpot(Kinds[0], "Spike", p, false, p) };
+            Spots[0] = new[] { new PostSpot(Kinds[0], L.N("Spike"), p, false, p) };
             Warnings.Add("no post-plant spot qualified");
         }
 
@@ -219,7 +224,7 @@ public sealed class TacticalSite
                 if (!nav.Straight(c.P, q) || !SeesSpike(Eye(q), 3)) continue;
                 bd = dd; peek = q;
             }
-            if (peek is { } pk) lurks.Add(new PostSpot("Lurk", Callout(map, c.P, "Lurk"), c.P, false, pk));
+            if (peek is { } pk) lurks.Add(new PostSpot(L.N("Lurk"), Callout(map, c.P, "Lurk"), c.P, false, pk));
         }
         Lurks = lurks.ToArray();
         BuildMs = (float)sw.Elapsed.TotalMilliseconds;

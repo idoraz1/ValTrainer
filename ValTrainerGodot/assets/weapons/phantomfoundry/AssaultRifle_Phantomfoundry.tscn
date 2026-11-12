@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/weapons/phantomfoundry/AssaultRifle_Phantomfoundry.gltf" id="1_mdl"]
+
+[node name="AssaultRifle_Phantomfoundry" type="Node3D"]
+metadata/source_model = "res://assets/weapons/phantomfoundry/AssaultRifle_Phantomfoundry.gltf"
+metadata/length_m = 0.95
+metadata/textured = true
+
+[node name="Model" parent="." instance=ExtResource("1_mdl")]
+
+[node name="Muzzle" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.076, -0.686)

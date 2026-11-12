@@ -16,17 +16,21 @@ public partial class SettingsScreen
 {
     static readonly (string Title, GameAction[] Actions)[] BindGroupsLeft =
     {
-        ("MOVEMENT", new[] { GameAction.MoveForward, GameAction.MoveBack, GameAction.StrafeLeft, GameAction.StrafeRight, GameAction.Walk, GameAction.Crouch, GameAction.Jump }),
-        ("COMBAT", new[] { GameAction.Fire, GameAction.AltFire, GameAction.Reload }),
+        (L.N("MOVEMENT"), new[] { GameAction.MoveForward, GameAction.MoveBack, GameAction.StrafeLeft, GameAction.StrafeRight, GameAction.Walk, GameAction.Crouch, GameAction.Jump }),
+        (L.N("COMBAT"), new[] { GameAction.Fire, GameAction.AltFire, GameAction.Reload }),
         // the gun picker in a drill; here, not under EQUIPMENT: that column is full at 720p (one more row scrolls it)
-        ("SHOP", new[] { GameAction.BuyMenu }),
+        (L.N("SHOP"), new[] { GameAction.BuyMenu }),
     };
+
+    /// <summary>ValTrainer-only binds (VALORANT has no crosshair-profile bind): the crosshair switcher in drills
+    /// (Valorant.CrosshairList). In the right-hand column, which has room at 720p (the other two would scroll).</summary>
+    static readonly GameAction[] BindGroupCrosshair = { GameAction.CrosshairPrev, GameAction.CrosshairNext };
 
     static readonly (string Title, GameAction[] Actions)[] BindGroupsRight =
     {
-        ("ABILITIES", new[] { GameAction.AbilityGrenade, GameAction.Ability1, GameAction.Ability2, GameAction.Ultimate }),
-        ("EQUIPMENT", new[] { GameAction.EquipPrimary, GameAction.EquipSecondary, GameAction.EquipMelee, GameAction.EquipSpike }),
-        ("INTERACT", new[] { GameAction.Use, GameAction.UseSpike, GameAction.Drop, GameAction.Inspect }),
+        (L.N("ABILITIES"), new[] { GameAction.AbilityGrenade, GameAction.Ability1, GameAction.Ability2, GameAction.Ultimate }),
+        (L.N("EQUIPMENT"), new[] { GameAction.EquipPrimary, GameAction.EquipSecondary, GameAction.EquipMelee, GameAction.EquipSpike }),
+        (L.N("INTERACT"), new[] { GameAction.Use, GameAction.UseSpike, GameAction.Drop, GameAction.Inspect }),
     };
 
     /// <summary>The slot waiting for a key / mouse button, if any.</summary>
@@ -41,9 +45,9 @@ public partial class SettingsScreen
     void BuildKeybinds(HBoxContainer cols)
     {
         capturing = null;
-        foreach (var (title, groups) in new[] { ("MOVEMENT & COMBAT", BindGroupsLeft), ("ABILITIES & ITEMS", BindGroupsRight) })
+        foreach (var (title, groups) in new[] { (L.N("MOVEMENT & COMBAT"), BindGroupsLeft), (L.N("ABILITIES & ITEMS"), BindGroupsRight) })
         {
-            var v = Column(cols, title, "PRIMARY · SECONDARY", 1f);
+            var v = Column(cols, title, L.N("PRIMARY · SECONDARY"), 1f);
             bool first = true;
             foreach (var (section, actions) in groups)
             {
@@ -184,23 +188,33 @@ public partial class SettingsScreen
         return row;
     }
 
+    /// <summary>Actions VALORANT has no bind for (the crosshair switcher): their "imported" binds are ValTrainer's defaults.</summary>
+    static bool ValTrainerOnly(GameAction a) => a is GameAction.CrosshairPrev or GameAction.CrosshairNext;
+
     /// <summary>"From VALORANT" / "Custom · VALORANT: E · Mouse 4" (the note under the action's name).</summary>
     static string BindNote(GameAction a)
     {
         bool p = CustomBinds.IsCustom(St.CustomBinds, a, 0), s = CustomBinds.IsCustom(St.CustomBinds, a, 1);
-        if (!p && !s) return App.Valorant.Found ? "From VALORANT" : "VALORANT default";
-        return $"Custom · VALORANT: {Imp.Text(a)}";
+        if (ValTrainerOnly(a)) return !p && !s ? L.N("ValTrainer only") : L.F($"Custom · default: {Imp.Text(a)}");
+        if (!p && !s) return App.Valorant.Found ? L.N("From VALORANT") : L.N("VALORANT default");
+        return L.F($"Custom · VALORANT: {Imp.Text(a)}");
     }
 
+    /// <summary>A bind slot's tooltip (translated: TooltipText is no sink; key names stay as they are).</summary>
     static string SlotTip(GameAction a, int slot)
     {
-        string name = slot == 0 ? "primary" : "secondary";
         var b = Eff[a, slot];
-        string src = CustomBinds.IsCustom(St.CustomBinds, a, slot) ? $"Custom (VALORANT: {Imp[a, slot].Text})" : "From VALORANT";
+        string src = ValTrainerOnly(a)
+            ? CustomBinds.IsCustom(St.CustomBinds, a, slot) ? L.F($"Custom (ValTrainer default: {Imp[a, slot].Text})") : L.T("ValTrainer default (VALORANT has no crosshair bind)")
+            : CustomBinds.IsCustom(St.CustomBinds, a, slot) ? L.F($"Custom (VALORANT: {Imp[a, slot].Text})") : L.T("From VALORANT");
         var others = Eff.Others(b, a);
-        string shared = others.Count > 0 ? $"\nAlso bound to {string.Join(", ", others.Select(Keybinds.Label))}: both trigger" : "";
-        return $"{Keybinds.Label(a)} · {name}: {b.Text}\n{src}{shared}\nClick, then press a key or mouse button · Esc cancels · Backspace / Delete = VALORANT's · right-click unbinds";
+        string shared = others.Count > 0 ? "\n" + L.F($"Also bound to {ActionList(others, ", ")}: both trigger") : "";
+        return $"{L.T(Keybinds.Label(a))} · {SlotName(slot)}: {b.Text}\n{src}{shared}\n" +
+               L.T("Click, then press a key or mouse button · Esc cancels · Backspace / Delete = VALORANT's · right-click unbinds");
     }
+
+    /// <summary>Translated action names joined ("Walk, Crouch").</summary>
+    static string ActionList(IEnumerable<GameAction> acts, string sep) => string.Join(sep, acts.Select(x => L.T(Keybinds.Label(x))));
 
     void StartCapture(GameAction a, int slot)
     {
@@ -216,13 +230,14 @@ public partial class SettingsScreen
         if (e is InputEventKey { Pressed: true, Echo: false } k)
         {
             GetViewport().SetInputAsHandled();
-            if (k.Keycode == Key.Escape) { capturing = null; Msg("Cancelled", UiTheme.Dim); RefreshAll(); return; }
+            if (k.Keycode == Key.Escape) { capturing = null; Msg(L.T("Cancelled"), UiTheme.Dim); RefreshAll(); return; }
             if (k.Keycode is Key.Backspace or Key.Delete)
             {
                 capturing = null;
                 CustomBinds.Clear(ref St.CustomBinds, c.A, c.Slot);
                 App.ApplyBinds();
-                Msg($"{Keybinds.Label(c.A)} ({SlotName(c.Slot)}): back to VALORANT's {Imp[c.A, c.Slot].Text}", UiTheme.Good);
+                string act = L.T(Keybinds.Label(c.A)), sl = SlotName(c.Slot), key = Imp[c.A, c.Slot].Text;
+                Msg(ValTrainerOnly(c.A) ? L.F($"{act} ({sl}): back to the default {key}") : L.F($"{act} ({sl}): back to VALORANT's {key}"), UiTheme.Good);
                 Sfx.I?.Play("kill1", 0.35f);
                 Changed();
                 return;
@@ -235,24 +250,27 @@ public partial class SettingsScreen
         SetBind(c.A, c.Slot, bind);
     }
 
-    static string SlotName(int slot) => slot == 0 ? "primary" : "secondary";
+    /// <summary>"primary" / "secondary", translated (it goes into translated sentences).</summary>
+    static string SlotName(int slot) => slot == 0 ? L.T("primary") : L.T("secondary");
 
     void SetBind(GameAction a, int slot, InputBinding b)
     {
         CustomBinds.Set(ref St.CustomBinds, Imp, a, slot, b);
         App.ApplyBinds();
         var others = Eff.Others(b, a);
-        string what = $"{Keybinds.Label(a)} ({SlotName(slot)}): {b.Text}";
-        if (b.IsNone) Msg($"{Keybinds.Label(a)} ({SlotName(slot)}): unbound in ValTrainer", UiTheme.Warn);
-        else if (others.Count > 0) Msg($"{what} · also {string.Join(", ", others.Select(Keybinds.Label))}: both trigger", UiTheme.Warn);
-        else Msg(what + (CustomBinds.IsCustom(St.CustomBinds, a, slot) ? " · custom" : " · same as VALORANT"), UiTheme.Good);
+        string act = L.T(Keybinds.Label(a)), sl = SlotName(slot), key = b.Text;
+        if (b.IsNone) Msg(L.F($"{act} ({sl}): unbound in ValTrainer"), UiTheme.Warn);
+        else if (others.Count > 0) Msg(L.F($"{act} ({sl}): {key} · also {ActionList(others, ", ")}: both trigger"), UiTheme.Warn);
+        else if (CustomBinds.IsCustom(St.CustomBinds, a, slot)) Msg(L.F($"{act} ({sl}): {key} · custom"), UiTheme.Good);
+        else Msg(L.F($"{act} ({sl}): {key} · same as VALORANT"), UiTheme.Good);
         Sfx.I?.Play("kill1", 0.35f);
         Changed();
     }
 
+    /// <summary>The last-change line under the capture prompt (<paramref name="text"/> already translated).</summary>
     void Msg(string text, Color c)
     {
-        bindMsg = text;
+        bindMsg = L.Raw(text);
         bindMsgColor = c;
         bindMsgFlash = 6f;
     }
@@ -285,7 +303,7 @@ public partial class SettingsScreen
             if (capturing is { } c)
             {
                 Gfx.TextFit(d, UiTheme.Display, "PRESS A KEY OR MOUSE BUTTON", x, Gfx.Mid(cy - 16 * k, hs), hs, UiTheme.Text, w);
-                Gfx.TextFit(d, UiTheme.Body, $"{Keybinds.Label(c.A)} · {SlotName(c.Slot)}", x, Gfx.Mid(cy + 6 * k, ss), ss, UiTheme.Accent, w);
+                Gfx.TextFit(d, UiTheme.Body, L.Raw(L.T(Keybinds.Label(c.A)) + " · " + SlotName(c.Slot)), x, Gfx.Mid(cy + 6 * k, ss), ss, UiTheme.Accent, w);
                 Gfx.TextFit(d, UiTheme.Body, "Esc cancels · Backspace / Delete = VALORANT's bind", x, Gfx.Mid(cy + 24 * k, ss), ss, UiTheme.Dim, w);
             }
             else
@@ -302,6 +320,10 @@ public partial class SettingsScreen
         v.AddChild(prompt);
 
         v.AddChild(Spacer(0, 4 * k));
+        v.AddChild(new SectionLabel { Text = "CROSSHAIR", Note = "ValTrainer only", K = k });
+        foreach (var a in BindGroupCrosshair) v.AddChild(BindRow(a));
+
+        v.AddChild(Spacer(0, 4 * k));
         v.AddChild(new SectionLabel { Text = "WHERE THEY COME FROM", K = k });
         int stripe = 0;
         void Info(string label, Func<string> value, Func<Color>? color = null)
@@ -310,18 +332,19 @@ public partial class SettingsScreen
             refreshers.Add(row.QueueRedraw);
             v.AddChild(row);
         }
-        Info("VALORANT", () => App.Valorant.Found ? $"account {App.Valorant.AccountId?[..Math.Min(8, App.Valorant.AccountId.Length)]}…" : "not found: defaults",
+        Info("VALORANT", () => App.Valorant.Found ? L.F($"account {App.Valorant.AccountId?[..Math.Min(8, App.Valorant.AccountId.Length)]}…") : L.N("not found: defaults"),
             () => App.Valorant.Found ? UiTheme.Good : UiTheme.Warn);
-        Info("Changed in VALORANT", () => Imp.FromFile.Count == 0 ? "none (defaults)" : $"{Imp.FromFile.Count} bind{(Imp.FromFile.Count == 1 ? "" : "s")}");
-        Info("Custom in ValTrainer", () => { int n = CustomBinds.Count(St.CustomBinds); return n == 0 ? "none" : $"{n} bind{(n == 1 ? "" : "s")}"; },
+        Info(L.N("Changed in VALORANT"), () => { int c = Imp.FromFile.Count; return c == 0 ? L.N("none (defaults)") : L.P(c, $"{c} bind", $"{c} binds"); });
+        Info(L.N("Custom in ValTrainer"), () => { int n = CustomBinds.Count(St.CustomBinds); return n == 0 ? L.N("none") : L.P(n, $"{n} bind", $"{n} binds"); },
             () => CustomBinds.Count(St.CustomBinds) > 0 ? UiTheme.Warn : UiTheme.Text);
         v.AddChild(NoteRow(() =>
         {
             int agents = Imp.Skipped.Count(s => s.Contains(" for agent ", StringComparison.Ordinal));
-            return agents > 0 ? $"{agents} agent-specific VALORANT bind{(agents == 1 ? " isn't" : "s aren't")} used (one set of binds for every drill): set them here." : null;
+            return agents > 0 ? L.P(agents, $"{agents} agent-specific VALORANT bind isn't used (one set of binds for every drill): set them here.",
+                $"{agents} agent-specific VALORANT binds aren't used (one set of binds for every drill): set them here.") : null;
         }));
         v.AddChild(NoteRow(() => App.Valorant.Found ? null
-            : "VALORANT's settings weren't found on this PC, so these start at VALORANT's defaults. Set yours here."));
+            : L.N("VALORANT's settings weren't found on this PC, so these start at VALORANT's defaults. Set yours here.")));
 
         v.AddChild(Spacer(0, 6 * k));
         v.AddChild(new SectionLabel { Text = "SHARED BINDS", K = k });
@@ -345,9 +368,9 @@ public partial class SettingsScreen
                 shared.AddChild(l);
                 return l;
             }
-            if (lines.Count == 0) { Line("None: every bind does one thing.", UiTheme.Dim); return; }
-            foreach (var (text, custom) in lines) Line(text, custom ? UiTheme.Warn : UiTheme.Text);
-            Line("Every action on a shared bind triggers, like in VALORANT.", UiTheme.Dim);
+            if (lines.Count == 0) { Line(L.N("None: every bind does one thing."), UiTheme.Dim); return; }
+            foreach (var (_, custom, shown) in lines) Line(shown, custom ? UiTheme.Warn : UiTheme.Text);
+            Line(L.N("Every action on a shared bind triggers, like in VALORANT."), UiTheme.Dim);
         });
 
         v.AddChild(Spacer(0, 6 * k));
@@ -379,11 +402,11 @@ public partial class SettingsScreen
             St.CustomBinds = null;
             capturing = null;
             App.ApplyBinds();
-            Msg(n == 0 ? "Already VALORANT's binds" : $"{n} custom bind{(n == 1 ? "" : "s")} removed: VALORANT's binds everywhere", UiTheme.Good);
+            Msg(n == 0 ? L.T("Already VALORANT's binds") : L.P(n, $"{n} custom bind removed: VALORANT's binds everywhere", $"{n} custom binds removed: VALORANT's binds everywhere"), UiTheme.Good);
             Sfx.I?.Play("kill1", 0.5f);
             Changed();
         }, 300, 50, 18);
-        reset.TooltipText = "Removes every ValTrainer custom bind: back to the binds imported from VALORANT";
+        reset.TooltipText = L.T("Removes every ValTrainer custom bind: back to the binds imported from VALORANT");
         refreshers.Add(() => { reset.Disabled = St.CustomBinds == null && armedAt == 0; reset.QueueRedraw(); });
         bottom.AddChild(reset);
         outer.AddChild(bottom);
@@ -392,8 +415,9 @@ public partial class SettingsScreen
     DrawBox? promptBox;
 
     /// <summary>"Mouse 4: Alt fire / ADS + Ability Q (1)" for every bind used by 2+ actions; Custom = a custom bind is
-    /// involved (shown as a warning; VALORANT's own defaults share 4 for the spike).</summary>
-    static List<(string Text, bool Custom)> SharedLines()
+    /// involved (shown as a warning; VALORANT's own defaults share 4 for the spike). Text is English (the UI self-test
+    /// reads it); Shown is the same line with the action names translated, for display.</summary>
+    static List<(string Text, bool Custom, string Shown)> SharedLines()
     {
         var by = new Dictionary<InputBinding, List<GameAction>>();
         var customBinds = new HashSet<InputBinding>();
@@ -406,9 +430,10 @@ public partial class SettingsScreen
                 if (!l.Contains(a)) l.Add(a);
                 if (CustomBinds.IsCustom(St.CustomBinds, a, s)) customBinds.Add(b);
             }
-        var lines = new List<(string, bool)>();
+        var lines = new List<(string, bool, string)>();
         foreach (var (b, acts) in by)
-            if (acts.Count >= 2) lines.Add(($"{b.Text}: {string.Join(" + ", acts.Select(Keybinds.Label))}", customBinds.Contains(b)));
+            if (acts.Count >= 2)
+                lines.Add(($"{b.Text}: {string.Join(" + ", acts.Select(Keybinds.Label))}", customBinds.Contains(b), L.Raw($"{b.Text}: {ActionList(acts, " + ")}")));
         return lines;
     }
 
@@ -482,7 +507,7 @@ public partial class BindSlot : BaseButton
         bool shared = !b.IsNone && Shared().Count > 0;
         float right = shared ? 18 * k : 8 * k;
         var col = b.IsNone ? UiTheme.Faint : custom ? UiTheme.Warn : UiTheme.Text;
-        Gfx.TextFit(this, UiTheme.Body, b.IsNone ? "—" : b.Text, 8 * k, Gfx.Mid(cy, fs), fs, col, r.Size.X - 8 * k - right, HorizontalAlignment.Center);
+        Gfx.TextFit(this, UiTheme.Body, b.IsNone ? "—" : L.Raw(b.Text), 8 * k, Gfx.Mid(cy, fs), fs, col, r.Size.X - 8 * k - right, HorizontalAlignment.Center);
         if (shared)
         {
             int ms = UiTheme.Fs(14, k);

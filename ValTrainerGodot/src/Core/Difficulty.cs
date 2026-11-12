@@ -14,8 +14,15 @@ public sealed record BotSkill(
     int Burst, float GapMs,            // bullets per burst, pause between bursts
     bool RunAndGun);                   // shoots while moving (low tiers) instead of stopping first
 
-/// <summary>A difficulty tier calibrated to Valorant ranks (see README for sources).</summary>
-public sealed record Tier(int Id, string Name, string Ranks, BotSkill Bot);
+/// <summary>A difficulty tier calibrated to Valorant ranks (see README for sources). <see cref="Name"/> and
+/// <see cref="Ranks"/> stay English (logic, logs, telemetry); show <see cref="DisplayName"/> / <see cref="DisplayRanks"/>.</summary>
+public sealed record Tier(int Id, string Name, string Ranks, BotSkill Bot)
+{
+    /// <summary>The tier name in the UI language ("Rookie").</summary>
+    public string DisplayName => L.T(Name);
+    /// <summary>The rank range in the UI language ("Iron – Bronze").</summary>
+    public string DisplayRanks => L.T(Ranks);
+}
 
 public static class Difficulty
 {
@@ -25,11 +32,11 @@ public static class Difficulty
         // (perfect awareness, no peeker's advantage for you), so low tiers are deliberately softer than a raw
         // human model. Simulated median time-to-kill vs a player standing in view: Rookie 4.4 s, Regular 2.4 s,
         // Veteran 1.4 s, Elite 0.84 s, Pro 0.53 s (scratchpad botsim.py mirrors BotBrain).
-        new(0, "Rookie",  "Iron – Bronze",       new(480, 90, 9.0f, 300, .26f, .05f, .85f, 3, 420, true)),
-        new(1, "Regular", "Silver – Gold",       new(370, 65, 6.0f, 230, .38f, .10f, .88f, 4, 320, true)),
-        new(2, "Veteran", "Platinum – Diamond",  new(290, 45, 3.5f, 160, .55f, .18f, .92f, 4, 220, false)),
-        new(3, "Elite",   "Ascendant – Immortal", new(225, 30, 1.8f, 110, .72f, .28f, .95f, 4, 170, false)),
-        new(4, "Pro",     "Radiant",             new(180, 22, 0.8f,  80, .86f, .42f, .96f, 4, 140, false)),
+        new(0, L.N("Rookie"),  L.N("Iron – Bronze"),        new(480, 90, 9.0f, 300, .26f, .05f, .85f, 3, 420, true)),
+        new(1, L.N("Regular"), L.N("Silver – Gold"),        new(370, 65, 6.0f, 230, .38f, .10f, .88f, 4, 320, true)),
+        new(2, L.N("Veteran"), L.N("Platinum – Diamond"),   new(290, 45, 3.5f, 160, .55f, .18f, .92f, 4, 220, false)),
+        new(3, L.N("Elite"),   L.N("Ascendant – Immortal"), new(225, 30, 1.8f, 110, .72f, .28f, .95f, 4, 170, false)),
+        new(4, L.N("Pro"),     L.N("Radiant"),              new(180, 22, 0.8f,  80, .86f, .42f, .96f, 4, 140, false)),
     };
 
     public static Tier Get(int id) => Tiers[Math.Clamp(id, 0, Tiers.Length - 1)];
@@ -117,10 +124,23 @@ public static class Difficulty
     /// <summary>A continuous level as a tier name with a +/− hint: 2.0 "Veteran", 2.4 "Veteran+", 2.8 "Elite−".</summary>
     public static string LevelName(float level)
     {
+        var (n, hint) = Level(level);
+        return Tiers[n].Name + hint;
+    }
+
+    /// <summary><see cref="LevelName"/> with the tier name in the UI language (for display; LevelName stays English).</summary>
+    public static string DisplayLevelName(float level)
+    {
+        var (n, hint) = Level(level);
+        return Tiers[n].DisplayName + hint;
+    }
+
+    static (int Tier, string Hint) Level(float level)
+    {
         level = Math.Clamp(level, 0f, 4f);
         int n = (int)MathF.Round(level);
         float d = level - n;
-        return Tiers[n].Name + (d >= 0.2f ? "+" : d <= -0.2f ? "−" : "");
+        return (n, d >= 0.2f ? "+" : d <= -0.2f ? "−" : "");
     }
 
     public static float TrackRadius(int t) => T(t, .45f, .38f, .30f, .22f, .16f);
@@ -271,5 +291,7 @@ public static class Difficulty
         return -1;
     }
 
-    public static string BadgeName(int badge) => badge < 0 ? "Below Rookie" : $"{Tiers[badge].Name} ({Tiers[badge].Ranks})";
+    /// <summary>A badge for display, in the UI language: "Veteran (Platinum – Diamond)", "Below Rookie".</summary>
+    public static string BadgeName(int badge) =>
+        badge < 0 ? L.T("Below Rookie") : L.F($"{Tiers[badge].DisplayName} ({Tiers[badge].DisplayRanks})");
 }

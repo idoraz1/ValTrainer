@@ -298,10 +298,12 @@ public sealed class TacticalMap
             ci.DrawArc(c, r, i * step, i * step + step * 0.55f, 6, col, width, true);
     }
 
+    /// <summary>Outlined text centred on <paramref name="at"/>, drawn exactly as given: map callouts and names are never
+    /// translated, so UI words ("ENTRY") must come translated from the caller (L.T / L.F).</summary>
     public static void Label(CanvasItem ci, string text, Vector2 at, int fs, Color col, Font? font = null)
     {
         font ??= UiTheme.HudWide;
-        float tw = Gfx.TextW(font, text, fs);
+        float tw = Gfx.RawW(font, text, fs);
         var pos = new Vector2(at.X - tw / 2, at.Y + fs * 0.36f);
         ci.DrawStringOutline(font, pos, text, HorizontalAlignment.Left, -1, fs, Math.Max(2, fs / 5), new Color(0.02f, 0.03f, 0.05f, 0.85f * col.A));
         ci.DrawString(font, pos, text, HorizontalAlignment.Left, -1, fs, col);

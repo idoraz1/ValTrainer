@@ -25,19 +25,19 @@ public sealed partial class SensFinderMode : TrainingMode
 
     public override string Key => "sensfinder";
     public override bool PreviewDemo => false; // blind A/B choices: only a person can play it
-    public override string Name => "Sens Finder";
-    public override string Description => "Blind A/B test of sensitivities with flicks, micro-adjustments and tracking. Finds the sens you actually perform best with.";
-    public override string Category => "Coach";
+    public override string Name => L.N("Sens Finder");
+    public override string Description => L.N("Blind A/B test of sensitivities with flicks, micro-adjustments and tracking. Finds the sens you actually perform best with.");
+    public override string Category => L.N("Coach");
     public override WeaponKind Weapon => WeaponKind.None;
     public override bool Timed => false;
     public override bool ShowScore => false;
     public override bool Done => done;
-    public override string? Subtitle => "Blind A/B test";
+    public override string? Subtitle => L.N("Blind A/B test");
 
     enum Ph { Intro, Rest, Flick, Micro, TrackReady, Track, Summary }
     Ph phase;
     float phaseT;
-    bool done, prevHeld, prevMKey;
+    bool done, prevHeld, prevMKey, prevQKey;
     ulong lastRealUsec;
 
     SensFinderConfig cfg = null!;
@@ -84,7 +84,7 @@ public sealed partial class SensFinderMode : TrainingMode
     (SfStage Stage, int Cond, double T)? flickBest, microBest; // which tested sens each component preferred on its own
     bool confirmed;       // a confirmation stage was run
     bool adoptC = true;
-    string confidence = "", confidenceWhy = "";
+    string confidence = "", confidenceWhy = "", confidenceWhyUi = "";
     bool atLimit;         // every decisive step pointed the same way: the optimum may lie beyond this run's reach
 
     public override AimFocus? Focus => phase switch
@@ -108,7 +108,8 @@ public sealed partial class SensFinderMode : TrainingMode
     protected override void Setup()
     {
         bool dev = Main.I.Dev;
-        cfg = dev && Args.Contains("--sfquick") ? SensFinderConfig.Quick() : SensFinderConfig.Full();
+        cfg = dev && Args.Contains("--sfquick") ? SensFinderConfig.Quick()
+            : Main.I.Settings.SensFinderShort || (dev && Args.Contains("--sfshort")) ? SensFinderConfig.Short() : SensFinderConfig.Full();
         cfg.Micro = Main.I.Settings.SensFinderMicro && !(dev && Args.Contains("--sfnomicro"));
         int seed = dev && int.TryParse(ArgAfter("--sfseed"), out var s) ? s : System.Environment.TickCount;
         rng = new Random(seed);
@@ -137,7 +138,7 @@ public sealed partial class SensFinderMode : TrainingMode
         phase = Ph.Intro;
         phaseT = 0;
         lastRealUsec = Time.GetTicksUsec();
-        GD.Print($"[sf] start seed={seed} quick={cfg.Steps < 5} micro={cfg.Micro} dpi={dpi} current={current:0.000} ({SfUnits.Cm360(current, dpi):0.0} cm/360) C1={centre:0.000} ({SfUnits.Cm360(centre, dpi):0.0} cm)");
+        GD.Print($"[sf] start seed={seed} quick={cfg.Steps < 5} short={cfg.IsShort} micro={cfg.Micro} dpi={dpi} current={current:0.000} ({SfUnits.Cm360(current, dpi):0.0} cm/360) C1={centre:0.000} ({SfUnits.Cm360(centre, dpi):0.0} cm)");
     }
 
     // =====================================================================================
@@ -157,7 +158,7 @@ public sealed partial class SensFinderMode : TrainingMode
         // A pause (Esc / focus loss) inside a block invalidates it: replay the block after a rest.
         if (phase is Ph.Flick or Ph.Micro or Ph.TrackReady or Ph.Track && realGap > dt + 0.75f)
         {
-            Notice("Round restarted after the pause");
+            Notice(L.N("Round restarted after the pause"));
             StartRest(blockIdx);
             return;
         }
@@ -176,6 +177,18 @@ public sealed partial class SensFinderMode : TrainingMode
                     G.Sound("tick", 0.3f, 1.2f);
                 }
                 prevMKey = mKey;
+                // Q switches between the full and the short test (remembered in the settings).
+                bool qKey = Input.IsKeyPressed(Godot.Key.Q);
+                if (qKey && !prevQKey && !(Main.I.Dev && Args.Contains("--sfquick")))
+                {
+                    bool micro = cfg.Micro, toShort = !cfg.IsShort;
+                    cfg = toShort ? SensFinderConfig.Short() : SensFinderConfig.Full();
+                    cfg.Micro = micro;
+                    Main.I.Settings.SensFinderShort = toShort;
+                    Main.I.Settings.Save();
+                    G.Sound("tick", 0.3f, 1.2f);
+                }
+                prevQKey = qKey;
                 if ((phaseT > 2f && pressed) || (Main.I.Dev && phaseT > 3f)) BeginStage(0);
                 break;
             }
@@ -372,8 +385,8 @@ public sealed partial class SensFinderMode : TrainingMode
         if (acc < cfg.MinAccuracy)
         {
             aborted = true;
-            abortWhy = $"Accuracy fell to {acc * 100:0}% (below {cfg.MinAccuracy * 100:0}%). You're probably tired. Take a break and run it again later.";
-            GD.Print($"[sf] ABORT (fatigue): {abortWhy}");
+            abortWhy = L.F($"Accuracy fell to {acc * 100:0}% (below {cfg.MinAccuracy * 100:0}%). You're probably tired. Take a break and run it again later.");
+            GD.Print($"[sf] ABORT (fatigue): accuracy fell to {acc * 100:0}% (below {cfg.MinAccuracy * 100:0}%)");
             Finish();
             return;
         }
@@ -709,16 +722,22 @@ public sealed partial class SensFinderMode : TrainingMode
         atLimit = !aborted && flips == 0 && decisive >= 3 && decisive >= Steps.Count() - 1;
         // A failed confirmation between two nearby values is expected noise (Medium); rejecting a big change is not (Low).
         bool bigReject = confirmed && !adoptC && Mathf.Abs(Mathf.Log(centre / current)) > Mathf.Log(1.15f);
+        // confidence stays English (a logic key, compared below and in the draw code); shown as L.C("confidence", …)
+        // (the keys "confidence|High" … come from SensAdvisor; plain "High" is the graphics quality)
         if (aborted || flips >= 3 || bigReject) confidence = "Low";
         else if (flips <= 1 && decisive >= 2 && adoptC && (!confirmed || confT >= 0f)) confidence = "High";
         else confidence = "Medium";
-        var why = new List<string>();
-        if (aborted) why.Add("aborted");
+        var why = new List<string>();      // English, for the log
+        var whyUi = new List<string>();    // the same in the UI language, for the summary screen
+        if (aborted) { why.Add("aborted"); whyUi.Add(L.T("aborted")); }
         why.Add($"{decisive}/{Steps.Count()} decisive");
+        whyUi.Add(L.F($"{decisive}/{Steps.Count()} decisive"));
         why.Add(flips == 1 ? "1 flip" : $"{flips} flips");
-        if (confirmed) why.Add($"confirm {confT:+0.0;-0.0}σ");
-        if (atLimit) why.Add("at search limit");
+        whyUi.Add(L.P(flips, $"{flips} flip", $"{flips} flips"));
+        if (confirmed) { why.Add($"confirm {confT:+0.0;-0.0}σ"); whyUi.Add(L.F($"confirm {confT:+0.0;-0.0}σ")); }
+        if (atLimit) { why.Add("at search limit"); whyUi.Add(L.T("at search limit")); }
         confidenceWhy = string.Join(" · ", why);
+        confidenceWhyUi = string.Join(" · ", whyUi);
 
         Event("sens_result", rec, confidence == "High" ? 2 : confidence == "Medium" ? 1 : 0);
         GD.Print($"[sf] RESULT rec={rec:0.000} ({Cm(rec):0.0} cm/360, eDPI {rec * dpi:0}) current={current:0.000} ({Cm(current):0.0}cm) change={ChangePct:+0.0;-0.0}% confidence={confidence} ({confidenceWhy.Replace("·", "/").Replace("σ", "sd")}) aborted={aborted}");
@@ -735,7 +754,8 @@ public sealed partial class SensFinderMode : TrainingMode
 
     float BestSens((SfStage Stage, int Cond, double T)? b) => b is { } x ? x.Stage.Sens[x.Cond] : 0f;
 
-    /// <summary>One line on what the flicks and the micro-adjustments preferred on their own.</summary>
+    /// <summary>One line on what the flicks and the micro-adjustments preferred on their own (English: the dev log only;
+    /// the summary screen draws its own translated version).</summary>
     string SplitText()
     {
         string F(float s) => s.ToString("0.000", Inv);
@@ -755,21 +775,21 @@ public sealed partial class SensFinderMode : TrainingMode
     {
         if (phase is Ph.Intro or Ph.Summary || stage == null) yield break;
         var st = stage;
-        yield return st.Confirm ? $"Confirmation · round {blockIdx + 1} / {st.Order.Length}"
-            : $"Step {st.Step + 1} / {cfg.Steps} · round {blockIdx + 1} / {st.Order.Length}";
-        yield return $"Setting {block?.Label}";
-        if (phase == Ph.Flick) yield return $"Flick {Math.Min(flickIdx + 1, seq.Count)} / {seq.Count}";
-        else if (phase == Ph.Micro) yield return $"Micro-adjustment {Math.Min(microIdx + 1, mseq.Count)} / {mseq.Count}";
-        else if (phase is Ph.TrackReady or Ph.Track) yield return $"Tracking · {Mathf.Max(0, cfg.TrackSec - (phase == Ph.Track ? phaseT : 0)):0} s";
+        yield return st.Confirm ? L.F($"Confirmation · round {blockIdx + 1} / {st.Order.Length}")
+            : L.F($"Step {st.Step + 1} / {cfg.Steps} · round {blockIdx + 1} / {st.Order.Length}");
+        yield return L.F($"Setting {block?.Label}");
+        if (phase == Ph.Flick) yield return L.F($"Flick {Math.Min(flickIdx + 1, seq.Count)} / {seq.Count}");
+        else if (phase == Ph.Micro) yield return L.F($"Micro-adjustment {Math.Min(microIdx + 1, mseq.Count)} / {mseq.Count}");
+        else if (phase is Ph.TrackReady or Ph.Track) yield return L.F($"Tracking · {Mathf.Max(0, cfg.TrackSec - (phase == Ph.Track ? phaseT : 0)):0} s");
         if (Now < noticeUntil) yield return notice;
     }
 
     public override string? Prompt => phase switch
     {
-        Ph.Flick when doneBlocks < 2 => "Flick to the head and click it",
-        Ph.Micro when doneBlocks < 2 => "Tiny moves: settle on the small head, then click",
-        Ph.TrackReady => "Tracking next: keep your crosshair on the target",
-        Ph.Track when doneBlocks < 2 => "Keep your crosshair on the target",
+        Ph.Flick when doneBlocks < 2 => L.N("Flick to the head and click it"),
+        Ph.Micro when doneBlocks < 2 => L.N("Tiny moves: settle on the small head, then click"),
+        Ph.TrackReady => L.N("Tracking next: keep your crosshair on the target"),
+        Ph.Track when doneBlocks < 2 => L.N("Keep your crosshair on the target"),
         _ => null,
     };
 
@@ -778,18 +798,18 @@ public sealed partial class SensFinderMode : TrainingMode
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
         if (phase != Ph.Summary) yield break;
-        if (aborted) yield return ("Result", "aborted (fatigue)");
-        yield return (aborted ? "Provisional" : "VALORANT sens", $"{rec.ToString("0.000", Inv)}  (was {current.ToString("0.000", Inv)})");
-        yield return ("eDPI", $"{rec * dpi:0}  (was {current * dpi:0})");
-        yield return ("cm/360", $"{Cm(rec):0.0}  (was {Cm(current):0.0})");
-        yield return ("Change", KeepSens ? $"{ChangePct:+0.0;-0.0}% · keep yours" : $"{ChangePct:+0.0;-0.0}%");
-        yield return ("Confidence", flips > 0 ? $"{confidence} · {flips} flip{(flips == 1 ? "" : "s")}" : confidence);
-        if (cfg.Micro) yield return ("Micro-adjust",microBest != null ? $"cleaner at {BestSens(microBest).ToString("0.000", Inv)}" : "no clear winner");
-        yield return ("Flicks", flickBest != null ? $"faster at {BestSens(flickBest).ToString("0.000", Inv)}" : "no clear winner");
-        yield return ("Pro median", "eDPI 240 ≈ 54 cm/360");
-        yield return ("Run again", atLimit ? "in a few days" : "another day");
-        yield return (atLimit ? "Then" : "If within 10%", atLimit ? "start from the new sens" : "use the average");
-        yield return ("In VALORANT", "set it yourself");
+        if (aborted) yield return (L.N("Result"), L.N("aborted (fatigue)"));
+        yield return (aborted ? L.N("Provisional") : L.N("VALORANT sens"), L.F($"{rec.ToString("0.000", Inv)}  (was {current.ToString("0.000", Inv)})"));
+        yield return ("eDPI", L.F($"{rec * dpi:0}  (was {current * dpi:0})"));
+        yield return ("cm/360", L.F($"{Cm(rec):0.0}  (was {Cm(current):0.0})"));
+        yield return (L.N("Change"), KeepSens ? L.F($"{ChangePct:+0.0;-0.0}% · keep yours") : $"{ChangePct:+0.0;-0.0}%");
+        yield return (L.N("Confidence"), flips > 0 ? L.P(flips, $"{L.C("confidence", confidence)} · {flips} flip", $"{L.C("confidence", confidence)} · {flips} flips") : L.C("confidence", confidence));
+        if (cfg.Micro) yield return (L.N("Micro-adjust"), microBest != null ? L.F($"cleaner at {BestSens(microBest).ToString("0.000", Inv)}") : L.N("no clear winner"));
+        yield return (L.N("Flicks"), flickBest != null ? L.F($"faster at {BestSens(flickBest).ToString("0.000", Inv)}") : L.N("no clear winner"));
+        yield return (L.N("Pro median"), "eDPI 240 ≈ 54 cm/360");
+        yield return (L.N("Run again"), atLimit ? L.N("in a few days") : L.N("another day"));
+        yield return (atLimit ? L.N("Then") : L.N("If within 10%"), atLimit ? L.N("start from the new sens") : L.N("use the average"));
+        yield return (L.N("In VALORANT"), L.N("set it yourself"));
     }
 
     public override IEnumerable<(string Label, Action Act)> ResultButtons()
@@ -798,7 +818,7 @@ public sealed partial class SensFinderMode : TrainingMode
         if (!aborted && !KeepSens)
         {
             float r = rec;
-            yield return ($"Use {r.ToString("0.000", Inv)} in ValTrainer", () =>
+            yield return (L.F($"Use {r.ToString("0.000", Inv)} in ValTrainer"), () =>
             {
                 var s = Main.I.Settings;
                 s.UseSensOverride = true;
@@ -807,7 +827,7 @@ public sealed partial class SensFinderMode : TrainingMode
             });
         }
         // Undoes "Use …" if it was clicked; otherwise nothing changes.
-        yield return ("Keep my sens", () =>
+        yield return (L.N("Keep my sens"), () =>
         {
             var s = Main.I.Settings;
             if (s.UseSensOverride == origUseOverride && s.SensOverride == origOverride) return;

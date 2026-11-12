@@ -19,7 +19,7 @@ public partial class LockInSetupCheck : VPanel
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
     /// <summary>Manual checklist, ticked state kept for this app session (never saved).</summary>
-    static readonly string[] Manual = { "Same headset and volume as in VALORANT", "A lamp on, not a dark room", "Hands warm" };
+    static readonly string[] Manual = { L.N("Same headset and volume as in VALORANT"), L.N("A lamp on, not a dark room"), L.N("Hands warm") };
     static readonly bool[] Ticked = new bool[Manual.Length];
 
     enum Mark { Ok, Differs, Warn, Info }
@@ -44,7 +44,7 @@ public partial class LockInSetupCheck : VPanel
         var left = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsStretchRatio = 1.7f };
         left.AddThemeConstantOverride("separation", 0);
         cols.AddChild(left);
-        left.AddChild(Caption2("COMPARED WITH VALORANT"));
+        left.AddChild(Caption2(L.N("COMPARED WITH VALORANT")));
         var lines = Lines();
         left.AddChild(new DrawBox
         {
@@ -57,20 +57,20 @@ public partial class LockInSetupCheck : VPanel
         {
             var row = new HBoxContainer { CustomMinimumSize = new Vector2(0, RowH * k) };
             row.AddThemeConstantOverride("separation", (int)(10 * k));
-            var line = new Line(hint.Ok ? Mark.Ok : Mark.Warn, "Crosshair", hint.Short);
+            var line = new Line(hint.Ok ? Mark.Ok : Mark.Warn, L.N("Crosshair"), hint.Short);
             row.AddChild(new DrawBox
             {
-                SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Pass, TooltipText = hint.Long,
+                SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Pass, TooltipText = L.T(hint.Long),
                 OnDraw = d => DrawLine(d, line, d.Size.Y / 2, k),
             });
             if (!hint.Ok && ModeRegistry.Find("xhairfinder") is { } finder)
             {
-                const string label = "Try the Crosshair Finder →";
+                string label = L.T("Try the Crosshair Finder →");
                 var b = new VButton
                 {
                     Kind = VButton.Look.Ghost, K = k, Label = label, FontPx = 15, TitleFont = UiTheme.Body,
                     CustomMinimumSize = new Vector2(Gfx.TextW(UiTheme.Body, label, UiTheme.Fs(15, k)) + 8 * k, RowH * k),
-                    TooltipText = "Opens the Crosshair Finder (leaves this screen)",
+                    TooltipText = L.T("Opens the Crosshair Finder (leaves this screen)"),
                 };
                 b.Pressed += () => Main.I.StartMode(finder);
                 row.AddChild(b);
@@ -82,7 +82,7 @@ public partial class LockInSetupCheck : VPanel
         var right = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsStretchRatio = 1f };
         right.AddThemeConstantOverride("separation", 0);
         cols.AddChild(right);
-        right.AddChild(Caption2("BEFORE YOU START"));
+        right.AddChild(Caption2(L.N("BEFORE YOU START")));
         for (int i = 0; i < Manual.Length; i++)
         {
             int idx = i;
@@ -98,9 +98,9 @@ public partial class LockInSetupCheck : VPanel
 
     // ---------------- automatic lines ----------------
 
-    static readonly string[] ModeNames = { "Fullscreen", "Windowed fullscreen", "Windowed" };
+    static readonly string[] ModeNames = { L.N("Fullscreen"), L.N("Windowed fullscreen"), L.N("Windowed") };
 
-    static string Fps(int cap) => cap <= 0 ? "unlimited" : cap.ToString(Inv);
+    static string Fps(int cap) => cap <= 0 ? L.T("unlimited") : cap.ToString(Inv);
 
     /// <summary>What ValTrainer runs with right now: window mode (0 fullscreen, 1 windowed fullscreen, 2 windowed),
     /// monitor, VSync, FPS cap. Dev runs are forced windowed, VSync off and uncapped, so they report the settings a normal
@@ -118,6 +118,7 @@ public partial class LockInSetupCheck : VPanel
         return (mode, DisplayServer.WindowGetCurrentScreen(), DisplayServer.WindowGetVsyncMode() != DisplayServer.VSyncMode.Disabled, Math.Max(0, Engine.MaxFps));
     }
 
+    /// <summary>The rows: values are built in the UI language; labels and notes are English that <see cref="DrawLine"/> translates.</summary>
     static List<Line> Lines()
     {
         var m = Main.I;
@@ -126,32 +127,32 @@ public partial class LockInSetupCheck : VPanel
         var list = new List<Line>();
         if (!v.Found)
         {
-            list.Add(new(Mark.Info, "VALORANT", "settings not imported, so there is nothing to compare"));
-            list.Add(new(Mark.Ok, "FOV", fov, "same as VALORANT"));
+            list.Add(new(Mark.Info, "VALORANT", L.N("settings not imported, so there is nothing to compare")));
+            list.Add(new(Mark.Ok, L.N("FOV"), fov, L.N("same as VALORANT")));
             return list;
         }
 
         // Sensitivity (VALORANT's own number; ValTrainer converts it 1:1) and the 103° FOV, which is fixed like VALORANT's.
         string Sens(float s) => s.ToString("0.###", Inv);
-        if (!v.SensFromFile) list.Add(new(Mark.Info, "Sens · FOV", $"{Sens(m.Sens)} · {fov}", "VALORANT's file has no sens"));
-        else if (Mathf.Abs(m.Sens - v.Sensitivity) < 0.0005f) list.Add(new(Mark.Ok, "Sens · FOV", $"{Sens(m.Sens)} · {fov}", "same as VALORANT"));
-        else list.Add(new(Mark.Differs, "Sens · FOV", $"{Sens(m.Sens)} here · {Sens(v.Sensitivity)} in VALORANT", $"FOV {fov} same"));
+        if (!v.SensFromFile) list.Add(new(Mark.Info, L.N("Sens · FOV"), $"{Sens(m.Sens)} · {fov}", L.N("VALORANT's file has no sens")));
+        else if (Mathf.Abs(m.Sens - v.Sensitivity) < 0.0005f) list.Add(new(Mark.Ok, L.N("Sens · FOV"), $"{Sens(m.Sens)} · {fov}", L.N("same as VALORANT")));
+        else list.Add(new(Mark.Differs, L.N("Sens · FOV"), L.F($"{Sens(m.Sens)} here · {Sens(v.Sensitivity)} in VALORANT"), L.F($"FOV {fov} same")));
 
         var run = Running();
         int screens = Math.Max(1, DisplayServer.GetScreenCount());
         int vMode = Math.Clamp(v.WindowMode, 0, 2), vMon = Math.Clamp(v.MonitorIndex, 0, screens - 1);
         int vFps = Math.Max(0, (int)MathF.Round(v.FrameRateLimit));
-        string Disp(int mode, int mon) => ModeNames[Math.Clamp(mode, 0, 2)] + (screens > 1 ? $", monitor #{mon + 1}" : "");
-        if (run.Mode == vMode && (screens < 2 || run.Monitor == vMon)) list.Add(new(Mark.Ok, "Display", Disp(run.Mode, run.Monitor), "same as VALORANT"));
-        else list.Add(new(Mark.Differs, "Display", $"{Disp(run.Mode, run.Monitor)} here · {Disp(vMode, vMon).ToLowerInvariant()} in VALORANT"));
+        string Disp(int mode, int mon) => L.T(ModeNames[Math.Clamp(mode, 0, 2)]) + (screens > 1 ? L.F($", monitor #{mon + 1}") : "");
+        if (run.Mode == vMode && (screens < 2 || run.Monitor == vMon)) list.Add(new(Mark.Ok, L.N("Display"), Disp(run.Mode, run.Monitor), L.N("same as VALORANT")));
+        else list.Add(new(Mark.Differs, L.N("Display"), L.F($"{Disp(run.Mode, run.Monitor)} here · {Disp(vMode, vMon).ToLowerInvariant()} in VALORANT")));
 
-        string Sync(bool on, int cap) => $"{(on ? "on" : "off")}, {Fps(cap)}";
-        if (run.VSync == v.VSync && run.Fps == vFps) list.Add(new(Mark.Ok, "VSync · FPS cap", Sync(run.VSync, run.Fps), "same as VALORANT"));
-        else list.Add(new(Mark.Differs, "VSync · FPS cap", $"{Sync(run.VSync, run.Fps)} here · {Sync(v.VSync, vFps)} in VALORANT"));
+        string Sync(bool on, int cap) => L.F($"{(on ? L.C("toggle", "on") : L.C("toggle", "off"))}, {Fps(cap)}");
+        if (run.VSync == v.VSync && run.Fps == vFps) list.Add(new(Mark.Ok, L.N("VSync · FPS cap"), Sync(run.VSync, run.Fps), L.N("same as VALORANT")));
+        else list.Add(new(Mark.Differs, L.N("VSync · FPS cap"), L.F($"{Sync(run.VSync, run.Fps)} here · {Sync(v.VSync, vFps)} in VALORANT")));
 
         // Neutral notes, never a "fix this".
-        if (v.VSync) list.Add(new(Mark.Info, "", "VSync is on in VALORANT. It adds input delay; most players turn it off."));
-        else if (v.Reflex >= 1) list.Add(new(Mark.Info, "", "NVIDIA Reflex is on in VALORANT; ValTrainer can't use Reflex."));
+        if (v.VSync) list.Add(new(Mark.Info, "", L.N("VSync is on in VALORANT. It adds input delay; most players turn it off.")));
+        else if (v.Reflex >= 1) list.Add(new(Mark.Info, "", L.N("NVIDIA Reflex is on in VALORANT; ValTrainer can't use Reflex.")));
         return list;
     }
 
@@ -179,7 +180,7 @@ public partial class LockInSetupCheck : VPanel
         float vw = Mathf.Min(Gfx.TextW(UiTheme.Body, l.Value, fs), room);
         Gfx.TextFit(d, UiTheme.Body, l.Value, x, Gfx.Mid(cy, fs), fs, valCol, room);
         if (l.Note.Length > 0 && room - vw > 40 * k)
-            Gfx.TextFit(d, UiTheme.Body, "  ·  " + l.Note, x + vw, Gfx.Mid(cy, fs), fs, UiTheme.Faint, room - vw);
+            Gfx.TextFit(d, UiTheme.Body, "  ·  " + L.T(l.Note), x + vw, Gfx.Mid(cy, fs), fs, UiTheme.Faint, room - vw);
     }
 }
 

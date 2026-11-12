@@ -11,7 +11,7 @@ namespace ValTrainer.Modes;
 /// <summary>Drills on a Valorant map blockout with full movement; bots fight with the tier's duel model.</summary>
 public abstract class MapMode : MovementMode
 {
-    public override string Category => "Map";
+    public override string Category => L.N("Map");
     public override float Duration => 120f;
 
     protected MapSpot MapSpot = MapSpots.Ascent;
@@ -50,8 +50,8 @@ public sealed class SiteClearMode : MapMode
 
     public override string Key => "siteclear";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
-    public override string Name => "Site Clear";
-    public override string Description => "Attack through a real choke on any of the six maps. Defenders hold real angles and duel you.";
+    public override string Name => L.N("Site Clear");
+    public override string Description => L.N("Attack through a real choke on any of the six maps. Defenders hold real angles and duel you.");
 
     readonly List<(BotCharacter Body, BotBrain Brain)> defenders = new();
     float roundStart, between;
@@ -103,14 +103,14 @@ public sealed class SiteClearMode : MapMode
             won++;
             Event("round_won", t);
             Score += 200 + (int)Mathf.Max(0, (15 - t) * 20);
-            G.Banner($"SITE CLEAR  {t:0.0}s", UiTheme.Good);
+            G.Banner(L.F($"SITE CLEAR  {t:0.0}s"), UiTheme.Good);
             between = 1.5f;
         }
         else if (Now - roundStart > Difficulty.SiteRoundTime(Tier))
         {
             lost++;
             Event("round_lost");
-            G.Banner("TIME", UiTheme.Warn);
+            G.Banner(L.N("TIME"), UiTheme.Warn);
             between = 1.5f;
         }
     }
@@ -119,7 +119,7 @@ public sealed class SiteClearMode : MapMode
     {
         lost++; Deaths++; Score -= 100;
         Event("round_lost");
-        G.Banner("YOU DIED", UiTheme.Accent);
+        G.Banner(L.N("YOU DIED"), UiTheme.Accent);
         between = 1.5f;
     }
 
@@ -136,16 +136,16 @@ public sealed class SiteClearMode : MapMode
 
     public override IEnumerable<string> HudLines()
     {
-        if (between <= 0) yield return $"Defenders left: {defenders.Count(d => !d.Body.Dead)}";
+        if (between <= 0) yield return L.F($"Defenders left: {defenders.Count(d => !d.Body.Dead)}");
     }
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Map", $"{MapSpot.Map} {MapSpot.Name}");
-        yield return ("Rounds won / lost", $"{won} / {lost}");
-        if (clearTimes.Count > 0) yield return ("Avg clear time", $"{clearTimes.Average():0.0} s");
-        yield return ("Kills / deaths", $"{Kills} / {Deaths}");
-        if (Hits > 0) yield return ("Headshot %", $"{100f * HeadHits / Hits:0}%");
+        yield return (L.N("Map"), $"{MapSpot.Map} {MapSpot.Name}");
+        yield return (L.N("Rounds won / lost"), $"{won} / {lost}");
+        if (clearTimes.Count > 0) yield return (L.N("Avg clear time"), L.F($"{clearTimes.Average():0.0} s"));
+        yield return (L.N("Kills / deaths"), $"{Kills} / {Deaths}");
+        if (Hits > 0) yield return (L.N("Headshot %"), $"{100f * HeadHits / Hits:0}%");
         foreach (var l in MovementLines()) yield return l;
     }
 
@@ -168,9 +168,9 @@ public sealed class FlashDodgeMode : MapMode
 
     public override string Key => "flashmap";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
-    public override string Name => "Flash Dodge";
-    public override string Description => "Hold a real angle. Hear the flash, turn it off-screen (60–90°+), swing back, win the duel. Shoot Gekko's Dizzy before she spits.";
-    public override string Category => "Utility";
+    public override string Name => L.N("Flash Dodge");
+    public override string Description => L.N("Hold a real angle. Hear the flash, turn it off-screen (60–90°+), swing back, win the duel. Shoot Gekko's Dizzy before she spits.");
+    public override string Category => L.N("Utility");
 
     enum St { Hold, Thrown, Dizzy, Swing, After }
     St st;
@@ -313,10 +313,10 @@ public sealed class FlashDodgeMode : MapMode
         if (Main.I.Dev) Log.Info($"[flash] pop {lastAgent} at {stateT:0.00} s (land {land:0.00}, bounce windup {bounceWindup}): {grade} {sec:0.00} s");
         switch (grade)
         {
-            case BlindGrade.Flashed: flashed++; Score -= 40; G.Banner($"FLASHED {sec:0.0}s · {lastAgent}", UiTheme.Accent); break;
-            case BlindGrade.Partial: partial++; Score += 10; G.Banner($"Partial {sec:0.0}s · {lastAgent}", UiTheme.Warn); break;
-            case BlindGrade.NoLineOfSight: flashes--; G.Banner("Flash was blocked", UiTheme.Dim); break;
-            default: dodged++; Score += 50; G.Banner($"Dodged · {lastAgent}", UiTheme.Good); break;
+            case BlindGrade.Flashed: flashed++; Score -= 40; G.Banner(L.F($"FLASHED {sec:0.0}s · {lastAgent}"), UiTheme.Accent); break;
+            case BlindGrade.Partial: partial++; Score += 10; G.Banner(L.F($"Partial {sec:0.0}s · {lastAgent}"), UiTheme.Warn); break;
+            case BlindGrade.NoLineOfSight: flashes--; G.Banner(L.N("Flash was blocked"), UiTheme.Dim); break;
+            default: dodged++; Score += 50; G.Banner(L.F($"Dodged · {lastAgent}"), UiTheme.Good); break;
         }
         StartSwing();
     }
@@ -330,7 +330,7 @@ public sealed class FlashDodgeMode : MapMode
         Event("flash", 0, -1);
         dodged++; rosesShot++; Score += 60;
         lastAgent = $"{agent.Agent} {agent.Ability}";
-        G.Banner($"Shot the Arc Rose · {lastAgent}", UiTheme.Good);
+        G.Banner(L.F($"Shot the Arc Rose · {lastAgent}"), UiTheme.Good);
         StartSwing();
     }
 
@@ -382,7 +382,7 @@ public sealed class FlashDodgeMode : MapMode
             dzDead = true; // she reverts to a dormant globule
             if (orb != null && GodotObject.IsInstanceValid(orb)) orb.QueueFree();
             orb = null;
-            if (!dzFired) { DizzyDodged("Out of Dizzy's sight", 0); return; }
+            if (!dzFired) { DizzyDodged(L.N("Out of Dizzy's sight"), 0); return; }
         }
         if (boltT >= 0)
         {
@@ -410,13 +410,13 @@ public sealed class FlashDodgeMode : MapMode
         if (bolt != null && GodotObject.IsInstanceValid(bolt)) bolt.QueueFree();
         bolt = null;
         G.SoundAt("dizzy_splat", boltTo, maxRange: 50f, floor: 0.6f);
-        if (G.View.Eye.DistanceTo(boltTo) > DizzySpec.Splash) { DizzyDodged("Dodged Dizzy's plasma", 0); return; }
+        if (G.View.Eye.DistanceTo(boltTo) > DizzySpec.Splash) { DizzyDodged(L.N("Dodged Dizzy's plasma"), 0); return; }
         // a plasma hit: blinded whichever way you face, 1 s full + 1 s fade
         G.Blind.Apply(DizzySpec.BlindFull, BlindLook.Dizzy, null);
         G.Sound("dizzy_bubble", 0.7f);
         Event("dizzy", 2);
         flashed++; dizzyHit++; Score -= 40;
-        G.Banner("DIZZY'D 2.0s · Gekko Dizzy", UiTheme.Accent);
+        G.Banner(L.N("DIZZY'D 2.0s · Gekko Dizzy"), UiTheme.Accent);
         if (Main.I.Dev) Log.Info($"[flash] Dizzy hit you (fired at {dzT - boltTravel:0.00} s after the throw)");
         StartSwing();
     }
@@ -428,14 +428,15 @@ public sealed class FlashDodgeMode : MapMode
         if (orb != null && GodotObject.IsInstanceValid(orb)) orb.Pop();
         orb = null;
         dizzyShot++;
-        DizzyDodged("Shot Dizzy", 1, 60);
+        DizzyDodged(L.N("Shot Dizzy"), 1, 60);
     }
 
+    /// <param name="banner">English (logged as is, translated for the banner).</param>
     void DizzyDodged(string banner, int shot, int points = 50)
     {
         Event("dizzy", 0, shot);
         dodged++; Score += points;
-        G.Banner($"{banner} · Gekko Dizzy", UiTheme.Good);
+        G.Banner(L.F($"{L.T(banner)} · Gekko Dizzy"), UiTheme.Good);
         if (Main.I.Dev) Log.Info($"[flash] Dizzy: {banner} (t {dzT:0.00} s)");
         StartSwing();
     }
@@ -539,7 +540,7 @@ public sealed class FlashDodgeMode : MapMode
                 if (stateT > 10f)
                 {
                     // The entry happened but nobody won the duel in time (or the attacker never got a sight line).
-                    G.Banner(brain is { FirstSeenAt: >= 0 } ? "Too slow — the entry survived" : "They didn't swing", UiTheme.Dim);
+                    G.Banner(brain is { FirstSeenAt: >= 0 } ? L.N("Too slow — the entry survived") : L.N("They didn't swing"), UiTheme.Dim);
                     if (brain is { FirstSeenAt: >= 0 }) losses++;
                     st = St.After; stateT = 0;
                 }
@@ -554,7 +555,7 @@ public sealed class FlashDodgeMode : MapMode
     {
         losses++; Deaths++; Score -= 100;
         Event("round_lost");
-        G.Banner("YOU DIED", UiTheme.Accent);
+        G.Banner(L.N("YOU DIED"), UiTheme.Accent);
         st = St.After; stateT = 0;
     }
 
@@ -590,7 +591,7 @@ public sealed class FlashDodgeMode : MapMode
         {
             wins++; Score += 100;
             Event("round_won");
-            G.Banner("Entry denied", UiTheme.Good);
+            G.Banner(L.N("Entry denied"), UiTheme.Good);
             st = St.After; stateT = 0;
         }
         return dist;
@@ -598,21 +599,21 @@ public sealed class FlashDodgeMode : MapMode
 
     public override IEnumerable<string> HudLines()
     {
-        if (st == St.Hold) yield return "Hold the angle — listen for the flash";
-        if (st == St.Dizzy && !dzDead && !dzFired) yield return "Gekko's Dizzy: shoot her or get out of her sight";
+        if (st == St.Hold) yield return L.N("Hold the angle — listen for the flash");
+        if (st == St.Dizzy && !dzDead && !dzFired) yield return L.N("Gekko's Dizzy: shoot her or get out of her sight");
     }
 
     public override float Accuracy => Shots == 0 ? 0 : (float)Hits / Shots;
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Map", $"{MapSpot.Map} {MapSpot.Name}");
-        yield return ("Dodged / partial / flashed", $"{dodged} / {partial} / {flashed} of {flashes}");
-        if (turnMs.Count > 0) yield return ("Avg time to get it off-screen", $"{turnMs.Average():0} ms after the throw");
-        if (dizzies > 0) yield return ("Dizzy: shot / hit you", $"{dizzyShot} / {dizzyHit} of {dizzies}");
-        if (rosesShot > 0) yield return ("Arc Roses shot", $"{rosesShot}");
-        yield return ("Entries denied / died", $"{wins} / {losses}");
-        yield return ("Accuracy", $"{Accuracy * 100:0.0}%");
+        yield return (L.N("Map"), $"{MapSpot.Map} {MapSpot.Name}");
+        yield return (L.N("Dodged / partial / flashed"), L.F($"{dodged} / {partial} / {flashed} of {flashes}"));
+        if (turnMs.Count > 0) yield return (L.N("Avg time to get it off-screen"), L.F($"{turnMs.Average():0} ms after the throw"));
+        if (dizzies > 0) yield return (L.N("Dizzy: shot / hit you"), L.F($"{dizzyShot} / {dizzyHit} of {dizzies}"));
+        if (rosesShot > 0) yield return (L.N("Arc Roses shot"), $"{rosesShot}");
+        yield return (L.N("Entries denied / died"), $"{wins} / {losses}");
+        yield return (L.N("Accuracy"), $"{Accuracy * 100:0.0}%");
     }
 
     public override int Badge() => wins + losses == 0 ? -1 : Difficulty.BadgeWinRate(Tier, (float)wins / (wins + losses));

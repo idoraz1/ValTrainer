@@ -33,7 +33,7 @@ public static class SysInfo
                 "opengl3" => "OpenGL" + (ver != "" ? " " + ver : ""),
                 "opengl3_angle" => "OpenGL ES (ANGLE)",
                 "opengl3_es" => "OpenGL ES",
-                "" => "Unknown",
+                "" => L.N("Unknown"),
                 var d => d,
             };
             string method = RenderingMethod switch
@@ -68,14 +68,15 @@ public static class SysInfo
     /// </summary>
     public static (int Quality, string Reason) AutoQuality()
     {
-        if (IsCompatibility) return (0, "Compatibility renderer (no Vulkan / Direct3D 12)");
+        // English (logged, bug reports); Settings shows L.T(reason)
+        if (IsCompatibility) return (0, L.N("Compatibility renderer (no Vulkan / Direct3D 12)"));
         switch (AdapterType)
         {
-            case RenderingDevice.DeviceType.IntegratedGpu: return (0, "integrated GPU");
-            case RenderingDevice.DeviceType.VirtualGpu: return (0, "virtual GPU");
-            case RenderingDevice.DeviceType.Cpu: return (0, "software rendering");
+            case RenderingDevice.DeviceType.IntegratedGpu: return (0, L.N("integrated GPU"));
+            case RenderingDevice.DeviceType.VirtualGpu: return (0, L.N("virtual GPU"));
+            case RenderingDevice.DeviceType.Cpu: return (0, L.N("software rendering"));
         }
-        return (1, "dedicated GPU");
+        return (1, L.N("dedicated GPU"));
     }
 
     static string ShortVersion(string api)

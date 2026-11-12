@@ -1,4 +1,5 @@
 using Godot;
+using ValTrainer.Core;
 
 namespace ValTrainer.UI;
 
@@ -12,8 +13,11 @@ public partial class VButton : BaseButton
     public enum Look { Primary, Secondary, Select, Ghost, Arrow }
 
     public Look Kind = Look.Secondary;
-    public string Label = "";
-    public string? Sub;
+    /// <summary>Drawn translated (L.T); in other languages the button grows to fit it (see <see cref="_GetMinimumSize"/>).</summary>
+    public string Label { get => label; set { if (label == value) return; label = value; UpdateMinimumSize(); } }
+    public string? Sub { get => sub; set { if (sub == value) return; sub = value; UpdateMinimumSize(); } }
+    string label = "";
+    string? sub;
     public float K = 1f;
     public float FontPx = 20f, SubPx = 13f;
     /// <summary>&gt;= -1 draws a rank emblem on the left.</summary>
@@ -37,6 +41,21 @@ public partial class VButton : BaseButton
     {
         MouseEntered += () => { if (!Disabled && !Silent) UiTheme.HoverSound(); };
         Pressed += () => { if (!Silent) UiTheme.ClickSound(); flash = 1f; QueueRedraw(); };
+    }
+
+    /// <summary>Translated text can be longer than the English the width was designed for: outside English the button
+    /// asks for at least its label's width (+ padding), so HBoxes make room instead of cutting it with "…". English
+    /// keeps the designed sizes exactly (CustomMinimumSize).</summary>
+    public override Vector2 _GetMinimumSize()
+    {
+        if (L.IsEnglish || Kind == Look.Arrow || label.Length == 0) return Vector2.Zero;
+        float k = K;
+        var font = TitleFont ?? UiTheme.Display;
+        float w = Gfx.TextW(font, label, UiTheme.Fs(FontPx, k));
+        if (sub != null) w = Mathf.Max(w, Gfx.TextW(UiTheme.Body, sub, UiTheme.Fs(SubPx, k)));
+        float pad = 14 * k;
+        if (Emblem >= -1) w += pad + Mathf.Min(CustomMinimumSize.Y * 0.3f, 20 * k) * 2 + 10 * k;
+        return new Vector2(Mathf.Ceil(w + pad * 2), 0);
     }
 
     /// <summary>Activates the button as if clicked (used by the in-game overlay, which handles clicks itself).</summary>
@@ -183,11 +202,21 @@ public partial class VPanel : MarginContainer
         float cy = 28 * k;
         int fs = UiTheme.Fs(19, k);
         DrawRect(new Rect2(Pad * k, cy - 3 * k, 6 * k, 6 * k), UiTheme.Accent);
-        Gfx.Text(this, UiTheme.DisplayWide, Title, Pad * k + 16 * k, Gfx.Mid(cy, fs), fs, UiTheme.Text);
-        if (Caption != null)
+        int cs = UiTheme.Fs(13, k);
+        float tx = Pad * k + 16 * k, right = r.Size.X - Pad * k, gap = 16 * k;
+        if (!L.IsEnglish && Caption != null && tx + Gfx.TextW(UiTheme.DisplayWide, Title, fs) + gap + Gfx.TextW(UiTheme.Body, Caption, cs) > right)
         {
-            int cs = UiTheme.Fs(13, k);
-            Gfx.TextR(this, UiTheme.Body, Caption, r.Size.X - Pad * k, Gfx.Mid(cy, cs), cs, UiTheme.Dim);
+            // a long translated title would run into the caption: the title keeps the room it needs (or 60% of the bar),
+            // then both shrink / cut with "…" to share it (English keeps the designed layout)
+            float avail = right - tx, tw = Gfx.TextW(UiTheme.DisplayWide, Title, fs), cw = Gfx.TextW(UiTheme.Body, Caption, cs);
+            float capW = Mathf.Max(avail - tw - gap, Mathf.Min(cw, avail * 0.4f));
+            Gfx.TextFit(this, UiTheme.DisplayWide, Title, tx, Gfx.Mid(cy, fs), fs, UiTheme.Text, Mathf.Max(0, avail - capW - gap));
+            Gfx.TextFit(this, UiTheme.Body, Caption, right - capW, Gfx.Mid(cy, cs), cs, UiTheme.Dim, capW, HorizontalAlignment.Right);
+        }
+        else
+        {
+            Gfx.Text(this, UiTheme.DisplayWide, Title, tx, Gfx.Mid(cy, fs), fs, UiTheme.Text);
+            if (Caption != null) Gfx.TextR(this, UiTheme.Body, Caption, right, Gfx.Mid(cy, cs), cs, UiTheme.Dim);
         }
         DrawRect(new Rect2(Pad * k, TitleH - 2 * k, r.Size.X - Pad * k * 2, 1), new Color(UiTheme.Text, 0.09f));
     }
@@ -203,6 +232,11 @@ public partial class SectionLabel : Control
     public SectionLabel() => MouseFilter = MouseFilterEnum.Ignore;
 
     public override void _Ready() => CustomMinimumSize = new Vector2(CustomMinimumSize.X, Mathf.Max(CustomMinimumSize.Y, 30 * K));
+
+    /// <summary>Outside English the caption asks for its (translated) width, so a fixed-width label next to buttons
+    /// doesn't run under them. English keeps the designed sizes.</summary>
+    public override Vector2 _GetMinimumSize() =>
+        L.IsEnglish || Text.Length == 0 ? Vector2.Zero : new Vector2(Mathf.Ceil(14 * K + Gfx.TextW(UiTheme.HudWide, Text, UiTheme.Fs(14, K)) + 8 * K), 0);
 
     public override void _Draw()
     {
@@ -328,6 +362,11 @@ public abstract partial class ScreenBase : Control
         Tick((float)delta);
     }
 
+    // A language change (Settings → Language) rebuilds the screen in the new language.
+    public override void _EnterTree() => L.Changed += OnLanguageChanged;
+    public override void _ExitTree() => L.Changed -= OnLanguageChanged;
+    void OnLanguageChanged() => Callable.From(() => { if (IsInsideTree()) Rebuild(); }).CallDeferred();
+
     protected virtual void Tick(float dt) { }
 
     protected void Rebuild()
@@ -367,8 +406,9 @@ public abstract partial class ScreenBase : Control
         return b;
     }
 
+    /// <summary>A Godot Label; <paramref name="text"/> is translated here (set later texts with L.T yourself).</summary>
     protected Label Lbl(string text, Font f, float px, Color c, HorizontalAlignment align = HorizontalAlignment.Left) =>
-        new() { Text = text, LabelSettings = UiTheme.Label(f, px, K, c), HorizontalAlignment = align, MouseFilter = MouseFilterEnum.Ignore };
+        new() { Text = L.T(text), LabelSettings = UiTheme.Label(f, px, K, c), HorizontalAlignment = align, MouseFilter = MouseFilterEnum.Ignore };
 
     protected static MarginContainer Margins(Control child, float l, float t, float r, float b)
     {

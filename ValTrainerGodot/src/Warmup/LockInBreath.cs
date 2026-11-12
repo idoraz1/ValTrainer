@@ -126,7 +126,7 @@ public partial class LockInBreath : ScreenBase
         else if (end) Gfx.TextC(d, UiTheme.Display, "DONE", cx, Gfx.Mid(cy, big), big, UiTheme.Text);
         else
         {
-            Gfx.TextC(d, UiTheme.Display, inhale ? "IN" : "OUT", cx, Gfx.Mid(cy - 8 * k, big), big, UiTheme.Text);
+            Gfx.TextC(d, UiTheme.Display, inhale ? L.C("breath", "IN") : L.C("breath", "OUT"), cx, Gfx.Mid(cy - 8 * k, big), big, UiTheme.Text);
             Gfx.TextC(d, UiTheme.Display, left.ToString(), cx, Gfx.Mid(cy + 50 * k, num), num, new Color(UiTheme.Text, 0.7f));
         }
 
@@ -139,6 +139,6 @@ public partial class LockInBreath : ScreenBase
         float bw = 300 * k, by = size.Y - 48 * k;
         d.DrawRect(new Rect2(cx - bw / 2, by, bw, 3 * k), new Color(UiTheme.Text, 0.1f));
         d.DrawRect(new Rect2(cx - bw / 2, by, bw * (1 - rem / seconds), 3 * k), new Color(UiTheme.Teal, 0.8f));
-        Gfx.TextC(d, UiTheme.HudWide, $"{WarmupPlan.Clock(rem)} LEFT", cx, by - 10 * k, UiTheme.Fs(12, k), UiTheme.Faint);
+        Gfx.TextC(d, UiTheme.HudWide, L.F($"{WarmupPlan.Clock(rem)} LEFT"), cx, by - 10 * k, UiTheme.Fs(12, k), UiTheme.Faint);
     }
 }

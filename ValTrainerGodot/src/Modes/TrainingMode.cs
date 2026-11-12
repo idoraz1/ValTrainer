@@ -14,7 +14,15 @@ public abstract class TrainingMode
     public abstract string Key { get; }
     public abstract string Name { get; }
     public abstract string Description { get; }
-    public virtual string Category => "Aim";
+    public virtual string Category => L.N("Aim");
+    // Name, Description and Category stay English: they are keys (logic, telemetry, stats, Discord). Show these instead.
+    /// <summary>The drill's name in the UI language.</summary>
+    public string DisplayName => L.T(Name);
+    /// <summary>The drill's description in the UI language. Override it (with <c>L.F</c>) when <see cref="Description"/>
+    /// is interpolated: an interpolated string has no catalogue key.</summary>
+    public virtual string DisplayDescription => L.T(Description);
+    /// <summary>The category's name in the UI language (<see cref="Category"/> itself is a logic key).</summary>
+    public string DisplayCategory => L.T(Category);
     /// <summary>GitHub handle of the community member who made this drill: a COMMUNITY tag on its card and a credit
     /// line on its countdown. Null = made by the ValTrainer team.</summary>
     public virtual string? MadeBy => null;
@@ -66,8 +74,20 @@ public abstract class TrainingMode
     public virtual Vector3 StartFeet => Vector3.Zero;
     public virtual float StartYaw => 0f;
     public virtual string? Subtitle => null;
+    /// <summary>A HUD line starting with this (English, untranslated) is hidden on movement drills, which show the last
+    /// stop under the speed meter. Return such lines from <see cref="HudLines"/> untranslated (the HUD translates them).</summary>
+    public const string LastStopLine = "Last stop";
     /// <summary>The drill can adapt its difficulty per spawn to the session's <see cref="IGame.Adaptive"/> staircase.</summary>
     public virtual bool SupportsAdaptive => false;
+    /// <summary>How this drill ends kills, for the skin finisher rules (skins2-design §4.5): target drills (no bot dies) and
+    /// the measuring tools (Sens / Crosshair Finder) by default; <see cref="BotMode"/> sorts the bot drills into round
+    /// drills, Deathmatch and one-bot rep drills.</summary>
+    public virtual Game.Skins.KillDrill KillDrill =>
+        Key is "sensfinder" or "xhairfinder" ? Game.Skins.KillDrill.Measuring : Game.Skins.KillDrill.Target;
+    /// <summary>Skin effects may play in this drill: kill effects, finishers, banner, counter, sound layers and tinted tracers
+    /// (the gun's look itself always shows). False for 2D drills and the measuring tools, whose trials must look and sound
+    /// identical.</summary>
+    public virtual bool SkinFxAllowed => !Is2D && KillDrill != Game.Skins.KillDrill.Measuring;
     /// <summary>Extra solid boxes the mode adds to the range (cover, lanes, walls).</summary>
     public virtual IEnumerable<Box> ExtraSolids => Array.Empty<Box>();
 
@@ -84,6 +104,25 @@ public abstract class TrainingMode
     public virtual AimFocus? Focus => null;
     /// <summary>Zone the last bullet hit (set by modes in OnBullet; None = miss).</summary>
     public HitZone LastShotZone = HitZone.None;
+    /// <summary>Set by a click drill in OnBullet when the bullet was an accidental double-click right after a hit
+    /// (see <see cref="IsDoubleClick"/>): the session then leaves it out of the telemetry and the Rewind.</summary>
+    public bool LastShotIgnored;
+    /// <summary>Accidental double-clicks ignored this run (shown on the results screen).</summary>
+    public int DoubleClicks;
+    /// <summary>A shot this soon after a hit can't be aimed at the next target (human reaction time is ≥ ~150 ms),
+    /// so a miss inside it is a double-click or a held trigger, not a real miss (reported on Discord).</summary>
+    public const float DoubleClickGrace = 0.15f;
+    float lastHitAt = float.NegativeInfinity;
+    /// <summary>Click drills: call on every hit.</summary>
+    protected void MarkHit() => lastHitAt = Now;
+    /// <summary>Click drills: call on a miss before penalising it. True = forgive it (not a shot, no penalty).</summary>
+    protected bool IsDoubleClick()
+    {
+        if (Now - lastHitAt >= DoubleClickGrace) return false;
+        DoubleClicks++; LastShotIgnored = true;
+        Event("double_click");
+        return true;
+    }
     protected static int IdOf(object o) => System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(o);
     protected void Event(string kind, float a = 0, float b = 0) => G.Event(kind, a, b);
 
@@ -135,7 +174,7 @@ public abstract class TrainingMode
 
     /// <summary>Left-side HUD lines (state, prompts).</summary>
     public virtual IEnumerable<string> HudLines() => Adapt is { } a ? new[] { AdaptiveLine(a) } : Array.Empty<string>();
-    protected static string AdaptiveLine(Staircase a) => $"Level {Difficulty.LevelName(a.Level)} ({a.Level:0.0}) · adapts to {a.TargetHitRate * 100:0}% hits";
+    protected static string AdaptiveLine(Staircase a) => L.F($"Level {Difficulty.DisplayLevelName(a.Level)} ({a.Level:0.0}) · adapts to {a.TargetHitRate * 100:0}% hits");
     /// <summary>Centre prompt (e.g. "Keep strafing").</summary>
     public virtual string? Prompt => null;
     /// <summary>Custom 2D drawing on the HUD canvas (reaction test, etc.).</summary>
@@ -145,10 +184,11 @@ public abstract class TrainingMode
 
     public virtual IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Accuracy", $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
-        if (Kills > 0) yield return ("Kills", Kills.ToString());
-        if (KillTimes.Count > 0) yield return ("Avg time to kill", $"{KillTimes.Average():0} ms");
-        if (UsesHeadshots && Hits > 0) yield return ("Headshot %", $"{100f * HeadHits / Hits:0}%");
+        yield return (L.N("Accuracy"), $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
+        if (Kills > 0) yield return (L.N("Kills"), Kills.ToString());
+        if (KillTimes.Count > 0) yield return (L.N("Avg time to kill"), L.F($"{KillTimes.Average():0} ms"));
+        if (UsesHeadshots && Hits > 0) yield return (L.N("Headshot %"), $"{100f * HeadHits / Hits:0}%");
+        if (DoubleClicks > 0) yield return (L.N("Double-clicks ignored"), DoubleClicks.ToString());
         if (AdaptiveResult() is { } ar) yield return ar;
     }
 
@@ -157,7 +197,7 @@ public abstract class TrainingMode
     {
         if (Adapt is not { } a) return null;
         float lv = a.Threshold >= 0 ? a.Threshold : a.Level;
-        return ($"Level at {a.TargetHitRate * 100:0}% hits", $"{Difficulty.LevelName(lv)} ({lv:0.0}) · {a.HitRate * 100:0}% of {a.Trials}");
+        return (L.F($"Level at {a.TargetHitRate * 100:0}% hits"), L.F($"{Difficulty.DisplayLevelName(lv)} ({lv:0.0}) · {a.HitRate * 100:0}% of {a.Trials}"));
     }
 
     /// <summary>Extra buttons on the results screen (e.g. the sens finder's "Use this sens").</summary>
@@ -206,7 +246,7 @@ public abstract class TrainingMode
         Event("kill", KillTimes[^1], headshot ? 1 : 0);
         streak = Now - lastKillAt < 5f ? Math.Min(5, streak + 1) : 1;
         lastKillAt = Now;
-        G.Sound("kill" + streak, 0.9f);
+        G.KillSound(streak, 0.9f); // factory kill1..kill5, or the skin's escalating set after its own kill
         KillBanner = (streak, 1.4f);
     }
 

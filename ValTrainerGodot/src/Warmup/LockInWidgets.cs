@@ -1,26 +1,27 @@
 using Godot;
+using ValTrainer.Core;
 using ValTrainer.UI;
 
 namespace ValTrainer.Warmup;
 
 /// <summary>The Lock-In's fixed wording: goal and cue suggestions and the check-in lines. Plain and honest: no claim that
-/// any of it changes aim or results.</summary>
+/// any of it changes aim or results. English (the goal and cue are saved as picked); translated where shown.</summary>
 public static class LockInText
 {
     /// <summary>Process goals (what to do, not what to win).</summary>
     public static readonly string[] Goals =
     {
-        "Crosshair at head height", "Clear one angle at a time", "Trade my entry",
-        "Stop before I shoot", "Comms first", "Play my role",
+        L.N("Crosshair at head height"), L.N("Clear one angle at a time"), L.N("Trade my entry"),
+        L.N("Stop before I shoot"), L.N("Comms first"), L.N("Play my role"),
     };
 
     /// <summary>Cue words, aimed at the crosshair and the fight rather than the hand.</summary>
-    public static readonly string[] Cues = { "Head level", "Smooth", "Patient", "Crisp", "Stop. Shoot.", "Calm" };
+    public static readonly string[] Cues = { L.N("Head level"), L.N("Smooth"), L.N("Patient"), L.N("Crisp"), L.N("Stop. Shoot."), L.N("Calm") };
 
-    public const string Reappraisal = "Nerves are your body getting ready. Use them.";
-    public const string FlatTip = "Feeling flat? Put on your own up-tempo music for the first drills. Turn it off before the deathmatch.";
-    public const string TiltLine = "Tilted? Maybe take a 10-minute break before ranked. Your call.";
-    public const string BreathLine = "Breathe in through your nose… long slow breath out.";
+    public static readonly string Reappraisal = L.N("Nerves are your body getting ready. Use them.");
+    public static readonly string FlatTip = L.N("Feeling flat? Put on your own up-tempo music for the first drills. Turn it off before the deathmatch.");
+    public static readonly string TiltLine = L.N("Tilted? Maybe take a 10-minute break before ranked. Your call.");
+    public static readonly string BreathLine = L.N("Breathe in through your nose… long slow breath out.");
 
     public const int MaxGoal = 40, MaxCue = 18;
     public static readonly int[] BreathOptions = { 60, 90, 120 };

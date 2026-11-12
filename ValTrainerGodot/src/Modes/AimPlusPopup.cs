@@ -14,9 +14,9 @@ public sealed class PopupMode : TrainingMode
 {
     public override string Key => "popup";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.NoShotguns;
-    public override string Name => "Pop-up Reflex";
-    public override string Description => "Heads pop up anywhere on screen for a split second (700 ms at Rookie, 320 ms at Pro, a little longer when far): see, flick, click.";
-    public override string Category => "Aim";
+    public override string Name => L.N("Pop-up Reflex");
+    public override string Description => L.N("Heads pop up anywhere on screen for a split second (700 ms at Rookie, 320 ms at Pro, a little longer when far): see, flick, click.");
+    public override string Category => L.N("Aim");
     public override string SimKind => "static";
     public override AimFocus? Focus => up ? new AimFocus(pid, head.GlobalPosition, head.Radius) : null;
 
@@ -141,22 +141,22 @@ public sealed class PopupMode : TrainingMode
     /// <summary>Pop-ups that are over (hit or vanished): the one on screen when time runs out doesn't count against you.</summary>
     int Resolved => Hits + expired;
 
-    public override string? Prompt => shown == 0 ? "Heads pop up anywhere — hit them before they vanish" : null;
+    public override string? Prompt => shown == 0 ? L.N("Heads pop up anywhere — hit them before they vanish") : null;
 
     public override IEnumerable<string> HudLines()
     {
-        yield return $"Window {AimPlusTiers.PopupWindow(Tier) * 1000:0} ms + travel";
-        if (Resolved > 0) yield return $"Hit {Hits} / {Resolved} pop-ups";
-        if (lastMs >= 0) yield return $"Last hit {lastMs:0} ms";
+        yield return L.F($"Window {AimPlusTiers.PopupWindow(Tier) * 1000:0} ms + travel");
+        if (Resolved > 0) yield return L.F($"Hit {Hits} / {Resolved} pop-ups");
+        if (lastMs >= 0) yield return L.F($"Last hit {lastMs:0} ms");
     }
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Pop-ups hit", Resolved == 0 ? "—" : $"{HitPct:0}%  ({Hits}/{Resolved})");
-        yield return ("Median time to hit", KillTimes.Count > 0 ? $"{Median(KillTimes):0} ms" : "—");
-        yield return ("Reaction (first move)", onsets.Count > 0 ? $"{Median(onsets):0} ms" : "—");
-        yield return ("Missed shots", misses.ToString());
-        yield return ("Accuracy", $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
+        yield return (L.N("Pop-ups hit"), Resolved == 0 ? "—" : $"{HitPct:0}%  ({Hits}/{Resolved})");
+        yield return (L.N("Median time to hit"), KillTimes.Count > 0 ? L.F($"{Median(KillTimes):0} ms") : "—");
+        yield return (L.N("Reaction (first move)"), onsets.Count > 0 ? L.F($"{Median(onsets):0} ms") : "—");
+        yield return (L.N("Missed shots"), misses.ToString());
+        yield return (L.N("Accuracy"), $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
     }
 
     /// <summary>% of pop-ups hit (needs ≥ 50% accuracy and 8 pop-ups); at most one badge above the tier played.</summary>

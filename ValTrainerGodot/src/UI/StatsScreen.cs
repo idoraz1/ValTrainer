@@ -38,7 +38,7 @@ public partial class StatsScreen : ScreenBase
         int n = Main.I.Stats.Runs.Count(r => r != null && (gun == null || DrillGuns.GunOf(r) == gun));
         var b = new VButton
         {
-            Kind = VButton.Look.Select, K = K, Label = label, FontPx = 14, Selected = selGun == gun, TooltipText = $"{n} run{(n == 1 ? "" : "s")}",
+            Kind = VButton.Look.Select, K = K, Label = label, FontPx = 14, Selected = selGun == gun, TooltipText = L.P(n, $"{n} run", $"{n} runs"),
             CustomMinimumSize = new Vector2(Mathf.Max(96, 30 + label.Length * 9) * K, 34 * K),
         };
         b.Pressed += () =>
@@ -54,7 +54,7 @@ public partial class StatsScreen : ScreenBase
 
     /// <summary>Column layout as fractions of the row width: mode, runs, best, avg10, accuracy, kill/react, badge, sparkline.</summary>
     internal static readonly float[] Cols = { 0f, 0.235f, 0.305f, 0.39f, 0.48f, 0.565f, 0.665f, 0.82f };
-    internal static readonly string[] Heads = { "DRILL", "RUNS", "BEST", "AVG · LAST 10", "ACCURACY", "KILL / REACT", "BEST BADGE", "LAST 20 RUNS" };
+    internal static readonly string[] Heads = { L.N("DRILL"), L.N("RUNS"), L.N("BEST"), L.N("AVG · LAST 10"), L.N("ACCURACY"), L.N("KILL / REACT"), L.N("BEST BADGE"), L.N("LAST 20 RUNS") };
 
     protected override void Build()
     {
@@ -82,8 +82,8 @@ public partial class StatsScreen : ScreenBase
 
         // tier tabs
         var tabRow = HBox(10 * k);
-        foreach (var t in Difficulty.Tiers) AddTab(tabRow, t.Id, t.Name.ToUpperInvariant(), t.Ranks);
-        if (legacy) AddTab(tabRow, -1, "LEGACY", "old Easy/Normal/Hard runs");
+        foreach (var t in Difficulty.Tiers) AddTab(tabRow, t.Id, L.Upper(L.T(t.Name)), L.T(t.Ranks));
+        if (legacy) AddTab(tabRow, -1, L.T("LEGACY"), L.T("old Easy/Normal/Hard runs"));
         col.AddChild(tabRow);
 
         // gun filter: only once more than one gun was ever used (ALL = the best across guns)
@@ -94,8 +94,8 @@ public partial class StatsScreen : ScreenBase
         {
             var gunRow = HBox(6 * k);
             gunRow.AddChild(new SectionLabel { Text = "GUN", K = k, CustomMinimumSize = new Vector2(70 * k, 34 * k) });
-            AddGunChip(gunRow, null, "ALL GUNS");
-            foreach (var g in guns) AddGunChip(gunRow, g, GunPicker.GunName(g).ToUpperInvariant());
+            AddGunChip(gunRow, null, L.T("ALL GUNS"));
+            foreach (var g in guns) AddGunChip(gunRow, g, L.Raw(GunPicker.GunName(g).ToUpperInvariant())); // gun names stay English
             col.AddChild(gunRow);
         }
 
@@ -112,12 +112,13 @@ public partial class StatsScreen : ScreenBase
         FillTable();
     }
 
+    /// <param name="name">Translated tab title.</param><param name="sub">Translated second line.</param>
     void AddTab(HBoxContainer row, int tier, string name, string sub)
     {
         int runs = Main.I.Stats.Runs.Count(r => tier < 0 ? r.Tier < 0 : r.Tier == tier);
         var b = new VButton
         {
-            Kind = VButton.Look.Select, K = K, Label = name, Sub = $"{sub} · {runs} run{(runs == 1 ? "" : "s")}", Emblem = tier >= 0 ? tier : -1,
+            Kind = VButton.Look.Select, K = K, Label = name, Sub = sub + " · " + L.P(runs, $"{runs} run", $"{runs} runs"), Emblem = tier >= 0 ? tier : -1,
             FontPx = 21, SubPx = 12.5f, CustomMinimumSize = new Vector2(0, 62 * K), SizeFlagsHorizontal = SizeFlags.ExpandFill,
             Selected = selTier == tier,
         };
@@ -168,7 +169,7 @@ public partial class StatsScreen : ScreenBase
                 TrainingMode v;
                 try { v = ModeRegistry.Find(key)?.Invoke() ?? m; } catch { v = m; }
                 if (v.Key != key) continue; // the drill no longer knows this argument
-                yield return (v, $"{v.Name} · {arg}");
+                yield return (v, $"{v.DisplayName} · {arg}"); // translated drill name, agent name as it is
             }
         }
     }
@@ -179,19 +180,20 @@ public partial class StatsScreen : ScreenBase
         var all = Main.I.Stats.Runs;
         int atTier = all.Count(r => selTier < 0 ? r.Tier < 0 : r.Tier == selTier);
         int badges = all.Where(r => r != null && r.Badge >= 0 && DrillGuns.IsRated(r)).Select(r => r.Badge).DefaultIfEmpty(-1).Max();
-        (string L, string V, Color C)[] items =
+        (string Cap, string V, Color C)[] items =
         {
-            ("TOTAL RUNS", all.Count.ToString(Inv), UiTheme.Text),
-            ("AT THIS TIER", atTier.ToString(Inv), UiTheme.Text),
-            ("BEST BADGE", badges >= 0 ? Difficulty.Tiers[badges].Name.ToUpperInvariant() : "—", UiTheme.TierColor(badges)),
+            (L.N("TOTAL RUNS"), all.Count.ToString(Inv), UiTheme.Text),
+            (L.N("AT THIS TIER"), atTier.ToString(Inv), UiTheme.Text),
+            (L.N("BEST BADGE"), badges >= 0 ? L.Upper(L.T(Difficulty.Tiers[badges].Name)) : "—", UiTheme.TierColor(badges)),
         };
         float cw = d.Size.X / items.Length, cy = d.Size.Y / 2;
         int vs = UiTheme.Fs(30, k), ls = UiTheme.Fs(11, k);
         for (int i = 0; i < items.Length; i++)
         {
-            float cx = cw * (i + 0.5f);
-            Gfx.TextC(d, UiTheme.Display, items[i].V, cx, cy + 4 * k, vs, items[i].C);
-            Gfx.TextC(d, UiTheme.HudWide, items[i].L, cx, cy + 24 * k, ls, UiTheme.Dim);
+            // centred in its third (translated tier names and captions can be longer)
+            float cx = cw * i + 4 * k, cmax = cw - 8 * k;
+            Gfx.TextFit(d, UiTheme.Display, items[i].V, cx, cy + 4 * k, vs, items[i].C, cmax, HorizontalAlignment.Center);
+            Gfx.TextFit(d, UiTheme.HudWide, items[i].Cap, cx, cy + 24 * k, ls, UiTheme.Dim, cmax, HorizontalAlignment.Center);
             if (i > 0) d.DrawRect(new Rect2(cw * i, cy - 26 * k, 1, 52 * k), new Color(UiTheme.Text, 0.1f));
         }
     }
@@ -207,8 +209,13 @@ public partial class StatsHeaderRow : Control
     {
         float k = K, pad = 16 * k, w = Size.X - pad * 2, cy = Size.Y / 2;
         int fs = UiTheme.Fs(12, k);
+        var cols = StatsScreen.Cols;
         for (int i = 0; i < StatsScreen.Heads.Length; i++)
-            Gfx.Text(this, UiTheme.HudWide, StatsScreen.Heads[i], pad + StatsScreen.Cols[i] * w, Gfx.Mid(cy, fs), fs, UiTheme.Dim);
+        {
+            // translations run longer: each caption stays inside its column (English draws as designed)
+            float cw = L.IsEnglish ? float.MaxValue : ((i + 1 < cols.Length ? cols[i + 1] : 1f) - cols[i]) * w - 10 * k;
+            Gfx.TextFit(this, UiTheme.HudWide, StatsScreen.Heads[i], pad + cols[i] * w, Gfx.Mid(cy, fs), fs, UiTheme.Dim, cw);
+        }
         DrawRect(new Rect2(0, Size.Y - 1, Size.X, 1), new Color(UiTheme.Text, 0.12f));
     }
 }
@@ -227,7 +234,7 @@ public partial class StatsRow : Control
     public bool Stripe;
     /// <summary>Old Easy/Normal/Hard runs were never rated.</summary>
     public bool Legacy;
-    /// <summary>Row title instead of the drill name (per-agent variants: "Flash &amp; Peek · Skye").</summary>
+    /// <summary>Row title instead of the drill name (per-agent variants: "Flash &amp; Peek · Skye"), already translated.</summary>
     public string? Label;
     float hover;
 
@@ -250,13 +257,13 @@ public partial class StatsRow : Control
         {
             var bestGun = StatsStore.GunOf(top, m.Weapon);
             bool mixed = list.Select(r => StatsStore.GunOf(r, m.Weapon)).Distinct().Skip(1).Any();
-            if ((mixed || bestGun != m.Weapon) && bestGun != WeaponKind.None) bestGunName = GunPicker.GunName(bestGun).ToUpperInvariant();
+            if ((mixed || bestGun != m.Weapon) && bestGun != WeaponKind.None) bestGunName = L.Raw(GunPicker.GunName(bestGun).ToUpperInvariant()); // gun names stay English
         }
         avg10 = last10.Average(r => r.Score).ToString("#,0", Inv);
         var accs = last10.Where(r => r.Accuracy >= 0).ToList();
         if (accs.Count > 0) acc = $"{accs.Average(r => r.Accuracy) * 100:0.0}%";
         var kt = last10.Where(r => r.AvgKillMs > 0).ToList();
-        if (kt.Count > 0) kill = $"{kt.Average(r => r.AvgKillMs):0} ms";
+        if (kt.Count > 0) kill = L.F($"{kt.Average(r => r.AvgKillMs):0} ms");
     }
 
     public override void _Process(double delta)
@@ -275,8 +282,8 @@ public partial class StatsRow : Control
         float ColW(int c) => (c + 1 < StatsScreen.Cols.Length ? StatsScreen.Cols[c + 1] : 1f) * w - StatsScreen.Cols[c] * w - 10 * k;
 
         int ns = UiTheme.Fs(22, k), cs = UiTheme.Fs(11, k), vs = UiTheme.Fs(22, k);
-        Gfx.TextFit(this, UiTheme.Display, (Label ?? mode.Name).ToUpperInvariant(), X(0), Gfx.Mid(cy - 8 * k, ns), ns, UiTheme.Text, ColW(0));
-        Gfx.Text(this, UiTheme.HudWide, mode.Category.ToUpperInvariant(), X(0), Gfx.Mid(cy + 13 * k, cs), cs, ModeCard.CategoryColor(mode.Category));
+        Gfx.TextFit(this, UiTheme.Display, L.Upper(Label ?? mode.DisplayName), X(0), Gfx.Mid(cy - 8 * k, ns), ns, UiTheme.Text, ColW(0));
+        Gfx.Text(this, UiTheme.HudWide, L.Upper(mode.DisplayCategory), X(0), Gfx.Mid(cy + 13 * k, cs), cs, ModeCard.CategoryColor(mode.Category));
 
         if (runs == 0)
         {
@@ -301,7 +308,7 @@ public partial class StatsRow : Control
         else
         {
             RankEmblem.Draw(this, new Vector2(X(6) + er, cy), er, badge, badge >= 0 ? 1f : 0.6f);
-            Gfx.TextFit(this, UiTheme.HudWide, badge >= 0 ? Difficulty.Tiers[badge].Name.ToUpperInvariant() : Legacy ? "NOT RATED" : "BELOW ROOKIE", X(6) + er * 2 + 8 * k, Gfx.Mid(cy, bs), bs,
+            Gfx.TextFit(this, UiTheme.HudWide, badge >= 0 ? L.Upper(L.T(Difficulty.Tiers[badge].Name)) : Legacy ? L.N("NOT RATED") : L.N("BELOW ROOKIE"), X(6) + er * 2 + 8 * k, Gfx.Mid(cy, bs), bs,
                 UiTheme.TierColor(badge), ColW(6) - er * 2 - 8 * k);
         }
 

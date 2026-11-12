@@ -100,7 +100,7 @@ public partial class WarmupCard : ScreenBase
 
         if (offer != null)
         {
-            const string label = "YOU'RE AT YOUR USUAL LEVEL · SKIP TO DEATHMATCH";
+            string label = L.T("YOU'RE AT YOUR USUAL LEVEL · SKIP TO DEATHMATCH");
             var row = HBox(0);
             row.Alignment = BoxContainer.AlignmentMode.Center;
             row.AnchorLeft = 0; row.AnchorRight = 1; row.AnchorTop = 1; row.AnchorBottom = 1;
@@ -122,13 +122,13 @@ public partial class WarmupCard : ScreenBase
     {
         col = UiTheme.Text;
         var parts = new List<string> { WarmupPlan.Clock(st.Seconds) };
-        string tier = Difficulty.Get(st.Tier).Name.ToUpperInvariant();
-        if (st.Adaptive) { parts.Add("ADAPTIVE: TARGETS ADJUST TO KEEP YOU NEAR 80% HITS"); col = UiTheme.Teal; }
-        else if (st.Easier) { parts.Add($"{tier}, ONE TIER DOWN"); col = UiTheme.Teal; }
+        string tier = L.Upper(Difficulty.Get(st.Tier).DisplayName);
+        if (st.Adaptive) { parts.Add(L.T("ADAPTIVE: TARGETS ADJUST TO KEEP YOU NEAR 80% HITS")); col = UiTheme.Teal; }
+        else if (st.Easier) { parts.Add(L.F($"{tier}, ONE TIER DOWN")); col = UiTheme.Teal; }
         else parts.Add(tier);
-        if (st.EaseLast > 0) parts.Add($"LAST {WarmupPlan.Clock(st.EaseLast)} EASIER");
-        if (st.Shifted) { parts.Add($"SENS {st.Sens.ToString("0.000", Inv)} ({st.OffsetPct:+0;-0}%)"); col = WarmupCharts.ShiftCol; }
-        else if (run.Plan.ShiftedCount > 0) parts.Add("YOUR SENS");
+        if (st.EaseLast > 0) parts.Add(L.F($"LAST {WarmupPlan.Clock(st.EaseLast)} EASIER"));
+        if (st.Shifted) { parts.Add(L.F($"SENS {st.Sens.ToString("0.000", Inv)} ({st.OffsetPct:+0;-0}%)")); col = WarmupCharts.ShiftCol; }
+        else if (run.Plan.ShiftedCount > 0) parts.Add(L.T("YOUR SENS"));
         return string.Join("  ·  ", parts);
     }
 
@@ -143,8 +143,8 @@ public partial class WarmupCard : ScreenBase
 
         // header + a thin progress strip (no labels: focus mode)
         int hs = UiTheme.Fs(15, k);
-        string who = plan.Preset.Key.StartsWith(Agents.AgentRoutines.Prefix) ? $"LOCK-IN AS {plan.Preset.Name.ToUpperInvariant()}" : "LOCK-IN";
-        Gfx.TextC(d, UiTheme.HudWide, $"{who} · {Phases.Name(st.Phase)} · DRILL {st.Index + 1} OF {plan.Steps.Count}", cx, 70 * k, hs, UiTheme.Dim);
+        string who = plan.Preset.Key.StartsWith(Agents.AgentRoutines.Prefix) ? L.F($"LOCK-IN AS {L.Upper(plan.Preset.Name)}") : L.T("LOCK-IN");
+        Gfx.TextC(d, UiTheme.HudWide, L.F($"{who} · {L.T(Phases.Name(st.Phase))} · DRILL {st.Index + 1} OF {plan.Steps.Count}"), cx, 70 * k, hs, UiTheme.Dim);
         float sw = Mathf.Min(size.X - 160 * k, 900 * k), sx = cx - sw / 2, sy = 92 * k, sh = 8 * k;
         float total = plan.PlaySeconds, t0 = 0;
         foreach (var s in plan.Steps)
@@ -162,13 +162,13 @@ public partial class WarmupCard : ScreenBase
         if (run.LastResult is { } last && run.NextIndex > 0)
         {
             var prevStep = plan.Steps[run.NextIndex - 1];
-            string res = last.Skipped ? "skipped"
-                : last.Adaptive ? last.Level >= 0 ? $"level {WarmupScore.LevelText(last.Level)} at {last.HitRate * 100:0}% hits" : "no level (too few shots)"
-                : last.Value < 0 ? "no result"
-                : $"{WarmupScore.Label(last.Mode)} {WarmupScore.Format(last.Mode, last.Value)}" +
-                  (last.Index >= 0 && last.BaselineKind != "today" ? $" · {last.Index:0}% of {WarmupScore.BaselineText(last.BaselineKind)}" : "");
+            string res = last.Skipped ? L.T("skipped")
+                : last.Adaptive ? last.Level >= 0 ? L.F($"level {WarmupScore.DisplayLevelText(last.Level)} at {last.HitRate * 100:0}% hits") : L.T("no level (too few shots)")
+                : last.Value < 0 ? L.T("no result")
+                : L.T(WarmupScore.Label(last.Mode)) + " " + WarmupScore.Format(last.Mode, last.Value) +
+                  (last.Index >= 0 && last.BaselineKind != "today" ? " · " + L.F($"{last.Index:0}% of {L.T(WarmupScore.BaselineText(last.BaselineKind))}") : "");
             int ps = UiTheme.Fs(18, k);
-            string head = $"DONE  {prevStep.Name.ToUpperInvariant()}   ";
+            string head = L.T("DONE") + "  " + L.Upper(prevStep.DisplayName) + "   ";
             float w1 = Gfx.TextW(UiTheme.HudWide, head, UiTheme.Fs(14, k)), w2 = Gfx.TextW(UiTheme.Body, res, ps);
             float x0 = cx - (w1 + w2) / 2;
             Gfx.Text(d, UiTheme.HudWide, head, x0, y, UiTheme.Fs(14, k), UiTheme.Good);
@@ -177,7 +177,7 @@ public partial class WarmupCard : ScreenBase
 
         // next drill, one cue in large type
         Gfx.TextC(d, UiTheme.HudWide, "NEXT", cx, 290 * k, UiTheme.Fs(18, k), UiTheme.Accent);
-        Gfx.TextC(d, UiTheme.Display, st.Name.ToUpperInvariant(), cx, 390 * k, UiTheme.Fs(104, k), UiTheme.Text);
+        Gfx.TextC(d, UiTheme.Display, L.Upper(st.DisplayName), cx, 390 * k, UiTheme.Fs(104, k), UiTheme.Text);
         string tag = TagLine(st, out var tagCol);
         Gfx.TextFit(d, UiTheme.HudWide, tag, cx - (size.X - 160 * k) / 2, 440 * k, UiTheme.Fs(20, k), tagCol, size.X - 160 * k, HorizontalAlignment.Center);
 
@@ -195,7 +195,8 @@ public partial class WarmupCard : ScreenBase
         Gfx.TextFit(d, UiTheme.Body, st.Cue, cx - cw / 2, cueY, UiTheme.Fs(34, k), UiTheme.Text, cw, HorizontalAlignment.Center);
         if (st.Phase == Phase.Deathmatch && (run.Check.Goal.Length > 0 || run.Check.Cue.Length > 0))
         {
-            string carry = $"YOUR GOAL: {run.Check.Goal.ToUpperInvariant()}   ·   YOUR CUE: {run.Check.Cue.ToUpperInvariant()}";
+            // a picked goal / cue is a catalogue key (translated); one the player typed stays as typed
+            string carry = L.F($"YOUR GOAL: {L.Upper(L.T(run.Check.Goal))}   ·   YOUR CUE: {L.Upper(L.T(run.Check.Cue))}");
             Gfx.TextFit(d, UiTheme.HudWide, carry, cx - cw / 2, cueY + 50 * k, UiTheme.Fs(17, k), UiTheme.Dim, cw, HorizontalAlignment.Center);
         }
 
@@ -203,8 +204,8 @@ public partial class WarmupCard : ScreenBase
         if (offer != null)
         {
             string lv = string.Join("   ·   ", offer.Drills.Select(x =>
-                $"{WarmupDrills.Name(x.Mode).ToUpperInvariant()} {x.Level.ToString("0.0", Inv)} (USUAL {Mathf.Max(0, x.Low).ToString("0.0", Inv)}–{Mathf.Min(4, x.High).ToString("0.0", Inv)})"));
-            Gfx.TextFit(d, UiTheme.HudWide, "CALIBRATION TODAY   " + lv, cx - cw / 2, size.Y - 404 * k, UiTheme.Fs(14, k), UiTheme.Dim, cw, HorizontalAlignment.Center);
+                L.F($"{L.Upper(WarmupDrills.DisplayName(x.Mode))} {x.Level.ToString("0.0", Inv)} (USUAL {Mathf.Max(0, x.Low).ToString("0.0", Inv)}–{Mathf.Min(4, x.High).ToString("0.0", Inv)})")));
+            Gfx.TextFit(d, UiTheme.HudWide, L.T("CALIBRATION TODAY") + "   " + lv, cx - cw / 2, size.Y - 404 * k, UiTheme.Fs(14, k), UiTheme.Dim, cw, HorizontalAlignment.Center);
         }
 
         // 15 / 20 minute reminders
@@ -212,7 +213,7 @@ public partial class WarmupCard : ScreenBase
         if (mins >= WarmupPlan.RemindMinutes && run.Results.Any(r => !r.Skipped))
         {
             bool ready = mins >= WarmupPlan.ReadyMinutes;
-            string text = ready ? "YOU'RE READY · 20 MINUTES IN · FINISH NOW AND QUEUE" : "15 MINUTES IN · THE REST IS OPTIONAL · FINISH WHEN YOU LIKE";
+            string text = ready ? L.T("YOU'RE READY · 20 MINUTES IN · FINISH NOW AND QUEUE") : L.T("15 MINUTES IN · THE REST IS OPTIONAL · FINISH WHEN YOU LIKE");
             var c = ready ? UiTheme.Teal : UiTheme.Warn;
             int rs = UiTheme.Fs(16, k);
             float rw = Gfx.TextW(UiTheme.HudWide, text, rs) + 60 * k;
@@ -230,7 +231,7 @@ public partial class WarmupCard : ScreenBase
             Gfx.TextC(d, UiTheme.HudWide, "PAUSED · SPACE TO START · ESC AGAIN TO QUIT THE LOCK-IN", cx, ty, UiTheme.Fs(18, k), UiTheme.Warn);
         else
         {
-            Gfx.TextC(d, UiTheme.HudWide, $"STARTING IN {Mathf.CeilToInt(Mathf.Max(0, left))}", cx, ty, UiTheme.Fs(20, k), UiTheme.Text);
+            Gfx.TextC(d, UiTheme.HudWide, L.F($"STARTING IN {Mathf.CeilToInt(Mathf.Max(0, left))}"), cx, ty, UiTheme.Fs(20, k), UiTheme.Text);
             float bw = 360 * k;
             d.DrawRect(new Rect2(cx - bw / 2, ty + 14 * k, bw, 3 * k), new Color(UiTheme.Text, 0.12f));
             d.DrawRect(new Rect2(cx - bw / 2, ty + 14 * k, bw * Mathf.Clamp(left / autoStart, 0, 1), 3 * k), UiTheme.Accent);

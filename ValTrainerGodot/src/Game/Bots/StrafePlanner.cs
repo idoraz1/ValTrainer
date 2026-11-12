@@ -30,7 +30,8 @@ public sealed class StrafePlanner
 
     public enum Pat { Long, Micro, CrouchStrafe, ACrouchD, Jiggle }
     public static readonly string[] PatNames = { "Long strafe", "ADAD micro-strafe", "Crouch-strafe", "A-crouch / D-crouch", "Jiggle" };
-    public static readonly string[] PatShort = { "long", "ADAD", "crouch", "ACD", "jiggle" };
+    // shown in Strafe Duels' results (translated there; the dev log keeps English)
+    public static readonly string[] PatShort = { L.N("long"), L.N("ADAD"), L.N("crouch"), L.N("ACD"), L.N("jiggle") };
     // Pattern weights per tier: Rookie = long predictable strafes; Pro = mostly micro-strafes, A-crouch-D and jiggles.
     static readonly int[][] Weights =
     {

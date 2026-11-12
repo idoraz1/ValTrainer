@@ -793,7 +793,9 @@ static class RunAnalysis
         var fr = p.T.Frames;
         // Peek Practice swings bots out of a random pillar: only head height can be pre-aimed there, so its sightings
         // count for the vertical error but not for the total / horizontal pre-aim error. Flash Dodge asks you to turn
-        // away from the flash, so the attacker is first seen far off to the side by design: vertical only as well.
+        // away from the flash, so the attacker is first seen far off to the side by design: vertical only as well. Drills
+        // that announce the angle (Peek Duel, Jiggle Peek, Recon) are vertical only too: pre-aiming a known angle isn't
+        // crosshair placement. The total error is also stored on the match scale (Bench.XhairDrillFactor).
         bool horiz = !HorizExcluded(p.T.Mode);
         var a = new List<float>(); var b = new List<float>(); var h = new List<float>();
         int below = 0, onHead = 0;
@@ -817,6 +819,7 @@ static class RunAnalysis
         {
             m["xhair.nh"] = ev.Count;
             m["xhair.err_deg"] = Dsp.Median(a);
+            m["xhair.err_ref_deg"] = m["xhair.err_deg"] / Bench.XhairDrillFactor(Base(p.T.Mode));
             m["xhair.h_deg"] = Dsp.Median(h);
             m["xhair.on_head"] = onHead;
         }
@@ -948,7 +951,20 @@ static class RunAnalysis
     static readonly HashSet<string> UngatedSightings = new()
         { "siteclear", "smokeexec", "flashpeek", "recon", "mobility", "chamber", "anchor", "sound" };
 
-    static bool HorizExcluded(string mode) => Base(mode) is "peek" or "flashmap" or "longtaps" or "sheriff" or "peek_mix" or "sound";
+    /// <summary>Sightings that count for the vertical crosshair error only: the bot appears where you can't pre-aim
+    /// (Peek Practice's pillars, Flash Dodge's turn-away, …) or the drill announces the angle (Peek Duel: a bot holding
+    /// the corner you swing; Jiggle Peek: an Operator holding the angle you bait; Recon: enemies revealed through walls),
+    /// where a small error says nothing about placement in a match (v1.19; a Gold 2 measured 2.2–2.7° there).</summary>
+    static bool HorizExcluded(string mode) => Base(mode) is "peek" or "flashmap" or "longtaps" or "sheriff" or "peek_mix" or "sound"
+        or "peekduel" or "jigglepeek" or "recon";
+
+    /// <summary>Drills whose instructions ask for the movement habit the profile rates ("tap the opposite key to stop",
+    /// "counter-strafe and hit first"): their counter-strafe / moving-shot shares measure following the instruction, not
+    /// a habit (a Gold 2 counter-strafed 98.5% there vs 67% elsewhere), so the profile drops them. Stop time stays (a
+    /// mechanic), and the run review still sees everything.</summary>
+    static readonly HashSet<string> InstructedMovement = new() { "counterstrafe", "strafeduel" };
+    static readonly string[] MovementHabits =
+        { "move.counter", "move.counter_pct", "move.moving", "move.moving_shot_pct", "move.moving_speed", "move.early", "move.early_shot_pct", "move.shots" };
 
     /// <summary>
     /// A stored run's metrics as the profile uses them (runs saved by older versions are brought up to date without
@@ -959,12 +975,16 @@ static class RunAnalysis
     /// counted enemies beside or behind you, crosshair placement recorded before the 60° gate (no "xhair.gated").
     /// Runs with an unrated gun (<paramref name="weapon"/>, see <see cref="Modes.WeaponRating.IsRatedRun"/>) lose the
     /// metrics the gun shapes (<see cref="GunMetric"/>); what only the mouse decides still counts.
+    /// Calibration 2 (v1.19): the crosshair error on the match scale ("xhair.err_ref_deg", <see cref="Bench.XhairDrillFactor"/>)
+    /// is added to runs stored without it, and drills that instruct a movement habit lose it (<see cref="InstructedMovement"/>).
     /// Returns a copy when anything changes; the stored record is never modified.
     /// </summary>
     public static Dictionary<string, float> Normalize(string mode, int tier, Dictionary<string, float> m, string? weapon = null)
     {
         string b = Base(mode);
         bool dropX = HorizExcluded(mode) && m.ContainsKey("xhair.nh");
+        bool xref = !dropX && m.ContainsKey("xhair.err_deg") && !m.ContainsKey("xhair.err_ref_deg");
+        bool habits = InstructedMovement.Contains(b) && MovementHabits.Any(m.ContainsKey);
         bool dodge = m.ContainsKey("flash.dodge_pct");
         bool track = m.ContainsKey("track.ontarget");
         bool speed = mode is "spider" or "gridshot" && m.ContainsKey("speed.tier");
@@ -972,7 +992,7 @@ static class RunAnalysis
         bool notReact = b == "sound" && m.ContainsKey("react.ms");
         bool ungated = UngatedSightings.Contains(b) && m.ContainsKey("xhair.n") && !m.ContainsKey("xhair.gated");
         bool unrated = !Modes.WeaponRating.IsRatedRun(mode, weapon) && m.Keys.Any(GunMetric);
-        if (!dropX && !dodge && !track && !speed && !notFlash && !notReact && !ungated && !unrated) return m;
+        if (!dropX && !xref && !habits && !dodge && !track && !speed && !notFlash && !notReact && !ungated && !unrated) return m;
         var c = new Dictionary<string, float>(m);
         if (unrated)
         {
@@ -980,12 +1000,14 @@ static class RunAnalysis
             speed = false; // gone with the rest of speed.*
         }
         if (dropX)
-            foreach (var k in new[] { "xhair.nh", "xhair.err_deg", "xhair.h_deg", "xhair.on_head", "xhair.on_head_pct" }) c.Remove(k);
+            foreach (var k in new[] { "xhair.nh", "xhair.err_deg", "xhair.err_ref_deg", "xhair.h_deg", "xhair.on_head", "xhair.on_head_pct" }) c.Remove(k);
+        if (habits) foreach (var k in MovementHabits) c.Remove(k);
         if (ungated || notFlash || notReact)
             foreach (var k in m.Keys)
                 if ((ungated && k.StartsWith("xhair.", StringComparison.Ordinal)) || (notFlash && k.StartsWith("flash.", StringComparison.Ordinal))
                     || (notReact && k.StartsWith("react.", StringComparison.Ordinal)))
                     c.Remove(k);
+        if (xref && c.ContainsKey("xhair.err_deg")) c["xhair.err_ref_deg"] = c["xhair.err_deg"] / Bench.XhairDrillFactor(b);
         if (dodge && !notFlash) c["flash.dodge_tier"] = Bench.DodgeTier(m["flash.dodge_pct"], tier);
         if (track) c["track.ontarget_tier"] = Bench.TrackTier(m["track.ontarget"], tier);
         if (speed) c["speed.tier"] = Math.Max(-0.5f, m["speed.tier"] - Bench.ScoreSpeedOffset);

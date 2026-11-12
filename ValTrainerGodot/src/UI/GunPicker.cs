@@ -30,8 +30,8 @@ public partial class GunPicker : Control
 
     static readonly (WeaponClass Class, string Name)[] Columns =
     {
-        (WeaponClass.Sidearm, "SIDEARMS"), (WeaponClass.SMG, "SMGS"), (WeaponClass.Shotgun, "SHOTGUNS"),
-        (WeaponClass.Rifle, "RIFLES"), (WeaponClass.Sniper, "SNIPERS"), (WeaponClass.Heavy, "MACHINE GUNS"),
+        (WeaponClass.Sidearm, L.N("SIDEARMS")), (WeaponClass.SMG, L.N("SMGS")), (WeaponClass.Shotgun, L.N("SHOTGUNS")),
+        (WeaponClass.Rifle, L.N("RIFLES")), (WeaponClass.Sniper, L.N("SNIPERS")), (WeaponClass.Heavy, L.N("MACHINE GUNS")),
     };
 
     readonly float k;
@@ -88,16 +88,17 @@ public partial class GunPicker : Control
 
     // ---------------- opening helpers ----------------
 
-    /// <summary>Why <paramref name="g"/> isn't offered by drill <paramref name="m"/> (shown on its greyed tile).</summary>
+    /// <summary>Why <paramref name="g"/> isn't offered by drill <paramref name="m"/> (shown on its greyed tile). English
+    /// (L.N): translated where it is drawn.</summary>
     public static string ReasonFor(TrainingMode m, WeaponKind g)
     {
         var choice = m.WeaponChoice;
         var def = Weapons.Get(g);
-        if (choice == null) return $"This drill is about the {GunRating.GunName(m.Weapon)}";
-        if (choice.All(x => Weapons.Get(x)?.Class == WeaponClass.Sniper)) return "This drill is for snipers";
-        if (def is { Pellets: > 1 } && choice.All(x => (Weapons.Get(x)?.Pellets ?? 1) <= 1)) return "Pellets don't fit target drills";
-        if (def is { Auto: false } && choice.All(x => Weapons.Get(x)?.Auto == true)) return "Full-auto guns only: this drill is about spraying";
-        return "Not offered in this drill";
+        if (choice == null) return L.F($"This drill is about the {GunRating.GunName(m.Weapon)}");
+        if (choice.All(x => Weapons.Get(x)?.Class == WeaponClass.Sniper)) return L.N("This drill is for snipers");
+        if (def is { Pellets: > 1 } && choice.All(x => (Weapons.Get(x)?.Pellets ?? 1) <= 1)) return L.N("Pellets don't fit target drills");
+        if (def is { Auto: false } && choice.All(x => Weapons.Get(x)?.Auto == true)) return L.N("Full-auto guns only: this drill is about spraying");
+        return L.N("Not offered in this drill");
     }
 
     /// <summary>The picker for one drill: remembers the pick for it (<see cref="WeaponPicks.Remember"/>), and with "Use for
@@ -108,7 +109,7 @@ public partial class GunPicker : Control
     {
         if (m.WeaponChoice is not { Count: > 0 } choice || HasOpen(parent)) return null;
         var pref = WeaponPicks.Preferred();
-        var p = new GunPicker(k, (title ?? m.Name).ToUpperInvariant(), Purpose.Drill, m.Weapon, shown, choice, g => ReasonFor(m, g),
+        var p = new GunPicker(k, L.Upper(title != null ? L.T(title) : m.DisplayName), Purpose.Drill, m.Weapon, shown, choice, g => ReasonFor(m, g),
             (g, every) =>
             {
                 var gun = g ?? m.Weapon;
@@ -128,7 +129,7 @@ public partial class GunPicker : Control
                 }
                 applied(gun);
             },
-            g => GunRating.IsRated(m, g) ? null : $"Unrated here: a score and a PB with it, badges only with {GunRating.RatedText(m)}",
+            g => GunRating.IsRated(m, g) ? null : L.F($"Unrated here: a score and a PB with it, badges only with {GunRating.DisplayRatedText(m)}"),
             everyDrill: pref != null && pref == shown);
         configure?.Invoke(p);
         parent.AddChild(p);
@@ -139,9 +140,9 @@ public partial class GunPicker : Control
     public static GunPicker? OpenPreferred(Node parent, float k, Action changed)
     {
         if (HasOpen(parent)) return null;
-        var p = new GunPicker(k, "PREFERRED GUN · EVERY DRILL THAT OFFERS A CHOICE", Purpose.Preferred, WeaponKind.None, WeaponPicks.Preferred(), null,
+        var p = new GunPicker(k, L.N("PREFERRED GUN · EVERY DRILL THAT OFFERS A CHOICE"), Purpose.Preferred, WeaponKind.None, WeaponPicks.Preferred(), null,
             _ => null, (g, _) => { WeaponPicks.SetPreferred(g); changed(); },
-            note: _ => "Drills that don't offer this gun keep their own");
+            note: _ => L.N("Drills that don't offer this gun keep their own"));
         parent.AddChild(p);
         return p;
     }
@@ -152,13 +153,13 @@ public partial class GunPicker : Control
         var withChoice = drills.Where(d => d.WeaponChoice is { Count: > 0 }).ToList();
         if (withChoice.Count == 0 || HasOpen(parent)) return null;
         var union = withChoice.SelectMany(d => d.WeaponChoice!).ToHashSet();
-        var p = new GunPicker(k, title.ToUpperInvariant(), Purpose.Group, WeaponKind.None, shown, union, _ => "None of these drills offers it",
+        var p = new GunPicker(k, L.Upper(L.T(title)), Purpose.Group, WeaponKind.None, shown, union, _ => L.N("None of these drills offers it"),
             (g, _) =>
             {
                 foreach (var d in withChoice) WeaponPicks.Remember(d.Key, g is { } gg && d.WeaponChoice!.Contains(gg) ? gg : null);
                 changed();
             },
-            note: g => withChoice.All(d => d.WeaponChoice!.Contains(g)) ? null : "Some of these drills don't offer it: they keep their own");
+            note: g => withChoice.All(d => d.WeaponChoice!.Contains(g)) ? null : L.N("Some of these drills don't offer it: they keep their own"));
         parent.AddChild(p);
         return p;
     }
@@ -209,7 +210,7 @@ public partial class GunPicker : Control
                     int fs = UiTheme.Fs(14, k), ns = UiTheme.Fs(11, k);
                     d.DrawRect(new Rect2(0, d.Size.Y / 2 - 3 * k, 6 * k, 6 * k), on > 0 ? UiTheme.Accent : UiTheme.Faint);
                     Gfx.Text(d, UiTheme.HudWide, name, 13 * k, Gfx.Mid(d.Size.Y / 2, fs), fs, on > 0 ? UiTheme.Text : UiTheme.Faint);
-                    if (allowed != null && on < n) Gfx.TextR(d, UiTheme.HudWide, on == 0 ? "LOCKED" : $"{on}/{n}", d.Size.X, Gfx.Mid(d.Size.Y / 2, ns), ns, UiTheme.Faint);
+                    if (allowed != null && on < n) Gfx.TextR(d, UiTheme.HudWide, on == 0 ? L.N("LOCKED") : $"{on}/{n}", d.Size.X, Gfx.Mid(d.Size.Y / 2, ns), ns, UiTheme.Faint);
                     d.DrawRect(new Rect2(0, d.Size.Y - 1, d.Size.X, 1), new Color(UiTheme.Text, 0.1f));
                 },
             });
@@ -221,7 +222,7 @@ public partial class GunPicker : Control
                 {
                     K = k, Enabled = Allowed(kind), Equipped = kind == Shown, IsDefault = kind == defaultGun,
                     CustomMinimumSize = new Vector2(0, tileH * k), SizeFlagsHorizontal = SizeFlags.ExpandFill,
-                    TooltipText = Allowed(kind) ? $"{g.Name} · {ClassName(g.Class)} · {Price(g.Cost)} credits" : $"{g.Name}: {reason(kind)}",
+                    TooltipText = Allowed(kind) ? L.F($"{g.Name} · {L.T(ClassName(g.Class))} · {Price(g.Cost)} credits") : g.Name + ": " + L.T(reason(kind)),
                 };
                 int ci = grid.Count, ri = tiles.Count;
                 t.Pressed += () => { Focus(ci, ri); Pick(kind); };
@@ -243,11 +244,11 @@ public partial class GunPicker : Control
         var foot = new HBoxContainer();
         foot.AddThemeConstantOverride("separation", (int)(12 * k));
         col.AddChild(foot);
-        string defLabel = purpose == Purpose.Drill ? $"DRILL DEFAULT ({GunName(defaultGun).ToUpperInvariant()})" : "EACH DRILL'S DEFAULT";
+        string defLabel = purpose == Purpose.Drill ? L.F($"DRILL DEFAULT ({GunName(defaultGun).ToUpperInvariant()})") : L.N("EACH DRILL'S DEFAULT");
         var def = new VButton
         {
             Label = defLabel, Kind = VButton.Look.Secondary, K = k, FontPx = 17, CustomMinimumSize = new Vector2(Mathf.Max(260, 40 + defLabel.Length * 9.5f) * k, 50 * k),
-            TooltipText = purpose == Purpose.Drill ? "Play this drill with its own gun again" : "No preferred gun: every drill plays its own unless you pick one for it",
+            TooltipText = L.T(purpose == Purpose.Drill ? "Play this drill with its own gun again" : "No preferred gun: every drill plays its own unless you pick one for it"),
         };
         def.Pressed += () => Pick(null);
         foot.AddChild(def);
@@ -256,7 +257,7 @@ public partial class GunPicker : Control
             everyBtn = new VButton
             {
                 Label = EveryLabel(), Kind = VButton.Look.Select, K = k, FontPx = 15, Selected = everyDrill, CustomMinimumSize = new Vector2(250 * k, 50 * k),
-                TooltipText = "Make this gun your preferred gun: every drill that offers it starts with it (a pick you make for one drill still wins there)",
+                TooltipText = L.T("Make this gun your preferred gun: every drill that offers it starts with it (a pick you make for one drill still wins there)"),
             };
             everyBtn.Pressed += () =>
             {
@@ -267,9 +268,17 @@ public partial class GunPicker : Control
             };
             foot.AddChild(everyBtn);
         }
+        // gun skins for the focused gun (not in the in-drill buy menu, which runs its own state machine)
+        if (CloseOn == null)
+        {
+            var skins = new VButton { Label = "SKINS", Kind = VButton.Look.Secondary, K = k, FontPx = 17, CustomMinimumSize = new Vector2(130 * k, 50 * k) };
+            skins.TooltipText = L.T("Gun skins for the highlighted gun: original finishes, cosmetic only");
+            skins.Pressed += () => { if (GetParent() is { } p && grid.Count > 0) SkinPicker.Open(p, k, grid[fc][fr].Def.Kind); };
+            foot.AddChild(skins);
+        }
         var hint = new Label
         {
-            Text = KeysHint ?? "Click or Enter picks · arrows move · B / Esc closes", SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.ShrinkCenter,
+            Text = KeysHint != null ? L.T(KeysHint) : L.T("Click or Enter picks · arrows move · B / Esc closes"), SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsVertical = SizeFlags.ShrinkCenter,
             HorizontalAlignment = HorizontalAlignment.Right, LabelSettings = UiTheme.Label(UiTheme.Body, 14, k, UiTheme.Faint), MouseFilter = MouseFilterEnum.Ignore,
             ClipText = true,
         };
@@ -279,12 +288,12 @@ public partial class GunPicker : Control
         foot.AddChild(close);
     }
 
-    string EveryLabel() => (everyDrill ? "✓  " : "") + "USE FOR EVERY DRILL";
+    string EveryLabel() => (everyDrill ? "✓  " : "") + L.T("USE FOR EVERY DRILL");
 
     static string ClassName(WeaponClass c) => c switch
     {
-        WeaponClass.Sidearm => "Sidearm", WeaponClass.SMG => "SMG", WeaponClass.Shotgun => "Shotgun",
-        WeaponClass.Rifle => "Rifle", WeaponClass.Sniper => "Sniper", _ => "Machine gun",
+        WeaponClass.Sidearm => L.N("Sidearm"), WeaponClass.SMG => L.N("SMG"), WeaponClass.Shotgun => L.N("Shotgun"),
+        WeaponClass.Rifle => L.N("Rifle"), WeaponClass.Sniper => L.N("Sniper"), _ => L.N("Machine gun"),
     };
 
     internal static string Price(int cost) => cost.ToString("#,0", CultureInfo.InvariantCulture);
@@ -299,16 +308,18 @@ public partial class GunPicker : Control
         d.DrawRect(new Rect2(0, 0, 3 * k, r.Size.Y), on ? UiTheme.Accent : UiTheme.Faint);
         int ns = UiTheme.Fs(24, k), ls = UiTheme.Fs(12, k), bs = UiTheme.Fs(14.5f, k);
         float x = 16 * k, cy = r.Size.Y / 2;
-        string head = g.Name.ToUpperInvariant();
-        Gfx.Text(d, UiTheme.Display, head, x, Gfx.Mid(cy - 10 * k, ns), ns, on ? UiTheme.Text : UiTheme.Dim);
-        float hx = x + Gfx.TextW(UiTheme.Display, head, ns) + 14 * k;
-        string meta = $"{ClassName(g.Class).ToUpperInvariant()} · {Price(g.Cost)} CREDITS" + (g.Kind == defaultGun ? " · DRILL DEFAULT" : "");
-        Gfx.Text(d, UiTheme.HudWide, meta, hx, Gfx.Mid(cy - 10 * k, ls), ls, UiTheme.Dim);
+        string head = g.Name.ToUpperInvariant(); // gun names stay English (as in VALORANT)
+        Gfx.TextRaw(d, UiTheme.Display, head, x, Gfx.Mid(cy - 10 * k, ns), ns, on ? UiTheme.Text : UiTheme.Dim);
+        float hx = x + Gfx.RawW(UiTheme.Display, head, ns) + 14 * k;
+        string meta = L.Upper(L.T(ClassName(g.Class))) + " · " + L.F($"{Price(g.Cost)} CREDITS") + (g.Kind == defaultGun ? " · " + L.T("DRILL DEFAULT") : "");
         string? line = on ? note?.Invoke(g.Kind) : reason(g.Kind);
         string stats = StatLine(g);
+        float lw = line != null ? Gfx.TextW(UiTheme.Body, line, bs) : 0;
+        // translations run longer: the class / price line keeps clear of the note on the right (English draws as designed)
+        float metaMax = L.IsEnglish ? float.MaxValue : r.Size.X - 16 * k - (line != null ? Mathf.Min(lw, r.Size.X * 0.45f) + 14 * k : 0) - hx;
+        Gfx.TextFit(d, UiTheme.HudWide, meta, hx, Gfx.Mid(cy - 10 * k, ls), ls, UiTheme.Dim, Mathf.Max(20 * k, metaMax));
         if (line != null)
         {
-            float lw = Gfx.TextW(UiTheme.Body, line, bs);
             Gfx.TextFit(d, UiTheme.Body, line, r.Size.X - 16 * k - Mathf.Min(lw, r.Size.X * 0.45f), Gfx.Mid(cy - 10 * k, bs), bs, on ? UiTheme.Warn : UiTheme.Accent,
                 r.Size.X * 0.45f);
         }
@@ -321,17 +332,19 @@ public partial class GunPicker : Control
         var inv = CultureInfo.InvariantCulture;
         var parts = new List<string>
         {
-            $"{g.MaxRps.ToString("0.##", inv)} {(g.Auto ? "rounds/s" : "shots/s")}{(g.Auto ? "" : " (semi-auto)")}",
-            $"{g.Mag}-round magazine",
-            $"{g.Reload.ToString("0.##", inv)} s reload",
+            g.Auto ? L.F($"{g.MaxRps.ToString("0.##", inv)} rounds/s") : L.F($"{g.MaxRps.ToString("0.##", inv)} shots/s (semi-auto)"),
+            L.F($"{g.Mag}-round magazine"),
+            L.F($"{g.Reload.ToString("0.##", inv)} s reload"),
             g.Pellets > 1
-                ? $"{g.Pellets} pellets of {g.DamageBody[0].ToString("0.#", inv)} body damage"
-                : $"head {g.DamageHead[0].ToString("0.#", inv)} / body {g.DamageBody[0].ToString("0.#", inv)} / legs {g.DamageLegs[0].ToString("0.#", inv)}{(g.DamageRangeEnd.Length > 1 ? " up close" : "")}",
+                ? L.F($"{g.Pellets} pellets of {g.DamageBody[0].ToString("0.#", inv)} body damage")
+                : g.DamageRangeEnd.Length > 1
+                    ? L.F($"head {g.DamageHead[0].ToString("0.#", inv)} / body {g.DamageBody[0].ToString("0.#", inv)} / legs {g.DamageLegs[0].ToString("0.#", inv)} up close")
+                    : L.F($"head {g.DamageHead[0].ToString("0.#", inv)} / body {g.DamageBody[0].ToString("0.#", inv)} / legs {g.DamageLegs[0].ToString("0.#", inv)}"),
         };
-        if (g.Scope) parts.Add("scope");
-        if (g.Silenced) parts.Add("silenced");
-        if (g.SpinUpTime > 0) parts.Add("spins up");
-        if (g.BurstCount > 1) parts.Add($"{g.BurstCount}-round bursts aimed");
+        if (g.Scope) parts.Add(L.T("scope"));
+        if (g.Silenced) parts.Add(L.T("silenced"));
+        if (g.SpinUpTime > 0) parts.Add(L.T("spins up"));
+        if (g.BurstCount > 1) parts.Add(L.F($"{g.BurstCount}-round bursts aimed"));
         return string.Join(" · ", parts);
     }
 
@@ -469,11 +482,11 @@ public partial class GunTile : BaseButton
         float ny = r.Size.Y * 0.5f + 14 * k;
         string price = GunPicker.Price(Def.Cost);
         float pw = Gfx.TextW(UiTheme.Hud, price, ps);
-        Gfx.TextFit(this, UiTheme.Display, Def.Name.ToUpperInvariant(), pad, Gfx.Mid(ny, ns), ns, new Color(Enabled ? UiTheme.Text : UiTheme.Dim, a), r.Size.X - pad * 3 - pw - 14 * k);
+        Gfx.TextFit(this, UiTheme.Display, L.Raw(Def.Name.ToUpperInvariant()), pad, Gfx.Mid(ny, ns), ns, new Color(Enabled ? UiTheme.Text : UiTheme.Dim, a), r.Size.X - pad * 3 - pw - 14 * k);
         Gfx.TextR(this, UiTheme.Hud, price, r.Size.X - pad, Gfx.Mid(ny, ps), ps, new Color(UiTheme.Dim, a));
         CreditGlyph(this, new Vector2(r.Size.X - pad - pw - 9 * k, ny), 5 * k, new Color(UiTheme.Dim, a));
 
-        string tag = Equipped ? "EQUIPPED" : IsDefault ? "DEFAULT" : "";
+        string tag = Equipped ? L.N("EQUIPPED") : IsDefault ? L.N("DEFAULT") : "";
         float sy = ny + 17 * k;
         if (r.Size.Y > 80 * k)
         {
@@ -489,7 +502,7 @@ public partial class GunTile : BaseButton
     {
         var inv = CultureInfo.InvariantCulture;
         string dmg = g.Pellets > 1 ? $"{g.Pellets}×{g.DamageBody[0].ToString("0", inv)}" : $"{g.DamageHead[0].ToString("0", inv)}/{g.DamageBody[0].ToString("0", inv)}";
-        return $"{g.MaxRps.ToString("0.##", inv)}/s · {g.Mag} rds · {dmg}";
+        return L.F($"{g.MaxRps.ToString("0.##", inv)}/s · {g.Mag} rds · {dmg}");
     }
 
     /// <summary>A small credits mark (a ring with a cut), not VALORANT's icon.</summary>
@@ -505,7 +518,7 @@ public partial class GunTile : BaseButton
 /// </summary>
 public partial class GunRow : BaseButton
 {
-    public string Label = "Weapon";
+    public string Label = L.N("Weapon");
     public Func<WeaponKind> Gun = () => WeaponKind.Vandal;
     public Func<string?>? Tag;
     public float K = 1f, H = 40f;
@@ -517,7 +530,7 @@ public partial class GunRow : BaseButton
         FocusMode = FocusModeEnum.None;
         MouseDefaultCursorShape = CursorShape.PointingHand;
         TextureFilter = TextureFilterEnum.LinearWithMipmaps;
-        TooltipText = "Pick the gun for this drill (B)";
+        TooltipText = L.T("Pick the gun for this drill (B)");
     }
 
     public override void _Ready()
@@ -546,14 +559,14 @@ public partial class GunRow : BaseButton
         Gfx.Text(this, UiTheme.Body, Label, pad, Gfx.Mid(cy, ls), ls, UiTheme.Dim);
 
         // right to left: the CHANGE · B chip, the gun's name, its silhouette, the tag
-        string chip = "CHANGE · B";
+        string chip = L.N("CHANGE · B");
         float cw = Gfx.TextW(UiTheme.HudWide, chip, cs) + 18 * k;
         var cr = new Rect2(Size.X - pad - cw, cy - 12 * k, cw, 24 * k);
         DrawRect(cr, new Color(UiTheme.Accent, 0.12f + 0.5f * hover));
         DrawRect(cr, new Color(UiTheme.Accent, 0.8f), false, 1f);
         Gfx.Text(this, UiTheme.HudWide, chip, cr.Position.X + 9 * k, Gfx.Mid(cy, cs), cs, UiTheme.Text);
         var gun = Gun();
-        string name = GunPicker.GunName(gun);
+        string name = L.Raw(GunPicker.GunName(gun)); // gun names stay English
         float nw = Gfx.TextW(UiTheme.Body, name, vs);
         float nx = cr.Position.X - 12 * k - nw;
         Gfx.Text(this, UiTheme.Body, name, nx, Gfx.Mid(cy, vs), vs, UiTheme.Text);
@@ -571,6 +584,7 @@ public partial class GunRow : BaseButton
             var tr = new Rect2((icon ? ir.Position.X : nx) - 8 * k - tw, cy - 9 * k, tw, 18 * k);
             if (tr.Position.X > lw)
             {
+                // Tag returns the English key (DrillPreview.GunTag, L.N); Gfx.Text translates it when drawn
                 var tc = tag == "YOUR PICK" ? UiTheme.Teal : tag == "PREFERRED" ? UiTheme.Warn : UiTheme.Dim;
                 DrawRect(tr, new Color(tc, 0.12f));
                 DrawRect(tr, new Color(tc, 0.7f), false, 1f);

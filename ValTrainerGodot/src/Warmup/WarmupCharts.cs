@@ -1,5 +1,6 @@
 using System.Globalization;
 using Godot;
+using ValTrainer.Core;
 using ValTrainer.UI;
 
 namespace ValTrainer.Warmup;
@@ -93,14 +94,14 @@ public static class WarmupCharts
         }
 
         // phases
-        PhaseBox(left, left + fw, Phase.CheckIn, "30 s");
+        PhaseBox(left, left + fw, Phase.CheckIn, L.N("30 s"));
         float t0 = 0;
         foreach (var (p, secs, n) in plan.PhaseSpans())
         {
-            PhaseBox(X(t0) + (t0 > 0 ? gap / 2 : 0), X(t0 + secs) - gap / 2, p, $"{WarmupPlan.Clock(secs)} · {n} drill{(n == 1 ? "" : "s")}");
+            PhaseBox(X(t0) + (t0 > 0 ? gap / 2 : 0), X(t0 + secs) - gap / 2, p, L.P(n, $"{WarmupPlan.Clock(secs)} · {n} drill", $"{WarmupPlan.Clock(secs)} · {n} drills"));
             t0 += secs;
         }
-        PhaseBox(right - fw, right, Phase.LockIn, "goal card");
+        PhaseBox(right - fw, right, Phase.LockIn, L.N("goal card"));
 
         // drills
         t0 = 0;
@@ -122,7 +123,7 @@ public static class WarmupCharts
             float lw = s.EaseLast > 0 ? X(t0 + s.Seconds - s.EaseLast) - br.Position.X - 4 * k : br.Size.X - 4 * k;
             Gfx.TextFit(c, UiTheme.HudWide, s.Short, br.Position.X + 2 * k, br.Position.Y + 24 * k, ls, UiTheme.Text, lw, HorizontalAlignment.Center);
             Gfx.TextFit(c, UiTheme.Body, WarmupPlan.Clock(s.Seconds), br.Position.X + 2 * k, br.Position.Y + 42 * k, ls, UiTheme.Dim, lw, HorizontalAlignment.Center);
-            string tag = s.Shifted ? $"{s.OffsetPct:+0;-0}%" : s.Adaptive ? "ADAPT" : s.Easier ? "EASY" : "";
+            string tag = s.Shifted ? $"{s.OffsetPct:+0;-0}%" : s.Adaptive ? L.N("ADAPT") : s.Easier ? L.N("EASY") : "";
             if (tag.Length > 0 && drillH > 58 * k)
                 Gfx.TextFit(c, UiTheme.HudWide, tag, br.Position.X + 2 * k, br.Position.Y + 60 * k, ls, s.Shifted ? ShiftCol : pc, lw, HorizontalAlignment.Center);
             t0 += s.Seconds;
@@ -145,7 +146,7 @@ public static class WarmupCharts
             {
                 float x = X(m * 60);
                 c.DrawLine(new Vector2(x, ay - 4 * k), new Vector2(x, ay), new Color(UiTheme.Text, 0.3f), 1);
-                Gfx.TextC(c, UiTheme.Body, m == 0 ? "0 min" : m.ToString(Inv), x, ay + 14 * k, ls, UiTheme.Faint);
+                Gfx.TextC(c, UiTheme.Body, m == 0 ? L.N("0 min") : m.ToString(Inv), x, ay + 14 * k, ls, UiTheme.Faint);
             }
 
         // what the tags mean (honest: the player knows when the difficulty moves)
@@ -153,9 +154,9 @@ public static class WarmupCharts
         int gs = UiTheme.Fs(13, k);
         foreach (var (tag, text, col) in new[]
         {
-            ("EASY", "one tier below yours", PhaseColor(Phase.Activation)),
-            ("ADAPT", "gets harder or easier to keep you near 80% hits", PhaseColor(Phase.Calibration)),
-            ("EASIER", "the deathmatch's last minute has easier bots", UiTheme.Good),
+            (L.N("EASY"), L.N("one tier below yours"), PhaseColor(Phase.Activation)),
+            (L.N("ADAPT"), L.N("gets harder or easier to keep you near 80% hits"), PhaseColor(Phase.Calibration)),
+            (L.N("EASIER"), L.N("the deathmatch's last minute has easier bots"), UiTheme.Good),
         })
         {
             if (tag == "ADAPT" && !plan.Steps.Any(s => s.Adaptive)) continue;
@@ -212,14 +213,14 @@ public static class WarmupCharts
         bool sensLine = steps.Any(s => s.Shifted);
         if (sensLine)
         {
-            Legend("SENSITIVITY (RIGHT AXIS)", ShiftCol, true);
-            Legend("YOUR SENS", RealCol, false);
-            Legend("SHIFTED SENS", new Color(ShiftCol, 0.75f), false);
+            Legend(L.N("SENSITIVITY (RIGHT AXIS)"), ShiftCol, true);
+            Legend(L.N("YOUR SENS"), RealCol, false);
+            Legend(L.N("SHIFTED SENS"), new Color(ShiftCol, 0.75f), false);
         }
         else
         {
-            if (steps.Any(s => s.Adaptive)) Legend("ADAPTIVE: LEVEL HELD", PhaseColor(Phase.Calibration), false);
-            Legend("% OF YOUR USUAL", RealCol, false);
+            if (steps.Any(s => s.Adaptive)) Legend(L.N("ADAPTIVE: LEVEL HELD"), PhaseColor(Phase.Calibration), false);
+            Legend(L.N("% OF YOUR USUAL"), RealCol, false);
         }
 
         // grid + left axis
@@ -245,7 +246,7 @@ public static class WarmupCharts
             c.DrawRect(new Rect2(X(bandA), top - 14 * k, X(bandB) - X(bandA), bottom - top + 14 * k), new Color(ShiftCol, 0.07f));
             var first = steps.First(s => s.Shifted);
             var last = steps.Last(s => s.Shifted);
-            Gfx.TextFit(c, UiTheme.HudWide, $"SENS SHIFT {first.OffsetPct:+0;-0}% → {last.OffsetPct:+0;-0}%", X(bandA) + 8 * k, top - 22 * k + ls, ls,
+            Gfx.TextFit(c, UiTheme.HudWide, L.F($"SENS SHIFT {first.OffsetPct:+0;-0}% → {last.OffsetPct:+0;-0}%"), X(bandA) + 8 * k, top - 22 * k + ls, ls,
                 ShiftCol, X(bandB) - X(bandA) - 12 * k);
         }
 
@@ -300,7 +301,7 @@ public static class WarmupCharts
                 {
                     Gfx.TextC(c, UiTheme.HudWide, "LEVEL", cx, my + 2 * k, UiTheme.Fs(10, k), UiTheme.Dim);
                     Gfx.TextC(c, UiTheme.Display, s.Level.ToString("0.0", Inv), cx, my + 2 * k + vs + 4 * k, vs, UiTheme.Text);
-                    if (s.HitRate >= 0) Gfx.TextC(c, UiTheme.Body, $"{s.HitRate * 100:0}% hits", cx, my + 2 * k + vs * 2 + 8 * k, UiTheme.Fs(11, k), UiTheme.Dim);
+                    if (s.HitRate >= 0) Gfx.TextC(c, UiTheme.Body, L.F($"{s.HitRate * 100:0}% hits"), cx, my + 2 * k + vs * 2 + 8 * k, UiTheme.Fs(11, k), UiTheme.Dim);
                 }
             }
             else

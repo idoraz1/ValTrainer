@@ -100,6 +100,44 @@ public static class AgentArt
     }
 }
 
+/// <summary>
+/// Display words of the Agents screens, translated: role names (the <see cref="AgentRole"/> enum and its English name stay
+/// the keys for logic and search) and drill titles. Agent and ability names stay English (VALORANT's own names).
+/// </summary>
+public static class AgentText
+{
+    /// <summary>"Duelist".</summary>
+    public static string Role(AgentRole r) => L.T(r switch
+    {
+        AgentRole.Duelist => L.N("Duelist"), AgentRole.Initiator => L.N("Initiator"), AgentRole.Controller => L.N("Controller"), _ => L.N("Sentinel"),
+    });
+
+    /// <summary>"Duelists" (roster headers and role cards, upper-cased there).</summary>
+    public static string Roles(AgentRole r) => L.T(r switch
+    {
+        AgentRole.Duelist => L.N("Duelists"), AgentRole.Initiator => L.N("Initiators"), AgentRole.Controller => L.N("Controllers"), _ => L.N("Sentinels"),
+    });
+
+    /// <summary>"duelist", inside sentences ("6 duelist drills").</summary>
+    public static string RoleLower(AgentRole r) => L.T(r switch
+    {
+        AgentRole.Duelist => L.N("duelist"), AgentRole.Initiator => L.N("initiator"), AgentRole.Controller => L.N("controller"), _ => L.N("sentinel"),
+    });
+
+    /// <summary>"duelists", inside sentences ("Only duelists").</summary>
+    public static string RolesLower(AgentRole r) => L.T(r switch
+    {
+        AgentRole.Duelist => L.N("duelists"), AgentRole.Initiator => L.N("initiators"), AgentRole.Controller => L.N("controllers"), _ => L.N("sentinels"),
+    });
+
+    /// <summary>A drill's translated name (the same as its drill card's DisplayName).</summary>
+    public static string Drill(string key) => L.T(AgentDrills.Name(key));
+
+    /// <summary><see cref="AgentDrills.Title"/> translated: "Chamber Guns · Tour De Force" (the gun keeps its name), else the drill's name.</summary>
+    public static string DrillTitle(string key) =>
+        AgentDrills.Base(key) == "chamber" && AgentDrills.Arg(key).Length > 0 ? $"{Drill(key)} · {AgentRoster.ArgName(AgentDrills.Arg(key))}" : Drill(key);
+}
+
 /// <summary>One agent in the roster: badge, name and a diamond per signature drill.</summary>
 public partial class AgentTile : BaseButton
 {
@@ -114,7 +152,7 @@ public partial class AgentTile : BaseButton
         Agent = a;
         FocusMode = FocusModeEnum.None;
         MouseDefaultCursorShape = CursorShape.PointingHand;
-        TooltipText = $"{a.Name} · {a.Role}\n{a.Summary}";
+        TooltipText = $"{a.Name} · {AgentText.Role(a.Role)}\n{L.T(a.Summary)}";
     }
 
     public override void _Ready()
@@ -178,10 +216,10 @@ public partial class RoleHeader : Control
         var col = AgentArt.RoleColor(Role);
         AgentArt.RoleGlyph(this, new Vector2(8 * k, cy), 7.5f * k, Role, col);
         int fs = UiTheme.Fs(14, k), ns = UiTheme.Fs(13, k);
-        string t = Role.ToString().ToUpperInvariant() + "S";
+        string t = L.Upper(AgentText.Roles(Role));
         float w = Gfx.TextW(UiTheme.HudWide, t, fs);
         Gfx.Text(this, UiTheme.HudWide, t, 24 * k, Gfx.Mid(cy, fs), fs, UiTheme.Dim);
-        string note = Shown >= 0 && Shown < Count ? $"{Shown} of {Count} agents" : Count == 1 ? "1 agent" : $"{Count} agents";
+        string note = Shown >= 0 && Shown < Count ? L.F($"{Shown} of {Count} agents") : L.P(Count, $"{Count} agent", $"{Count} agents");
         float nw = Gfx.TextR(this, UiTheme.Body, note, Size.X, Gfx.Mid(cy, ns), ns, UiTheme.Faint);
         float x0 = 24 * k + w + 14 * k, x1 = Size.X - nw - 14 * k;
         if (x1 > x0) DrawRect(new Rect2(x0, cy, x1 - x0, 1), new Color(UiTheme.Text, 0.08f));
@@ -201,8 +239,12 @@ public partial class RoleChip : BaseButton
         Role = role;
         FocusMode = FocusModeEnum.None;
         MouseDefaultCursorShape = CursorShape.PointingHand;
-        TooltipText = role == null ? "Every agent" : $"Only {role.Value.ToString().ToLowerInvariant()}s";
+        TooltipText = role == null ? L.T("Every agent") : L.F($"Only {AgentText.RolesLower(role.Value)}");
     }
+
+    /// <summary>The ALL chip grows to fit its translated word (English keeps the designed size).</summary>
+    public override Vector2 _GetMinimumSize() =>
+        Role != null || L.IsEnglish ? Vector2.Zero : new Vector2(Mathf.Ceil(Gfx.TextW(UiTheme.Display, "ALL", UiTheme.Fs(17, K)) + 16 * K), 0);
 
     public override void _Ready()
     {
@@ -260,11 +302,12 @@ public partial class AbilityCard : Control
     {
         agent = a;
         ability = ab;
-        drills = trainedBy.Select(k => (AgentDrills.Title(k), signature.Contains(k))).ToList();
+        drills = trainedBy.Select(k => (AgentText.DrillTitle(k), signature.Contains(k))).ToList(); // translated (the screen rebuilds on a language change)
         MouseFilter = MouseFilterEnum.Pass;
-        string slot = ab.Slot.Length > 0 ? $"[{ab.Slot}] " : "[passive] ";
-        TooltipText = $"{slot}{ab.Name}\n{ab.Summary}\n" +
-                      (drills.Count > 0 ? "Trained by: " + string.Join(", ", drills.Select(d => d.Name)) : "No drill trains this one yet: practise it in VALORANT.");
+        string slot = ab.Slot.Length > 0 ? $"[{ab.Slot}] " : $"[{L.T("passive")}] ";
+        string names = string.Join(", ", drills.Select(d => d.Name));
+        TooltipText = $"{slot}{ab.Name}\n{L.T(ab.Summary)}\n" +
+                      (drills.Count > 0 ? L.F($"Trained by: {names}") : L.T("No drill trains this one yet: practise it in VALORANT."));
     }
 
     public override void _Draw()
@@ -304,7 +347,7 @@ public partial class AbilityCard : Control
         float by = r.Size.Y - pad - Math.Max(1, Math.Min(2, drills.Count)) * lineH;
         float sy = below + 16 * k;
         int lines = Math.Clamp((int)((by - 6 * k - ls - 6 * k - sy) / (UiTheme.Body.GetHeight(ds))), 1, 3);
-        DrawMultilineString(UiTheme.Body, new Vector2(pad, sy + UiTheme.Body.GetAscent(ds)), ability.Summary, HorizontalAlignment.Left, r.Size.X - pad * 2, ds, lines, UiTheme.Dim);
+        DrawMultilineString(UiTheme.Body, new Vector2(pad, sy + UiTheme.Body.GetAscent(ds)), L.T(ability.Summary), HorizontalAlignment.Left, r.Size.X - pad * 2, ds, lines, UiTheme.Dim);
         Gfx.Text(this, UiTheme.HudWide, "TRAINED BY", pad, by - 6 * k, ls, UiTheme.Faint);
         if (!trained)
         {
@@ -340,7 +383,7 @@ public partial class RoleCard : BaseButton
         this.withSignature = withSignature;
         FocusMode = FocusModeEnum.None;
         MouseDefaultCursorShape = CursorShape.PointingHand;
-        TooltipText = $"Show only the {role.ToString().ToLowerInvariant()}s";
+        TooltipText = L.F($"Show only the {AgentText.RolesLower(role)}");
     }
 
     public override void _Ready()
@@ -367,15 +410,16 @@ public partial class RoleCard : BaseButton
 
         AgentArt.RoleGlyph(this, new Vector2(pad + 26 * k, pad + 26 * k), 24 * k, role, col);
         int ts = UiTheme.Fs(40, k);
-        Gfx.Text(this, UiTheme.Display, role.ToString().ToUpperInvariant() + "S", pad + 66 * k, Gfx.Mid(pad + 26 * k, ts), ts, UiTheme.Text);
+        Gfx.TextFit(this, UiTheme.Display, L.Upper(AgentText.Roles(role)), pad + 66 * k, Gfx.Mid(pad + 26 * k, ts), ts, UiTheme.Text, r.Size.X - pad * 2 - 66 * k);
         int cs = UiTheme.Fs(12, k);
-        string count = $"{agents} AGENTS · {withSignature} WITH SIGNATURE DRILLS";
+        string count = L.F($"{agents} AGENTS · {withSignature} WITH SIGNATURE DRILLS");
         Gfx.TextFit(this, UiTheme.HudWide, count, pad + 66 * k, pad + 62 * k, cs, col, r.Size.X - pad * 2 - 66 * k);
 
         int ss = UiTheme.Fs(16, k);
         float w = r.Size.X - pad * 2, y = pad + 88 * k;
-        DrawMultilineString(UiTheme.Body, new Vector2(pad, y + UiTheme.Body.GetAscent(ss)), AgentRoles.Summary(role), HorizontalAlignment.Left, w, ss, 2, UiTheme.Text);
-        y += UiTheme.Body.GetMultilineStringSize(AgentRoles.Summary(role), HorizontalAlignment.Left, w, ss, 2).Y + 18 * k;
+        string summary = L.T(AgentRoles.Summary(role));
+        DrawMultilineString(UiTheme.Body, new Vector2(pad, y + UiTheme.Body.GetAscent(ss)), summary, HorizontalAlignment.Left, w, ss, 2, UiTheme.Text);
+        y += UiTheme.Body.GetMultilineStringSize(summary, HorizontalAlignment.Left, w, ss, 2).Y + 18 * k;
         int ls = UiTheme.Fs(11, k), ds = UiTheme.Fs(14, k);
         foreach (var (label, text) in sections)
         {
@@ -399,7 +443,7 @@ public partial class AgentsLinkCard : BaseButton
     {
         FocusMode = FocusModeEnum.None;
         MouseDefaultCursorShape = CursorShape.PointingHand;
-        TooltipText = $"Agent training: abilities, signature drills, role drills and a Lock-In for each of the {AgentRoster.All.Length} agents";
+        TooltipText = L.F($"Agent training: abilities, signature drills, role drills and a Lock-In for each of the {AgentRoster.All.Length} agents");
     }
 
     public override void _Ready()
@@ -433,7 +477,7 @@ public partial class AgentsLinkCard : BaseButton
         int ns = UiTheme.Fs(23, k);
         Gfx.TextFit(this, UiTheme.Display, "AGENT TRAINING", pad, Gfx.Mid(24 * k, ns), ns, UiTheme.Text, gx - pad);
         int ds = UiTheme.Fs(13.5f, k);
-        string d = $"All {AgentRoster.All.Length} agents: signature drills with their own utility, role drills and a 10-minute Lock-In.";
+        string d = L.F($"All {AgentRoster.All.Length} agents: signature drills with their own utility, role drills and a 10-minute Lock-In.");
         if (TwoLines)
             DrawMultilineString(UiTheme.Body, new Vector2(pad, 42 * k + UiTheme.Body.GetAscent(ds)), d, HorizontalAlignment.Left, r.Size.X - pad * 2, ds, 2, UiTheme.Dim);
         else
@@ -476,13 +520,13 @@ public partial class RoutineList : Control
             float x = 30 * k;
             if (sig) { Gfx.Diamond(this, new Vector2(x + 4 * k, cy), 4 * k, 5 * k, sigCol); x += 14 * k; }
             var (sens, tagCol) = s.Shifted ? ($"{s.OffsetPct:+0;-0}%", Warmup.WarmupCharts.ShiftCol)
-                : s.Adaptive ? ("ADAPTIVE", Warmup.WarmupCharts.PhaseColor(Warmup.Phase.Calibration))
-                : s.Easier ? ("EASY", Warmup.WarmupCharts.PhaseColor(Warmup.Phase.Activation))
-                : s.EaseLast > 0 ? ("EASIER END", UiTheme.Good) : ("", UiTheme.Dim);
+                : s.Adaptive ? (L.N("ADAPTIVE"), Warmup.WarmupCharts.PhaseColor(Warmup.Phase.Calibration))
+                : s.Easier ? (L.N("EASY"), Warmup.WarmupCharts.PhaseColor(Warmup.Phase.Activation))
+                : s.EaseLast > 0 ? (L.N("EASIER END"), UiTheme.Good) : ("", UiTheme.Dim);
             float right = w - 6 * k;
             float tw = Gfx.TextR(this, UiTheme.HudWide, Warmup.WarmupPlan.Clock(s.Seconds), right, Gfx.Mid(cy, ls), ls, UiTheme.Dim);
             float sw = sens.Length > 0 ? Gfx.TextR(this, UiTheme.HudWide, sens, right - tw - 12 * k, Gfx.Mid(cy, ls), ls, tagCol) + 12 * k : 0;
-            Gfx.TextFit(this, UiTheme.Body, AgentDrills.Title(s.Mode), x, Gfx.Mid(cy, fs), fs, sig ? sigCol : UiTheme.Text, right - tw - sw - 14 * k - x);
+            Gfx.TextFit(this, UiTheme.Body, AgentText.DrillTitle(s.Mode), x, Gfx.Mid(cy, fs), fs, sig ? sigCol : UiTheme.Text, right - tw - sw - 14 * k - x);
         }
     }
 }

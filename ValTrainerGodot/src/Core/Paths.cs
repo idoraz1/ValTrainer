@@ -22,6 +22,11 @@ public static class Paths
     /// <summary>Set when the normal data folder couldn't be created and a fallback is used (or nothing worked).</summary>
     public static string? DataDirProblem { get; private set; }
 
+    /// <summary><see cref="DataDirProblem"/> in the UI language, for display (DataDirProblem stays English: logs and bug
+    /// reports). Null when there's no problem.</summary>
+    public static string? DataDirProblemText => DataDirProblem == null ? null : problemUi?.Invoke() ?? DataDirProblem;
+    static Func<string>? problemUi;
+
     /// <summary>The last failed save (settings, stats or telemetry), for the UI; null when the last save worked.</summary>
     public static string? LastWriteError { get; private set; }
 
@@ -32,7 +37,11 @@ public static class Paths
         {
             DataDirOverridden = true;
             var full = Path.GetFullPath(over);
-            if (!TryCreate(full, out var err)) DataDirProblem = $"Can't create {full}: {err}";
+            if (!TryCreate(full, out var err))
+            {
+                DataDirProblem = $"Can't create {full}: {err}";
+                problemUi = () => L.F($"Can't create {full}: {err}");
+            }
             return full;
         }
 
@@ -55,14 +64,18 @@ public static class Paths
             {
                 if (dir != candidates[0])
                 {
-                    DataDirProblem = $"Couldn't use {candidates[0]} ({firstErr}); saving to {dir} instead";
+                    string first = candidates[0], why = firstErr ?? "";
+                    DataDirProblem = $"Couldn't use {first} ({firstErr}); saving to {dir} instead";
+                    problemUi = () => L.F($"Couldn't use {first} ({why}); saving to {dir} instead");
                     Log.Error(DataDirProblem);
                 }
                 return dir;
             }
             firstErr ??= err;
         }
+        string err0 = firstErr ?? "";
         DataDirProblem = $"No writable data folder ({firstErr}); settings and stats won't be saved";
+        problemUi = () => L.F($"No writable data folder ({err0}); settings and stats won't be saved");
         Log.Error(DataDirProblem);
         return candidates.Count > 0 ? candidates[0] : Path.Combine(Path.GetTempPath(), "ValTrainer");
     }
@@ -121,6 +134,7 @@ public static class Paths
     internal static void SetDataDirForTests(string? dir)
     {
         DataDirProblem = null;
+        problemUi = null;
         LastWriteError = null;
         dataDir = dir;
         if (dir != null) TryCreate(dir, out _);

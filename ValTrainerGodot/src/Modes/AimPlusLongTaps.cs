@@ -17,9 +17,9 @@ public sealed class LongTapsMode : BotMode
 {
     public override string Key => "longtaps";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.NoShotguns;
-    public override string Name => "Long-range Taps";
-    public override string Description => "Tiny heads at 30–50 m with the Vandal: make the first bullet count, then let the recoil reset before the next tap. Higher tiers add strafers and peekers.";
-    public override string Category => "Valorant";
+    public override string Name => L.N("Long-range Taps");
+    public override string Description => L.N("Tiny heads at 30–50 m with the Vandal: make the first bullet count, then let the recoil reset before the next tap. Higher tiers add strafers and peekers.");
+    public override string Category => L.N("Valorant");
     /// <summary>The simulated player clicks precisely on still heads ("static") but pursues moving ones ("bot");
     /// Elite and Pro are mostly strafers and peekers.</summary>
     public override string SimKind => Tier >= 3 ? "bot" : "static";
@@ -230,7 +230,7 @@ public sealed class LongTapsMode : BotMode
             if (tooFast)
             {
                 wastedKills++;
-                G.Banner("TOO FAST — NO POINTS", UiTheme.Warn);
+                G.Banner(L.N("TOO FAST — NO POINTS"), UiTheme.Warn);
             }
             else Score += (zone == HitZone.Head ? 150 : 80) + (int)Mathf.Max(0, (2500 - KillTimes[^1]) / 20) + (firstBullet && zone == HitZone.Head ? 25 : 0);
             bot = null; // death animation, then it frees itself
@@ -243,23 +243,25 @@ public sealed class LongTapsMode : BotMode
     int Resolved => Kills + escaped;
 
     public override string? Prompt =>
-        Now < tooFastUntil ? $"Too fast — let the recoil reset (≈ {Recovery * 1000:0} ms between taps)"
-        : Shots == 0 ? "Tap the head once, then wait for the recoil to reset before the next tap" : null;
+        Now < tooFastUntil ? L.F($"Too fast — let the recoil reset (≈ {Recovery * 1000:0} ms between taps)")
+        : Shots == 0 ? L.N("Tap the head once, then wait for the recoil to reset before the next tap") : null;
 
     public override IEnumerable<string> HudLines()
     {
-        if (Alive(bot)) yield return $"Distance {dist:0} m";
-        if (taps > 0) yield return $"Tap discipline {Discipline * 100:0}%";
-        if (firstShots > 0) yield return $"First-bullet heads {firstHeads} / {firstShots}";
+        if (Alive(bot)) yield return L.F($"Distance {dist:0} m");
+        if (taps > 0) yield return L.F($"Tap discipline {Discipline * 100:0}%");
+        if (firstShots > 0) yield return L.F($"First-bullet heads {firstHeads} / {firstShots}");
     }
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Kills", Resolved == 0 ? "—" : $"{Kills} / {Resolved} agents  ·  {headKills} headshots");
-        yield return ("First-bullet headshots", firstShots == 0 ? "—" : $"{100f * firstHeads / firstShots:0}%  ({firstHeads}/{firstShots})");
-        yield return ("Tap discipline", taps == 0 ? "—" : $"{Discipline * 100:0}%  ({taps - disciplined} too fast" + (wastedKills > 0 ? $", {wastedKills} kills wasted)" : ")"));
-        yield return ("Median time to kill", KillTimes.Count > 0 ? $"{Median(KillTimes):0} ms" : "—");
-        yield return ("Accuracy", $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})  ·  {escaped} escaped");
+        yield return (L.N("Kills"), Resolved == 0 ? "—" : L.F($"{Kills} / {Resolved} agents  ·  {headKills} headshots"));
+        yield return (L.N("First-bullet headshots"), firstShots == 0 ? "—" : $"{100f * firstHeads / firstShots:0}%  ({firstHeads}/{firstShots})");
+        yield return (L.N("Tap discipline"), taps == 0 ? "—" : wastedKills > 0
+            ? L.F($"{Discipline * 100:0}%  ({taps - disciplined} too fast, {wastedKills} kills wasted)")
+            : L.F($"{Discipline * 100:0}%  ({taps - disciplined} too fast)"));
+        yield return (L.N("Median time to kill"), KillTimes.Count > 0 ? L.F($"{Median(KillTimes):0} ms") : "—");
+        yield return (L.N("Accuracy"), L.F($"{Accuracy * 100:0.0}%  ({Hits}/{Shots})  ·  {escaped} escaped"));
     }
 
     /// <summary>Median time from first sight to the kill (needs ≥ 60% kills of 5+ agents); poor tap discipline costs

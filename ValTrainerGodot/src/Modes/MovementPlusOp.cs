@@ -300,7 +300,7 @@ public sealed class OpBotBrain
 /// </summary>
 public abstract class OpAngleMode : MovementMode
 {
-    public override string Category => "Movement";
+    public override string Category => L.N("Movement");
     public override float Duration => 90f;
     public override string SimKind => "bot";
     public override Vector3 StartFeet => new(-0.7f, 0, 1.0f);
@@ -333,6 +333,8 @@ public abstract class OpAngleMode : MovementMode
     protected BotCharacter? Bot;
     protected OpBotBrain? Op;
     protected string SpotName = "";
+    /// <summary>The Op's spot for the HUD and banners: translated, upper-cased (<see cref="SpotName"/> stays English).</summary>
+    protected string SpotLabel => L.Upper(L.T(SpotName));
     protected float RoundT, Between = -1f;
     protected int Rounds;
     protected float DamageTaken;
@@ -481,7 +483,7 @@ public abstract class OpAngleMode : MovementMode
     {
         Deaths++;
         Event("round_lost");
-        G.Banner("YOU DIED — the Op saw too much of you", UiTheme.Accent);
+        G.Banner(L.N("YOU DIED — the Op saw too much of you"), UiTheme.Accent);
         if (Bot != null) { var b = Bot; b.GetTree().CreateTimer(0.8).Timeout += () => G.Despawn(b); }
         Bot = null; Op = null;
         EndRound(1.4f);
@@ -525,8 +527,8 @@ public abstract class OpAngleMode : MovementMode
         c.DrawColoredPolygon(new[] { s + new Vector2(0, -r), s + new Vector2(r, 0), s + new Vector2(0, r), s + new Vector2(-r, 0) }, col);
         c.DrawPolyline(new[] { s + new Vector2(0, -r), s + new Vector2(r, 0), s + new Vector2(0, r), s + new Vector2(-r, 0), s + new Vector2(0, -r) },
             new Color(1, 1, 1, 0.9f * a), 2f * k);
-        var label = $"OP · {SpotName.ToUpperInvariant()} · {d.Length():0} M";
-        c.DrawString(UiTheme.HudWide, s + new Vector2(-Gfx.TextW(UiTheme.HudWide, label, UiTheme.Fs(14, k)) / 2f, -r - 8 * k), label,
+        var label = L.F($"OP · {SpotLabel} · {d.Length():0} M");
+        c.DrawString(UiTheme.HudWide, s + new Vector2(-Gfx.RawW(UiTheme.HudWide, label, UiTheme.Fs(14, k)) / 2f, -r - 8 * k), label,
             HorizontalAlignment.Left, -1, UiTheme.Fs(14, k), new Color(1, 1, 1, a));
     }
 

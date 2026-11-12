@@ -52,6 +52,7 @@ public partial class GameSession
             cam.AddChild(viewmodel);
             Gun!.Fired += () => viewmodel?.OnFire();
         }
+        SkinEquip(def); // the gun's skin: kill effects, sound layers, equip sound (SkinSession.cs)
     }
 
     public void SwitchWeapon(WeaponKind kind)

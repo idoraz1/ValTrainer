@@ -1,4 +1,5 @@
 using Godot;
+using ValTrainer.Core;
 
 namespace ValTrainer.Modes;
 
@@ -22,35 +23,35 @@ public sealed record InitiatorAbility(
     public static readonly InitiatorAbility[] All =
     {
         new("phoenix", "Phoenix", "Curveball", AbilitySlot.E, UtilKind.Curveball, 2, 0.8f, 0.78f, Color.Color8(255, 150, 50),
-            "LMB: curve left", "RMB: curve right",
-            "Bends left (LMB) or right (RMB) and pops 0.6 s after it leaves your hand. Throw it around the corner, not at your own screen."),
+            L.N("LMB: curve left"), L.N("RMB: curve right"),
+            L.N("Bends left (LMB) or right (RMB) and pops 0.6 s after it leaves your hand.") + " " + L.N("Throw it around the corner, not at your own screen.")),
         new("skye", "Skye", "Guiding Light", AbilitySlot.E, UtilKind.GuidingLight, 2, 0.8f, 1.15f, Color.Color8(120, 230, 120),
-            "LMB: send the hawk · hold to steer", null,
-            "LMB sends the hawk; keep LMB held to steer it with your crosshair. Press the key again to pop it — a longer flight blinds longer."),
+            L.N("LMB: send the hawk · hold to steer"), null,
+            L.N("LMB sends the hawk; keep LMB held to steer it with your crosshair.") + " " + L.N("Press the key again to pop it — a longer flight blinds longer.")),
         new("yoru", "Yoru", "Blindside", AbilitySlot.Q, UtilKind.Blindside, 1, 0.8f, 0.8f, Color.Color8(90, 140, 255),
-            "LMB: throw at a wall", null,
-            "The shard only arms when it hits a surface: it bounces off and pops 0.6 s later. Bank it off a wall into the site."),
+            L.N("LMB: throw at a wall"), null,
+            L.N("The shard only arms when it hits a surface: it bounces off and pops 0.6 s later.") + " " + L.N("Bank it off a wall into the site.")),
         new("kayo", "KAY/O", "FLASH/drive", AbilitySlot.Q, UtilKind.FlashDrive, 2, 0.8f, 0.9f, Color.Color8(90, 220, 255),
-            "LMB: overhand", "RMB: underhand",
-            "LMB: overhand — pops 1.6 s after the throw, or 0.8 s after its first bounce. RMB: underhand lob — pops after 1 s."),
+            L.N("LMB: overhand"), L.N("RMB: underhand"),
+            L.N("LMB: overhand — pops 1.6 s after the throw, or 0.8 s after its first bounce.") + " " + L.N("RMB: underhand lob — pops after 1 s.")),
         new("breach", "Breach", "Flashpoint", AbilitySlot.Q, UtilKind.Flashpoint, 2, 1.1f, 0.8f, Color.Color8(255, 190, 60),
-            "LMB: fire into a wall", null,
-            "Aim at a wall up to 35 m away and up to 10 m thick, then fire. The charge bursts out of the far side 0.5 s later."),
+            L.N("LMB: fire into a wall"), null,
+            L.N("Aim at a wall up to 35 m away and up to 10 m thick, then fire.") + " " + L.N("The charge bursts out of the far side 0.5 s later.")),
         new("gekko", "Gekko", "Dizzy", AbilitySlot.E, UtilKind.Dizzy, 1, 0.9f, 1.15f, Color.Color8(29, 199, 254),
-            "LMB: send Dizzy", null,
-            "Dizzy flies forward, charges, then spits plasma at every enemy she can see within 45 m. A hit blinds them. Enemies can shoot her first."),
+            L.N("LMB: send Dizzy"), null,
+            L.N("Dizzy flies forward, charges, then spits plasma at every enemy she can see within 45 m.") + " " + L.N("A hit blinds them.") + " " + L.N("Enemies can shoot her first.")),
         new("reyna", "Reyna", "Leer", AbilitySlot.C, UtilKind.Leer, 2, 0.77f, 0.5f, Color.Color8(200, 90, 255),
-            "LMB: cast the eye", null,
-            "The eye drifts 10 m forward, straight through walls. Anyone who looks at it can only see 6 m. It has 60 HP — they will shoot it."),
+            L.N("LMB: cast the eye"), null,
+            L.N("The eye drifts 10 m forward, straight through walls.") + " " + L.N("Anyone who looks at it can only see 6 m.") + " " + L.N("It has 60 HP — they will shoot it.")),
         new("omen", "Omen", "Paranoia", AbilitySlot.Q, UtilKind.Paranoia, 1, 1.1f, 1.0f, Color.Color8(120, 90, 210),
-            "LMB: fire the shadow", null,
-            "A shadow flies 25 m straight ahead, through walls. Everyone it touches can only see 7.5 m for 2 s."),
+            L.N("LMB: fire the shadow"), null,
+            L.N("A shadow flies 25 m straight ahead, through walls.") + " " + L.N("Everyone it touches can only see 7.5 m for 2 s.")),
         new("sova", "Sova", "Recon Bolt", AbilitySlot.E, UtilKind.ReconBolt, 1, 0.8f, 0.9f, Color.Color8(80, 200, 255),
-            "Hold LMB: charge · release: shoot", "RMB: add a bounce",
-            "Hold LMB to charge (3 bars = farther), RMB adds a bounce (0–2). Where the bolt sticks it scans twice and reveals the enemies it can see."),
+            L.N("Hold LMB: charge · release: shoot"), L.N("RMB: add a bounce"),
+            L.N("Hold LMB to charge (3 bars = farther), RMB adds a bounce (0–2).") + " " + L.N("Where the bolt sticks it scans twice and reveals the enemies it can see.")),
         new("fade", "Fade", "Haunt", AbilitySlot.E, UtilKind.Haunt, 1, 0.85f, 0.9f, Color.Color8(70, 200, 190),
-            "LMB: throw the watcher", null,
-            "The watcher flies 1.5 s, then drops (press the key again to drop it early). When it lands it reveals the enemies it can see and leaves a trail to them."),
+            L.N("LMB: throw the watcher"), null,
+            L.N("The watcher flies 1.5 s, then drops (press the key again to drop it early).") + " " + L.N("When it lands it reveals the enemies it can see and leaves a trail to them.")),
     };
 
     public static InitiatorAbility For(string agent, InitiatorAbility fallback) =>

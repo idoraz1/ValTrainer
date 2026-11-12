@@ -171,12 +171,13 @@ public static class WarmupScore
 
     public static bool LowerBetter(string mode) => Def(mode) == Kind.Ttk;
 
+    /// <summary>The metric's name: English (also logged), translated where shown.</summary>
     public static string Label(string mode) => Def(mode) switch
     {
-        Kind.Ttk => mode == "reaction" ? "reaction" : "time to kill",
-        Kind.OnTarget => "on target",
-        Kind.KillsPerMin => "kills / min",
-        _ => "score / min",
+        Kind.Ttk => mode == "reaction" ? L.N("reaction") : L.N("time to kill"),
+        Kind.OnTarget => L.N("on target"),
+        Kind.KillsPerMin => L.N("kills / min"),
+        _ => L.N("score / min"),
     };
 
     public static string Format(string mode, float v)
@@ -236,12 +237,13 @@ public static class WarmupScore
         return 100f * (LowerBetter(mode) ? baseline / value : value / baseline);
     }
 
+    /// <summary>English, translated where shown.</summary>
     public static string BaselineText(string kind) => kind switch
     {
-        "7d" => "your 7-day average",
-        "recent" => "your recent average",
-        "today" => "your first run of it today",
-        _ => "no history yet",
+        "7d" => L.N("your 7-day average"),
+        "recent" => L.N("your recent average"),
+        "today" => L.N("your first run of it today"),
+        _ => L.N("no history yet"),
     };
 
     // ---------------- Lock-In ----------------
@@ -249,6 +251,10 @@ public static class WarmupScore
     /// <summary>An adaptive level as "2.4 · Veteran+" ("—" when unknown).</summary>
     public static string LevelText(float level) =>
         level < 0 ? "—" : $"{level.ToString("0.0", CultureInfo.InvariantCulture)} · {Difficulty.LevelName(level)}";
+
+    /// <summary><see cref="LevelText"/> with the tier name in the UI language (LevelText stays English: logs).</summary>
+    public static string DisplayLevelText(float level) =>
+        level < 0 ? "—" : $"{level.ToString("0.0", CultureInfo.InvariantCulture)} · {Difficulty.DisplayLevelName(level)}";
 
     /// <summary>Mean adaptive level of this drill over the last <paramref name="n"/> Lock-In steps that had one (-1 = none).</summary>
     public static float PreviousLevel(string mode, IEnumerable<WarmupRecord> records, int n = 5)
@@ -261,15 +267,16 @@ public static class WarmupScore
     /// players): +1 above, 0 in, -1 below your usual range, -2 no comparison. Same ±6% band as <see cref="Verdict"/>.</summary>
     public static int VerdictDir(float readiness) => readiness < 0 ? -2 : readiness >= 106 ? 1 : readiness >= 94 ? 0 : -1;
 
-    /// <summary>The neutral verdict on the hand-off (never "cold"): above / in / below your usual range (±6%).</summary>
+    /// <summary>The neutral verdict on the hand-off (never "cold"): above / in / below your usual range (±6%). Display
+    /// text, in the UI language.</summary>
     public static (string Head, string Sub, Godot.Color Col) Verdict(float readiness, string kind)
     {
-        string usual = BaselineText(kind);
+        string usual = L.T(BaselineText(kind));
         var inv = CultureInfo.InvariantCulture;
-        if (readiness < 0) return ("NO COMPARISON YET", "Play these drills normally a few times and the next Lock-In compares you with your usual level.", UI.UiTheme.Text);
+        if (readiness < 0) return (L.T("NO COMPARISON YET"), L.T("Play these drills normally a few times and the next Lock-In compares you with your usual level."), UI.UiTheme.Text);
         string pct = readiness.ToString("0", inv);
-        if (readiness >= 106) return ("ABOVE YOUR USUAL RANGE", $"{pct}% of {usual}, over the drills you have history for.", UI.UiTheme.Good);
-        if (readiness >= 94) return ("IN YOUR USUAL RANGE", $"{pct}% of {usual}, over the drills you have history for.", UI.UiTheme.Teal);
-        return ("BELOW YOUR USUAL RANGE TODAY", $"{pct}% of {usual}. Warm-up scores vary a lot and say little about how your match will go.", UI.UiTheme.Text);
+        if (readiness >= 106) return (L.T("ABOVE YOUR USUAL RANGE"), L.F($"{pct}% of {usual}, over the drills you have history for."), UI.UiTheme.Good);
+        if (readiness >= 94) return (L.T("IN YOUR USUAL RANGE"), L.F($"{pct}% of {usual}, over the drills you have history for."), UI.UiTheme.Teal);
+        return (L.T("BELOW YOUR USUAL RANGE TODAY"), L.F($"{pct}% of {usual}. Warm-up scores vary a lot and say little about how your match will go."), UI.UiTheme.Text);
     }
 }

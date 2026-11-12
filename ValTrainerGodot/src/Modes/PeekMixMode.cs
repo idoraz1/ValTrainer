@@ -9,9 +9,9 @@ public sealed class PeekMixMode : BotMode
 {
     public override string Key => "peek_mix";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
-    public override string Name => "Mixed Peeks";
-    public override string Description => "Hold an angle against unpredictable peeks. Shoot a bait and it punishes you; hold fire and it commits.";
-    public override string Category => "Movement";
+    public override string Name => L.N("Mixed Peeks");
+    public override string Description => L.N("Hold an angle against unpredictable peeks. Shoot a bait and it punishes you; hold fire and it commits.");
+    public override string Category => L.N("Movement");
     public override string? MadeBy => "Widowrasko";
     public override string SimKind => "bot";
     public override float Duration => 120f;
@@ -29,7 +29,12 @@ public sealed class PeekMixMode : BotMode
 
     // Peek kinds (telemetry v3, peek_trial kind 0–7).
     const int KShort = 0, KWide = 1, KCrouch = 2, KDouble = 3, KJiggle = 4, KShoulder = 5, KShift = 6, KRepeek = 7;
-    static readonly string[] names = { "Short", "Wide", "Crouch", "Double", "Jiggle", "Shoulder", "Shift walk", "Repeek" };
+    /// <summary>The peek's name for the results (translated; "Short" has a context: alone it's the short Lock-In).</summary>
+    static string PeekName(int k) => k switch
+    {
+        KShort => L.C("peek", "Short"), KWide => L.T("Wide"), KCrouch => L.T("Crouch"), KDouble => L.T("Double"), KJiggle => L.T("Jiggle"),
+        KShoulder => L.T("Shoulder"), KShift => L.T("Shift walk"), _ => L.T("Repeek"),
+    };
     static readonly float[] timeouts = { 5f, 5f, 5f, 5f, 8f, 7f, 7f, 8f };
 
     // Difficulty (tier 0 Rookie … 4 Pro). The duel itself (reaction, accuracy) is BotBrain's tier skill; these set
@@ -424,19 +429,19 @@ public sealed class PeekMixMode : BotMode
         return distance;
     }
     public override void OnPlayerDied() { Deaths++; Finish(false, 3); }
-    public override string? Prompt => active ? null : "Hold either edge; the next peek is unpredictable";
+    public override string? Prompt => active ? null : L.N("Hold either edge; the next peek is unpredictable");
     public override IEnumerable<string> HudLines()
     {
-        yield return $"Won {wins.Sum()}/{attempts.Sum()} | lost {losses.Sum()}";
-        yield return $"HP {G.Player.Hp:0} + shield {G.Player.Shield:0}";
+        yield return L.F($"Won {wins.Sum()}/{attempts.Sum()} | lost {losses.Sum()}");
+        yield return L.F($"HP {G.Player.Hp:0} + shield {G.Player.Shield:0}");
     }
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
         for (int i = 0; i < 8; i++)
-            if (attempts[i] > 0) yield return (names[i], $"won {wins[i]}/{attempts[i]}, lost {losses[i]}, unfinished {attempts[i] - wins[i] - losses[i]}");
-        yield return ("Accuracy", $"{Hits}/{Shots} ({Accuracy * 100:0.0}%)");
-        yield return ("Visible head to first hit", firstHitMs.Count > 0 ? $"{Median(firstHitMs):0} ms median ({firstHitMs.Count} hit targets only)" : "No hits");
-        yield return ("Kill to next first hit", transferMs.Count > 0 ? $"{Median(transferMs):0} ms median ({transferMs.Count} transfers)" : "No transfers");
+            if (attempts[i] > 0) yield return (PeekName(i), L.F($"won {wins[i]}/{attempts[i]}, lost {losses[i]}, unfinished {attempts[i] - wins[i] - losses[i]}"));
+        yield return (L.N("Accuracy"), $"{Hits}/{Shots} ({Accuracy * 100:0.0}%)");
+        yield return (L.N("Visible head to first hit"), firstHitMs.Count > 0 ? L.F($"{Median(firstHitMs):0} ms median ({firstHitMs.Count} hit targets only)") : L.T("No hits"));
+        yield return (L.N("Kill to next first hit"), transferMs.Count > 0 ? L.F($"{Median(transferMs):0} ms median ({transferMs.Count} transfers)") : L.T("No transfers"));
     }
     public override int Badge()
     {

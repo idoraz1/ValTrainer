@@ -100,6 +100,11 @@ public static class CoachCli
             sw.Stop();
             P();
             P(F($"##### PROFILE from {prof.RunsAnalyzed} runs (built in {sw.ElapsedMilliseconds} ms): overall {(prof.OverallTier < 0 ? "unrated" : $"{prof.OverallTier:0.00} {Coach.RankName(prof.OverallTier)}")}, evidence {prof.OverallConfidence:0.00}"));
+            if (prof.OverallTier >= 0)
+            {
+                float u = Bench.RangeHalfWidth(prof.OverallConfidence);
+                P(F($"  likely range: {Div(prof.OverallTier - u)} - {Div(prof.OverallTier + u)} (±{u:0.00}), most likely {Div(prof.OverallTier)}; data {Bench.DataAmount(prof.OverallConfidence)}"));
+            }
             foreach (var s in prof.Skills)
                 P(F($"  {Coach.SkillName(s.Skill),-30} tier {s.Tier,5:0.00} conf {s.Confidence:0.00} n={s.Samples,-5} {s.Headline}"));
             if (args.Contains("--explain"))
@@ -117,12 +122,30 @@ public static class CoachCli
             foreach (var s in prof.Strengths) P("    + " + s);
             if (prof.Sens is { } a)
                 P(F($"  sens: {a.Direction} {a.CurrentSens:0.000} -> {a.RecommendedSens:0.000} ({a.CurrentCm360:0.0} -> {a.RecommendedCm360:0.0} cm/360) conf {a.Confidence:0.00}: {a.Reason}"));
+            // --actual-rank G2: the gap view and the anonymous calibration line, as the coach screen shows / copies them.
+            int ai = Array.IndexOf(args, "--actual-rank");
+            int actual = ai >= 0 && ai + 1 < args.Length ? ActualRank.Parse(args[ai + 1]) ?? ActualRank.None : ActualRank.None;
+            if (actual >= 0)
+            {
+                if (CoachCalibration.Gap(prof, actual) is { } gap)
+                    P(F($"  actual rank {ActualRank.Code(actual)} (tier {ActualRank.Tier(actual):0.00}): gap {gap.Tiers:+0.00;-0.00} = {gap.Divisions} div · {CoachCalibration.Headline(gap)} · {CoachCalibration.Advice(gap)}"));
+                P("  calibration line: " + CoachCalibration.Line(prof, actual, DateTime.Today));
+            }
             // Raw sens signals for debugging (ignores the session / cool-down guardrails).
             var agg = Agg.Aggregate(store.Runs.Select(r => (r.When, r.Metrics!)), DateTime.Now);
             var (delta, h, c, used) = SensAdvisor.Step(agg, Assess.Run(agg, false, store.Runs[^1].Tier).RefTier);
             P(F($"  sens signals: Δ={delta:0.000} H={h:0.00} c̄={c:0.00} ") + string.Join(" ", used.Select(u => F($"{u.Key}={u.H:0.00}(c{u.C:0.00})"))));
         }
         if (outFile != null) { try { File.WriteAllText(outFile, Out.ToString()); } catch (Exception e) { GD.PrintErr(e.Message); } }
+    }
+
+    /// <summary>"Gold 2" / "Radiant" for a tier (English, CLI).</summary>
+    static string Div(float t)
+    {
+        string r = Bench.Rank(t);
+        if (r == "Radiant" || float.IsNaN(t) || t < -0.75f) return r;
+        float lo = t < 0 ? -0.5f : MathF.Floor(t / 0.5f) * 0.5f;
+        return r + " " + Math.Clamp(1 + (int)((t - lo) / (0.5f / 3f)), 1, 3).ToString(CultureInfo.InvariantCulture);
     }
 
     static void PrintDiag(Diagnosis d)
@@ -176,7 +199,8 @@ public static class CoachCli
             "flick.n", "flick.onset_ms", "flick.gain", "flick.overshoot_share", "flick.mean_overshoot_deg", "flick.end_err_pct", "flick.nc", "flick.tc_ms",
             "flick.dwell_ms", "flick.snap_share", "flick.premature_share", "flick.eta", "flick.eta_p", "flick.end_y_deg", "flick.ttk_hit_ms", "speed.tier", "head.fsh_pct",
             "track.ontarget", "track.lag_deg", "track.tau_ms", "track.jitter", "track.reacq_ms", "track.overrun_deg",
-            "xhair.n", "xhair.err_deg", "xhair.pitch_deg", "xhair.h_deg", "spray.n", "spray.v", "spray.h", "spray.delay_ms", "react.ms",
+            "xhair.n", "xhair.err_deg", "xhair.err_ref_deg", "xhair.pitch_deg", "xhair.h_deg", "spray.n", "spray.v", "spray.h", "spray.delay_ms", "react.ms",
+            "move.shots", "move.moving_shot_pct", "move.stops", "move.counter_pct", "move.stop_ms",
         };
         return string.Join(" ", keys.Where(m.ContainsKey).Select(k => F($"{k}={m[k]:0.##}")));
     }
@@ -299,13 +323,16 @@ public static class CoachCli
             ["move.shots"] = 80, ["move.stops"] = 60, ["move.moving_shot_pct"] = moving, ["move.counter_pct"] = counter, ["move.stop_ms"] = stop,
             ["flash.n"] = 16, ["flash.turn_n"] = 16, ["flash.turn_ms"] = turn, ["flash.dodge_tier"] = dodgeT,
         };
+        // Calibration 2 (v1.19, docs/research/coach-calibration-1.19.md §5.8): with a validity per skill (mean ≈ 0.6) the
+        // estimate regresses toward the median on purpose (rank given aim), so the ranges are narrower than the archetypes'
+        // own tiers: Iron mechanics read Bronze, Immortal mechanics Diamond / Ascendant.
         var arch = new (string Name, float Lo, float Hi, Dictionary<string, float> M)[]
         {
-            ("Iron", -0.5f, 0.35f, Arch(-0.3f, 23, 268, 58, 440, 1.8f, -0.3f, 235, 235, 262, 13.5f, 2.6f, 1.6f, 1.1f, 450, 27, 10, 127, 680, -0.3f)),
-            ("Silver", 0.45f, 1.0f, Arch(0.75f, 17, 235, 67, 360, 1.3f, 0.7f, 200, 185, 238, 11.2f, 1.8f, 1.15f, 0.85f, 350, 13, 24, 118, 560, 0.7f)),
-            ("Gold", 1.0f, 1.5f, Arch(1.25f, 13, 215, 72, 320, 1.0f, 1.25f, 185, 150, 226, 10.0f, 1.3f, 0.9f, 0.7f, 300, 8, 37, 113, 500, 1.25f)),
-            ("Diamond", 1.85f, 2.45f, Arch(2.25f, 9.5f, 192, 79, 255, 0.75f, 2.2f, 155, 118, 207, 8.6f, 0.85f, 0.66f, 0.53f, 245, 3.8f, 58, 107, 415, 2.2f)),
-            ("Immortal", 2.6f, 3.2f, Arch(3.2f, 6.8f, 171, 85, 205, 0.55f, 3.2f, 134, 92, 182, 7.0f, 0.5f, 0.45f, 0.4f, 190, 2, 76, 102, 338, 3.2f)),
+            ("Iron", 0.20f, 0.65f, Arch(-0.3f, 23, 268, 58, 440, 1.8f, -0.3f, 235, 235, 262, 13.5f, 2.6f, 1.6f, 1.1f, 450, 27, 10, 127, 680, -0.3f)),
+            ("Silver", 0.75f, 1.05f, Arch(0.75f, 17, 235, 67, 360, 1.3f, 0.7f, 200, 185, 238, 11.2f, 1.8f, 1.15f, 0.85f, 350, 13, 24, 118, 560, 0.7f)),
+            ("Gold", 1.10f, 1.40f, Arch(1.25f, 13, 215, 72, 320, 1.0f, 1.25f, 185, 150, 226, 10.0f, 1.3f, 0.9f, 0.7f, 300, 8, 37, 113, 500, 1.25f)),
+            ("Diamond", 1.55f, 1.95f, Arch(2.25f, 9.5f, 192, 79, 255, 0.75f, 2.2f, 155, 118, 207, 8.6f, 0.85f, 0.66f, 0.53f, 245, 3.8f, 58, 107, 415, 2.2f)),
+            ("Immortal", 2.00f, 2.50f, Arch(3.2f, 6.8f, 171, 85, 205, 0.55f, 3.2f, 134, 92, 182, 7.0f, 0.5f, 0.45f, 0.4f, 190, 2, 76, 102, 338, 3.2f)),
         };
         float prev = float.NegativeInfinity;
         foreach (var (name, lo, hi, mm) in arch)
@@ -316,6 +343,75 @@ public static class CoachCli
             prev = t;
             P(F($"  {(ok ? "PASS" : "FAIL")} calibration: typical {name} mechanics → overall {t:0.00} {Coach.RankName(t)} (raw mean {a.RawMean:0.00}, evidence {a.OverallConf:0.00}), expected {lo:0.00}–{hi:0.00}"));
         }
+
+        // A real Gold 2 (the developer's aggregated profile of Nov 2026, 128 runs; numbers only): Platinum 1 (1.58) before
+        // v1.19, because Deathmatch placement and the Counter-Strafe drill's instructed counter-strafes read Ascendant.
+        var gold2 = new Dictionary<string, float>
+        {
+            ["flick.n"] = 277, ["flick.n5"] = 277, ["speed.n"] = 277, ["speed.tier"] = 1.54f, ["flick.end_err_pct"] = 18.9f, ["flick.onset_ms"] = 238,
+            ["head.n_first"] = 324, ["head.n_hit"] = 200, ["head.fsh_pct"] = 57, ["head.tc_ms"] = 416, ["head.nc"] = 1.18f,
+            ["track.secs"] = 359, ["track.reversals"] = 61, ["track.ontarget_tier"] = 1.52f, ["track.tau_ms"] = 206, ["track.reacq_ms"] = 171,
+            ["react.n"] = 20, ["react.ms"] = 217,
+            ["xhair.n"] = 312, ["xhair.nh"] = 312, ["xhair.err_deg"] = 7.22f, ["xhair.err_ref_deg"] = 10.3f, ["xhair.pitch_abs_deg"] = 0.76f, ["xhair.pitch_deg"] = -0.1f,
+            ["spray.n"] = 60, ["spray.v_abs"] = 0.64f, ["spray.v"] = 0.6f, ["spray.h"] = 0.73f, ["spray.delay_ms"] = 75,
+            ["move.shots"] = 150, ["move.stops"] = 180, ["move.moving_shot_pct"] = 5.0f, ["move.counter_pct"] = 66.7f, ["move.stop_ms"] = 110,
+            ["flash.n"] = 53, ["flash.turn_n"] = 53, ["flash.turn_ms"] = 488, ["flash.dodge_tier"] = 2.0f,
+        };
+        var g2 = Assess.Run(gold2, false, 1);
+        P(F($"  {(g2.Overall is >= 1.05f and <= 1.40f ? "PASS" : "FAIL")} calibration: real Gold 2 profile → overall {g2.Overall:0.00} {Coach.RankName(g2.Overall)} (raw mean {g2.RawMean:0.00}), expected 1.05–1.40"));
+
+        // The overall from given skill tiers (confidence 0.9 each).
+        Assessment Tiers(float core, float behaviour)
+        {
+            var x = new Assessment();
+            foreach (var s in Enum.GetValues<Skill>())
+                x.Ratings[s] = new SkillRating(s, Bench.AimCore(s) ? core : behaviour, 0.9f, 100, "");
+            Assess.Overall(x);
+            return x;
+        }
+        var carry = Tiers(1.0f, 3.5f);
+        P(F($"  {(carry.Overall is >= 0.9f and <= 1.4f ? "PASS" : "FAIL")} calibration: Gold aim + Radiant drill habits → overall {carry.Overall:0.00} {Coach.RankName(carry.Overall)} (was 2.79 Ascendant before v1.19), expected ≤ 1.40"));
+        var flat = Tiers(2.5f, 2.5f);
+        P(F($"  {(flat.Overall is >= 1.85f and <= 2.15f ? "PASS" : "FAIL")} calibration: Ascendant everywhere → overall {flat.Overall:0.00} {Coach.RankName(flat.Overall)} (deliberate regression to the mean), expected 1.85–2.15"));
+        var weakHabit = Tiers(1.2f, 0.2f);
+        P(F($"  {(weakHabit.Overall <= 1.1f ? "PASS" : "FAIL")} calibration: Gold aim + Bronze drill habits → overall {weakHabit.Overall:0.00} {Coach.RankName(weakHabit.Overall)} (weak habits still pull down: Gold aim alone is 1.20), expected ≤ 1.10"));
+
+        // Profile inputs (calibration 2): drills that announce the angle count for head height only, Deathmatch placement is
+        // rated on the match scale, and the drills that instruct counter-strafing don't feed the movement habits.
+        void Ok(bool ok, string what) => P($"  {(ok ? "PASS" : "FAIL")} calibration {what}");
+        var seen = new Dictionary<string, float> { ["xhair.n"] = 20, ["xhair.nh"] = 20, ["xhair.err_deg"] = 2.2f, ["xhair.pitch_deg"] = -0.2f, ["xhair.gated"] = 1 };
+        Ok(!RunAnalysis.Normalize("peekduel", 1, seen).ContainsKey("xhair.err_deg") && !RunAnalysis.Normalize("recon:sova", 1, seen).ContainsKey("xhair.err_deg")
+           && !RunAnalysis.Normalize("jigglepeek", 1, seen).ContainsKey("xhair.err_deg") && RunAnalysis.Normalize("jigglepeek", 1, seen).ContainsKey("xhair.pitch_deg"),
+           "known-angle drills (Peek Duel, Recon, Jiggle Peek) keep only the vertical crosshair error");
+        var dm = RunAnalysis.Normalize("deathmatch", 1, new Dictionary<string, float>(seen) { ["xhair.err_deg"] = 7 });
+        var sc = RunAnalysis.Normalize("siteclear", 1, new Dictionary<string, float>(seen) { ["xhair.err_deg"] = 7 });
+        Ok(MathF.Abs(dm.GetValueOrDefault("xhair.err_ref_deg") - 10f) < 0.01f && MathF.Abs(sc.GetValueOrDefault("xhair.err_ref_deg") - 7f) < 0.01f && dm["xhair.err_deg"] == 7,
+           "Deathmatch placement is rated on the match scale (7° → 10°), Site Clear as measured, the raw degrees stay");
+        var cs = new Dictionary<string, float> { ["move.stops"] = 40, ["move.counter"] = 39, ["move.counter_pct"] = 97.5f, ["move.stop_ms"] = 101, ["move.shots"] = 40, ["move.moving"] = 0, ["move.moving_shot_pct"] = 0 };
+        var csN = RunAnalysis.Normalize("counterstrafe", 1, cs, "Vandal");
+        Ok(!csN.ContainsKey("move.counter_pct") && !csN.ContainsKey("move.moving_shot_pct") && !csN.ContainsKey("move.shots") && csN.ContainsKey("move.stop_ms")
+           && RunAnalysis.Normalize("siteclear", 1, cs, "Vandal").ContainsKey("move.counter_pct"),
+           "Counter-Strafe drill: counter-strafe / moving-shot shares dropped from the profile, stop time kept; free play keeps them");
+
+        // "Your actual rank": codes, tiers and the gap (never fed into the estimate), and a calibration line without
+        // personal data.
+        Ok(ActualRank.Parse("G2") == 10 && ActualRank.Parse("im3") == 23 && ActualRank.Parse("R") == ActualRank.Radiant && ActualRank.Parse("I1") == 0
+           && ActualRank.Parse("X9") == null && ActualRank.Code(10) == "G2" && MathF.Abs(ActualRank.Tier(10) - 1.25f) < 1e-4f
+           && Coach.RankName(ActualRank.Tier(ActualRank.Parse("P1")!.Value)) == "Platinum" && Coach.RankName(ActualRank.Tier(0)) == "Iron",
+           "actual-rank codes and tiers (G2 = 10 → 1.25)");
+        var prof = new SkillProfile { OverallTier = 1.18f, OverallConfidence = 0.89f, RunsAnalyzed = 128, Calibration = Bench.Calibration, RawMean = 1.3f,
+            Skills = Enum.GetValues<Skill>().Select(s => new SkillRating(s, s == Skill.Precision ? 0.01f : 1.3f, 0.9f, 100, "")).ToList(),
+            XhairSources = new() { ("deathmatch", 372), ("siteclear", 24) } };
+        var ahead = CoachCalibration.Gap(prof, ActualRank.Parse("B3")!.Value);
+        var behind = CoachCalibration.Gap(prof, ActualRank.Parse("P3")!.Value);
+        var match = CoachCalibration.Gap(prof, ActualRank.Parse("G2")!.Value);
+        Ok(ahead?.Kind == CoachCalibration.GapKind.AimAhead && behind?.Kind == CoachCalibration.GapKind.RankAhead && behind.Weakest == Skill.Precision
+           && match?.Kind == CoachCalibration.GapKind.Matches && CoachCalibration.Gap(prof, ActualRank.None) == null && prof.OverallTier == 1.18f,
+           "gap view: aim ahead / rank ahead (→ weakest skill) / matches; the estimate is unchanged");
+        string line = CoachCalibration.Line(prof, 10, new DateTime(2026, 11, 2));
+        Ok(line.StartsWith("vtcal1 rank=G2 set=2026-11-02 runs=128 E=0.89 T=fl1.30,pr0.01,", StringComparison.Ordinal) && line.Contains(" xh=deathmatch:372,siteclear:24 ")
+           && line.Contains(" est=1.18 cal=2 ") && !line.Contains('\\') && !line.Contains('/') && (System.Environment.UserName.Length < 4 || !line.Contains(System.Environment.UserName, StringComparison.OrdinalIgnoreCase)),
+           "calibration line: rank, tiers, drill mix, estimate; no paths or names: " + line);
         _ = CultureInfo.InvariantCulture;
     }
 

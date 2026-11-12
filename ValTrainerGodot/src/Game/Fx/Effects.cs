@@ -40,6 +40,9 @@ public static class Effects
     /// <summary>Wall hit: bullet-hole decal + dust tinted by <paramref name="surface"/> + sparks + flash.</summary>
     public static void Impact(Vector3 pos, Vector3 normal, Color surface) => World?.Impact(pos, normal, surface);
 
+    /// <summary>Only the bullet-hole decal of a wall hit (skin Bullet FX draw their own sparks / flash: BulletFxWorld).</summary>
+    public static void Hole(Vector3 pos, Vector3 normal) => World?.Hole(pos, normal);
+
     /// <summary>Enemy hit: enemy-coloured spark burst + flash (bigger/brighter for headshots).</summary>
     public static void BodyHit(Vector3 pos, Color enemy, bool headshot) => World?.BodyHit(pos, enemy, headshot);
 }

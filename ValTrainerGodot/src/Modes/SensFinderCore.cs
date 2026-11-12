@@ -44,6 +44,19 @@ public sealed class SensFinderConfig
 
     public static SensFinderConfig Full() => new();
 
+    /// <summary>The player's short test (Q on the intro, AppSettings.SensFinderShort; asked for on Discord): 3 coarser
+    /// steps and lighter rounds, about half the time of <see cref="Full"/>. The ABBA rounds and scoring are unchanged,
+    /// so it finds the same sens, only with a wider margin.</summary>
+    public static SensFinderConfig Short() => new()
+    {
+        HalfWidths = new[] { 1.35f, 1.17f, 1.08f },
+        WarmupFlicks = 1, MicroFlicks = 3, MediumFlicks = 3, LargeFlicks = 3,
+        MicroAdjTargets = 5,
+        TrackSec = 7f, TrackWarmup = 1.5f, TrackWindow = 1.75f,
+        RestSec = 3f,
+    };
+    public bool IsShort => Steps == 3 && WarmupFlicks == 1 && MicroFlicks == 3;
+
     /// <summary>Dev/test (--sfquick): 3 steps, short blocks.</summary>
     public static SensFinderConfig Quick() => new()
     {

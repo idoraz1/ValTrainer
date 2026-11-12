@@ -1,4 +1,5 @@
 using Godot;
+using ValTrainer.Core;
 using ValTrainer.Game;
 using ValTrainer.Game.Fx;
 using ValTrainer.UI;
@@ -17,7 +18,7 @@ public sealed partial class AnchorMode
         k.Place = alt =>
         {
             var p = Compute(k.A, G.View.Eye, G.View.Forward, alt);
-            if (!p.Ok) { k.Refuse(p.Why ?? "Can't place it there"); SentinelSfx.Play(G, "reuse", 0.4f, 0.6f); return false; }
+            if (!p.Ok) { k.Refuse(p.Why ?? L.N("Can't place it there")); SentinelSfx.Play(G, "reuse", 0.4f, 0.6f); return false; }
             Commit(k.A, p);
             return true;
         };
@@ -162,20 +163,20 @@ public sealed partial class AnchorMode
                 p.Axis = a.Kind == SentKind.BarrierOrb ? (alt ? flat : new Vector3(-flat.Z, 0, flat.X)) : flat;
                 var feet = PlayerFeet;
                 float reach = new Vector2(p.Pos.X - feet.X, p.Pos.Z - feet.Z).Length();
-                if (q.Y - gy > 6f) p.Why = "No floor there";
-                else if (reach > a.Range + 0.6f) p.Why = $"Too far (max {a.Range:0.#} m)";
-                else if (Collision.Overlaps(p.Pos, G.Solid, 0.12f)) p.Why = "Not enough room";
+                if (q.Y - gy > 6f) p.Why = L.N("No floor there");
+                else if (reach > a.Range + 0.6f) p.Why = L.F($"Too far (max {a.Range:0.#} m)");
+                else if (Collision.Overlaps(p.Pos, G.Solid, 0.12f)) p.Why = L.N("Not enough room");
                 else p.Ok = true;
                 break;
             }
             case SentPlace.Wall:
             {
                 float t = Collision.FirstHit(eye, dir, G.Solid, out int idx);
-                if (t > a.Range) { p.Pos = eye + dir * Mathf.Min(t, a.Range); p.Normal = -dir; p.Why = $"Aim at a wall within {a.Range:0} m"; break; }
+                if (t > a.Range) { p.Pos = eye + dir * Mathf.Min(t, a.Range); p.Normal = -dir; p.Why = L.F($"Aim at a wall within {a.Range:0} m"); break; }
                 var hit = eye + dir * t;
                 var n = G.Solid[idx].NormalAt(hit);
                 p.Pos = hit; p.Normal = n;
-                if (Mathf.Abs(n.Y) > 0.3f) { p.Why = "Aim at a wall"; break; }
+                if (Mathf.Abs(n.Y) > 0.3f) { p.Why = L.N("Aim at a wall"); break; }
                 float floor = Collision.Ground(new Vector3(hit.X + n.X * 0.4f, hit.Y + 0.05f, hit.Z + n.Z * 0.4f), G.Solid, 0.05f);
                 switch (a.Kind)
                 {
@@ -185,8 +186,8 @@ public sealed partial class AnchorMode
                         var s = new Vector3(hit.X, y, hit.Z) + n * 0.02f;
                         float span = Collision.FirstHit(s, n, G.Solid);
                         p.Pos = s;
-                        if (span > 15f) { p.End = s + n * 15f; p.Why = "No wall across within 15 m"; break; }
-                        if (span < 0.6f) { p.End = s + n * span; p.Why = "Too narrow"; break; }
+                        if (span > 15f) { p.End = s + n * 15f; p.Why = L.N("No wall across within 15 m"); break; }
+                        if (span < 0.6f) { p.End = s + n * span; p.Why = L.N("Too narrow"); break; }
                         p.End = s + n * span;
                         p.Ok = true;
                         break;
@@ -199,11 +200,11 @@ public sealed partial class AnchorMode
                         p.End = s + n * len;
                         p.End = new Vector3(p.End.X, Collision.Ground(p.End + new Vector3(0, 0.5f, 0), G.Solid), p.End.Z);
                         p.Ok = len >= 1f;
-                        if (!p.Ok) p.Why = "No room for the wall";
+                        if (!p.Ok) p.Why = L.N("No room for the wall");
                         break;
                     }
                     case SentKind.SonicSensor:
-                        if (hit.Y - PlayerFeet.Y > 4.5f) { p.Why = "Too high (max 4.5 m above you)"; break; }
+                        if (hit.Y - PlayerFeet.Y > 4.5f) { p.Why = L.N("Too high (max 4.5 m above you)"); break; }
                         p.Ok = true;
                         break;
                     default:
@@ -228,7 +229,7 @@ public sealed partial class AnchorMode
                 p.Normal = Vector3.Up;
                 p.Axis = flat;
                 p.Ok = ok;
-                if (!ok) p.Why = "It wouldn't land anywhere";
+                if (!ok) p.Why = L.N("It wouldn't land anywhere");
                 break;
             }
         }

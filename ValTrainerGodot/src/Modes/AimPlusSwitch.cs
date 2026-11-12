@@ -15,9 +15,9 @@ public sealed class TargetSwitchMode : BotMode
 {
     public override string Key => "switch";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.NoShotguns;
-    public override string Name => "Target Switch";
-    public override string Description => "Three strafing agents (real damage of your gun; a Vandal kills with 1 head or 4 body). Kill one, switch to the next — fast switches, no flicking past them.";
-    public override string Category => "Aim";
+    public override string Name => L.N("Target Switch");
+    public override string Description => L.N("Three strafing agents (real damage of your gun; a Vandal kills with 1 head or 4 body). Kill one, switch to the next — fast switches, no flicking past them.");
+    public override string Category => L.N("Aim");
     public override bool InfiniteAmmo => true; // pure aim drill: no reloads
     public override string SimKind => "bot";
     public override AimFocus? Focus => focus?.B is { } b && Alive(b) ? new AimFocus(IdOf(b), b.Head, BotCharacter.HeadRadius) : null;
@@ -193,22 +193,25 @@ public sealed class TargetSwitchMode : BotMode
 
     float PerMinute => Kills * 60f / Mathf.Max(Now, 1f);
 
-    public override string? Prompt => Kills == 0 && Now < 4f ? "Kill one, switch to the next — stop on the body, don't flick past it" : null;
+    public override string? Prompt => Kills == 0 && Now < 4f ? L.N("Kill one, switch to the next — stop on the body, don't flick past it") : null;
 
     public override IEnumerable<string> HudLines()
     {
-        if (lastSwitchMs >= 0) yield return $"Last switch {lastSwitchMs:0} ms";
-        if (judged > 0) yield return $"Overflicks {overflicks} / {judged} switches";
+        if (lastSwitchMs >= 0) yield return L.F($"Last switch {lastSwitchMs:0} ms");
+        if (judged > 0) yield return L.F($"Overflicks {overflicks} / {judged} switches");
     }
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Kills", $"{Kills}  ({PerMinute:0.0} per minute)");
-        yield return ("Accuracy", $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})" + (Hits > 0 ? $"  ·  {100f * HeadHits / Hits:0}% headshots" : ""));
-        yield return ("Switch time", switchMs.Count > 0 ? $"{Median(switchMs):0} ms median (kill → next hit)" : "—");
-        yield return ("Time per kill", KillTimes.Count > 0 ? $"{Median(KillTimes):0} ms median" + (engageMs.Count > 0 ? $" (first hit → kill {Median(engageMs):0} ms)" : "") : "—");
-        yield return ("Overflick on switch", judged == 0 ? "—" : overflicks == 0 ? $"none in {judged} switches"
-            : $"{100f * overflicks / judged:0}% of switches, {overDeg.Average():0.0}° past");
+        yield return (L.N("Kills"), L.F($"{Kills}  ({PerMinute:0.0} per minute)"));
+        yield return (L.N("Accuracy"), Hits > 0 ? L.F($"{Accuracy * 100:0.0}%  ({Hits}/{Shots})  ·  {100f * HeadHits / Hits:0}% headshots")
+            : $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
+        yield return (L.N("Switch time"), switchMs.Count > 0 ? L.F($"{Median(switchMs):0} ms median (kill → next hit)") : "—");
+        yield return (L.N("Time per kill"), KillTimes.Count == 0 ? "—" : engageMs.Count > 0
+            ? L.F($"{Median(KillTimes):0} ms median (first hit → kill {Median(engageMs):0} ms)")
+            : L.F($"{Median(KillTimes):0} ms median"));
+        yield return (L.N("Overflick on switch"), judged == 0 ? "—" : overflicks == 0 ? L.P(judged, $"none in {judged} switch", $"none in {judged} switches")
+            : L.F($"{100f * overflicks / judged:0}% of switches, {overDeg.Average():0.0}° past"));
     }
 
     /// <summary>Kills per minute (needs ≥ 30% accuracy and 3 kills), thresholds per tier played.</summary>

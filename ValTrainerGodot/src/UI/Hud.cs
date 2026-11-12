@@ -28,23 +28,30 @@ public partial class Hud : Control
     readonly List<VButton> overlayButtons = new();
     VButton? resetSens;
     LineEdit? sensEdit;
+    /// <summary>The pause menu's crosshair row (mouse wheel = previous / next crosshair); empty when there is none.</summary>
+    Rect2 xhWheel;
     float overlayAt;
     List<(string Label, string Value)> resultLines = new();
 
     // aim coach: cue shown during the countdown (from a "Practise" button or the last run's review)
     CoachData.Focus? focus, nextFocus;
 
+    // progression: the results XP row; Progress.LastRun as it was before this run (a run that earned nothing shows no row)
+    ResultsXpRow? xpRow;
+    Progression.RunXp? runBefore;
+
     // animation bookkeeping (real time, so it keeps moving while paused)
     float lastStopSeen = -2f, stopPopAt = -99f;
 
-    // tiny string caches so steady-state frames don't allocate
+    // tiny string caches so steady-state frames don't allocate (the text is built in the UI language: a language
+    // change also rebuilds it)
     sealed class Cache
     {
         long key = long.MinValue;
-        string val = "";
+        string val = "", lang = "";
         public string Get(long k, Func<long, string> f)
         {
-            if (k != key) { key = k; val = f(k); }
+            if (k != key || !ReferenceEquals(lang, L.Lang)) { key = k; lang = L.Lang; val = f(k); }
             return val;
         }
     }
@@ -53,20 +60,32 @@ public partial class Hud : Control
 
     static float RealNow => Time.GetTicksMsec() / 1000f;
 
-    // uppercase labels cached per mode / subtitle / weapon (avoid per-frame string allocations)
-    string nameUpper = "", subSrc = "", subUpper = "", gunSrc = "", gunUpper = "";
-    string readySrc = "", readyUpper = "", readyGun = "", readyText = "GET READY";
-
-    string Upper(ref string src, ref string upper, string value)
+    /// <summary>Upper-case text cached per English source (subtitle, weapon, crosshair tag): translated first unless
+    /// <paramref name="translate"/> is false (gun names stay English).</summary>
+    sealed class UpCache
     {
-        if (!ReferenceEquals(src, value) && src != value) { src = value; upper = value.ToUpperInvariant(); }
-        return upper;
+        string src = "", lang = "", val = "";
+        public string Get(string value, bool translate = true)
+        {
+            if (!ReferenceEquals(lang, L.Lang) || (!ReferenceEquals(src, value) && src != value))
+            {
+                src = value;
+                lang = L.Lang;
+                val = translate ? L.Upper(L.T(value)) : value.ToUpperInvariant();
+            }
+            return val;
+        }
     }
+
+    // uppercase labels cached per mode / subtitle / weapon (avoid per-frame string allocations); already translated
+    string nameUpper = "", readyGun = "", readyLang = "", readyText = "";
+    readonly UpCache subUpper = new(), gunUpper = new(), readyUpper = new(), toastSub = new();
 
     public override void _Ready()
     {
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         MouseFilter = MouseFilterEnum.Ignore;
+        if (!s.Demo) ProgressToasts.Ensure(); // unlocks from this run toast on the results screen
     }
 
     public override void _Process(double delta)
@@ -77,12 +96,13 @@ public partial class Hud : Control
         if (s.State != lastState || s.Mode != lastMode || (overlay != null && size != overlaySize))
         {
             bool modeChanged = s.Mode != lastMode;
+            if (s.State != GameSession.St.Results) runBefore = Progression.Progress.LastRun;
             lastState = s.State;
             lastMode = s.Mode;
             if (modeChanged)
             {
                 lastStopSeen = -2f;
-                nameUpper = s.Mode.Name.ToUpperInvariant();
+                nameUpper = L.Upper(s.Mode.DisplayName);
                 focus = CoachData.TakeFocus(s.Mode.Key) ?? nextFocus;
                 nextFocus = null;
             }
@@ -117,6 +137,14 @@ public partial class Hud : Control
             GetViewport().SetInputAsHandled();
             sensEdit!.Text = Main.I.Sens.ToString("0.000", Inv);
             sensEdit.ReleaseFocus();
+            return;
+        }
+        // The mouse wheel over the pause menu's crosshair row cycles the crosshairs (up = previous).
+        if (e is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.WheelUp or MouseButton.WheelDown } wh && s.State == GameSession.St.Paused
+            && xhWheel.Size.X > 0 && xhWheel.HasPoint(wh.Position))
+        {
+            GetViewport().SetInputAsHandled();
+            s.SwitchCrosshair(wh.ButtonIndex == MouseButton.WheelUp ? -1 : 1);
             return;
         }
         if (e is InputEventMouseButton { Pressed: true } mb && mb.ButtonIndex is MouseButton.Left or MouseButton.Right)
@@ -157,7 +185,7 @@ public partial class Hud : Control
         {
             int fps = (int)Engine.GetFramesPerSecond();
             int fs = UiTheme.Fs(16, k);
-            TR(UiTheme.Hud, cFps.Get(fps, v => $"{v} FPS"), size.X - 24 * k, 30 * k, fs, new Color(UiTheme.Text, 0.85f));
+            TR(UiTheme.Hud, cFps.Get(fps, v => L.F($"{v} FPS")), size.X - 24 * k, 30 * k, fs, new Color(UiTheme.Text, 0.85f), raw: true);
         }
         if (!m.Is2D)
         {
@@ -166,9 +194,16 @@ public partial class Hud : Control
             if (m.Movement) DrawSpeed(size, k);
             DrawReload(size, k);
         }
-        if (m.Prompt is { } p) DrawPrompt(size, k, Main.I.Valorant.Binds.Hint(p));
+        // translated first, then LMB / RMB swapped for the player's binds (like the HUD lines)
+        if (m.Prompt is { } p) DrawPrompt(size, k, Main.I.Valorant.Binds.Hint(L.T(p)));
         if (s.BannerTime > 0 && s.BannerText.Length > 0) DrawBanner(size, k);
-        if (m.KillBanner.Time > 0 && m.KillBanner.Count > 0) DrawKillBanner(size, k, m.KillBanner.Count, m.KillBanner.Time);
+        // not while paused: the pause menu covers it and its crosshair row shows the name
+        if (s.XhairToastTime > 0 && s.XhairToastText.Length > 0 && s.State != GameSession.St.Paused) DrawXhairToast(size, k);
+        if (m.KillBanner.Time > 0 && m.KillBanner.Count > 0)
+        {
+            if (s.SkinBanner is { } sb) DrawSkinKillBanner(size, k, m.KillBanner.Count, m.KillBanner.Time, sb.Style, sb.Main, sb.Accent); // HudSkinBanner.cs
+            else DrawKillBanner(size, k, m.KillBanner.Count, m.KillBanner.Time);
+        }
         if (s.State == GameSession.St.Countdown) DrawCountdown(size, k, m);
         if (focus != null && (s.State == GameSession.St.Countdown || (s.State == GameSession.St.Running && s.Now < 2f))) DrawFocus(size, k, focus);
     }
@@ -246,8 +281,8 @@ public partial class Hud : Control
         int accTenths = (int)(m.Accuracy * 1000);
         string right = m.UsesHeadshots ? cRight.Get(m.Kills, v => v.ToString(Inv)) : cRight.Get(accTenths + 1_000_000L, v => $"{(v - 1_000_000) / 10f:0}%");
         TC(UiTheme.Display, right, rr.GetCenter().X - 8 * k, Gfx.Mid(top + bh / 2, vs), vs, UiTheme.Text);
-        string rl = m.UsesHeadshots ? cRightLabel.Get(accTenths / 10, v => $"KILLS · {v}% ACC") : "ACCURACY";
-        TC(UiTheme.HudWide, rl, rr.GetCenter().X - 8 * k, top + bh + 18 * k, ls, UiTheme.Accent);
+        string rl = m.UsesHeadshots ? cRightLabel.Get(accTenths / 10, v => L.F($"KILLS · {v}% ACC")) : L.T("ACCURACY");
+        TC(UiTheme.HudWide, rl, rr.GetCenter().X - 8 * k, top + bh + 18 * k, ls, UiTheme.Accent, raw: true);
     }
 
     void DrawModeInfo(Vector2 size, float k, TrainingMode m)
@@ -255,29 +290,37 @@ public partial class Hud : Control
         float x = 30 * k, y = 22 * k;
         DrawRect(new Rect2(x, y, 4 * k, 36 * k), UiTheme.Accent);
         int ns = UiTheme.Fs(34, k);
-        TL(UiTheme.Display, nameUpper, x + 14 * k, Gfx.Mid(y + 18 * k, ns), ns, UiTheme.Text);
+        TL(UiTheme.Display, nameUpper, x + 14 * k, Gfx.Mid(y + 18 * k, ns), ns, UiTheme.Text, raw: true);
         y += 56 * k;
         var tier = Difficulty.Get(s.Tier);
         int ts = UiTheme.Fs(13, k);
+        // longer translations must stop before the score box (top centre); English keeps its layout
+        float lineMax = L.IsEnglish ? float.MaxValue
+            : size.X / 2 - (s.FreePlay ? 105 * k : 64 * k + 6 * k + 168 * k) - (x + 26 * k) - 14 * k;
         if (m.ShowScore) RankEmblem.Draw(this, new Vector2(x + 9 * k, y), 9 * k, tier.Id);
-        if (m.ShowScore) TL(UiTheme.HudWide, cTier.Get(tier.Id, v => $"{Difficulty.Get((int)v).Name.ToUpperInvariant()} · {Difficulty.Get((int)v).Ranks.ToUpperInvariant()}"),
-            x + 26 * k, Gfx.Mid(y, ts), ts, UiTheme.TierColor(tier.Id));
+        if (m.ShowScore)
+        {
+            var (tl, tfs) = FitLine(UiTheme.HudWide, cTier.Get(tier.Id, v => TierLine(Difficulty.Get((int)v))), ts, lineMax);
+            TL(UiTheme.HudWide, tl, x + 26 * k, Gfx.Mid(y, ts), tfs, UiTheme.TierColor(tier.Id), raw: true);
+        }
         if (m.Subtitle is { } sub)
         {
             y += 24 * k;
-            TL(UiTheme.HudWide, Upper(ref subSrc, ref subUpper, sub), x + 26 * k, Gfx.Mid(y, ts), ts, new Color(UiTheme.Text, 0.85f));
+            var (st, sfs) = FitLine(UiTheme.HudWide, subUpper.Get(sub), ts, lineMax);
+            TL(UiTheme.HudWide, st, x + 26 * k, Gfx.Mid(y, ts), sfs, new Color(UiTheme.Text, 0.85f), raw: true);
         }
         y += 34 * k;
         int ls = UiTheme.Fs(18, k);
         foreach (var rawLine in m.HudLines())
         {
-            var line = Main.I.Valorant.Binds.Hint(rawLine);
-            // movement drills show their last stop under the speed meter instead
-            if (m.Movement && line.StartsWith("Last stop", StringComparison.Ordinal)) continue;
-            float w = Gfx.TextW(UiTheme.Body, line, ls);
+            // movement drills show their last stop under the speed meter instead (checked on the mode's English line)
+            if (m.Movement && rawLine.StartsWith(TrainingMode.LastStopLine, StringComparison.Ordinal)) continue;
+            // translated first, then LMB / RMB swapped for the player's binds (translations keep those tokens)
+            var line = Main.I.Valorant.Binds.Hint(L.T(rawLine));
+            float w = Gfx.RawW(UiTheme.Body, line, ls);
             DrawRect(new Rect2(x, y - 14 * k, w + 26 * k, 28 * k), new Color(0.04f, 0.07f, 0.1f, 0.5f));
             DrawRect(new Rect2(x, y - 14 * k, 2 * k, 28 * k), new Color(UiTheme.Accent, 0.8f));
-            TL(UiTheme.Body, line, x + 13 * k, Gfx.Mid(y, ls), ls, UiTheme.Text);
+            TL(UiTheme.Body, line, x + 13 * k, Gfx.Mid(y, ls), ls, UiTheme.Text, raw: true);
             y += 32 * k;
         }
     }
@@ -325,7 +368,7 @@ public partial class Hud : Control
         TL(UiTheme.Display, ammo, x, baseY, as_, ac);
         x += Gfx.TextW(UiTheme.Display, ammo, as_) + 10 * k;
         TL(UiTheme.Hud, cReserve.Get(gun.Reserve, v => $"/ {v}"), x, baseY, rs, UiTheme.Dim);
-        TR(UiTheme.HudWide, Upper(ref gunSrc, ref gunUpper, gun.Def.Name), r.End.X - 22 * k, r.Position.Y + 24 * k, ns, UiTheme.Dim);
+        TR(UiTheme.HudWide, gunUpper.Get(gun.Def.Name, translate: false), r.End.X - 22 * k, r.Position.Y + 24 * k, ns, UiTheme.Dim, raw: true);
         // magazine bar
         float bx = r.Position.X + 16 * k, bwid = r.Size.X - 32 * k, hy = r.End.Y - 11 * k;
         DrawRect(new Rect2(bx, hy, bwid, 4 * k), new Color(1, 1, 1, 0.12f));
@@ -355,8 +398,8 @@ public partial class Hud : Control
         var r = plate.Grow(-14 * k);
         int ls = UiTheme.Fs(12, k), vs = UiTheme.Fs(17, k);
         TL(UiTheme.HudWide, "SPEED", r.Position.X, r.Position.Y + 10 * k, ls, UiTheme.Dim);
-        TR(UiTheme.Hud, cSpeed.Get((int)(mv.Speed * 10), v => $"{v / 10f:0.0} m/s"), r.End.X, r.Position.Y + 11 * k, vs,
-            mv.Accurate ? UiTheme.Good : UiTheme.Text);
+        TR(UiTheme.Hud, cSpeed.Get((int)(mv.Speed * 10), v => L.F($"{v / 10f:0.0} m/s")), r.End.X, r.Position.Y + 11 * k, vs,
+            mv.Accurate ? UiTheme.Good : UiTheme.Text, raw: true);
         float barY = r.Position.Y + 20 * k, bh = 8 * k;
         DrawRect(new Rect2(r.Position.X, barY, r.Size.X, bh), new Color(0, 0, 0, 0.5f));
         DrawRect(new Rect2(r.Position.X, barY, r.Size.X * Mathf.Clamp(mv.Speed / mv.RunMax, 0, 1), bh), mv.Accurate ? UiTheme.Good : UiTheme.Accent);
@@ -372,10 +415,10 @@ public partial class Hud : Control
         if (mv.LastStopMs >= 0)
         {
             long key = (long)mv.LastStopMs * 2 + (mv.LastStopWasCounter ? 1 : 0);
-            string t = cStop.Get(key, v => $"LAST STOP {v / 2} MS · {((v & 1) == 1 ? "COUNTER-STRAFE" : "RELEASED KEYS")}");
+            string t = cStop.Get(key, v => L.F($"LAST STOP {v / 2} MS · {L.T((v & 1) == 1 ? "COUNTER-STRAFE" : "RELEASED KEYS")}"));
             float age = RealNow - stopPopAt, sc = age < 0.22f ? 1.25f - 0.25f * Gfx.EaseOut(age / 0.22f) : 1f;
             int fs = UiTheme.Fs(17, k);
-            ScaledTextC(UiTheme.HudWide, t, new Vector2(cx, plate.Position.Y - 22 * k), fs, mv.LastStopWasCounter ? UiTheme.Good : UiTheme.Warn, sc);
+            ScaledTextC(UiTheme.HudWide, t, new Vector2(cx, plate.Position.Y - 22 * k), fs, mv.LastStopWasCounter ? UiTheme.Good : UiTheme.Warn, sc, raw: true);
         }
     }
 
@@ -411,12 +454,12 @@ public partial class Hud : Control
     void DrawPrompt(Vector2 size, float k, string p)
     {
         int fs = UiTheme.Fs(24, k);
-        float w = Gfx.TextW(UiTheme.Body, p, fs), cy = size.Y * 0.64f;
+        float w = Gfx.RawW(UiTheme.Body, p, fs), cy = size.Y * 0.64f; // p is already translated (and has the binds in)
         var r = new Rect2(size.X / 2 - w / 2 - 22 * k, cy - 22 * k, w + 44 * k, 44 * k);
         Gfx.HGradient(this, new Rect2(r.Position.X - 60 * k, r.Position.Y, 60 * k, r.Size.Y), new Color(0, 0, 0, 0), new Color(0.03f, 0.05f, 0.08f, 0.6f));
         DrawRect(r, new Color(0.03f, 0.05f, 0.08f, 0.6f));
         Gfx.HGradient(this, new Rect2(r.End.X, r.Position.Y, 60 * k, r.Size.Y), new Color(0.03f, 0.05f, 0.08f, 0.6f), new Color(0, 0, 0, 0));
-        TC(UiTheme.Body, p, size.X / 2, Gfx.Mid(cy, fs), fs, UiTheme.Text);
+        TC(UiTheme.Body, p, size.X / 2, Gfx.Mid(cy, fs), fs, UiTheme.Text, raw: true);
     }
 
     void DrawBanner(Vector2 size, float k)
@@ -443,6 +486,29 @@ public partial class Hud : Control
         Gfx.HGradient(this, new Rect2(cx, cy + h / 2 - 2 * k, half, 2 * k), line, lineClear);
         Gfx.Diamond(this, new Vector2(cx, cy - h / 2), 6 * k, 6 * k, line);
         ScaledTextC(UiTheme.Display, s.BannerText, new Vector2(cx, Gfx.Mid(cy, fs)), fs, new Color(col, alpha), sc);
+    }
+
+    /// <summary>The crosshair switcher's name plate, small and under the crosshair (so the crosshair itself stays clear):
+    /// the name, then where it comes from ("VALORANT 2/4 · ACTIVE IN VALORANT", "SAVED 3/7"). Fades over its last 0.3 s.</summary>
+    void DrawXhairToast(Vector2 size, float k)
+    {
+        float t = s.XhairToastTime, age = GameSession.XhairToastLife - t;
+        float a = Mathf.Clamp(t / 0.3f, 0, 1) * Mathf.Clamp(age / 0.08f, 0, 1);
+        if (a <= 0.01f) return;
+        int ns = UiTheme.Fs(22, k), ss = UiTheme.Fs(11, k);
+        // a warning is an English message (translated here, where it's drawn: XhairSwitchTest checks the English);
+        // otherwise the text is the crosshair's name (never translated) and the sub its source tag, in upper case
+        string text = s.XhairToastWarn ? L.T(s.XhairToastText) : L.Raw(s.XhairToastText);
+        string sub = s.XhairToastWarn ? L.T(s.XhairToastSub) : toastSub.Get(s.XhairToastSub);
+        float cx = size.X / 2, cy = size.Y / 2 + 90 * k, h = 56 * k;
+        float w = Mathf.Min(Mathf.Max(Gfx.RawW(UiTheme.Display, text, ns), Gfx.RawW(UiTheme.HudWide, sub, ss)) + 56 * k, size.X * 0.6f);
+        var r = new Rect2(cx - w / 2, cy - h / 2, w, h);
+        DrawRect(r, new Color(0.03f, 0.05f, 0.08f, 0.78f * a));
+        DrawRect(new Rect2(r.Position, new Vector2(3 * k, h)), new Color(s.XhairToastWarn ? UiTheme.Warn : UiTheme.Accent, a));
+        float inner = w - 28 * k;
+        Gfx.TextFit(this, UiTheme.Display, text, cx - inner / 2, Gfx.Mid(cy - 8 * k, ns), ns, new Color(UiTheme.Text, a), inner, HorizontalAlignment.Center);
+        Gfx.TextFit(this, UiTheme.HudWide, sub, cx - inner / 2, Gfx.Mid(cy + 15 * k, ss), ss,
+            new Color(s.XhairToastWarn ? UiTheme.Warn : UiTheme.Dim, a), inner, HorizontalAlignment.Center);
     }
 
     void DrawKillBanner(Vector2 size, float k, int count, float t)
@@ -500,55 +566,83 @@ public partial class Hud : Control
         int ls = UiTheme.Fs(14, k);
         // the gun of this run, for drills that offer a choice (a buy-menu pick restarts the run: the countdown shows it)
         bool gunShown = m.Weapon != WeaponKind.None && !m.Is2D && (m.WeaponChoice != null || m.ActiveWeapon != m.Weapon);
-        string ready = gunShown ? Upper(ref readySrc, ref readyUpper, GunPicker.GunName(m.ActiveWeapon)) : "";
-        if (!ReferenceEquals(ready, readyGun)) { readyGun = ready; readyText = ready.Length > 0 ? "GET READY · " + ready : "GET READY"; }
-        TC(UiTheme.HudWide, readyText, c.X, c.Y - r - 34 * k, ls, UiTheme.Dim);
+        string ready = gunShown ? readyUpper.Get(GunPicker.GunName(m.ActiveWeapon), translate: false) : ""; // gun names stay English
+        if (ready.Length == 0) TC(UiTheme.HudWide, "GET READY", c.X, c.Y - r - 34 * k, ls, UiTheme.Dim);
+        else
+        {
+            if (!ReferenceEquals(ready, readyGun) || !ReferenceEquals(readyLang, L.Lang)) { readyGun = ready; readyLang = L.Lang; readyText = L.F($"GET READY · {ready}"); }
+            TC(UiTheme.HudWide, readyText, c.X, c.Y - r - 34 * k, ls, UiTheme.Dim, raw: true);
+        }
         int ns = UiTheme.Fs(30, k), ds = UiTheme.Fs(16, k);
-        TC(UiTheme.Display, nameUpper, c.X, c.Y + r + 54 * k, ns, UiTheme.Text);
-        TC(UiTheme.Body, m.Description, c.X, c.Y + r + 82 * k, ds, UiTheme.Dim);
-        if (m.MadeBy is { } by) TC(UiTheme.HudWide, $"MADE BY THE COMMUNITY · @{by}", c.X, c.Y + r + 110 * k, ls, UiTheme.Good);
+        TC(UiTheme.Display, nameUpper, c.X, c.Y + r + 54 * k, ns, UiTheme.Text, raw: true);
+        TC(UiTheme.Body, m.DisplayDescription, c.X, c.Y + r + 82 * k, ds, UiTheme.Dim, raw: true);
+        if (m.MadeBy is { } by) TC(UiTheme.HudWide, L.F($"MADE BY THE COMMUNITY · @{by}"), c.X, c.Y + r + 110 * k, ls, UiTheme.Good, raw: true);
     }
 
     // ---- outlined text (readable over bright scenes, like VALORANT's shadowed HUD text) ----
 
     static Color Shadow(Color c) => new(0.02f, 0.03f, 0.05f, 0.5f * c.A);
 
-    void TL(Font f, string t, float x, float baseline, int fs, Color c)
+    // Like the Gfx text helpers these translate what they draw (L.T), so plain literals need no wrapping and the width is
+    // measured on the translated text. raw: the text is already translated (cached upper case, L.F, binds swapped in)
+    // or must never be looked up.
+
+    /// <summary>Already translated text fitted to <paramref name="maxW"/>: a smaller font (down to 80%), then cut with
+    /// "…". Text that fits comes back unchanged.</summary>
+    static (string Text, int Size) FitLine(Font f, string t, int fs, float maxW)
     {
+        if (maxW >= float.MaxValue || Gfx.RawW(f, t, fs) <= maxW) return (t, fs);
+        int min = Math.Max(8, (int)MathF.Ceiling(fs * 0.8f));
+        while (fs > min && Gfx.RawW(f, t, fs) > maxW) fs--;
+        if (Gfx.RawW(f, t, fs) <= maxW) return (t, fs);
+        int n = t.Length;
+        while (n > 1 && Gfx.RawW(f, t[..n] + "…", fs) > maxW) n--;
+        return (t[..n].TrimEnd() + "…", fs);
+    }
+
+    void TL(Font f, string t, float x, float baseline, int fs, Color c, bool raw = false)
+    {
+        if (!raw) t = L.T(t);
         var pos = new Vector2(x, baseline);
         DrawStringOutline(f, pos, t, HorizontalAlignment.Left, -1, fs, Math.Max(2, fs / 9), Shadow(c));
         DrawString(f, pos, t, HorizontalAlignment.Left, -1, fs, c);
     }
 
-    float TC(Font f, string t, float cx, float baseline, int fs, Color c)
+    float TC(Font f, string t, float cx, float baseline, int fs, Color c, bool raw = false)
     {
-        float w = Gfx.TextW(f, t, fs);
-        TL(f, t, cx - w / 2, baseline, fs, c);
+        if (!raw) t = L.T(t);
+        float w = Gfx.RawW(f, t, fs);
+        TL(f, t, cx - w / 2, baseline, fs, c, raw: true);
         return w;
     }
 
-    float TR(Font f, string t, float right, float baseline, int fs, Color c)
+    float TR(Font f, string t, float right, float baseline, int fs, Color c, bool raw = false)
     {
-        float w = Gfx.TextW(f, t, fs);
-        TL(f, t, right - w, baseline, fs, c);
+        if (!raw) t = L.T(t);
+        float w = Gfx.RawW(f, t, fs);
+        TL(f, t, right - w, baseline, fs, c, raw: true);
         return w;
     }
 
     /// <summary>Centred text scaled around its own centre (pop animations).</summary>
-    void ScaledTextC(Font f, string t, Vector2 baselineCentre, int fs, Color c, float scale)
+    void ScaledTextC(Font f, string t, Vector2 baselineCentre, int fs, Color c, float scale, bool raw = false)
     {
-        float w = Gfx.TextW(f, t, fs);
+        if (!raw) t = L.T(t);
+        float w = Gfx.RawW(f, t, fs);
         if (Mathf.Abs(scale - 1f) < 0.001f)
         {
-            TL(f, t, baselineCentre.X - w / 2, baselineCentre.Y, fs, c);
+            TL(f, t, baselineCentre.X - w / 2, baselineCentre.Y, fs, c, raw: true);
             return;
         }
         // scale about the visual centre of the caps (baseline - 0.36 em)
         var pivot = new Vector2(baselineCentre.X, baselineCentre.Y - fs * 0.36f);
         DrawSetTransform(pivot, 0, new Vector2(scale, scale));
-        TL(f, t, -w / 2, fs * 0.36f, fs, c);
+        TL(f, t, -w / 2, fs * 0.36f, fs, c, raw: true);
         DrawSetTransformMatrix(Transform2D.Identity);
     }
+
+    /// <summary>"REGULAR · SILVER – GOLD": the tier and its ranks, translated, in upper case.</summary>
+    static string TierLine(Tier t) => L.Upper(t.DisplayName) + " · " + L.Upper(t.DisplayRanks);
 
     // =====================================================================================
     // Pause & results overlays (child controls with real buttons)
@@ -560,6 +654,7 @@ public partial class Hud : Control
         overlayButtons.Clear();
         resetSens = null;
         sensEdit = null;
+        xhWheel = default;
         insightsPending = false;
         if (s.State is not (GameSession.St.Paused or GameSession.St.Results)) return;
 
@@ -597,12 +692,12 @@ public partial class Hud : Control
     {
         var m = s.Mode;
         var app = Main.I;
-        var panel = new Rect2(size.X / 2 - 290 * k, size.Y / 2 - 300 * k, 580 * k, 600 * k);
+        var panel = new Rect2(size.X / 2 - 290 * k, size.Y / 2 - 348 * k, 580 * k, 696 * k);
         float bx = panel.Position.X + 90 * k, bw = panel.Size.X - 180 * k, bh = 56 * k;
         float y = panel.Position.Y + 156 * k;
-        OverlayButton("RESUME", VButton.Look.Primary, new Rect2(bx, y, bw, bh), k, s.Resume);
+        OverlayButton(L.N("RESUME"), VButton.Look.Primary, new Rect2(bx, y, bw, bh), k, s.Resume);
         y += 74 * k;
-        OverlayButton("RESTART", VButton.Look.Secondary, new Rect2(bx, y, bw, bh), k, s.Restart);
+        OverlayButton(L.N("RESTART"), VButton.Look.Secondary, new Rect2(bx, y, bw, bh), k, s.Restart);
         y += 92 * k;
         float sensY = y;
         float ab = 44 * k;
@@ -617,7 +712,7 @@ public partial class Hud : Control
         OverlayButton("", VButton.Look.Arrow, new Rect2(bx, sensY, ab, ab), k, () => Adjust(-1)).Dir = -1;
         OverlayButton("", VButton.Look.Arrow, new Rect2(bx + bw - ab, sensY, ab, ab), k, () => Adjust(1)).Dir = 1;
         // Full column width: at 720p the 10 px font floor makes the label wider than the 1080p design (was truncated).
-        resetSens = OverlayButton("USE VALORANT SENSITIVITY", VButton.Look.Ghost, new Rect2(bx, sensY + ab + 6 * k, bw, 28 * k), k, () =>
+        resetSens = OverlayButton(L.N("USE VALORANT SENSITIVITY"), VButton.Look.Ghost, new Rect2(bx, sensY + ab + 6 * k, bw, 28 * k), k, () =>
         {
             app.Settings.UseSensOverride = false;
             app.Settings.Save();
@@ -628,7 +723,7 @@ public partial class Hud : Control
         sensEdit = new LineEdit
         {
             Position = sensRect.Position, Size = sensRect.Size, CustomMinimumSize = sensRect.Size, MaxLength = 8,
-            Alignment = HorizontalAlignment.Center, SelectAllOnFocus = true, TooltipText = "Click and type a sensitivity, then Enter",
+            Alignment = HorizontalAlignment.Center, SelectAllOnFocus = true, TooltipText = L.T("Click and type a sensitivity, then Enter"),
         };
         SettingsScreen.StyleEdit(sensEdit, k, 30, UiTheme.Display);
         sensEdit.AddThemeStyleboxOverride("normal", new StyleBoxEmpty());
@@ -665,13 +760,34 @@ public partial class Hud : Control
                 GetTree().CreateTimer(0.5).Timeout += () => Log.Info($"[pause-type] typed {typed}: sens now {Main.I.Sens.ToString("0.000", Inv)} (custom {Main.I.Settings.UseSensOverride}), state {s.State}");
             };
         y += 118 * k;
-        OverlayButton("BACK TO MENU", VButton.Look.Secondary, new Rect2(bx, y, bw, bh), k, Main.I.ShowMenu);
+
+        // Crosshair switcher (CrosshairList): ◀ name ▶, the mouse wheel over the row, or the Previous / Next crosshair binds.
+        // The Crosshair Finder picks the crosshair itself, so the row only says so there.
+        float xhY = y + 30 * k;
+        bool xhLocked = m.Key == "xhairfinder";
+        var xhRect = new Rect2(bx + ab + 8 * k, xhY, bw - 2 * ab - 16 * k, ab);
+        var xhBox = new Rect2(xhRect.Position + new Vector2(4 * k, 4 * k), new Vector2(ab + 20 * k, ab - 8 * k));
+        if (!xhLocked)
+        {
+            OverlayButton("", VButton.Look.Arrow, new Rect2(bx, xhY, ab, ab), k, () => s.SwitchCrosshair(-1)).Dir = -1;
+            OverlayButton("", VButton.Look.Arrow, new Rect2(bx + bw - ab, xhY, ab, ab), k, () => s.SwitchCrosshair(1)).Dir = 1;
+            xhWheel = new Rect2(bx, xhY, bw, ab);
+        }
+        // a live preview of the crosshair at real pixel size, clipped to its box
+        var xhClip = new Control { Position = xhBox.Position, Size = xhBox.Size, ClipContents = true, MouseFilter = MouseFilterEnum.Ignore };
+        var xhView = new CrosshairView { LocalCenter = true };
+        xhClip.AddChild(xhView);
+        xhView.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        overlay!.AddChild(xhClip);
+        y = xhY + ab + 26 * k;
+        OverlayButton(L.N("BACK TO MENU"), VButton.Look.Secondary, new Rect2(bx, y, bw, bh), k, Main.I.ShowMenu);
 
         var pauseTier = Difficulty.Get(s.Tier);
-        string pauseSub = $"{m.Name.ToUpperInvariant()} · {pauseTier.Name.ToUpperInvariant()}";
-        // the buy-menu bind changes the gun from here too (BuySession.cs), in drills that offer a choice
+        string pauseSub = L.Upper(m.DisplayName) + " · " + L.Upper(pauseTier.DisplayName);
+        // the buy-menu bind changes the gun from here too (BuySession.cs), in drills that offer a choice (key names stay English)
         var buyBind = Main.I.Valorant.Binds.Primary(ValTrainer.Valorant.GameAction.BuyMenu);
-        string pauseKeys = GameSession.BuyRefusal(m) == null && !buyBind.IsNone ? $"ESC — RESUME · {buyBind.Text.ToUpperInvariant()} — BUY MENU" : "ESC — RESUME";
+        string pauseKeys = GameSession.BuyRefusal(m) == null && !buyBind.IsNone ? L.F($"ESC — RESUME · {buyBind.Text.ToUpperInvariant()} — BUY MENU") : L.T("ESC — RESUME");
+        if (!xhLocked && CrosshairList.KeysText is { Length: > 0 } xhKeys) pauseKeys += " · " + L.F($"{xhKeys.ToUpperInvariant()} — CROSSHAIR");
         overlay!.OnDraw = d =>
         {
             Dimmer(d, size, k, 0.78f);
@@ -697,10 +813,25 @@ public partial class Hud : Control
             else Gfx.TextC(d, UiTheme.Display, sens.ToString("0.000", Inv), cx, Gfx.Mid(sensY + ab / 2, vs), vs, app.Settings.UseSensOverride ? UiTheme.Warn : UiTheme.Text);
             int ns = UiTheme.Fs(12, k);
             string note = app.Settings.UseSensOverride
-                ? $"CUSTOM · {PlayerView.Cm360(sens, app.Settings.Dpi):0.0} CM/360 · CLICK TO TYPE · SHIFT ±0.001"
-                : $"FROM VALORANT · {PlayerView.Cm360(sens, app.Settings.Dpi):0.0} CM/360 · CLICK TO TYPE";
+                ? L.F($"CUSTOM · {PlayerView.Cm360(sens, app.Settings.Dpi):0.0} CM/360 · CLICK TO TYPE · SHIFT ±0.001")
+                : L.F($"FROM VALORANT · {PlayerView.Cm360(sens, app.Settings.Dpi):0.0} CM/360 · CLICK TO TYPE");
             if (!app.Settings.UseSensOverride) Gfx.TextC(d, UiTheme.HudWide, note, cx, sensY + ab + 24 * k, ns, UiTheme.Faint);
             else Gfx.TextC(d, UiTheme.HudWide, note, cx, sensY + ab + 56 * k, ns, UiTheme.Faint);
+
+            // crosshair switcher
+            Gfx.TextC(d, UiTheme.HudWide, "CROSSHAIR", cx, xhY - 12 * k, ls, UiTheme.Dim);
+            d.DrawRect(xhRect, new Color(0.03f, 0.06f, 0.09f, 0.9f));
+            Gfx.VGradient(d, xhBox, Color.Color8(96, 112, 126), Color.Color8(74, 88, 100));
+            xhView.Profile = s.TrialCrosshair ?? CrosshairCode.Effective;
+            var xe = CrosshairList.CurrentEntry;
+            float tx = xhBox.End.X + 10 * k, tw = xhRect.End.X - tx - 8 * k;
+            int xs = UiTheme.Fs(19, k), xt = UiTheme.Fs(10, k);
+            // the crosshair's name is never translated; its source tag is ("Saved 3/7"), then upper-cased
+            string xName = xhLocked ? L.N("SET BY THE CROSSHAIR FINDER") : L.Raw(xe.Name);
+            string xSub = xhLocked ? L.N("SWITCH AFTER THE TEST") : L.Upper(xe.DisplayTag);
+            float top = xhY + ab / 2 - (xs + xt + 4 * k) / 2; // the two lines as one block (font sizes have a floor at 720p)
+            Gfx.TextFit(d, UiTheme.Display, xName, tx, Gfx.Mid(top + xs / 2f, xs), xs, UiTheme.Text, tw);
+            Gfx.TextFit(d, UiTheme.HudWide, xSub, tx, Gfx.Mid(top + xs + 4 * k + xt / 2f, xt), xt, UiTheme.Dim, tw);
 
             Gfx.TextC(d, UiTheme.HudWide, pauseKeys, cx, pr.End.Y - 26 * k, ls, UiTheme.Faint);
         };
@@ -727,16 +858,19 @@ public partial class Hud : Control
         bool first = prev < 0, pb = !first && score > prev;
         var tier = Difficulty.Get(tierId);
         string scoreText = score.ToString("#,0", Inv);
-        string modeName = m.Name.ToUpperInvariant();
-        string tl = $"{tier.Name.ToUpperInvariant()} · {tier.Ranks.ToUpperInvariant()}" + (showGun ? $" · {gunUp}" : "");
-        string? subUp = m.Subtitle?.ToUpperInvariant();
-        string chip = pb ? "NEW PERSONAL BEST" + (showGun ? $" · {gunUp}" : "")
-            : showGun && gun != m.Weapon ? $"FIRST RUN WITH THE {gunUp} AT {tier.Name.ToUpperInvariant()}" : $"FIRST RUN AT {tier.Name.ToUpperInvariant()}";
-        string bestOf = showGun ? $"{tier.Name} best with the {gunName}" : $"{tier.Name} best";
-        string prevText = pb ? $"previous best {prev.ToString("#,0", Inv)}" : $"{bestOf}: {prev.ToString("#,0", Inv)}  ({score - prev:+#,0;-#,0;0})";
+        // display text below is translated here (gun names stay English) and drawn through the Gfx helpers, whose
+        // second lookup of an already translated string finds nothing and leaves it as it is
+        string modeName = L.Upper(m.DisplayName);
+        string tierUp = L.Upper(tier.DisplayName);
+        string tl = TierLine(tier) + (showGun ? $" · {gunUp}" : "");
+        string? subUp = m.Subtitle is { } msub ? L.Upper(L.T(msub)) : null;
+        string chip = pb ? L.T("NEW PERSONAL BEST") + (showGun ? $" · {gunUp}" : "")
+            : showGun && gun != m.Weapon ? L.F($"FIRST RUN WITH THE {gunUp} AT {tierUp}") : L.F($"FIRST RUN AT {tierUp}");
+        string bestOf = showGun ? L.F($"{tier.DisplayName} best with the {gunName}") : L.F($"{tier.DisplayName} best");
+        string prevText = pb ? L.F($"previous best {prev.ToString("#,0", Inv)}") : $"{bestOf}: {prev.ToString("#,0", Inv)}  ({(score - prev).ToString("+#,0;-#,0;0", Inv)})";
         // badges are calibrated on the drill's own gun (and the Phantom where it's the Vandal): other guns are unrated
-        string badgeName = !rated ? "UNRATED" : badge >= 0 ? Difficulty.Tiers[badge].Name.ToUpperInvariant() : "BELOW ROOKIE";
-        string badgeRanks = !rated ? $"Badges are rated with {GunRating.RatedText(m)}" : badge >= 0 ? Difficulty.Tiers[badge].Ranks : "keep practising";
+        string badgeName = !rated ? L.T("UNRATED") : badge >= 0 ? L.Upper(Difficulty.Tiers[badge].DisplayName) : L.T("BELOW ROOKIE");
+        string badgeRanks = !rated ? RatedWith(m) : badge >= 0 ? Difficulty.Tiers[badge].DisplayRanks : L.T("keep practising");
         bool showScore = m.ShowScore;
         float scoreH = showScore ? 292 * k : 40 * k; // score + badge block (hidden for drills like the Sens Finder)
 
@@ -758,21 +892,29 @@ public partial class Hud : Control
         int lineRows = twoCol ? (resultLines.Count + 1) / 2 : resultLines.Count;
         float pw = (hasReview ? 900 : 1060) * k, rw = hasReview ? 760 * k : 0, gap = hasReview ? 24 * k : 0;
         float extraH = extra.Count > 0 ? 72 * k : 0;
+        // progression XP row (one 44-px row above the buttons): what this run earned; nothing for demos / free play
+        var runXp = s.Demo || s.FreePlay ? null
+            : Progression.Progress.LastRun is { } lr && !ReferenceEquals(lr, runBefore) ? lr : ResultsXpRow.Demo();
+        xpRow = runXp != null ? new ResultsXpRow(runXp) : null;
+        float xpH = xpRow != null ? 44 * k : 0;
         float maxH = size.Y - 60 * k;
-        float ph = Mathf.Min(maxH, 120 * k + scoreH + lineRows * 40 * k + 40 * k + 104 * k + extraH);
+        float ph = Mathf.Min(maxH, 120 * k + scoreH + lineRows * 40 * k + 40 * k + 104 * k + extraH + xpH);
         var rl = hasReview ? LayoutReview(review!, rw, maxH, k, showable, OpenRewind) : null;
         if (rl != null) ph = Mathf.Min(maxH, Mathf.Max(ph, rl.Height));
         float left = size.X / 2 - (pw + gap + rw) / 2;
         var panel = new Rect2(left, size.Y / 2 - ph / 2, pw, ph);
         var rpanel = new Rect2(panel.End.X + gap, panel.Position.Y, rw, ph);
         float btnY = panel.End.Y - 90 * k;
+        var xpRect = new Rect2(panel.Position.X + 44 * k, panel.End.Y - 178 * k - extraH, pw - 88 * k, 40 * k);
+        if (xpRow != null)
+            overlay!.AddChild(new Control { Position = xpRect.Position, Size = xpRect.Size, TooltipText = xpRow.Tooltip(), MouseFilter = MouseFilterEnum.Stop });
         if (canRewind)
         {
             // PLAY AGAIN · REWIND · MENU (the mode's own buttons keep the row above)
             float bx0 = panel.GetCenter().X - 401 * k;
-            OverlayButton("PLAY AGAIN  (R)", VButton.Look.Primary, new Rect2(bx0, btnY, 280 * k, 58 * k), k, s.Restart);
-            OverlayButton("REWIND", VButton.Look.Secondary, new Rect2(bx0 + 296 * k, btnY, 210 * k, 58 * k), k, () => OpenRewind(null));
-            OverlayButton("MENU  (ESC)", VButton.Look.Secondary, new Rect2(bx0 + 522 * k, btnY, 280 * k, 58 * k), k, Main.I.ShowMenu);
+            OverlayButton(L.N("PLAY AGAIN  (R)"), VButton.Look.Primary, new Rect2(bx0, btnY, 280 * k, 58 * k), k, s.Restart);
+            OverlayButton(L.N("REWIND"), VButton.Look.Secondary, new Rect2(bx0 + 296 * k, btnY, 210 * k, 58 * k), k, () => OpenRewind(null));
+            OverlayButton(L.N("MENU  (ESC)"), VButton.Look.Secondary, new Rect2(bx0 + 522 * k, btnY, 280 * k, 58 * k), k, Main.I.ShowMenu);
             if (Main.I.Dev && !devRewindShown && CmdLine.After("--rewind-at") != null)
             {
                 devRewindShown = true; // dev screenshots: --rewind-at S [--rewind-code CODE]
@@ -781,8 +923,8 @@ public partial class Hud : Control
         }
         else
         {
-            OverlayButton("PLAY AGAIN  (R)", VButton.Look.Primary, new Rect2(panel.GetCenter().X - 330 * k, btnY, 320 * k, 58 * k), k, s.Restart);
-            OverlayButton("MENU  (ESC)", VButton.Look.Secondary, new Rect2(panel.GetCenter().X + 10 * k, btnY, 320 * k, 58 * k), k, Main.I.ShowMenu);
+            OverlayButton(L.N("PLAY AGAIN  (R)"), VButton.Look.Primary, new Rect2(panel.GetCenter().X - 330 * k, btnY, 320 * k, 58 * k), k, s.Restart);
+            OverlayButton(L.N("MENU  (ESC)"), VButton.Look.Secondary, new Rect2(panel.GetCenter().X + 10 * k, btnY, 320 * k, 58 * k), k, Main.I.ShowMenu);
         }
         if (extra.Count > 0)
         {
@@ -792,7 +934,8 @@ public partial class Hud : Control
             var extraBtns = new List<(VButton B, string Up)>();
             foreach (var (label, act) in extra)
             {
-                string up = label.ToUpperInvariant();
+                // the mode's English label (or one it already translated), translated then upper-cased
+                string up = L.Upper(L.T(label));
                 VButton? eb = null;
                 eb = OverlayButton(up, VButton.Look.Secondary, new Rect2(ex, btnY - 70 * k, ew, 52 * k), k, () =>
                 {
@@ -827,13 +970,32 @@ public partial class Hud : Control
             var tag = new Rect2(x0, y + 34 * k, Gfx.TextW(UiTheme.HudWide, "RESULTS", hs) + 18 * k, 22 * k);
             d.DrawRect(tag, UiTheme.Accent);
             Gfx.Text(d, UiTheme.HudWide, "RESULTS", tag.Position.X + 9 * k, Gfx.Mid(tag.GetCenter().Y, hs), hs, UiTheme.Text);
-            Gfx.Text(d, UiTheme.Display, modeName, x0, y + 100 * k, ts, UiTheme.Text);
+            float titleW;
+            if (L.IsEnglish)
+            {
+                Gfx.Text(d, UiTheme.Display, modeName, x0, y + 100 * k, ts, UiTheme.Text);
+                titleW = Gfx.TextW(UiTheme.Display, modeName, ts);
+            }
+            else
+            {
+                // a long translated drill name must not run into the PLAYED AT / tier block (right): shrink it (down to
+                // 70%), then cut it with "…"
+                float rightW = 0;
+                if (showScore)
+                    rightW = Mathf.Max(Gfx.TextW(UiTheme.HudWide, "PLAYED AT", UiTheme.Fs(11, k)), Gfx.TextW(UiTheme.HudWide, tl, hs) + 34 * k);
+                if (subUp != null) rightW = Mathf.Max(rightW, Gfx.TextW(UiTheme.HudWide, subUp, UiTheme.Fs(11, k)));
+                float titleMax = x1 - x0 - rightW - 28 * k;
+                int fs = ts, fsMin = (int)MathF.Ceiling(ts * 0.7f);
+                while (fs > fsMin && Gfx.TextW(UiTheme.Display, modeName, fs) > titleMax) fs--;
+                Gfx.TextFit(d, UiTheme.Display, modeName, x0, y + 100 * k, fs, UiTheme.Text, titleMax);
+                titleW = Mathf.Min(Gfx.TextW(UiTheme.Display, modeName, fs), titleMax);
+            }
             // gun chip after the drill's name: silhouette + name, teal when rated, amber when not
             if (showGun)
             {
                 int gs = UiTheme.Fs(13, k);
-                float mx = x0 + Gfx.TextW(UiTheme.Display, modeName, ts) + 18 * k;
-                float gw = 84 * k + Gfx.TextW(UiTheme.HudWide, gunUp, gs) + 12 * k;
+                float mx = x0 + titleW + 18 * k;
+                float gw = 84 * k + Gfx.RawW(UiTheme.HudWide, gunUp, gs) + 12 * k;
                 float limit = x1 - Gfx.TextW(UiTheme.HudWide, tl, hs) - 40 * k;
                 if (mx + gw < limit)
                 {
@@ -842,7 +1004,7 @@ public partial class Hud : Control
                     d.DrawRect(gr, new Color(gc, 0.12f));
                     d.DrawRect(gr, new Color(gc, 0.7f), false, 1f);
                     GunIcons.Draw(d, new Rect2(gr.Position + new Vector2(10 * k, 6 * k), new Vector2(64 * k, 20 * k)), gun, UiTheme.Text);
-                    Gfx.Text(d, UiTheme.HudWide, gunUp, gr.Position.X + 84 * k, Gfx.Mid(gr.GetCenter().Y, gs), gs, UiTheme.Text);
+                    Gfx.TextRaw(d, UiTheme.HudWide, gunUp, gr.Position.X + 84 * k, Gfx.Mid(gr.GetCenter().Y, gs), gs, UiTheme.Text);
                 }
             }
             // tier chip (right)
@@ -892,9 +1054,16 @@ public partial class Hud : Control
                 d.DrawSetTransformMatrix(Transform2D.Identity);
             }
             float ty = ey + er * 1.35f;
-            Gfx.TextC(d, UiTheme.HudWide, rated ? "PERFORMED AT" : $"WITH THE {gunUp}", ex, ty + 22 * k, UiTheme.Fs(12, k), UiTheme.Dim);
+            // other languages: accented capitals need a little more room between the label and the badge name, and a
+            // long name must stay inside the panel
+            Gfx.TextC(d, UiTheme.HudWide, rated ? L.T("PERFORMED AT") : L.F($"WITH THE {gunUp}"), ex, ty + (L.IsEnglish ? 22 : 18) * k, UiTheme.Fs(12, k), UiTheme.Dim);
             int bs = UiTheme.Fs(36, k);
-            Gfx.TextC(d, UiTheme.Display, badgeName, ex, ty + 58 * k, bs, tc);
+            if (L.IsEnglish) Gfx.TextC(d, UiTheme.Display, badgeName, ex, ty + 58 * k, bs, tc);
+            else
+            {
+                float bw = 2 * Mathf.Min(ex - x0 - 250 * k, x1 - ex);
+                Gfx.TextFit(d, UiTheme.Display, badgeName, ex - bw / 2, ty + 60 * k, bs, tc, bw, HorizontalAlignment.Center);
+            }
             Gfx.TextC(d, UiTheme.Body, badgeRanks, ex, ty + 82 * k, UiTheme.Fs(15, k), UiTheme.Dim);
             }
 
@@ -913,6 +1082,7 @@ public partial class Hud : Control
                 Gfx.TextFit(d, UiTheme.Body, label, lx + 12 * k, Gfx.Mid(lyy, rs), rs, UiTheme.Dim, colW - vw - 36 * k);
                 Gfx.TextFit(d, UiTheme.Body, value, lx + colW - 12 * k - colW * 0.6f, Gfx.Mid(lyy, rs), rs, UiTheme.Text, colW * 0.6f, HorizontalAlignment.Right);
             }
+            xpRow?.Draw(d, xpRect, k, t);
 
             if (rl != null)
             {
@@ -939,6 +1109,18 @@ public partial class Hud : Control
         if (s.World == null || !IsInstanceValid(s.World) || !RewindData.CanRewind(s.Telemetry)) return;
         if (s.World.GetNodeOrNull("Rewind") is { } old) old.Free();
         RewindScreen.Open(s.World, s.Telemetry, null, code);
+    }
+
+    /// <summary>"Badges are rated with the Vandal or Phantom" (gun names stay English).</summary>
+    static string RatedWith(TrainingMode m)
+    {
+        var g = GunRating.RatedFor(m).Select(GunRating.GunName).ToList();
+        return g.Count switch
+        {
+            1 => L.F($"Badges are rated with the {g[0]}"),
+            2 => L.F($"Badges are rated with the {g[0]} or {g[1]}"),
+            _ => L.F($"Badges are rated with {GunRating.RatedText(m)}"),
+        };
     }
 
     static List<(string Label, Action Act)> ExtraButtons(TrainingMode m)
@@ -982,14 +1164,14 @@ public partial class Hud : Control
     static ReviewLayout TryLayoutReview(RunReview rv, float w, float k, int maxIssues, int maxCues, int maxStrengths, int sumLines,
         Func<string, bool>? showable = null, Action<string>? showMe = null)
     {
-        var L = new ReviewLayout();
+        var lay = new ReviewLayout(); // not "L": that is the translation class
         var body = UiTheme.Body;
         float pad = 36 * k, x = pad, tw = w - pad * 2;
         int hs = UiTheme.Fs(13, k), ss = UiTheme.Fs(17, k), cs = UiTheme.Fs(12, k), ts = UiTheme.Fs(23, k), es = UiTheme.Fs(14.5f, k);
 
         // header tag
-        string caption = rv.Issues.Count > 0 ? "WHAT TO FIX NEXT RUN" : "NO CLEAR PROBLEMS THIS RUN";
-        L.Ops.Add((d, o) =>
+        string caption = rv.Issues.Count > 0 ? L.N("WHAT TO FIX NEXT RUN") : L.N("NO CLEAR PROBLEMS THIS RUN");
+        lay.Ops.Add((d, o) =>
         {
             var tag = new Rect2(o.X + x, o.Y + 34 * k, Gfx.TextW(UiTheme.HudWide, "COACH REVIEW", hs) + 18 * k, 22 * k);
             d.DrawRect(tag, UiTheme.Accent);
@@ -1002,14 +1184,14 @@ public partial class Hud : Control
         {
             float sy = y;
             float h = CoachDraw.TextH(body, rv.Summary, tw, ss, sumLines);
-            L.Ops.Add((d, o) => CoachDraw.Para(d, body, rv.Summary, o.X + x, o.Y + sy, tw, ss, UiTheme.Text, sumLines));
+            lay.Ops.Add((d, o) => CoachDraw.Para(d, body, rv.Summary, o.X + x, o.Y + sy, tw, ss, UiTheme.Text, sumLines));
             y += h + 22 * k;
         }
 
         void Section(string title)
         {
             float sy = y;
-            L.Ops.Add((d, o) =>
+            lay.Ops.Add((d, o) =>
             {
                 float cy = o.Y + sy + 8 * k;
                 d.DrawRect(new Rect2(o.X + x, cy - 3 * k, 6 * k, 6 * k), UiTheme.Accent);
@@ -1023,7 +1205,7 @@ public partial class Hud : Control
         var issues = rv.Issues.Take(maxIssues).ToList();
         if (issues.Count > 0)
         {
-            Section(issues.Count == 1 ? "TOP ISSUE" : "TOP ISSUES");
+            Section(issues.Count == 1 ? L.N("TOP ISSUE") : L.N("TOP ISSUES"));
             foreach (var iss in issues)
             {
                 float iy = y;
@@ -1034,7 +1216,7 @@ public partial class Hud : Control
                 if (drill != null)
                 {
                     var focusCue = CoachData.FocusFrom(iss);
-                    L.Buttons.Add((new Rect2(x + tw - bw, iy, bw, 42 * k), "PRACTISE", CoachData.DrillName(drill), () => CoachData.StartDrill(drill, focusCue), VButton.Look.Secondary));
+                    lay.Buttons.Add((new Rect2(x + tw - bw, iy, bw, 42 * k), L.N("PRACTISE"), CoachData.DrillName(drill), () => CoachData.StartDrill(drill, focusCue), VButton.Look.Secondary));
                 }
                 // "Show me": this run has moments for the issue → a rewind focused on them
                 float smw = 0;
@@ -1042,10 +1224,10 @@ public partial class Hud : Control
                 {
                     smw = Gfx.TextW(UiTheme.HudWide, "SHOW ME ›", UiTheme.Fs(14, k)) + 44 * k;
                     string id = iss.Id;
-                    L.Buttons.Add((new Rect2(x + tw - bw - (bw > 0 ? 10 * k : 0) - smw, iy + 5 * k, smw, 32 * k), "SHOW ME ›", null, () => showMe(id), VButton.Look.Ghost));
+                    lay.Buttons.Add((new Rect2(x + tw - bw - (bw > 0 ? 10 * k : 0) - smw, iy + 5 * k, smw, 32 * k), L.N("SHOW ME ›"), null, () => showMe(id), VButton.Look.Ghost));
                     smw += 10 * k;
                 }
-                L.Ops.Add((d, o) =>
+                lay.Ops.Add((d, o) =>
                 {
                     float cy = o.Y + iy + 21 * k;
                     float cw = CoachDraw.Chip(d, sev, o.X + x, cy, k, sc, filled: iss.Severity == Severity.Major);
@@ -1059,14 +1241,14 @@ public partial class Hud : Control
                 {
                     float ey = y;
                     float h = CoachDraw.TextH(body, iss.Evidence, tw, es, 2);
-                    L.Ops.Add((d, o) => CoachDraw.Para(d, body, iss.Evidence, o.X + x, o.Y + ey, tw, es, UiTheme.Dim, 2));
+                    lay.Ops.Add((d, o) => CoachDraw.Para(d, body, iss.Evidence, o.X + x, o.Y + ey, tw, es, UiTheme.Dim, 2));
                     y += h + 6 * k;
                 }
                 foreach (var cue in (iss.Fixes ?? Array.Empty<string>()).Take(maxCues))
                 {
                     float qy = y;
                     float h = CoachDraw.TextH(body, cue, tw - 20 * k, es, 2);
-                    L.Ops.Add((d, o) =>
+                    lay.Ops.Add((d, o) =>
                     {
                         Gfx.Diamond(d, new Vector2(o.X + x + 5 * k, o.Y + qy + es * 0.62f), 3.5f * k, 3.5f * k, sc);
                         CoachDraw.Para(d, body, cue, o.X + x + 20 * k, o.Y + qy, tw - 20 * k, es, UiTheme.Text, 2);
@@ -1080,12 +1262,12 @@ public partial class Hud : Control
         var good = rv.Strengths.Take(maxStrengths).ToList();
         if (good.Count > 0)
         {
-            Section("WHAT WENT WELL");
+            Section(L.N("WHAT WENT WELL"));
             foreach (var g in good)
             {
                 float gy = y;
                 float h = CoachDraw.TextH(body, g, tw - 20 * k, es, 2);
-                L.Ops.Add((d, o) =>
+                lay.Ops.Add((d, o) =>
                 {
                     Span<Vector2> pts = stackalloc Vector2[3];
                     float bx = o.X + x, by = o.Y + gy + es * 0.62f;
@@ -1098,9 +1280,9 @@ public partial class Hud : Control
         }
 
         y += 10 * k;
-        L.Buttons.Add((new Rect2(x - 2 * k, y, 300 * k, 32 * k), "FULL COACH PROFILE  ›", null, () => Main.I.ShowProfile(), VButton.Look.Ghost));
+        lay.Buttons.Add((new Rect2(x - 2 * k, y, 300 * k, 32 * k), L.N("FULL COACH PROFILE  ›"), null, () => Main.I.ShowProfile(), VButton.Look.Ghost));
         y += 32 * k + 26 * k;
-        L.Height = y;
-        return L;
+        lay.Height = y;
+        return lay;
     }
 }

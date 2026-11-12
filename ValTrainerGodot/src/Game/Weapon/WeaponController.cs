@@ -116,6 +116,17 @@ public sealed class WeaponController
         Spin = 0;
     }
 
+    /// <summary>A full magazine and reserve now (new life, new round or duel, a Deathmatch kill): any reload in progress is
+    /// dropped, a shell-by-shell one included. Recoil is left alone (a DM kill mid-spray keeps it); a respawn also calls
+    /// <see cref="ResetRecoil"/>.</summary>
+    public void Refill()
+    {
+        Ammo = Def.Mag;
+        Reserve = Def.Reserve;
+        ReloadLeft = reloadTotal = 0f;
+        roundsToLoad = roundsLoaded = 0;
+    }
+
     /// <summary>Starts a reload: the whole magazine in <see cref="WeaponDef.Reload"/>, with rounds left in
     /// <see cref="WeaponDef.ReloadPartial"/> if the gun has one (Outlaw 2.3 s), or a round per
     /// <see cref="WeaponDef.ReloadPerRound"/> (Bucky, Marshal).</summary>

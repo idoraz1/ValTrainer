@@ -28,6 +28,10 @@ public sealed record VmPose(
     /// <summary>Debug side / top views (VmTest --vmview): camera distance (m) and the gun-space z the view centres on.</summary>
     public float ViewD { get; init; } = 0.66f;
     public float ViewZ { get; init; } = -0.17f;
+    /// <summary>The model's shell is receiver metal (<c>DarkMetal</c>, <c>Grey</c>: receiver and stock frame) with almost no furniture (the SMG models: only the
+    /// magazine and grip are polymer): skins treat that receiver as Body, so a pattern covers the gun as the furniture of a
+    /// rifle does. Factory and Gold looks are unchanged.</summary>
+    public bool ReceiverIsBody { get; init; }
 
     // ---------------- hand shapes ----------------
 
@@ -64,7 +68,7 @@ public sealed record VmPose(
         var zh = -fingers;
         var xh = new Vector3(0, -Mathf.Cos(a), Mathf.Sin(a));
         var palm = c + new Vector3(0.03f, 0f, 0.01f);
-        return new HandPlacement(palm + 0.05f * zh - 0.001f * xh, fingers, Vector3.Right, elbow ?? new Vector3(0.35f, -0.45f, 0.82f), shape);
+        return new HandPlacement(palm + 0.05f * zh - 0.001f * xh, fingers, Vector3.Right, elbow ?? new Vector3(0.3f, -0.55f, 0.78f), shape);
     }
 
     /// <summary>Support hand around a vertical foregrip centred at <paramref name="c"/>: the trigger-hand grip mirrored to
@@ -78,7 +82,12 @@ public sealed record VmPose(
 
     /// <summary>Support hand under a handguard whose bottom centre is <paramref name="b"/>.</summary>
     static HandPlacement CupAt(Vector3 b) =>
-        new(b + new Vector3(-0.056f, -0.036f, -0.009f), new Vector3(1f, 0.35f, -0.25f), new Vector3(-0.3f, -1f, 0f), new Vector3(-0.5f, -0.55f, 0.65f), Cup);
+        new(b + new Vector3(-0.056f, -0.036f, -0.009f), new Vector3(1f, 0.35f, -0.25f), new Vector3(-0.3f, -1f, 0f), new Vector3(-0.3f, -0.55f, 0.78f), Cup); // forearm down and back under the gun (VALORANT-style: only the hand and wrist show)
+
+    /// <summary>Support hand around a modelled gun's tall handguard: palm under its bottom edge at <paramref name="b"/> (bottom
+    /// centre, gun space), wrist tucked in close to the gun's side, fingers curling up its left side.</summary>
+    static HandPlacement CupModelAt(Vector3 b, float up = 0.55f) =>
+        new(b + new Vector3(-0.036f, -0.014f, -0.009f), new Vector3(1f, up, -0.25f), new Vector3(-0.45f, -0.9f, 0f), new Vector3(-0.3f, -0.55f, 0.78f), Cup);
 
     /// <summary>Pistol support hand wrapping the grip hand from the left.</summary>
     static HandPlacement PistolSupportAt(Vector3 c, float slant)
@@ -114,6 +123,47 @@ public sealed record VmPose(
         MagWell: new Vector3(0f, 0.066f, -0.158f), MagHalf: new Vector3(0.012f, 0.095f, 0.028f), MagCurve: 26f,
         KickBack: 0.022f, KickPitch: 2.6f, KickFreq: 30f,
         FlashScale: 1f, Shells: true, ShellLen: 0.039f, Equip: 0.55f);
+
+    /// <summary>Dev test of modelled skins (<c>--vm-model foundry|aurora|orrery</c>): a Higgsfield + Blender rifle on the
+    /// Vandal's slot (assets/weapons/&lt;name&gt;/AssaultRifle_&lt;Name&gt;.tscn). The three share one silhouette (each concept was
+    /// generated from Foundry's), so they share this layout: grip near the origin, muzzle at -Z, a big box magazine.</summary>
+    public static VmPose ModelTest(string name) => modelTests.TryGetValue(name, out var p) ? p
+        : modelTests[name] = (name.StartsWith("vandal") ? VandalModel : name.StartsWith("phantom") ? PhantomModel : FoundryTest) with { Scene = $"res://assets/weapons/{name}/AssaultRifle_{char.ToUpperInvariant(name[0])}{name[1..]}.tscn" };
+
+    /// <summary>Phantom-slot modelled body (models-v2 <c>phantom*</c>: a suppressed carbine with a straight magazine).
+    /// points measured from the model's side render (grip point mid pistol grip).</summary>
+    static VmPose? phantomModel; // lazy: Phantom is declared further down (static fields initialise in file order)
+    static VmPose PhantomModel => phantomModel ??= Phantom with
+    {
+        HipPos = new Vector3(0.195f, -0.195f, -0.202f), HipRot = new Vector3(-2.6f, 2.3f, 7.2f), // solved from the user's VALORANT clips, stock kept off-screen (vmref)
+        AdsPos = new Vector3(0f, -0.19f, -0.24f), AdsRot = new Vector3(-7.05f, 0f, 0f),
+        Grip = GripAt(new Vector3(0f, -0.05f, 0.005f), 20f, PistolGrip), // measured pistol-grip centre (probe3)
+        Support = CupModelAt(new Vector3(0f, 0.03f, -0.33f), 0.25f), // shorter handguard: fingers stay under the rail
+        Eject = new Vector3(0.03f, 0.085f, -0.107f),
+        MagWell = new Vector3(0f, 0.01f, -0.165f), MagHalf = new Vector3(0.013f, 0.065f, 0.033f), MagCurve = 0f,
+    };
+
+    /// <summary>Vandal-slot modelled body (models-v2 <c>vandal*</c>: a heavy rifle with a curved magazine, 0.92 m).</summary>
+    static readonly VmPose VandalModel = Vandal with
+    {
+        HipPos = new Vector3(0.192f, -0.221f, -0.22f), HipRot = new Vector3(-0.7f, 0.7f, 9f), // solved from the user's VALORANT clips: muzzle ~59 %/60 %, sights 63–68 %, receiver to the right edge, stock off-screen, top canted toward the camera
+        AdsPos = new Vector3(0f, -0.215f, -0.24f),
+        Grip = GripAt(new Vector3(0f, -0.05f, 0.016f), 18f, PistolGrip), // measured pistol-grip centre (probe3)
+        Support = CupModelAt(new Vector3(0f, 0.037f, -0.41f)),
+        Eject = new Vector3(0.03f, 0.08f, -0.11f),
+        MagWell = new Vector3(0f, 0.05f, -0.19f), MagHalf = new Vector3(0.014f, 0.1f, 0.033f), MagCurve = 26f,
+    };
+    static readonly Dictionary<string, VmPose> modelTests = new();
+
+    static readonly VmPose FoundryTest = Vandal with
+    {
+        Scene = "res://assets/weapons/foundry/AssaultRifle_Foundry.tscn",
+        AdsPos = new Vector3(0f, -0.25f, -0.24f),
+        Grip = GripAt(new Vector3(0f, -0.046f, 0.027f), 20f, PistolGrip),
+        Support = CupAt(new Vector3(0f, 0.06f, -0.36f)),
+        Eject = new Vector3(0.036f, 0.137f, -0.15f),
+        MagWell = new Vector3(0f, 0.03f, -0.226f), MagHalf = new Vector3(0.016f, 0.085f, 0.06f), MagCurve = 0f,
+    };
 
     public static readonly VmPose Phantom = Vandal with
     {
@@ -174,7 +224,7 @@ public sealed record VmPose(
         Eject = new Vector3(0.024f, 0.11f, -0.1f),
         MagWell = new Vector3(0f, 0.005f, -0.122f), MagHalf = new Vector3(0.012f, 0.065f, 0.022f), MagCurve = 0f,
         KickBack = 0.014f, KickPitch = 1.6f, KickFreq = 34f, FlashScale = 0.7f, ShellLen = 0.025f, Equip = 0.45f,
-        ViewD = 0.5f, ViewZ = -0.04f,
+        ViewD = 0.5f, ViewZ = -0.04f, ReceiverIsBody = true,
     };
 
     /// <summary>Spectre: the long-receiver SMG with a suppressor (small dim flash).</summary>
@@ -385,4 +435,149 @@ public sealed record VmPose(
 
     /// <summary>The layout a gun is drawn with (<see cref="WeaponLooks"/>).</summary>
     public static VmPose For(WeaponKind k) => WeaponLooks.For(k).Pose;
+}
+
+/// <summary>One key of an inspect motion (<see cref="VmInspect"/>).</summary>
+/// <param name="T">Seconds from the start.</param>
+/// <param name="Off">Camera-space offset of the gun (m, right-handed layout; the left-handed one is mirrored).</param>
+/// <param name="Rot">Rotation about the gun's centre in gun space, degrees: pitch (+ = muzzle up), yaw (+ = muzzle swings
+/// left, the left side turns to the camera), roll about the barrel (- = the top tips toward the camera after a +yaw, + = the
+/// underside and magazine).</param>
+public readonly record struct InspectKey(float T, Vector3 Off, Vector3 Rot);
+
+/// <summary>
+/// The weapon inspect (skins3-contracts §4): ValTrainer's own motion, not VALORANT's. The gun is lifted toward the screen
+/// centre and turned to show its side, held a moment while it drifts, tipped over to show the top of the receiver (where the
+/// skins' receiver motifs sit), then brought back with a small overshoot that settles into the hip pose. Keys are eased with
+/// a Catmull-Rom spline (velocity carries through the keys, zero at the ends), so the motion has weight instead of stopping
+/// at every key. One profile per weapon class: sidearms flick from one side to the other one-handed (the support hand lets
+/// go for the whole motion; long guns free it only for the tip), SMGs are quicker, snipers turn less (they are long), shotguns and machine guns are slower and heftier.
+/// Cosmetic only: nothing here touches the gun's state, timing, telemetry or replays.
+/// </summary>
+public sealed record VmInspect(string Name, InspectKey[] Keys)
+{
+    /// <summary>Support hand off the gun: it drops out of view between these times (s; NaN = it stays on the gun).</summary>
+    public float HandOff { get; init; } = float.NaN;
+    public float HandOn { get; init; } = float.NaN;
+
+    public float Duration => Keys[^1].T;
+
+    static InspectKey K(float t, float ox, float oy, float oz, float pitch, float yaw, float roll) =>
+        new(t, new Vector3(ox, oy, oz), new Vector3(pitch, yaw, roll));
+    static InspectKey Zero(float t) => new(t, Vector3.Zero, Vector3.Zero);
+
+    /// <summary>Rifles (Vandal, Phantom, Bulldog, Guardian): present the left side, drift, tip the top over, settle. 3.2 s.</summary>
+    public static readonly VmInspect Rifle = new("rifle", new[]
+    {
+        Zero(0f),
+        K(0.60f, -0.105f, 0.050f, -0.035f, 6f, 52f, 14f),
+        K(1.35f, -0.112f, 0.056f, -0.040f, 9f, 58f, 9f),
+        K(1.95f, -0.090f, 0.074f, -0.020f, -6f, 30f, -48f),
+        K(2.45f, -0.086f, 0.070f, -0.020f, -5f, 27f, -45f),
+        K(2.95f, 0.004f, -0.006f, 0.002f, -1.5f, -3f, 4f),
+        Zero(3.2f),
+    }) { HandOff = 1.4f, HandOn = 2.5f };
+
+    /// <summary>SMGs (Stinger, Spectre): quicker; the first look is canted so the magazine shows. 2.85 s.</summary>
+    public static readonly VmInspect Smg = new("smg", new[]
+    {
+        Zero(0f),
+        K(0.50f, -0.095f, 0.050f, -0.020f, 8f, 55f, -14f),
+        K(1.20f, -0.100f, 0.054f, -0.024f, 10f, 60f, -9f),
+        K(1.75f, -0.082f, 0.070f, -0.010f, -4f, 30f, -45f),
+        K(2.25f, -0.080f, 0.068f, -0.010f, -3f, 27f, -42f),
+        K(2.65f, 0.004f, -0.005f, 0.002f, -1.5f, -3f, 4f),
+        Zero(2.85f),
+    }) { HandOff = 1.25f, HandOn = 2.3f };
+
+    /// <summary>Sidearms: one-handed; the left side, then a wrist flick to the right side, then back. 2.85 s.</summary>
+    public static readonly VmInspect Sidearm = new("sidearm", new[]
+    {
+        Zero(0f),
+        K(0.50f, -0.070f, 0.060f, 0.030f, 12f, 62f, 18f),
+        K(1.20f, -0.074f, 0.064f, 0.030f, 15f, 68f, 12f),
+        K(1.65f, -0.052f, 0.070f, 0.030f, 8f, -38f, -24f),
+        K(2.25f, -0.050f, 0.068f, 0.030f, 10f, -44f, -20f),
+        K(2.62f, 0.003f, -0.004f, 0.000f, -2f, 3f, 3f),
+        Zero(2.85f),
+    }) { HandOff = 0.05f, HandOn = 2.45f };
+
+    /// <summary>Snipers (Operator, Marshal, Outlaw): a long gun, so less yaw and more roll. 3.4 s.</summary>
+    public static readonly VmInspect Sniper = new("sniper", new[]
+    {
+        Zero(0f),
+        K(0.65f, -0.080f, 0.060f, -0.020f, 5f, 34f, 20f),
+        K(1.50f, -0.084f, 0.064f, -0.024f, 7f, 38f, 16f),
+        K(2.15f, -0.070f, 0.080f, 0.000f, -5f, 20f, -52f),
+        K(2.70f, -0.068f, 0.078f, 0.000f, -4f, 18f, -49f),
+        K(3.15f, 0.004f, -0.006f, 0.002f, -1.5f, -2.5f, 4f),
+        Zero(3.4f),
+    }) { HandOff = 1.55f, HandOn = 2.75f };
+
+    /// <summary>Shotguns (Shorty, Bucky, Judge): slower and lower, weight in the hands. 3.15 s.</summary>
+    public static readonly VmInspect Shotgun = new("shotgun", new[]
+    {
+        Zero(0f),
+        K(0.65f, -0.090f, 0.030f, -0.030f, 2f, 45f, 24f),
+        K(1.45f, -0.094f, 0.034f, -0.034f, 4f, 50f, 20f),
+        K(2.00f, -0.080f, 0.050f, -0.020f, -8f, 26f, -46f),
+        K(2.50f, -0.078f, 0.048f, -0.020f, -7f, 24f, -43f),
+        K(2.90f, 0.004f, -0.008f, 0.002f, -2f, -3f, 5f),
+        Zero(3.15f),
+    }) { HandOff = 1.5f, HandOn = 2.55f };
+
+    /// <summary>Machine guns (Ares, Odin): a heft dip first, then a heavy, smaller turn. 3.3 s.</summary>
+    public static readonly VmInspect Heavy = new("heavy", new[]
+    {
+        Zero(0f),
+        K(0.25f, 0.000f, -0.020f, 0.000f, -3f, 0f, 0f),
+        K(0.80f, -0.080f, 0.030f, -0.030f, 4f, 40f, 18f),
+        K(1.60f, -0.084f, 0.034f, -0.034f, 5f, 44f, 15f),
+        K(2.20f, -0.070f, 0.050f, -0.020f, -6f, 22f, -40f),
+        K(2.70f, -0.068f, 0.048f, -0.020f, -6f, 20f, -37f),
+        K(3.05f, 0.004f, -0.008f, 0.002f, -2f, -3f, 5f),
+        Zero(3.3f),
+    }) { HandOff = 1.65f, HandOn = 2.75f };
+
+    /// <summary>The inspect of a gun, by its class.</summary>
+    public static VmInspect For(WeaponKind gun) => Weapons.Get(gun)?.Class switch
+    {
+        WeaponClass.Sidearm => Sidearm,
+        WeaponClass.SMG => Smg,
+        WeaponClass.Shotgun => Shotgun,
+        WeaponClass.Sniper => Sniper,
+        WeaponClass.Heavy => Heavy,
+        _ => Rifle,
+    };
+
+    /// <summary>The offset and rotation at <paramref name="t"/> s (clamped to the motion): a non-uniform Catmull-Rom spline
+    /// through the keys, with zero velocity at the first and last key.</summary>
+    public (Vector3 Off, Vector3 Rot) Sample(float t)
+    {
+        var k = Keys;
+        if (t <= k[0].T) return (k[0].Off, k[0].Rot);
+        if (t >= k[^1].T) return (k[^1].Off, k[^1].Rot);
+        int i = 0;
+        while (i < k.Length - 2 && t > k[i + 1].T) i++;
+        var a = k[i];
+        var b = k[i + 1];
+        float h = b.T - a.T;
+        float u = (t - a.T) / h;
+        Vector3 TanOff(int j) => j <= 0 || j >= k.Length - 1 ? Vector3.Zero : (k[j + 1].Off - k[j - 1].Off) / (k[j + 1].T - k[j - 1].T);
+        Vector3 TanRot(int j) => j <= 0 || j >= k.Length - 1 ? Vector3.Zero : (k[j + 1].Rot - k[j - 1].Rot) / (k[j + 1].T - k[j - 1].T);
+        float u2 = u * u, u3 = u2 * u;
+        float h00 = 2f * u3 - 3f * u2 + 1f, h10 = u3 - 2f * u2 + u, h01 = -2f * u3 + 3f * u2, h11 = u3 - u2;
+        var off = a.Off * h00 + TanOff(i) * (h10 * h) + b.Off * h01 + TanOff(i + 1) * (h11 * h);
+        var rot = a.Rot * h00 + TanRot(i) * (h10 * h) + b.Rot * h01 + TanRot(i + 1) * (h11 * h);
+        return (off, rot);
+    }
+
+    /// <summary>How far the support hand is off the gun at <paramref name="t"/> (0 = on it, 1 = out of view).</summary>
+    public float HandAway(float t)
+    {
+        if (float.IsNaN(HandOff)) return 0f;
+        float off = Mathf.SmoothStep(HandOff, HandOff + 0.3f, t);
+        float on = Mathf.SmoothStep(HandOn, HandOn + 0.35f, t);
+        return off * (1f - on);
+    }
 }

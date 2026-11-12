@@ -66,12 +66,19 @@ public partial class Main : Node
         Sfx.Volume = Settings.Volume;
         AddChild(new Sfx { Name = "Sfx" });
         UiTheme.Init();
+        L.Init(Settings);            // UI language: Settings → Language, Auto = VALORANT's → Windows' → English (dev: --lang, --riot-locale)
         if (!OS.GetCmdlineUserArgs().Concat(OS.GetCmdlineArgs()).Contains("--dev")) ApplyDisplay();
         GetTree().Root.Title = "ValTrainer";
 
         var args = OS.GetCmdlineUserArgs().Concat(OS.GetCmdlineArgs()).ToArray();
         Dev = args.Contains("--dev");
         AppSettings.ReadOnly = !SavesData; // dev/automated runs never write the user's settings (quit, F11, result buttons, coach "Try it" …)
+        // Progression (progress.json; dev runs never write it): level, stars and the skin unlocks. New unlocks re-skin live guns.
+        Progression.Progress.Init();
+        Progression.Progress.Unlocked += _ => Game.Weapon.GunSkins.NotifyChanged();
+        // Dev "--xhair-pick N": the crosshair switcher draws entry N (1 = the first) from the start (screenshots; with
+        // --data-dir … --write-data it is saved like a pick in Settings, for the persistence check).
+        if (Dev && int.TryParse(CmdLine.DevAfter("--xhair-pick"), out var xhPick) && xhPick >= 1) CrosshairList.Select(xhPick - 1);
         if (args.Contains("--coach-analyze"))
         {
             // Dev tool: analyse saved telemetry and quit (works with --headless).
@@ -102,6 +109,20 @@ public partial class Main : Node
         {
             // Dev self-test (works with --headless): parsers and number formatting under the current culture.
             int failures = CultureCheck.Run();
+            GetTree().Quit(failures == 0 ? 0 : 1);
+            return;
+        }
+        if (Dev && Progression.ProgressDev.Requested)
+        {
+            // Dev tools (work with --headless): --progress-test (self-test, exit code = failures), --progress-sim
+            // casual|regular|grinder [--sim-days N] (pacing), --progress-report (the data dir's credit, broken down).
+            GetTree().Quit(Progression.ProgressDev.Run());
+            return;
+        }
+        if (Dev && args.Contains("--i18n-check"))
+        {
+            // Dev self-test (works with --headless): translation catalogues, plurals, the VALORANT locale parser, threads.
+            int failures = I18nCheck.Run();
             GetTree().Quit(failures == 0 ? 0 : 1);
             return;
         }
@@ -180,6 +201,8 @@ public partial class Main : Node
         if (Dev && make == null && (CmdLine.After("--lockin") ?? CmdLine.After("--warmup")) is { } wu) Callable.From(() => Warmup.WarmupRunner.StartDev(wu)).CallDeferred();
         // Dev-only: "--rewind-file run.vtt [--rewind-code CODE] [--rewind-at S]" opens the Rewind of a saved run.
         if (Dev && make == null && CmdLine.After("--rewind-file") is { } rf) Callable.From(() => RewindScreen.OpenDevFile(rf)).CallDeferred();
+        // Dev-only: "--lang-live fr" switches the language 2.5 s in, like Settings → Language (live rebuild check).
+        if (Dev && CmdLine.DevAfter("--lang-live") is { } liveLang) GetTree().CreateTimer(2.5).Timeout += () => L.Set(liveLang);
         Analysis.CoachWarmUp.Start(); // JIT the coach off the main thread before the first results screen
     }
 
@@ -240,6 +263,8 @@ public partial class Main : Node
     public void ShowSettings() => SetScreen(new SettingsScreen());
     public void ShowStats() => SetScreen(new StatsScreen());
     public void ShowProfile() => SetScreen(new ProfileScreen());
+    /// <summary>Progress: level, stars, challenges, next unlocks, the level track (menu account strip).</summary>
+    public void ShowProgress() => SetScreen(new ProgressScreen());
     /// <summary>The Lock-In setup screen (menu LOCK IN).</summary>
     public void ShowLockIn() => SetScreen(new Warmup.WarmupScreen());
     /// <summary>Shows any screen node (Lock-In check-in and step cards, sessions prepared with routine hooks, the hand-off).</summary>
@@ -332,6 +357,7 @@ public partial class Main : Node
     /// bug report treats the previous session's log without it as a crash and attaches its end too.</summary>
     public override void _ExitTree()
     {
+        L.WriteMissing(); // dev --i18n-missing <file>
         if (I == this) Log.Info(BugReport.CleanExit);
     }
 

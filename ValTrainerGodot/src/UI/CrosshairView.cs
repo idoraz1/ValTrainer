@@ -1,5 +1,6 @@
 using System.Globalization;
 using Godot;
+using ValTrainer.Core;
 using ValTrainer.Valorant;
 
 namespace ValTrainer.UI;
@@ -347,7 +348,7 @@ public partial class CrosshairPreview : VBoxContainer
         AddThemeConstantOverride("separation", (int)(6 * K));
         row = new HBoxContainer();
         row.AddThemeConstantOverride("separation", (int)(6 * K));
-        foreach (var (label, m) in new[] { ("PRIMARY", CrosshairView.Mode.Primary), ("ADS", CrosshairView.Mode.Ads), ("SNIPER", CrosshairView.Mode.Sniper) })
+        foreach (var (label, m) in new[] { (L.N("PRIMARY"), CrosshairView.Mode.Primary), (L.N("ADS"), CrosshairView.Mode.Ads), (L.N("SNIPER"), CrosshairView.Mode.Sniper) })
         {
             var b = new VButton { Kind = VButton.Look.Select, K = K, Label = label, FontPx = 14, CustomMinimumSize = new Vector2(0, 30 * K),
                 SizeFlagsHorizontal = SizeFlags.ExpandFill };
@@ -398,29 +399,30 @@ public partial class CrosshairPreview : VBoxContainer
         }
     }
 
-    /// <summary>What VALORANT draws in this tab, in one line.</summary>
+    /// <summary>What VALORANT draws in this tab, in one line (translated: the caption is a plain Godot Label).</summary>
     public static string Describe(CrosshairSettings p, CrosshairView.Mode m)
     {
         switch (m)
         {
             case CrosshairView.Mode.Ads:
-                if (p.AdsIsOwn) return $"Aiming down sights (Vandal, Phantom, Headhunter): your own ADS crosshair, {Colour(p.Ads.Color)}.";
-                return !p.UseAdvancedOptions && !p.UsePrimaryForAds
+                if (p.AdsIsOwn) return L.F($"Aiming down sights (Vandal, Phantom, Headhunter): your own ADS crosshair, {Colour(p.Ads.Color)}.");
+                return L.T(!p.UseAdvancedOptions && !p.UsePrimaryForAds
                     ? "Aiming down sights: your primary. Use Advanced Options is off, so VALORANT ignores the ADS tab."
-                    : "Aiming down sights: your primary (Copy Primary Crosshair is on).";
+                    : "Aiming down sights: your primary (Copy Primary Crosshair is on).");
             case CrosshairView.Mode.Sniper:
                 var d = p.SniperDotFor();
-                if (!p.SniperIsOwn) return "Scoped (Operator, Tour de Force): VALORANT's default red centre dot (Use Advanced Options is off).";
+                if (!p.SniperIsOwn) return L.T("Scoped (Operator, Tour de Force): VALORANT's default red centre dot (Use Advanced Options is off).");
                 return d.Show
-                    ? $"Scoped (Operator, Tour de Force): your centre dot, {Colour(d.Color)}, size {d.Size.ToString("0.###", CultureInfo.InvariantCulture)}, opacity {d.Opacity.ToString("0.##", CultureInfo.InvariantCulture)}."
-                    : "Scoped (Operator, Tour de Force): no centre dot (turned off in your Sniper tab).";
+                    ? L.F($"Scoped (Operator, Tour de Force): your centre dot, {Colour(d.Color)}, size {d.Size.ToString("0.###", CultureInfo.InvariantCulture)}, opacity {d.Opacity.ToString("0.##", CultureInfo.InvariantCulture)}.")
+                    : L.T("Scoped (Operator, Tour de Force): no centre dot (turned off in your Sniper tab).");
             default:
-                string split = p.AdsIsOwn ? " Your ADS crosshair is different: see ADS." : p.SniperIsOwn ? " Your sniper dot is your own: see SNIPER." : "";
-                return $"Hip fire with every gun: {Colour(p.Primary.Color)}.{split}";
+                string split = p.AdsIsOwn ? " " + L.T("Your ADS crosshair is different: see ADS.") : p.SniperIsOwn ? " " + L.T("Your sniper dot is your own: see SNIPER.") : "";
+                return L.F($"Hip fire with every gun: {Colour(p.Primary.Color)}.") + split;
         }
     }
 
-    static string Colour(Color c) => CrosshairCode.ColorName(c).ToLowerInvariant() is var n && n.StartsWith('#') ? n.ToUpperInvariant() : n;
+    /// <summary>"white", "#00FF7F": a preset name translated (CrosshairCode.PresetNames, English), a hex code as it is.</summary>
+    static string Colour(Color c) => CrosshairCode.ColorName(c) is var n && n.StartsWith('#') ? n.ToUpperInvariant() : L.T(n).ToLowerInvariant();
 
     static void Wall(DrawBox d)
     {

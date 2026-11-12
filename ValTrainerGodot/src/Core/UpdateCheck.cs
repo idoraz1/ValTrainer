@@ -29,8 +29,12 @@ public static class UpdateCheck
     static readonly TimeSpan RetryAfterFailure = TimeSpan.FromHours(1);
 
     public static State Status { get; private set; } = State.Idle;
-    /// <summary>Why the last check failed / why checks are off (for Settings → About).</summary>
+    /// <summary>Why the last check failed / why checks are off, in English (logs). Settings → About shows
+    /// <see cref="DisplayMessage"/>.</summary>
     public static string? Message { get; private set; }
+    /// <summary><see cref="Message"/> in the UI language (null when there's none).</summary>
+    public static string? DisplayMessage => Message == null ? null : messageUi?.Invoke() ?? L.T(Message);
+    static Func<string>? messageUi;
     /// <summary>Newest release known (from this session's check or the last one saved in settings).</summary>
     public static string? Latest { get; private set; }
     public static string? LatestUrl { get; private set; }
@@ -51,7 +55,8 @@ public static class UpdateCheck
     static bool manualCheck;
     static double devCheckNowAt = -1;
 
-    readonly record struct Result(bool Ok, string? Version, string? Url, UpdateAssets? Assets, string? Error);
+    /// <summary>Error is English (logged); ErrorUi builds it in the UI language when it isn't a catalogued literal.</summary>
+    readonly record struct Result(bool Ok, string? Version, string? Url, UpdateAssets? Assets, string? Error, Func<string>? ErrorUi = null);
 
     static AppSettings St => Main.I.Settings;
 
@@ -72,7 +77,7 @@ public static class UpdateCheck
     static string? Blocked()
     {
         if (fake != null || Source != null) return null;
-        if (!AppInfo.HasRepo) return "No GitHub repository is set for this build";
+        if (!AppInfo.HasRepo) return L.N("No GitHub repository is set for this build");
         if (CmdLine.Dev) return "Off in --dev runs (test with --update-test <version> or --update-source <url>)";
         return null;
     }
@@ -110,7 +115,7 @@ public static class UpdateCheck
         }
     }
 
-    static string OffReason => St.UpdatesConsent == null ? "Off until you turn it on" : "Turned off";
+    static string OffReason => St.UpdatesConsent == null ? L.N("Off until you turn it on") : L.N("Turned off");
 
     /// <summary>Settings → "Check now": the player's own request, so it runs even while automatic checks are off (or
     /// were never turned on); ignores the 6-hour limit (still never in --dev or for the placeholder repo).</summary>
@@ -185,12 +190,12 @@ public static class UpdateCheck
         if (pending is not { IsCompleted: true } t) return;
         pending = null;
         var r = t.IsCompletedSuccessfully ? t.Result : new Result(false, null, null, null, t.Exception is { } ex ? Log.Describe(ex.GetBaseException()) : "cancelled");
-        if (string.IsNullOrWhiteSpace(r.Error)) r = r with { Error = "unknown error" };
+        if (string.IsNullOrWhiteSpace(r.Error)) r = r with { Error = L.N("unknown error"), ErrorUi = null };
         if (!r.Ok)
         {
             Log.Info($"Update check failed: {r.Error}");
             if (fake == null && St.AutoUpdates) nextCheckUtc = DateTime.UtcNow + RetryAfterFailure;
-            Set(State.Failed, r.Error);
+            Set(State.Failed, r.Error, r.ErrorUi);
             Updater.OnCheckResult(); // a download that was already known can still go on
             return;
         }
@@ -211,10 +216,13 @@ public static class UpdateCheck
         Updater.OnCheckResult();
     }
 
-    static void Set(State s, string? msg)
+    /// <summary><paramref name="ui"/>: the message in the UI language (null = <paramref name="msg"/> is a catalogued
+    /// literal, looked up with L.T).</summary>
+    static void Set(State s, string? msg, Func<string>? ui = null)
     {
         Status = s;
         Message = msg;
+        messageUi = ui;
         Revision++;
     }
 
@@ -232,7 +240,10 @@ public static class UpdateCheck
             if (!resp.IsSuccessStatusCode)
             {
                 int code = (int)resp.StatusCode;
-                return new Result(false, null, null, null, code is 403 or 429 ? $"GitHub rate limit reached (HTTP {code}), try again later" : $"GitHub answered HTTP {code}");
+                return code is 403 or 429
+                    ? new Result(false, null, null, null, $"GitHub rate limit reached (HTTP {code}), try again later",
+                        () => L.F($"GitHub rate limit reached (HTTP {code}), try again later"))
+                    : new Result(false, null, null, null, $"GitHub answered HTTP {code}", () => L.F($"GitHub answered HTTP {code}"));
             }
             var json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
             using var doc = JsonDocument.Parse(json);
@@ -242,12 +253,19 @@ public static class UpdateCheck
             string? tag = root.TryGetProperty("tag_name", out var t) ? t.GetString() : null;
             string? url = root.TryGetProperty("html_url", out var u) ? u.GetString() : null;
             var v = SemVer.Normalize(tag);
-            if (v == null) return new Result(false, null, null, null, $"Latest release tag \"{tag}\" isn't a version number");
+            if (v == null)
+                return new Result(false, null, null, null, $"Latest release tag \"{tag}\" isn't a version number",
+                    () => L.F($"Latest release tag \"{tag}\" isn't a version number"));
             if (url == null || !url.StartsWith("https://github.com/", StringComparison.OrdinalIgnoreCase)) url = null;
             return new Result(true, v, url, ReadAssets(root, v, repo, local ? api : null), null);
         }
-        catch (TaskCanceledException) { return new Result(false, null, null, null, "No answer from GitHub within 5 s (offline?)"); }
-        catch (HttpRequestException e) { Log.Exception("Update check", e); return new Result(false, null, null, null, $"Can't reach GitHub ({Log.Describe(e)})"); }
+        catch (TaskCanceledException) { return new Result(false, null, null, null, L.N("No answer from GitHub within 5 s (offline?)")); }
+        catch (HttpRequestException e)
+        {
+            Log.Exception("Update check", e);
+            string why = Log.Describe(e);
+            return new Result(false, null, null, null, $"Can't reach GitHub ({why})", () => L.F($"Can't reach GitHub ({why})"));
+        }
         catch (Exception e) { Log.Exception("Update check", e); return new Result(false, null, null, null, Log.Describe(e)); }
     }
 

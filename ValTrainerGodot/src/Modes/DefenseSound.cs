@@ -21,9 +21,9 @@ public sealed class SoundLockMode : MapMode
 {
     public override string Key => "sound";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
-    public override string Name => "Sound Lock";
-    public override string Description => "Listen for footsteps and pre-aim where the enemy will appear.";
-    public override string Category => "Utility";
+    public override string Name => L.N("Sound Lock");
+    public override string Description => L.N("Listen for footsteps and pre-aim where the enemy will appear.");
+    public override string Category => L.N("Utility");
     public override float Duration => 90f;
     public override string SimKind => "bot";
     public override string? Subtitle => $"{MapSpot.Map} — {MapSpot.Name} · {spotName}";
@@ -263,7 +263,7 @@ public sealed class SoundLockMode : MapMode
         walkers.Clear();
         if (ents.Count == 0) { StartGap(3f); return; }
         if (G.Player.Dead) G.Respawn(SpawnFeet, SpawnYaw);
-        else G.Player.Reset();
+        else { G.Player.Reset(); G.RefillGun(); }
         reps++;
         int count = Tier <= 2 ? 1 : Tier == 3 ? 2 : (Rng.NextDouble() < 0.5 ? 2 : 3);
         count = Math.Min(count, ents.Count);
@@ -510,9 +510,10 @@ public sealed class SoundLockMode : MapMode
         if (seen.Count > 0)
         {
             var w = seen[0];
-            string r = w.Hit ? $" · first hit {(reacts.Count > 0 ? reacts[^1] : 0):0} ms" : "";
-            lastLine = $"Pre-aim error {w.Err:0.0}°{r}";
-            G.Banner(cleared ? $"{w.Err:0.0}° OFF{r.ToUpperInvariant()}" : "THEY GOT AWAY", cleared ? (w.Err <= 10f ? UiTheme.Good : UiTheme.Warn) : UiTheme.Dim);
+            float? hit = w.Hit ? (reacts.Count > 0 ? reacts[^1] : 0) : null;
+            lastLine = hit is { } ms ? L.F($"Pre-aim error {w.Err:0.0}° · first hit {ms:0} ms") : L.F($"Pre-aim error {w.Err:0.0}°");
+            string off = hit is { } ms2 ? L.F($"{w.Err:0.0}° OFF · FIRST HIT {ms2:0} MS") : L.F($"{w.Err:0.0}° OFF");
+            G.Banner(cleared ? off : L.N("THEY GOT AWAY"), cleared ? (w.Err <= 10f ? UiTheme.Good : UiTheme.Warn) : UiTheme.Dim);
         }
         Event(cleared ? "round_won" : "round_lost");
         foreach (var w in walkers) w.Brain.Enabled = false;
@@ -523,7 +524,7 @@ public sealed class SoundLockMode : MapMode
         Deaths++; deaths2++; Score -= 100;
         Log("you died");
         Event("round_lost");
-        G.Banner("YOU DIED", UiTheme.Accent);
+        G.Banner(L.N("YOU DIED"), UiTheme.Accent);
         ph = Ph.After; phT = 0;
         repsLost++;
         foreach (var w in walkers) w.Brain.Enabled = false;
@@ -554,26 +555,26 @@ public sealed class SoundLockMode : MapMode
 
     public override IEnumerable<string> HudLines()
     {
-        yield return $"Rep {Math.Max(1, reps)} · on the angle {locked}/{errs.Count}";
-        if (ph == Ph.Live && walkers.All(w => !w.Seen)) yield return "Listen — where will they come from?";
+        yield return L.F($"Rep {Math.Max(1, reps)} · on the angle {locked}/{errs.Count}");
+        if (ph == Ph.Live && walkers.All(w => !w.Seen)) yield return L.N("Listen — where will they come from?");
         if (lastLine.Length > 0) yield return lastLine;
-        if (ents.Count == 0) yield return "No usable corners on this map spot";
+        if (ents.Count == 0) yield return L.N("No usable corners on this map spot");
     }
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Map", $"{MapSpot.Map} · {spotName} ({ents.Count} corners)");
-        yield return ("Peeks", $"{errs.Count} seen in {reps} reps");
+        yield return (L.N("Map"), L.P(ents.Count, $"{MapSpot.Map} · {spotName} ({ents.Count} corner)", $"{MapSpot.Map} · {spotName} ({ents.Count} corners)"));
+        yield return (L.N("Peeks"), L.P(reps, $"{errs.Count} seen in {reps} rep", $"{errs.Count} seen in {reps} reps"));
         if (errs.Count > 0)
         {
-            yield return ("Pre-aim error", $"{Median(errs):0.0}° median");
-            yield return ("On the angle (≤ 10°)", $"{100f * locked / errs.Count:0}% of peeks");
+            yield return (L.N("Pre-aim error"), L.F($"{Median(errs):0.0}° median"));
+            yield return (L.N("On the angle (≤ 10°)"), L.F($"{100f * locked / errs.Count:0}% of peeks"));
         }
-        if (fakes > 0) yield return ("Fakes read", $"{fakesRead} of {fakes}");
-        if (reacts.Count > 0) yield return ("First sight → first hit", $"{Median(reacts):0} ms median");
-        yield return ("Kills / deaths", $"{Kills} / {Deaths}");
-        if (Hits > 0) yield return ("Headshot %", $"{100f * HeadHits / Hits:0}%");
-        yield return ("Accuracy", $"{Accuracy * 100:0.0}%");
+        if (fakes > 0) yield return (L.N("Fakes read"), L.F($"{fakesRead} of {fakes}"));
+        if (reacts.Count > 0) yield return (L.N("First sight → first hit"), L.F($"{Median(reacts):0} ms median"));
+        yield return (L.N("Kills / deaths"), $"{Kills} / {Deaths}");
+        if (Hits > 0) yield return (L.N("Headshot %"), $"{100f * HeadHits / Hits:0}%");
+        yield return (L.N("Accuracy"), $"{Accuracy * 100:0.0}%");
     }
 
     static readonly float[] ReactMs = { 1000, 800, 640, 520, 430 };

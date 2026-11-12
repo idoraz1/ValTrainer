@@ -12,6 +12,14 @@ Credit is not required, but these creators deserve it. Thank you!
 - **Ultimate Gun Pack** (July 2019): one model per gun. Pistols, revolver, SMGs, shotguns, assault rifles, bullpups and sniper rifles, plus the Silencer, Scope, Stock and Bipod accessories. <https://quaternius.itch.io/50-lowpoly-guns>
 
 The gun wrapper scenes in `assets/weapons/` scale and orient these models and mount the accessories (assets/MANIFEST.md §5).
+The gun skins (Carbon Weave, Glasswork, Thunderhead, Foundry, Aurora, Orrery and the rest) are original designs made for ValTrainer. On most guns they are procedural finishes: a shader (`assets/shaders/weapon/viewmodel.gdshaderinc`) plus colours and numbers in `src/Game/Skins/SkinLooks.cs`. They use no Riot / VALORANT skin art or designs.
+
+## Skin models: Foundry, Aurora and Orrery on the Vandal and Phantom
+The six models in `assets/weapons/vandal*` and `assets/weapons/phantom*` (two original gun designs, three finishes each) were made for ValTrainer by its maintainer with AI tools, then finished by hand:
+- concept images: GPT Image (via Higgsfield), from our own descriptions;
+- image to 3D: Hunyuan3D v3 (via Higgsfield);
+- cleanup in Blender with ValTrainer's own scripts: orientation and scale, the glow (emission) maps, the magazine piece for the reload, and the textures re-saved as JPEG.
+They are not third-party CC0 assets and contain no Riot / VALORANT models or art.
 The character `.gltf` files in `assets/characters/` are derivative merges of the above: outfit plus base-character head, eyes, brows and hair. Ranger textures were downscaled to 2K.
 
 ## Textures and HDRIs: Poly Haven (<https://polyhaven.com>)
@@ -48,6 +56,13 @@ The character `.gltf` files in `assets/characters/` are derivative merges of the
 - **Interface Sounds** by Kenney: <https://kenney.nl/assets/interface-sounds>
 - The sentinel-setup cues of Site Anchor (alarm, turret, wire, sensor, barriers, vines…) are synthesized in code (`src/Game/Fx/SentinelSfx.cs`); no samples.
 - The agent flash sounds in `assets/audio/flash` (throw, flight, windup and pop per agent, Gekko's Dizzy set, and the "flashed" ring) are synthesized by ValTrainer's own generator `tools/sfx/flash_sfx.py`. They are our own work, released as CC0, with no samples and no third-party or Riot audio.
+- The gun skin sounds in `assets/audio/skins` (each line's fire, hits, kill sounds, reload, equip, inspect, kill effect, special reload, finisher and counter, plus the `_core` shot bodies) are made by ValTrainer's own generator `tools/sfx/skin_sfx.py` from the CC0 recordings below, cut, pitched, filtered, layered and re-measured against the factory gun sounds (same loudness and timing). No Riot audio and no AI-made audio. Source packs, all CC0:
+  - **Impact Sounds**, **Interface Sounds** and **Sci-fi Sounds** by Kenney: <https://kenney.nl/assets/impact-sounds>, <https://kenney.nl/assets/interface-sounds>, <https://kenney.nl/assets/sci-fi-sounds>
+  - **75 CC0 breaking / falling / hit sfx**, **100 CC0 SFX**, **100 CC0 metal and wood SFX** and **40 CC0 water / splash / slime SFX** by rubberduck: <https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx>, <https://opengameart.org/content/100-cc0-sfx>, <https://opengameart.org/content/100-cc0-metal-and-wood-sfx>, <https://opengameart.org/content/40-cc0-water-splash-slime-sfx>
+  - **Rain (loopable)** by Ylmir: <https://opengameart.org/content/rain-loopable>
+  - **Clock Wind Sounds** by Brian MacIntosh (BMacZero): <https://opengameart.org/content/clock-wind-sounds>
+  - **7 mechanical clicks and buzzes** and **Electronic device loop** by qubodup: <https://opengameart.org/content/7-mechanical-clicks-and-buzzes>, <https://opengameart.org/content/electronic-device-loop>
+  - **equipment clicks III** by LFA: <https://opengameart.org/content/equipment-clicks-iii>
 
 ## Engine
 Built with the Godot Engine (MIT license): <https://godotengine.org/license>

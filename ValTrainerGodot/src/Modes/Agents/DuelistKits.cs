@@ -44,10 +44,12 @@ public sealed class JettKit : DuelistKit
 
     public override string AgentName => "Jett";
     public override Color Color => Color.Color8(150, 220, 255);
-    public override string HowTo =>
-        $"{KeyText(AbilitySlot.E)} primes Tailwind (1 s), then {KeyText(AbilitySlot.E)} again within 7.5 s dashes 11 m the way you're moving. " +
-        $"{KeyText(AbilitySlot.Q)}: Updraft (5 m up) · hold jump while falling to drift. " +
-        "Prime it behind cover, dash past the angle, stop and shoot.";
+    public override string[] HowTo => new[]
+    {
+        L.F($"{KeyText(AbilitySlot.E)} primes {"Tailwind"} (1 s), then {KeyText(AbilitySlot.E)} again within 7.5 s dashes 11 m the way you're moving."),
+        L.F($"{KeyText(AbilitySlot.Q)}: {"Updraft"} (5 m up) · hold jump while falling to drift."),
+        L.T("Prime it behind cover, dash past the angle, stop and shoot."),
+    };
 
     bool Priming => primedAt >= 0 && Now < primedAt + Windup;
     bool Empowered => primedAt >= 0 && Now >= primedAt + Windup && Now < primedAt + Windup + Window;
@@ -62,7 +64,7 @@ public sealed class JettKit : DuelistKit
     {
         if (tail >= 1 || primedAt >= 0) return;
         tail = 1;
-        G.Banner("Tailwind recharged (2 kills)", UiTheme.Teal);
+        G.Banner(L.F($"{"Tailwind"} recharged (2 kills)"), UiTheme.Teal);
     }
 
     protected override void Update(float dt)
@@ -71,7 +73,7 @@ public sealed class JettKit : DuelistKit
         {
             primedAt = -1f;
             wasted++;
-            G.Banner("Tailwind faded", UiTheme.Dim);
+            G.Banner(L.F($"{"Tailwind"} faded"), UiTheme.Dim);
         }
         if (Pressed[(int)AbilitySlot.E] && !Dashing)
         {
@@ -132,14 +134,14 @@ public sealed class JettKit : DuelistKit
     {
         get
         {
-            yield return new KitSlot(AbilitySlot.Q, "Updraft", updraft, 1, updraft > 0 ? "READY" : "USED", -1f, Now - updraftAt < 0.6f);
-            string st = Dashing ? "DASHING" : Priming ? "PRIMING…" : Empowered ? $"DASH READY  {primedAt + Windup + Window - Now:0.0}s" : tail > 0 ? "READY" : "NO CHARGE";
+            yield return new KitSlot(AbilitySlot.Q, "Updraft", updraft, 1, updraft > 0 ? L.N("READY") : L.N("USED"), -1f, Now - updraftAt < 0.6f);
+            string st = Dashing ? L.N("DASHING") : Priming ? L.N("PRIMING…") : Empowered ? L.F($"DASH READY  {primedAt + Windup + Window - Now:0.0}s") : tail > 0 ? L.N("READY") : L.N("NO CHARGE");
             float prog = Priming ? (Now - primedAt) / Windup : Empowered ? (primedAt + Windup + Window - Now) / Window : -1f;
             yield return new KitSlot(AbilitySlot.E, "Tailwind", tail, 1, st, prog, Priming || Empowered || Dashing);
         }
     }
 
-    public override string? Prompt => Empowered ? $"{KeyText(AbilitySlot.E)}: dash (the way you're moving)" : Priming ? "Tailwind priming…" : null;
+    public override string? Prompt => Empowered ? L.F($"{KeyText(AbilitySlot.E)}: dash (the way you're moving)") : Priming ? L.F($"{"Tailwind"} priming…") : null;
 
     public override void Draw2D(CanvasItem c, Vector2 size, float k)
     {
@@ -154,9 +156,9 @@ public sealed class JettKit : DuelistKit
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Tailwind dashes", $"{dashes}" + (dashSeen > 0 ? $"  ({dashSeen} spotted)" : ""));
-        if (wasted > 0) yield return ("Tailwind wasted", $"{wasted} (window ran out)");
-        if (updrafts > 0) yield return ("Updrafts", updraftRise.Count > 0 ? $"{updrafts}  (avg {updraftRise.Average():0.0} m up)" : updrafts.ToString());
+        yield return (L.F($"{"Tailwind"} dashes"), dashSeen > 0 ? L.F($"{dashes}  ({dashSeen} spotted)") : $"{dashes}");
+        if (wasted > 0) yield return (L.F($"{"Tailwind"} wasted"), L.F($"{wasted} (window ran out)"));
+        if (updrafts > 0) yield return (L.N("Updrafts"), updraftRise.Count > 0 ? L.F($"{updrafts}  (avg {updraftRise.Average():0.0} m up)") : updrafts.ToString());
     }
 
     // ---- dev auto-play: prime at the hidden spot (round 2: Updraft test first), then dash into the site.
@@ -216,10 +218,12 @@ public sealed class NeonKit : DuelistKit
 
     public override string AgentName => "Neon";
     public override Color Color => Color.Color8(80, 170, 255);
-    public override string HowTo =>
-        $"{KeyText(AbilitySlot.E)}: High Gear — sprint at 9.1 m/s, but no gun. " +
-        "While sprinting, RMB slides 7 m (once a round, back every two kills); your gun is out 0.2 s into the slide. " +
-        "Sprint up to the angle, slide wide past it, shoot from the slide.";
+    public override string[] HowTo => new[]
+    {
+        L.F($"{KeyText(AbilitySlot.E)}: {"High Gear"} — sprint at 9.1 m/s, but no gun."),
+        L.T("While sprinting, RMB slides 7 m (once a round, back every two kills); your gun is out 0.2 s into the slide."),
+        L.T("Sprint up to the angle, slide wide past it, shoot from the slide."),
+    };
 
     public override void ResetRound()
     {
@@ -233,7 +237,7 @@ public sealed class NeonKit : DuelistKit
     {
         if (slides >= 1) return;
         slides = 1;
-        G.Banner("Slide recharged (2 kills)", UiTheme.Teal);
+        G.Banner(L.N("Slide recharged (2 kills)"), UiTheme.Teal);
     }
 
     bool SlideReady => active && Now - activeAt >= Activation && slides > 0;
@@ -247,7 +251,7 @@ public sealed class NeonKit : DuelistKit
             var f = Feet;
             if (G.PlayerGrounded) sprintDist += new Vector2(f.X - lastFeet.X, f.Z - lastFeet.Z).Length();
             lastFeet = f;
-            if (energy <= 0f) { energy = 0f; outOfEnergy++; Stop(); G.Banner("Out of energy", UiTheme.Warn); }
+            if (energy <= 0f) { energy = 0f; outOfEnergy++; Stop(); G.Banner(L.N("Out of energy"), UiTheme.Warn); }
         }
         else energy = Mathf.Min(100f, energy + Regen * dt);
 
@@ -318,13 +322,13 @@ public sealed class NeonKit : DuelistKit
     {
         get
         {
-            string st = active ? (Now - activeAt < Activation ? "ACTIVATING…" : $"SPRINTING  {energy:0}%") : energy >= 2f ? $"READY  {energy:0}%" : "RECHARGING";
+            string st = active ? (Now - activeAt < Activation ? L.N("ACTIVATING…") : L.F($"SPRINTING  {energy:0}%")) : energy >= 2f ? L.F($"READY  {energy:0}%") : L.N("RECHARGING");
             yield return new KitSlot(AbilitySlot.E, "High Gear", 0, 0, st, energy / 100f, active);
-            yield return new KitSlot(AbilitySlot.E, "Slide", slides, 1, sliding ? "SLIDING" : SlideReady ? "RMB TO SLIDE" : slides > 0 ? "SPRINT FIRST" : "USED", -1f, sliding, "RMB");
+            yield return new KitSlot(AbilitySlot.E, L.N("Slide"), slides, 1, sliding ? L.N("SLIDING") : SlideReady ? L.N("RMB TO SLIDE") : slides > 0 ? L.N("SPRINT FIRST") : L.N("USED"), -1f, sliding, "RMB");
         }
     }
 
-    public override string? Prompt => SlideReady ? "RMB: slide (forward or sideways)" : active ? $"No gun while sprinting — {KeyText(AbilitySlot.E)} to stop" : null;
+    public override string? Prompt => SlideReady ? L.N("RMB: slide (forward or sideways)") : active ? L.F($"No gun while sprinting — {KeyText(AbilitySlot.E)} to stop") : null;
 
     public override void Draw2D(CanvasItem c, Vector2 size, float k)
     {
@@ -335,9 +339,9 @@ public sealed class NeonKit : DuelistKit
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        if (sprintTime > 0.5f) yield return ("High Gear sprint", $"{sprints}×, {sprintTime:0.0} s total");
-        yield return ("Slides", slidesUsed.ToString());
-        if (outOfEnergy > 0) yield return ("Out of energy", outOfEnergy.ToString());
+        if (sprintTime > 0.5f) yield return (L.F($"{"High Gear"} sprint"), L.F($"{sprints}×, {sprintTime:0.0} s total"));
+        yield return (L.N("Slides"), slidesUsed.ToString());
+        if (outOfEnergy > 0) yield return (L.N("Out of energy"), outOfEnergy.ToString());
     }
 
     // ---- dev auto-play: sprint from spawn, slide into the site at the hidden spot.
@@ -402,10 +406,12 @@ public sealed class RazeKit : DuelistKit
 
     public override string AgentName => "Raze";
     public override Color Color => Color.Color8(255, 150, 60);
-    public override string HowTo =>
-        $"{KeyText(AbilitySlot.Q)} throws a Blast Pack that sticks where it lands; {KeyText(AbilitySlot.Q)} again sets it off and launches you (no self-damage). " +
-        "Throw it at your feet, or let it fall behind you as you run, for a long boost. " +
-        "You're inaccurate in the air: land, then shoot.";
+    public override string[] HowTo => new[]
+    {
+        L.F($"{KeyText(AbilitySlot.Q)} throws a {"Blast Pack"} that sticks where it lands; {KeyText(AbilitySlot.Q)} again sets it off and launches you (no self-damage)."),
+        L.T("Throw it at your feet, or let it fall behind you as you run, for a long boost."),
+        L.T("You're inaccurate in the air: land, then shoot."),
+    };
 
     public override void ResetRound()
     {
@@ -492,18 +498,18 @@ public sealed class RazeKit : DuelistKit
     {
         get
         {
-            string st = pack == null ? (charges > 0 ? "READY" : "NO CHARGES") : pack.Stuck ? $"STUCK · {KeyText(AbilitySlot.Q)} TO BLOW" : "IN FLIGHT";
+            string st = pack == null ? (charges > 0 ? L.N("READY") : L.N("NO CHARGES")) : pack.Stuck ? L.F($"STUCK · {KeyText(AbilitySlot.Q)} TO BLOW") : L.N("IN FLIGHT");
             yield return new KitSlot(AbilitySlot.Q, "Blast Pack", charges, 2, st, pack != null ? 1f - (Now - pack.Born) / MaxLife : -1f, pack != null);
         }
     }
 
-    public override string? Prompt => pack != null ? $"{KeyText(AbilitySlot.Q)}: detonate" : null;
+    public override string? Prompt => pack != null ? L.F($"{KeyText(AbilitySlot.Q)}: detonate") : null;
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Packs thrown / boosts", $"{thrown} / {boosts}");
-        if (boostDist.Count > 0) yield return ("Boost distance", $"avg {boostDist.Average():0.0} m · best {boostDist.Max():0.0} m");
-        if (airKills > 0) yield return ("Kills in the air", airKills.ToString());
+        yield return (L.N("Packs thrown / boosts"), $"{thrown} / {boosts}");
+        if (boostDist.Count > 0) yield return (L.N("Boost distance"), L.F($"avg {boostDist.Average():0.0} m · best {boostDist.Max():0.0} m"));
+        if (airKills > 0) yield return (L.N("Kills in the air"), airKills.ToString());
     }
 
     // ---- dev auto-play: drop it at your feet, walk past it toward the site, blow it when it's behind you.
@@ -563,11 +569,13 @@ public sealed class ReynaKit : DuelistKit
 
     public override string AgentName => "Reyna";
     public override Color Color => Color.Color8(200, 90, 255);
-    public override string HowTo =>
-        "Kills drop a soul orb for 3 s. " +
-        $"{KeyText(AbilitySlot.E)}: Dismiss — eat it, become untouchable and run at 12 m/s for 1.5 s (no gun). " +
-        $"{KeyText(AbilitySlot.Q)}: Devour — eat it to heal 50. " +
-        "Win the first duel, then Dismiss out of the trade or onto a new angle.";
+    public override string[] HowTo => new[]
+    {
+        L.T("Kills drop a soul orb for 3 s."),
+        L.F($"{KeyText(AbilitySlot.E)}: {"Dismiss"} — eat it, become untouchable and run at 12 m/s for 1.5 s (no gun)."),
+        L.F($"{KeyText(AbilitySlot.Q)}: {"Devour"} — eat it to heal 50."),
+        L.F($"Win the first duel, then {"Dismiss"} out of the trade or onto a new angle."),
+    };
 
     public override void ResetRound()
     {
@@ -683,14 +691,14 @@ public sealed class ReynaKit : DuelistKit
         get
         {
             bool orb = Viable != null;
-            yield return new KitSlot(AbilitySlot.Q, "Devour", charges, 2, healLeft > 0 ? "HEALING" : orb && charges > 0 ? "ORB READY" : "NEEDS A SOUL ORB", -1f, healLeft > 0);
-            yield return new KitSlot(AbilitySlot.E, "Dismiss", charges, 2, dismissing ? $"INTANGIBLE  {dismissUntil - Now:0.0}s" : orb && charges > 0 ? "ORB READY" : "NEEDS A SOUL ORB",
+            yield return new KitSlot(AbilitySlot.Q, "Devour", charges, 2, healLeft > 0 ? L.N("HEALING") : orb && charges > 0 ? L.N("ORB READY") : L.N("NEEDS A SOUL ORB"), -1f, healLeft > 0);
+            yield return new KitSlot(AbilitySlot.E, "Dismiss", charges, 2, dismissing ? L.F($"INTANGIBLE  {dismissUntil - Now:0.0}s") : orb && charges > 0 ? L.N("ORB READY") : L.N("NEEDS A SOUL ORB"),
                 dismissing ? (dismissUntil - Now) / DismissTime : -1f, dismissing);
         }
     }
 
-    public override string? Prompt => dismissing ? "Intangible — reposition!" : charges > 0 && Viable != null
-        ? $"Soul orb: {KeyText(AbilitySlot.E)} Dismiss · {KeyText(AbilitySlot.Q)} Devour" : null;
+    public override string? Prompt => dismissing ? L.N("Intangible — reposition!") : charges > 0 && Viable != null
+        ? L.F($"Soul orb: {KeyText(AbilitySlot.E)} {"Dismiss"} · {KeyText(AbilitySlot.Q)} {"Devour"}") : null;
 
     public override void Draw2D(CanvasItem c, Vector2 size, float k)
     {
@@ -704,10 +712,10 @@ public sealed class ReynaKit : DuelistKit
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Soul orbs dropped", orbsDropped.ToString());
-        yield return ("Dismiss / Devour", $"{dismisses} / {devours}");
-        if (dismissDist.Count > 0) yield return ("Dismiss distance", $"avg {dismissDist.Average():0.0} m");
-        if (healed > 0) yield return ("Healed by Devour", $"{healed:0} HP");
+        yield return (L.N("Soul orbs dropped"), orbsDropped.ToString());
+        yield return ("Dismiss / Devour", $"{dismisses} / {devours}"); // ability names only: stays English
+        if (dismissDist.Count > 0) yield return (L.F($"{"Dismiss"} distance"), L.F($"avg {dismissDist.Average():0.0} m"));
+        if (healed > 0) yield return (L.F($"Healed by {"Devour"}"), $"{healed:0} HP");
     }
 
     public override bool DevDrives => dismissing;
@@ -752,10 +760,12 @@ public sealed class YoruKit : DuelistKit
 
     public override string AgentName => "Yoru";
     public override Color Color => Color.Color8(90, 140, 255);
-    public override string HowTo =>
-        $"{KeyText(AbilitySlot.E)} equips Gatecrash (0.8 s): LMB sends the tether along the floor, RMB places it 3 m ahead. " +
-        $"{KeyText(AbilitySlot.E)} again teleports to it (0.5 s wind-up, your gun is ready 0.7 s after you arrive) · {UseKey} fakes it. " +
-        "Defenders hear the arrival: send it to an angle they don't hold.";
+    public override string[] HowTo => new[]
+    {
+        L.F($"{KeyText(AbilitySlot.E)} equips {"Gatecrash"} (0.8 s): LMB sends the tether along the floor, RMB places it 3 m ahead."),
+        L.F($"{KeyText(AbilitySlot.E)} again teleports to it (0.5 s wind-up, your gun is ready 0.7 s after you arrive) · {UseKey} fakes it."),
+        L.T("Defenders hear the arrival: send it to an angle they don't hold."),
+    };
 
     public override void ResetRound()
     {
@@ -777,7 +787,7 @@ public sealed class YoruKit : DuelistKit
     {
         if (charges >= 2) return;
         charges++;
-        G.Banner("Gatecrash recharged (2 kills)", UiTheme.Teal);
+        G.Banner(L.F($"{"Gatecrash"} recharged (2 kills)"), UiTheme.Teal);
     }
 
     void Set(St s) { st = s; stT = 0; }
@@ -789,7 +799,7 @@ public sealed class YoruKit : DuelistKit
         {
             if (t.Moving) MoveTether(t, dt);
             if (t.Vis != null && GodotObject.IsInstanceValid(t.Vis)) t.Vis.GlobalPosition = t.Pos + Vector3.Up * 0.25f;
-            if (Now - t.Born > TetherLife && st != St.Windup) { t.Vis?.Remove(); tether = null; G.Banner("Tether faded", UiTheme.Dim); }
+            if (Now - t.Born > TetherLife && st != St.Windup) { t.Vis?.Remove(); tether = null; G.Banner(L.N("Tether faded"), UiTheme.Dim); }
         }
         bool key = Pressed[(int)AbilitySlot.E];
         switch (st)
@@ -896,10 +906,12 @@ public sealed class YoruKit : DuelistKit
         {
             string s = st switch
             {
-                St.Equipping => "EQUIPPING…",
-                St.Equipped => "LMB SEND · RMB PLACE",
-                St.Windup => "TELEPORTING…",
-                _ => tether != null ? $"TETHER {(tether.Moving ? "MOVING" : "SET")} · {Feet.DistanceTo(tether.Pos):0}m" : charges > 0 ? "READY" : "NO CHARGES",
+                St.Equipping => L.N("EQUIPPING…"),
+                St.Equipped => L.N("LMB SEND · RMB PLACE"),
+                St.Windup => L.N("TELEPORTING…"),
+                _ => tether != null
+                    ? tether.Moving ? L.F($"TETHER MOVING · {Feet.DistanceTo(tether.Pos):0}m") : L.F($"TETHER SET · {Feet.DistanceTo(tether.Pos):0}m")
+                    : charges > 0 ? L.N("READY") : L.N("NO CHARGES"),
             };
             float prog = st == St.Equipping ? stT / Equip : st == St.Windup ? stT / TeleWindup : tether != null ? 1f - (Now - tether.Born) / TetherLife : -1f;
             yield return new KitSlot(AbilitySlot.E, "Gatecrash", charges, 2, s, prog, st != St.Ready || tether != null);
@@ -908,9 +920,9 @@ public sealed class YoruKit : DuelistKit
 
     public override string? Prompt => st switch
     {
-        St.Equipped => "LMB: send the tether · RMB: place it",
+        St.Equipped => L.N("LMB: send the tether · RMB: place it"),
         St.Windup => null,
-        _ => tether != null ? $"{KeyText(AbilitySlot.E)}: teleport · {UseKey}: fake it" : null,
+        _ => tether != null ? L.F($"{KeyText(AbilitySlot.E)}: teleport · {UseKey}: fake it") : null,
     };
 
     public override void Draw2D(CanvasItem c, Vector2 size, float k)
@@ -922,10 +934,10 @@ public sealed class YoruKit : DuelistKit
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Tethers sent / placed", $"{sent} / {placed}");
-        yield return ("Teleports / fakes", $"{teleports} / {fakes}");
-        if (teleDist.Count > 0) yield return ("Teleport distance", $"avg {teleDist.Average():0.0} m");
-        if (caught > 0) yield return ("Caught on arrival", $"{caught} (died within 2 s)");
+        yield return (L.N("Tethers sent / placed"), $"{sent} / {placed}");
+        yield return (L.N("Teleports / fakes"), $"{teleports} / {fakes}");
+        if (teleDist.Count > 0) yield return (L.N("Teleport distance"), L.F($"avg {teleDist.Average():0.0} m"));
+        if (caught > 0) yield return (L.N("Caught on arrival"), L.F($"{caught} (died within 2 s)"));
     }
 
     // ---- dev auto-play: send the tether into the site and teleport (even rounds: fake it, then walk in).
@@ -990,10 +1002,12 @@ public sealed class WaylayKit : DuelistKit
 
     public override string AgentName => "Waylay";
     public override Color Color => Color.Color8(255, 220, 120);
-    public override string HowTo =>
-        $"{KeyText(AbilitySlot.E)} drops a Refract beacon (ready after 1 s, for 8 s): {KeyText(AbilitySlot.E)} again rushes you back to it, untouchable. " +
-        $"{KeyText(AbilitySlot.Q)} equips Lightspeed: LMB dashes twice, RMB once (9 m each; aim up for height on the first). " +
-        "Beacon behind cover, dash in, take the duel, Refract out.";
+    public override string[] HowTo => new[]
+    {
+        L.F($"{KeyText(AbilitySlot.E)} drops a {"Refract"} beacon (ready after 1 s, for 8 s): {KeyText(AbilitySlot.E)} again rushes you back to it, untouchable."),
+        L.F($"{KeyText(AbilitySlot.Q)} equips {"Lightspeed"}: LMB dashes twice, RMB once (9 m each; aim up for height on the first)."),
+        L.F($"Beacon behind cover, dash in, take the duel, {"Refract"} out."),
+    };
 
     bool Empowered => beacon != null && Now >= beaconAt + RfWindup && Now < beaconAt + RfWindup + RfWindow;
     bool Travelling => path != null;
@@ -1012,7 +1026,7 @@ public sealed class WaylayKit : DuelistKit
     {
         if (rfCharges >= 1 || beacon != null) return;
         rfCharges = 1;
-        G.Banner("Refract recharged (2 kills)", UiTheme.Teal);
+        G.Banner(L.F($"{"Refract"} recharged (2 kills)"), UiTheme.Teal);
     }
 
     void ClearBeacon()
@@ -1029,7 +1043,7 @@ public sealed class WaylayKit : DuelistKit
         if (Travelling) { Travel(dt); return; }
 
         // Refract
-        if (beacon != null && Now >= beaconAt + RfWindup + RfWindow) { ClearBeacon(); wasted++; G.Banner("Refract beacon faded", UiTheme.Dim); }
+        if (beacon != null && Now >= beaconAt + RfWindup + RfWindow) { ClearBeacon(); wasted++; G.Banner(L.F($"{"Refract"} beacon faded"), UiTheme.Dim); }
         if (beacon != null && Now - lastTrailAt > 0.1f)
         {
             lastTrailAt = Now;
@@ -1171,16 +1185,16 @@ public sealed class WaylayKit : DuelistKit
     {
         get
         {
-            string l = ls switch { Ls.Equipping => "EQUIPPING…", Ls.Equipped => "LMB ×2 · RMB ×1", Ls.Dashing => "DASHING", _ => lsCharges > 0 ? "READY" : "USED" };
+            string l = ls switch { Ls.Equipping => L.N("EQUIPPING…"), Ls.Equipped => "LMB ×2 · RMB ×1", Ls.Dashing => L.N("DASHING"), _ => lsCharges > 0 ? L.N("READY") : L.N("USED") };
             yield return new KitSlot(AbilitySlot.Q, "Lightspeed", lsCharges, 1, l, ls == Ls.Equipping ? lsT / LsEquip : -1f, ls != Ls.Ready);
-            string r = Travelling ? "RETURNING" : beacon == null ? (rfCharges > 0 ? "READY" : "NO CHARGE")
-                : Empowered ? $"BEACON  {beaconAt + RfWindup + RfWindow - Now:0.0}s" : "ARMING…";
+            string r = Travelling ? L.N("RETURNING") : beacon == null ? (rfCharges > 0 ? L.N("READY") : L.N("NO CHARGE"))
+                : Empowered ? L.F($"BEACON  {beaconAt + RfWindup + RfWindow - Now:0.0}s") : L.N("ARMING…");
             float rp = beacon == null ? -1f : Empowered ? (beaconAt + RfWindup + RfWindow - Now) / RfWindow : (Now - beaconAt) / RfWindup;
             yield return new KitSlot(AbilitySlot.E, "Refract", rfCharges, 1, r, rp, beacon != null);
         }
     }
 
-    public override string? Prompt => ls == Ls.Equipped ? "LMB: dash twice · RMB: dash once" : Empowered ? $"{KeyText(AbilitySlot.E)}: Refract back to the beacon" : null;
+    public override string? Prompt => ls == Ls.Equipped ? L.N("LMB: dash twice · RMB: dash once") : Empowered ? L.F($"{KeyText(AbilitySlot.E)}: {"Refract"} back to the beacon") : null;
 
     public override void Draw2D(CanvasItem c, Vector2 size, float k)
     {
@@ -1195,9 +1209,9 @@ public sealed class WaylayKit : DuelistKit
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Lightspeed casts", lsUsed + (lsDist.Count > 0 ? $"  (avg {lsDist.Average():0.0} m)" : ""));
-        yield return ("Refract returns", refracts + (escapes > 0 ? $"  ({escapes} from a fight)" : ""));
-        if (wasted > 0) yield return ("Beacons faded", wasted.ToString());
+        yield return (L.F($"{"Lightspeed"} casts"), lsDist.Count > 0 ? L.F($"{lsUsed}  (avg {lsDist.Average():0.0} m)") : $"{lsUsed}");
+        yield return (L.F($"{"Refract"} returns"), escapes > 0 ? L.F($"{refracts}  ({escapes} from a fight)") : $"{refracts}");
+        if (wasted > 0) yield return (L.N("Beacons faded"), wasted.ToString());
     }
 
     // ---- dev auto-play: beacon at the hidden spot, double dash into the site, Refract out after a kill or when hurt.
@@ -1255,10 +1269,12 @@ public sealed class IsoKit : DuelistKit
 
     public override string AgentName => "Iso";
     public override Color Color => Color.Color8(170, 110, 255);
-    public override string HowTo =>
-        $"{KeyText(AbilitySlot.E)}: Double Tap — 1 s focus (no gun), then a shield eats the next hit. " +
-        "Kills in the 12 s flow drop an orb: shoot it to get the shield back. " +
-        "Start it just before you swing.";
+    public override string[] HowTo => new[]
+    {
+        L.F($"{KeyText(AbilitySlot.E)}: {"Double Tap"} — 1 s focus (no gun), then a shield eats the next hit."),
+        L.T("Kills in the 12 s flow drop an orb: shoot it to get the shield back."),
+        L.T("Start it just before you swing."),
+    };
 
     bool Focusing => focusAt >= 0;
     bool InFlow => flowUntil >= 0 && Now < flowUntil;
@@ -1377,17 +1393,17 @@ public sealed class IsoKit : DuelistKit
     {
         get
         {
-            string s = Focusing ? "FOCUSING…" : InFlow ? (shield ? $"SHIELD UP  {flowUntil - Now:0.0}s" : $"FLOW  {flowUntil - Now:0.0}s · NO SHIELD") : charges > 0 ? "READY" : "USED";
+            string s = Focusing ? L.N("FOCUSING…") : InFlow ? (shield ? L.F($"SHIELD UP  {flowUntil - Now:0.0}s") : L.F($"FLOW  {flowUntil - Now:0.0}s · NO SHIELD")) : charges > 0 ? L.N("READY") : L.N("USED");
             float p = Focusing ? (Now - focusAt) / Windup : InFlow ? (flowUntil - Now) / Flow : -1f;
             yield return new KitSlot(AbilitySlot.E, "Double Tap", charges, 1, s, p, Focusing || InFlow);
         }
     }
 
-    public override string? Prompt => Focusing ? "Focusing…" : orbs.Count > 0 ? "Shoot the orb for a new shield" : null;
+    public override string? Prompt => Focusing ? L.N("Focusing…") : orbs.Count > 0 ? L.N("Shoot the orb for a new shield") : null;
 
     public override IEnumerable<string> StatusLines()
     {
-        if (shield && InFlow) yield return "Shield up";
+        if (shield && InFlow) yield return L.N("Shield up");
     }
 
     public override void Draw2D(CanvasItem c, Vector2 size, float k)
@@ -1403,9 +1419,9 @@ public sealed class IsoKit : DuelistKit
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Shields / hits blocked", $"{formed} / {blocked}");
-        if (orbsDropped > 0) yield return ("Orbs shot", $"{orbsShot} of {orbsDropped}");
-        if (shieldKills > 0) yield return ("Kills shield up", shieldKills.ToString());
+        yield return (L.N("Shields / hits blocked"), $"{formed} / {blocked}");
+        if (orbsDropped > 0) yield return (L.N("Orbs shot"), L.F($"{orbsShot} of {orbsDropped}"));
+        if (shieldKills > 0) yield return (L.N("Kills shield up"), shieldKills.ToString());
     }
 
     // ---- dev auto-play: focus at the hidden spot, then push (the simulated player shoots orbs: ExtraFocus).

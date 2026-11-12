@@ -72,7 +72,7 @@ public partial class MenuScreen : ScreenBase
             OnDraw = d =>
             {
                 int fs = UiTheme.Fs(11, k);
-                string v = "v" + AppInfo.Version + (Main.I.Dev && !Core.CmdLine.Showcase ? " · DEV" : "");
+                string v = L.Raw("v" + AppInfo.Version + (Main.I.Dev && !Core.CmdLine.Showcase ? " · DEV" : ""));
                 Gfx.TextR(d, UiTheme.HudWide, v, d.Size.X - 48 * k, d.Size.Y - 13 * k, fs, UiTheme.Faint);
             },
         });
@@ -83,6 +83,7 @@ public partial class MenuScreen : ScreenBase
         else if (UpdatesPrompt.Pending)
             AddChild(new UpdatesPromptPanel(k, AnswerUpdatesPrompt));
         else ShowSupportIfDue();
+        LanguageToast.ShowIfDue(this, k); // "ValTrainer is now in Français …" once, when Auto picked a language
 
         var body = HBox(34 * k);
         body.SizeFlagsVertical = SizeFlags.ExpandFill;
@@ -122,12 +123,24 @@ public partial class MenuScreen : ScreenBase
         ShowSupportIfDue();
     }
 
-    /// <summary>The support panel when it's due (after the other first-launch panels).</summary>
+    /// <summary>The support panel when it's due (after the other first-launch panels and the progression reveal).</summary>
     void ShowSupportIfDue()
     {
+        if (ShowRevealIfDue()) return;
         if (!SupportPrompt.Pending || GetChildren().Any(c => c is SupportPanel)) return;
         SupportPrompt.Shown();
         AddChild(new SupportPanel(K, true, () => { }));
+    }
+
+    /// <summary>The one-time "your training counts" / welcome reveal (progression), after What's new and the updates
+    /// prompt, before Support. Dev: <c>--progress-reveal demo|welcome</c>.</summary>
+    bool ShowRevealIfDue()
+    {
+        if (GetChildren().Any(c => c is ProgressReveal)) return true;
+        string? dev = ProgressReveal.DevVariant();
+        if (dev == null && !ProgressReveal.Due) return false;
+        AddChild(new ProgressReveal(K, () => { ProgressReveal.DevDone(); ShowSupportIfDue(); }, dev));
+        return true;
     }
 
     /// <summary>The menu's SUPPORT button.</summary>
@@ -176,6 +189,7 @@ public partial class MenuScreen : ScreenBase
         row.OffsetLeft = 236 * k; // text is drawn by the banner itself
         row.OffsetRight = -8 * k;
         row.Alignment = BoxContainer.AlignmentMode.End;
+        row.SortChildren += banner.QueueRedraw; // the banner fits its text to the room the buttons leave
         banner.AddChild(row);
         string? url = UpdateCheck.LatestUrl ?? (AppInfo.HasRepo ? AppInfo.LatestReleaseUrl : null);
         bool hasPage = url != null && AppInfo.HasRepo;
@@ -188,7 +202,7 @@ public partial class MenuScreen : ScreenBase
         {
             var b = Btn("WHAT'S NEW", VButton.Look.Ghost, () => AppInfo.OpenGitHub(url), 140, 32, 15);
             b.Disabled = !hasPage;
-            b.TooltipText = "Opens the release notes in your browser";
+            b.TooltipText = L.T("Opens the release notes in your browser");
             return b;
         }
         switch (stage)
@@ -196,13 +210,13 @@ public partial class MenuScreen : ScreenBase
             case UpdateBanner.Stage.Ready:
             {
                 var go = Btn("RESTART TO UPDATE", VButton.Look.Primary, Updater.RestartToUpdate, 210, 32, 16);
-                go.TooltipText = Updater.NeedsElevation
+                go.TooltipText = L.T(Updater.NeedsElevation
                     ? "Installs the update and restarts ValTrainer. ValTrainer is installed for all users, so Windows asks for permission"
-                    : "Installs the update and restarts ValTrainer (takes a few seconds; settings and stats are kept)";
+                    : "Installs the update and restarts ValTrainer (takes a few seconds; settings and stats are kept)");
                 Add(go);
                 Add(WhatsNew());
                 var later = Btn("LATER", VButton.Look.Ghost, () => { UpdateCheck.BannerDismissed = true; bannerRev = -1; RefreshBanner(); }, 100, 32, 15);
-                later.TooltipText = Updater.NeedsElevation ? "Hide until next launch" : "Installs the next time you start ValTrainer";
+                later.TooltipText = L.T(Updater.NeedsElevation ? "Hide until next launch" : "Installs the next time you start ValTrainer");
                 Add(later);
                 break;
             }
@@ -215,15 +229,15 @@ public partial class MenuScreen : ScreenBase
                 {
                     var dl = Btn("DOWNLOAD", VButton.Look.Primary, () => AppInfo.OpenGitHub(url), 150, 32, 16);
                     dl.Disabled = !hasPage;
-                    dl.TooltipText = dl.Disabled ? "No download page is set for this build" : "Opens the release page in your browser";
+                    dl.TooltipText = L.T(dl.Disabled ? "No download page is set for this build" : "Opens the release page in your browser");
                     Add(dl);
                 }
                 var skip = Btn("SKIP THIS VERSION", VButton.Look.Ghost, () => UpdateCheck.SkipVersion(ver), 170, 32, 15);
-                skip.TooltipText = $"Don't remind me about {ver} again (and don't download it)";
+                skip.TooltipText = L.F($"Don't remind me about {ver} again (and don't download it)");
                 Add(skip);
                 var close = Btn("×", VButton.Look.Ghost, () => { UpdateCheck.BannerDismissed = true; bannerRev = -1; RefreshBanner(); }, 36, 32, 24);
                 close.TitleFont = UiTheme.Body;
-                close.TooltipText = "Hide until next launch";
+                close.TooltipText = L.T("Hide until next launch");
                 Add(close);
                 break;
             }
@@ -245,23 +259,31 @@ public partial class MenuScreen : ScreenBase
     Control Header()
     {
         float k = K;
-        // 4:3 / 5:4 windows: slightly smaller nav buttons so all six fit next to the title
+        // 4:3 / 5:4 and other narrower windows: smaller nav buttons so all seven fit next to the title
         bool compact = GetViewportRect().Size.X / k - 96 < 1800;
-        float bw = compact ? 0.86f : 1f, fpx = compact ? 18 : 20;
+        float bw = compact ? 0.78f : 1f, fpx = compact ? 17 : 20;
         var h = HBox(20 * k);
+        // Translated nav buttons grow to fit their labels (VButton): outside English the title box may shrink to the
+        // logo's width so they still fit (the tagline is then fitted to the box).
+        float titleW = (compact ? 540 : 600) * k;
+        if (!L.IsEnglish)
+            titleW = Mathf.Min(titleW, Gfx.RawW(UiTheme.Display, "VALTRAINER", UiTheme.Fs(86, k)) + 24 * k);
         var title = new DrawBox
         {
-            CustomMinimumSize = new Vector2((compact ? 540 : 600) * k, 112 * k),
+            CustomMinimumSize = new Vector2(titleW, 112 * k),
             SizeFlagsHorizontal = SizeFlags.ExpandFill,
             OnDraw = d =>
             {
                 int fs = UiTheme.Fs(86, k);
                 float baseY = 74 * k;
-                float w = Gfx.TextW(UiTheme.Display, "VAL", fs);
-                Gfx.Text(d, UiTheme.Display, "VAL", 0, baseY, fs, UiTheme.Accent);
-                Gfx.Text(d, UiTheme.Display, "TRAINER", w + 2 * k, baseY, fs, UiTheme.Text);
+                // the logo is the brand: never translated
+                float w = Gfx.RawW(UiTheme.Display, "VAL", fs);
+                Gfx.TextRaw(d, UiTheme.Display, "VAL", 0, baseY, fs, UiTheme.Accent);
+                Gfx.TextRaw(d, UiTheme.Display, "TRAINER", w + 2 * k, baseY, fs, UiTheme.Text);
                 int ss = UiTheme.Fs(15, k);
-                Gfx.Text(d, UiTheme.HudWide, "AIM · MOVEMENT · UTILITY DRILLS — PLAYED WITH YOUR OWN VALORANT SETTINGS", 3 * k, 104 * k, ss, UiTheme.Dim);
+                // translations may be longer: kept inside the title box (English draws exactly as designed)
+                Gfx.TextFit(d, UiTheme.HudWide, "AIM · MOVEMENT · UTILITY DRILLS — PLAYED WITH YOUR OWN VALORANT SETTINGS", 3 * k, 104 * k, ss, UiTheme.Dim,
+                    L.IsEnglish ? float.MaxValue : d.Size.X - 3 * k);
             },
         };
         h.AddChild(title);
@@ -271,21 +293,33 @@ public partial class MenuScreen : ScreenBase
         var nav = HBox(12 * k);
         nav.Alignment = BoxContainer.AlignmentMode.End;
         var warm = Btn("LOCK IN", VButton.Look.Primary, Main.I.ShowLockIn, 176 * bw, 48, fpx);
-        warm.TooltipText = "Lock-In: about 12 minutes before ranked. A check-in, aim drills that adapt to you, a deathmatch, then your goal and cue";
+        warm.TooltipText = L.T("Lock-In: about 12 minutes before ranked. A check-in, aim drills that adapt to you, a deathmatch, then your goal and cue");
         nav.AddChild(warm);
         var agents = Btn("AGENTS", VButton.Look.Secondary, Main.I.ShowAgents, 156 * bw, 48, fpx);
-        agents.TooltipText = "Agent training: every agent's abilities, signature drills with their own utility, role drills and a 10-minute agent Lock-In";
+        agents.TooltipText = L.T("Agent training: every agent's abilities, signature drills with their own utility, role drills and a 10-minute agent Lock-In");
         nav.AddChild(agents);
+        var skins = Btn("SKINS", VButton.Look.Secondary, () => SkinPicker.Open(this, K), 140 * bw, 48, fpx);
+        skins.TooltipText = L.T("Gun skins: original finishes made for ValTrainer, per gun or on every gun (cosmetic, your gun only)");
+        skins.AddChild(new UnseenDot { K = k }); // new unlocks not looked at yet
+        nav.AddChild(skins);
         var coach = Btn("COACH", VButton.Look.Secondary, Main.I.ShowProfile, 156 * bw, 48, fpx);
-        coach.TooltipText = "Aim coach: your estimated rank per skill, what you do wrong, how to fix it and a sens recommendation";
+        coach.TooltipText = L.T("Aim coach: your estimated rank per skill, what you do wrong, how to fix it and a sens recommendation");
         nav.AddChild(coach);
         nav.AddChild(Btn("SETTINGS", VButton.Look.Secondary, Main.I.ShowSettings, 156 * bw, 48, fpx));
         nav.AddChild(Btn("STATS", VButton.Look.Secondary, Main.I.ShowStats, 156 * bw, 48, fpx));
         nav.AddChild(Btn("QUIT", VButton.Look.Secondary, Main.I.Quit, 116 * bw, 48, fpx));
         right.AddChild(nav);
-        coachHint = new CoachHint { K = k, CustomMinimumSize = new Vector2(0, 22 * k), Visible = false };
+        // one status row (same height as before, so the grid doesn't move): the account strip (level, XP, stars, dailies)
+        // on the left, the coach's rank and top problem on the right (its text is cut first when the row is narrow)
+        var status = HBox(16 * k);
+        status.CustomMinimumSize = new Vector2(0, 22 * k);
+        var strip = new AccountStrip { K = k, BarW = compact ? 140 : 200 };
+        strip.CustomMinimumSize = new Vector2(strip.Need(), 22 * k);
+        status.AddChild(strip);
+        coachHint = new CoachHint { K = k, CustomMinimumSize = new Vector2(0, 22 * k), Visible = false, SizeFlagsHorizontal = SizeFlags.ExpandFill };
         coachHint.Pressed += Main.I.ShowProfile;
-        right.AddChild(coachHint);
+        status.AddChild(coachHint);
+        right.AddChild(status);
         var foot = HBox(14 * k);
         foot.Alignment = BoxContainer.AlignmentMode.End;
         var fan = Lbl("Fan-made trainer · not endorsed by or affiliated with Riot Games", UiTheme.Body, 13, UiTheme.Faint, HorizontalAlignment.Right);
@@ -296,16 +330,16 @@ public partial class MenuScreen : ScreenBase
         fan.CustomMinimumSize = new Vector2(230 * k, 0);
         foot.AddChild(fan);
         var support = Btn("SUPPORT VALTRAINER", VButton.Look.Secondary, ShowSupport, 210, 32, 14);
-        support.TooltipText = "Buy Me a Coffee or Ko-fi: ValTrainer stays free either way";
+        support.TooltipText = L.T("Buy Me a Coffee or Ko-fi: ValTrainer stays free either way");
         foot.AddChild(support);
         var bug = Btn("REPORT A BUG", VButton.Look.Secondary, ShowBugReport, 150, 32, 14);
-        bug.TooltipText = "Something broken? Describe it and send it to #bug-reports on the ValTrainer Discord. You see everything before it's sent";
+        bug.TooltipText = L.T("Something broken? Describe it and send it to #bug-reports on the ValTrainer Discord. You see everything before it's sent");
         foot.AddChild(bug);
         var idea = Btn("SUGGEST A FEATURE", VButton.Look.Secondary, ShowSuggest, 180, 32, 14);
-        idea.TooltipText = "Missing a drill, an agent or a setting? Send your idea to #suggestions on the ValTrainer Discord";
+        idea.TooltipText = L.T("Missing a drill, an agent or a setting? Send your idea to #suggestions on the ValTrainer Discord");
         foot.AddChild(idea);
         var discord =Btn("DISCORD", VButton.Look.Secondary, () => AppInfo.OpenSupport(AppInfo.DiscordUrl), 110, 32, 14);
-        discord.TooltipText = "Join the ValTrainer Discord: release news, help, bug reports, suggestions and voice chats by rank";
+        discord.TooltipText = L.T("Join the ValTrainer Discord: release news, help, bug reports, suggestions and voice chats by rank");
         foot.AddChild(discord);
         right.AddChild(foot);
         h.AddChild(right);
@@ -323,6 +357,7 @@ public partial class MenuScreen : ScreenBase
     {
         CoachData.Request(); // background: ready by the time the player looks at the header
         CheckMatchPrompt(false);
+        ProgressToasts.Ensure(); // unlock / level-up toasts (queued while playing, shown on menus and results)
         base._Ready();
         if (devScreenDone || !Main.I.Dev) return;
         devScreenDone = true;
@@ -333,12 +368,18 @@ public partial class MenuScreen : ScreenBase
         int i = Array.IndexOf(a, "--screen");
         if (i >= 0 && i + 1 < a.Length && a[i + 1].Equals("profile", StringComparison.OrdinalIgnoreCase))
             Callable.From(Main.I.ShowProfile).CallDeferred();
+        // Dev-only: "--screen progress" opens the Progress screen (+ --progress-level N, --progress-stars N, --progress-demo).
+        if (i >= 0 && i + 1 < a.Length && a[i + 1].Equals("progress", StringComparison.OrdinalIgnoreCase))
+            Callable.From(Main.I.ShowProgress).CallDeferred();
         // Dev-only: "--screen bugreport" opens the Report a bug panel over the menu (+ --bugreport-demo, --bugreport-answer).
         if (i >= 0 && i + 1 < a.Length && a[i + 1].Equals("bugreport", StringComparison.OrdinalIgnoreCase))
             GetTree().CreateTimer(0.5).Timeout += () => { if (IsInstanceValid(this) && IsInsideTree()) ShowBugReport(); };
         // Dev-only: "--preview <drill key>" opens that drill's preview popup (screenshots of the live demo).
         if (CmdLine.DevAfter("--preview") is { } pk && ModeRegistry.Find(pk) is { } pmake)
             GetTree().CreateTimer(0.5).Timeout += () => { if (IsInstanceValid(this) && IsInsideTree()) DrillPreview.Open(this, K, pmake, g => Main.I.StartMode(pmake, false, g), freePlay: g => Main.I.StartMode(pmake, true, g)); };
+        // Dev-only: "--screen skins" opens the gun skin picker over the menu (+ --skins-gun, --skins-skin, --skins-view, --skins-apply).
+        if (i >= 0 && i + 1 < a.Length && a[i + 1].Equals("skins", StringComparison.OrdinalIgnoreCase))
+            GetTree().CreateTimer(0.5).Timeout += () => { if (IsInstanceValid(this) && IsInsideTree()) SkinPicker.Open(this, K); };
         // Dev-only: "--screen suggest" opens the Suggest a feature panel (same --bugreport-* flags).
         if (i >= 0 && i + 1 < a.Length && a[i + 1].Equals("suggest", StringComparison.OrdinalIgnoreCase))
             GetTree().CreateTimer(0.5).Timeout += () => { if (IsInstanceValid(this) && IsInsideTree()) ShowSuggest(); };
@@ -373,7 +414,7 @@ public partial class MenuScreen : ScreenBase
     void CheckMatchPrompt(bool refill)
     {
         matchRecheck = 30;
-        if (matchAsk != null || matchDone || WhatsNew.Pending != null || UpdatesPrompt.Pending || SupportPrompt.Pending) return;
+        if (matchAsk != null || matchDone || WhatsNew.Pending != null || UpdatesPrompt.Pending || SupportPrompt.Pending || ProgressReveal.Due || ProgressReveal.IsOpen) return;
         var rec = Warmup.LockInMatchLog.Due(Warmup.WarmupStore.I, DateTime.Now);
         if (rec == null) return;
         matchAsk = rec;
@@ -404,7 +445,7 @@ public partial class MenuScreen : ScreenBase
         coachHint.Rank = CoachData.HasOverall(p) ? CoachRank.RangeText(p.OverallTier, p.OverallConfidence) : null;
         coachHint.RankColor = CoachRank.Col(p.OverallTier);
         coachHint.Problem = p.Problems.FirstOrDefault()?.Title;
-        coachHint.TooltipText = "Open the aim coach";
+        coachHint.TooltipText = L.T("Open the aim coach");
         coachHint.Visible = coachHint.Rank != null || coachHint.Problem != null;
         coachHint.QueueRedraw();
     }
@@ -430,7 +471,7 @@ public partial class MenuScreen : ScreenBase
         {
             var b = new VButton
             {
-                Kind = VButton.Look.Select, K = k, Label = t.Name.ToUpperInvariant(), Sub = t.Ranks, Emblem = t.Id,
+                Kind = VButton.Look.Select, K = k, Label = L.Upper(L.T(t.Name)), Sub = t.Ranks, Emblem = t.Id,
                 FontPx = 22, SubPx = 13, CustomMinimumSize = new Vector2(0, 66 * k), SizeFlagsHorizontal = SizeFlags.ExpandFill,
                 Selected = Main.I.Tier == t.Id, TooltipText = TierLine(t),
             };
@@ -513,14 +554,15 @@ public partial class MenuScreen : ScreenBase
                 if (box.GetChildCount() > 0) box.AddChild(Spacer(0, (GroupGap - 2 * CardGap) * k));
                 if (g == groups.Count)
                 {
-                    box.AddChild(new SectionLabel { Text = "AGENTS", Note = $"{Agents.AgentRoster.All.Length} agents", K = k });
+                    int na = Agents.AgentRoster.All.Length;
+                    box.AddChild(new SectionLabel { Text = "AGENTS", Note = L.P(na, $"{na} agent", $"{na} agents"), K = k });
                     var link = new AgentsLinkCard { K = k, TwoLines = two, CustomMinimumSize = new Vector2(0, cardH * k), SizeFlagsHorizontal = SizeFlags.ExpandFill };
                     link.Pressed += Main.I.ShowAgents;
                     box.AddChild(link);
                     continue;
                 }
                 var (cat, items) = groups[g];
-                box.AddChild(new SectionLabel { Text = cat.ToUpperInvariant(), Note = items.Count == 1 ? "1 drill" : $"{items.Count} drills", K = k });
+                box.AddChild(new SectionLabel { Text = L.Upper(L.T(cat)), Note = L.P(items.Count, $"{items.Count} drill", $"{items.Count} drills"), K = k });
                 foreach (var (make, info) in items)
                 {
                     var card = new ModeCard(info)
@@ -568,8 +610,8 @@ public partial class MenuScreen : ScreenBase
     static string TierLine(Tier t)
     {
         var (fmin, fmax) = Difficulty.FlickDistance(t.Id);
-        return $"Bots react in ~{t.Bot.ReactMs:0} ms · Gridshot targets {Difficulty.GridshotRadius(t.Id) * 200:0} cm wide · "
-             + $"head flicks at {fmin:0}–{fmax:0} m · {(t.Bot.RunAndGun ? "bots run-and-gun" : "bots stop before shooting")}";
+        return L.F($"Bots react in ~{t.Bot.ReactMs:0} ms") + " · " + L.F($"Gridshot targets {Difficulty.GridshotRadius(t.Id) * 200:0} cm wide") + " · "
+             + L.F($"head flicks at {fmin:0}–{fmax:0} m") + " · " + L.T(t.Bot.RunAndGun ? "bots run-and-gun" : "bots stop before shooting");
     }
 
     void DrawTierInfo(DrawBox d)
@@ -579,7 +621,7 @@ public partial class MenuScreen : ScreenBase
         var col = UiTheme.TierColor(t.Id);
         RankEmblem.Draw(d, new Vector2(12 * k, cy), 10 * k, t.Id);
         int fs = UiTheme.Fs(17, k), ds = UiTheme.Fs(15, k);
-        string head = $"{t.Name.ToUpperInvariant()}  ·  {t.Ranks.ToUpperInvariant()}";
+        string head = L.Upper(L.T(t.Name)) + "  ·  " + L.Upper(L.T(t.Ranks));
         float w = Gfx.TextW(UiTheme.HudWide, head, fs);
         Gfx.Text(d, UiTheme.HudWide, head, 32 * k, Gfx.Mid(cy, fs), fs, col);
         Gfx.TextFit(d, UiTheme.Body, TierLine(t), 32 * k + w + 18 * k, Gfx.Mid(cy, ds), ds, UiTheme.Dim, d.Size.X - (32 * k + w + 18 * k));
@@ -614,24 +656,25 @@ public partial class MenuScreen : ScreenBase
         rows.AddChild(new InfoRow
         {
             K = k, H = 30, Label = "Source",
-            Value = () => v.Found ? v.Source.Replace("Account ", "") : "Not found — set your sens in Settings",
+            Value = () => v.Found ? v.SourceText(account: false) : L.N("Not found — set your sens in Settings"),
             ValueColor = () => v.Found ? UiTheme.Good : UiTheme.Warn,
         });
-        string Mode(int m) => m switch { 0 => "Fullscreen", 1 => "Windowed Fullscreen", _ => "Windowed" };
+        string Mode(int m) => m switch { 0 => L.N("Fullscreen"), 1 => L.N("Windowed Fullscreen"), _ => L.N("Windowed") };
         int stripe = 0;
         void Row(string label, Func<string> value, Func<Color>? color = null, Func<Color?>? swatch = null, Func<string?>? tag = null) =>
             rows.AddChild(new InfoRow { K = k, Label = label, Value = value, ValueColor = color, Swatch = swatch, Tag = tag, Stripe = stripe++ % 2 == 0 });
 
         var inv = CultureInfo.InvariantCulture;
-        Row("Sensitivity", () => app.Sens.ToString("0.###", inv), tag: () => app.Settings.UseSensOverride ? "CUSTOM" : null);
-        Row("eDPI / cm per 360", () => $"{app.Sens * app.Settings.Dpi:0} · {PlayerView.Cm360(app.Sens, app.Settings.Dpi):0.0} cm @ {app.Settings.Dpi} DPI");
+        Row("Sensitivity", () => app.Sens.ToString("0.###", inv), tag: () => app.Settings.UseSensOverride ? L.N("CUSTOM") : null);
+        Row("eDPI / cm per 360", () => L.F($"{app.Sens * app.Settings.Dpi:0} · {PlayerView.Cm360(app.Sens, app.Settings.Dpi):0.0} cm @ {app.Settings.Dpi} DPI"));
         Row("Scoped / ADS multiplier", () => $"{v.ZoomedSensMult.ToString("0.###", inv)} / {v.AdsSensMult.ToString("0.###", inv)}");
         Row("Enemy highlight", () => UiTheme.EnemyColorNames[Math.Clamp(app.EnemyColorIndex, 0, 3)], () => app.EnemyColor, () => app.EnemyColor,
-            () => app.Settings.EnemyColorOverride >= 0 ? "OVERRIDE" : null);
-        Row("Resolution", () => $"{v.ResX}×{v.ResY} · {Mode(app.WindowMode)} · #{app.Monitor + 1}");
-        Row("FPS cap / VSync", () => $"{(app.FpsCap <= 0 ? "Unlimited" : app.FpsCap.ToString())} / {(app.VSync ? "On" : "Off")}");
+            () => app.Settings.EnemyColorOverride >= 0 ? L.N("OVERRIDE") : null);
+        Row("Resolution", () => $"{v.ResX}×{v.ResY} · {L.T(Mode(app.WindowMode))} · #{app.Monitor + 1}");
+        Row("FPS cap / VSync", () => $"{(app.FpsCap <= 0 ? L.T("Unlimited") : app.FpsCap.ToString(inv))} / {L.T(app.VSync ? "On" : "Off")}");
         Row("Anti-aliasing", () => SettingsScreen.AaName(v.AntiAliasing));
-        Row("Crosshair profile", () => Valorant.CrosshairCode.Effective.Name);
+        // the crosshair name is the player's: never translated
+        Row("Crosshair profile", () => L.Raw($"{Valorant.CrosshairCode.Effective.Name} · {Valorant.CrosshairList.CountText}"));
 
         // crosshair preview
         var xp = new VPanel { Title = "CROSSHAIR", K = k, Caption = "real pixel size", SizeFlagsVertical = SizeFlags.ExpandFill };
@@ -639,12 +682,22 @@ public partial class MenuScreen : ScreenBase
         var col = new VBoxContainer { SizeFlagsVertical = SizeFlags.ExpandFill };
         col.AddThemeConstantOverride("separation", (int)(8 * k));
         xp.AddChild(col);
+        col.AddChild(CrosshairSwitchRow());
         // PRIMARY / ADS / SNIPER tabs only for a split profile (own ADS crosshair or sniper dot): the menu is tight.
-        col.AddChild(new CrosshairPreview
+        var preview = new CrosshairPreview
         {
-            K = k, BoxHeight = matchSlot.Visible ? 90 : 150, Backdrop = DrawRange, TabsOnlyWhenSplit = true, Caption = false,
+            K = k, BoxHeight = matchSlot.Visible ? 80 : 130, Backdrop = DrawRange, TabsOnlyWhenSplit = true, Caption = false,
             SizeFlagsVertical = SizeFlags.ExpandFill,
-        });
+            TooltipText = L.T("Scroll the mouse wheel here to switch crosshairs (ValTrainer only)"),
+        };
+        // the mouse wheel over the preview scrolls through the crosshairs, like the profile list in VALORANT
+        preview.GuiInput += e =>
+        {
+            if (e is not InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.WheelUp or MouseButton.WheelDown } wh) return;
+            preview.AcceptEvent();
+            StepCrosshair(wh.ButtonIndex == MouseButton.WheelUp ? -1 : 1);
+        };
+        col.AddChild(preview);
         VButton? copy = null;
         copy = Btn("COPY CROSSHAIR CODE", VButton.Look.Secondary, () =>
         {
@@ -654,8 +707,61 @@ public partial class MenuScreen : ScreenBase
             GetTree().CreateTimer(2.0).Timeout += () => { if (IsInstanceValid(copy)) { copy.Label = "COPY CROSSHAIR CODE"; copy.QueueRedraw(); } };
         }, 0, 38, 15);
         copy.SizeFlagsHorizontal = SizeFlags.ExpandFill;
-        copy.TooltipText = "The VALORANT code of this crosshair: paste it in VALORANT → Settings → Crosshair → Import Profile Code";
+        copy.TooltipText = L.T("The VALORANT code of this crosshair: paste it in VALORANT → Settings → Crosshair → Import Profile Code");
         col.AddChild(copy);
+    }
+
+    DrawBox? xhName;
+
+    /// <summary>◀ crosshair name · VALORANT 2/4 ▶ above the preview: the crosshair switcher (<see cref="Valorant.CrosshairList"/>).</summary>
+    Control CrosshairSwitchRow()
+    {
+        float k = K;
+        var row = HBox(6 * k);
+        row.CustomMinimumSize = new Vector2(0, 34 * k);
+        var l = new VButton { Kind = VButton.Look.Arrow, Dir = -1, K = k, CustomMinimumSize = new Vector2(30 * k, 30 * k), SizeFlagsVertical = SizeFlags.ShrinkCenter };
+        var r = new VButton { Kind = VButton.Look.Arrow, Dir = 1, K = k, CustomMinimumSize = new Vector2(30 * k, 30 * k), SizeFlagsVertical = SizeFlags.ShrinkCenter };
+        l.Pressed += () => StepCrosshair(-1);
+        r.Pressed += () => StepCrosshair(1);
+        l.TooltipText = r.TooltipText = L.T("Switch crosshair (ValTrainer only: VALORANT isn't changed)");
+        bool one = Valorant.CrosshairList.All.Count <= 1;
+        l.Disabled = r.Disabled = one;
+        xhName = new DrawBox
+        {
+            SizeFlagsHorizontal = SizeFlags.ExpandFill,
+            OnDraw = d =>
+            {
+                var e = Valorant.CrosshairList.CurrentEntry;
+                float cy = d.Size.Y / 2, w = d.Size.X - 8 * k;
+                int ns = UiTheme.Fs(15, k), ts = UiTheme.Fs(10, k);
+                Gfx.TextFit(d, UiTheme.Body, L.Raw(e.Name), 4 * k, Gfx.Mid(cy - 7 * k, ns), ns, UiTheme.Text, w, HorizontalAlignment.Center);
+                string tag = one ? L.N("ADD CODES IN SETTINGS") : L.Upper(e.DisplayTag);
+                Gfx.TextFit(d, UiTheme.HudWide, tag, 4 * k, Gfx.Mid(cy + 9 * k, ts), ts, UiTheme.Dim, w, HorizontalAlignment.Center);
+            },
+        };
+        row.AddChild(l);
+        row.AddChild(xhName);
+        row.AddChild(r);
+        return row;
+    }
+
+    void StepCrosshair(int d)
+    {
+        if (Valorant.CrosshairList.All.Count <= 1) return;
+        Valorant.CrosshairList.Step(d);
+        Audio.Sfx.I?.Play("kill1", 0.3f);
+        xhName?.QueueRedraw();
+        QueueRedrawAll(this);
+    }
+
+    /// <summary>The info rows read the crosshair through delegates: redraw them after a switch.</summary>
+    static void QueueRedrawAll(Node n)
+    {
+        foreach (var c in n.GetChildren())
+        {
+            if (c is InfoRow ir) ir.QueueRedraw();
+            QueueRedrawAll(c);
+        }
     }
 
     /// <summary>Range-like backdrop for the crosshair preview: wall, floor and a dummy whose head sits under the crosshair.</summary>
@@ -719,12 +825,12 @@ public partial class CoachHint : BaseButton
         Gfx.Chevron(this, new Vector2(x - 4 * k, cy), 10 * k, 1, new Color(UiTheme.Text, 0.5f + 0.5f * hover), 2.5f * k);
         x -= 16 * k;
         float minX = 0;
-        string head = "COACH";
+        string head = L.N("COACH");
         float headW = 14 * k + Gfx.TextW(UiTheme.HudWide, head, ls) + 12 * k;
         float rankW = Rank != null ? Gfx.TextW(UiTheme.HudWide, Rank, ls) + 18 * k : 0;
         if (Problem != null)
         {
-            string p = "Fix first: " + Problem;
+            string p = L.F($"Fix first: {L.T(Problem)}");
             float avail = x - minX - headW - rankW;
             float w = Mathf.Min(Gfx.TextW(UiTheme.Body, p, ts), avail);
             Gfx.TextFit(this, UiTheme.Body, p, x - w, Gfx.Mid(cy, ts), ts, UiTheme.Text.Lerp(Colors.White, hover * 0.3f), w);
@@ -773,7 +879,7 @@ public partial class ModeCard : BaseButton
         this.info = info;
         FocusMode = FocusModeEnum.None;
         MouseDefaultCursorShape = CursorShape.PointingHand;
-        TooltipText = $"{info.Name} — {info.Description}" + (info.MadeBy is { } by ? $"\nMade by the community: @{by}" : "");
+        TooltipText = $"{info.DisplayName} — {info.DisplayDescription}" + (info.MadeBy is { } by ? "\n" + L.F($"Made by the community: @{by}") : "");
     }
 
     public string Key => info.Key;
@@ -836,12 +942,12 @@ public partial class ModeCard : BaseButton
         }
 
         // name + tag (the name gets the whole first line, so it's never cut)
-        string? tag = Tag ?? (IsNew ? "NEW" : null);
-        string? community = Tag == null && info.MadeBy != null ? "COMMUNITY" : null;   // after NEW, outlined
+        string? tag = Tag ?? (IsNew ? L.N("NEW") : null);
+        string? community = Tag == null && info.MadeBy != null ? L.N("COMMUNITY") : null;   // after NEW, outlined
         int ns = UiTheme.Fs(23, k), ts = UiTheme.Fs(10, k);
         float tagW = tag != null ? Gfx.TextW(UiTheme.HudWide, tag, ts) + 10 * k : 0;
         float comW = community != null ? Gfx.TextW(UiTheme.HudWide, community, ts) + 10 * k : 0;
-        string name = (Title ?? info.Name).ToUpperInvariant();
+        string name = L.Upper(Title != null ? L.T(Title) : info.DisplayName);
         // Narrow card: the name stays whole, and COMMUNITY outranks NEW.
         if (community != null && tag != null && Gfx.TextW(UiTheme.Display, name, ns) > right - pad - tagW - comW - 14 * k) { tag = null; tagW = 0; }
         float nameMax = Mathf.Max(20 * k, right - pad - (tag != null ? tagW + 8 * k : 0) - (community != null ? comW + 6 * k : 0));
@@ -871,10 +977,10 @@ public partial class ModeCard : BaseButton
             int vs = UiTheme.Fs(17, k), ls = UiTheme.Fs(10, k);
             float x = r.Size.X - 14 * k;
             x -= Gfx.TextR(this, UiTheme.Display, pbText, x, Gfx.Mid(lineY, vs), vs, UiTheme.Good) + 6 * k;
-            x -= Gfx.TextR(this, UiTheme.HudWide, gun != info.Weapon ? $"{GunPicker.GunName(gun).ToUpperInvariant()} PB" : "PB", x, Gfx.Mid(lineY, ls), ls, UiTheme.Faint);
+            x -= Gfx.TextR(this, UiTheme.HudWide, gun != info.Weapon ? L.F($"{GunPicker.GunName(gun).ToUpperInvariant()} PB") : "PB", x, Gfx.Mid(lineY, ls), ls, UiTheme.Faint);
             descRight = x - 12 * k;
         }
-        string desc = Sub ?? info.Description;
+        string desc = Sub != null ? L.T(Sub) : info.DisplayDescription; // drawn directly below (not a sink)
         var dc = Sub != null && Tint is { } tint ? tint : UiTheme.Dim;
         if (TwoLines)
             DrawMultilineString(UiTheme.Body, new Vector2(pad, 42 * k + UiTheme.Body.GetAscent(ds)), desc, HorizontalAlignment.Left, descRight - pad, ds, 2, dc);
@@ -897,16 +1003,20 @@ public partial class MapSelector : HBoxContainer
     /// <summary>Called after the map changes.</summary>
     public Action? Changed;
 
-    /// <summary>RANDOM, then every map once (MapSpots.All order).</summary>
+    /// <summary>Map names are VALORANT's proper names: never translated (marked raw once).</summary>
+    static (string Key, string Name)[]? mapNames;
+
+    /// <summary>RANDOM (translated where drawn), then every map once (MapSpots.All order).</summary>
     public static List<(string Key, string Name)> Options()
     {
-        var list = new List<(string Key, string Name)> { ("random", "RANDOM") };
-        list.AddRange(MapSpots.All.Select(m => (m.Key, m.Map.ToUpperInvariant())).DistinctBy(m => m.Key));
+        mapNames ??= MapSpots.All.Select(m => (m.Key, L.Raw(m.Map.ToUpperInvariant()))).DistinctBy(m => m.Key).ToArray();
+        var list = new List<(string Key, string Name)> { ("random", L.N("RANDOM")) };
+        list.AddRange(mapNames);
         return list;
     }
 
     public static string NameOf(string key) =>
-        Options().FirstOrDefault(o => string.Equals(o.Key, key, StringComparison.OrdinalIgnoreCase)).Name ?? key.ToUpperInvariant();
+        Options().FirstOrDefault(o => string.Equals(o.Key, key, StringComparison.OrdinalIgnoreCase)).Name ?? L.Raw(key.ToUpperInvariant());
 
     /// <param name="host">The screen the pop-up is added to (drawn on top of everything).</param>
     public MapSelector(Control host, float k, bool label = true)
@@ -914,14 +1024,16 @@ public partial class MapSelector : HBoxContainer
         this.host = host;
         this.k = k;
         AddThemeConstantOverride("separation", (int)(6 * k));
-        if (label) AddChild(new DrawBox { CustomMinimumSize = new Vector2(56 * k, 40 * k), OnDraw = DrawLabel });
-        var prev = new VButton { Kind = VButton.Look.Arrow, Dir = -1, K = k, CustomMinimumSize = new Vector2(40 * k, 40 * k), TooltipText = "Previous map" };
+        // "MAP" may be longer translated: the label box grows to fit it (English keeps 56)
+        float labelW = L.IsEnglish ? 56 * k : Mathf.Max(56 * k, 14 * k + Gfx.TextW(UiTheme.HudWide, "MAP", UiTheme.Fs(14, k)) + 6 * k);
+        if (label) AddChild(new DrawBox { CustomMinimumSize = new Vector2(labelW, 40 * k), OnDraw = DrawLabel });
+        var prev = new VButton { Kind = VButton.Look.Arrow, Dir = -1, K = k, CustomMinimumSize = new Vector2(40 * k, 40 * k), TooltipText = L.T("Previous map") };
         prev.Pressed += () => Step(-1);
         AddChild(prev);
-        current = new MapButton { K = k, CustomMinimumSize = new Vector2(196 * k, 40 * k), TooltipText = "Map for the map, utility and agent drills · click to see every map" };
+        current = new MapButton { K = k, CustomMinimumSize = new Vector2(196 * k, 40 * k), TooltipText = L.T("Map for the map, utility and agent drills · click to see every map") };
         current.Pressed += () => { if (IsOpen) Close(); else Open(); };
         AddChild(current);
-        var next = new VButton { Kind = VButton.Look.Arrow, Dir = 1, K = k, CustomMinimumSize = new Vector2(40 * k, 40 * k), TooltipText = "Next map" };
+        var next = new VButton { Kind = VButton.Look.Arrow, Dir = 1, K = k, CustomMinimumSize = new Vector2(40 * k, 40 * k), TooltipText = L.T("Next map") };
         next.Pressed += () => Step(1);
         AddChild(next);
     }
@@ -1083,7 +1195,13 @@ public partial class MapPickerOverlay : Control
         int fs = UiTheme.Fs(19, k), ns = UiTheme.Fs(13, k);
         DrawRect(new Rect2(panel.Position.X + pad, cy - 3 * k, 6 * k, 6 * k), UiTheme.Accent);
         Gfx.Text(this, UiTheme.DisplayWide, "MAP", panel.Position.X + pad + 16 * k, Gfx.Mid(cy, fs), fs, UiTheme.Text);
-        Gfx.TextR(this, UiTheme.Body, "map, utility and agent drills · RANDOM picks a new one every run", panel.End.X - pad, Gfx.Mid(cy, ns), ns, UiTheme.Dim);
+        // translations run longer: the right-aligned note is kept clear of the title (English draws as designed)
+        float noteX = panel.Position.X + pad + 16 * k + Gfx.TextW(UiTheme.DisplayWide, "MAP", fs) + 20 * k;
+        if (L.IsEnglish)
+            Gfx.TextR(this, UiTheme.Body, "map, utility and agent drills · RANDOM picks a new one every run", panel.End.X - pad, Gfx.Mid(cy, ns), ns, UiTheme.Dim);
+        else
+            Gfx.TextFit(this, UiTheme.Body, "map, utility and agent drills · RANDOM picks a new one every run", noteX, Gfx.Mid(cy, ns), ns, UiTheme.Dim,
+                panel.End.X - pad - noteX, HorizontalAlignment.Right);
         DrawRect(new Rect2(panel.Position.X + pad, panel.Position.Y + pad + headH - 14 * k, panel.Size.X - pad * 2, 1), new Color(UiTheme.Text, 0.09f));
     }
 }
@@ -1102,7 +1220,7 @@ public partial class MapTile : BaseButton
         this.name = name;
         FocusMode = FocusModeEnum.None;
         MouseDefaultCursorShape = CursorShape.PointingHand;
-        TooltipText = key == "random" ? "Map drills pick a random map each run" : $"Map drills use {name[..1]}{name[1..].ToLowerInvariant()}";
+        TooltipText = key == "random" ? L.T("Map drills pick a random map each run") : L.F($"Map drills use {name[..1]}{name[1..].ToLowerInvariant()}");
     }
 
     public override void _Ready()
@@ -1228,19 +1346,102 @@ public partial class UpdateBanner : Control
         string v = Version.ToUpperInvariant();
         string head = Kind switch
         {
-            Stage.Ready => $"VALTRAINER {v} IS READY",
-            Stage.Applying => $"INSTALLING VALTRAINER {v}…",
-            _ => $"VALTRAINER {v} IS AVAILABLE",
+            Stage.Ready => L.F($"VALTRAINER {v} IS READY"),
+            Stage.Applying => L.F($"INSTALLING VALTRAINER {v}…"),
+            _ => L.F($"VALTRAINER {v} IS AVAILABLE"),
         };
         string sub = Kind switch
         {
-            Stage.Downloading => $"Downloading update {Updater.Progress * 100:0}%",
-            Stage.Ready => "restart to update · you have " + AppInfo.Version + (Updater.NeedsElevation ? " · Windows will ask for permission" : ""),
-            Stage.Applying => "ValTrainer restarts by itself",
-            _ => $"you have {AppInfo.Version}",
+            Stage.Downloading => L.F($"Downloading update {Updater.Progress * 100:0}%"),
+            Stage.Ready => L.F($"restart to update · you have {AppInfo.Version}") + (Updater.NeedsElevation ? " · " + L.T("Windows will ask for permission") : ""),
+            Stage.Applying => L.T("ValTrainer restarts by itself"),
+            _ => L.F($"you have {AppInfo.Version}"),
         };
-        Gfx.Text(this, UiTheme.HudWide, head, 42 * k, Gfx.Mid(cy, fs), fs, UiTheme.Text);
-        float x = 42 * k + Gfx.TextW(UiTheme.HudWide, head, fs) + 14 * k;
-        Gfx.Text(this, UiTheme.Body, sub, x, Gfx.Mid(cy, ss), ss, Kind == Stage.Ready ? UiTheme.Good : UiTheme.Dim);
+        // the buttons (child row, right-aligned) cover the right part: the text keeps to the room left of them
+        float right = ButtonsLeft() - 12 * k;
+        float x0 = 42 * k;
+        float hw = Gfx.TextW(UiTheme.HudWide, head, fs);
+        Gfx.TextFit(this, UiTheme.HudWide, head, x0, Gfx.Mid(cy, fs), fs, UiTheme.Text, Mathf.Max(20 * k, right - x0));
+        float x = x0 + hw + 14 * k;
+        if (right - x > 30 * k)
+            Gfx.TextFit(this, UiTheme.Body, sub, x, Gfx.Mid(cy, ss), ss, Kind == Stage.Ready ? UiTheme.Good : UiTheme.Dim, right - x);
+    }
+
+    /// <summary>Left edge of the laid-out buttons (the banner's right end when there are none).</summary>
+    float ButtonsLeft()
+    {
+        float left = Size.X - 8 * K;
+        foreach (var n in GetChildren())
+        {
+            if (n is not Container row) continue;
+            foreach (var c in row.GetChildren())
+                if (c is Control { Visible: true } b && b.Size.X > 0) left = Mathf.Min(left, row.Position.X + b.Position.X);
+        }
+        return left;
+    }
+}
+
+/// <summary>
+/// One-time notice when Auto picked a language other than English (VALORANT's or Windows' language): written in that
+/// language, at the bottom of the menu for ~12 s (click to close). Remembered in settings.json (LanguageNotice) so it
+/// shows once per language; picking a language in Settings never shows it.
+/// </summary>
+public partial class LanguageToast : Control
+{
+    const float Life = 12f;
+    /// <summary>Seconds left this session (the menu rebuilds on resize / return: the notice carries on).</summary>
+    static float left = -1;
+    float k = 1f;
+
+    public static void ShowIfDue(Control parent, float k)
+    {
+        var st = Main.I.Settings;
+        if (left < 0)
+        {
+            if (st.Language != null || L.Forced != null || L.IsEnglish || L.AutoSource == null || st.LanguageNotice == L.Lang) return;
+            st.LanguageNotice = L.Lang;
+            st.Save();
+            left = Life;
+        }
+        if (left > 0) parent.AddChild(new LanguageToast { k = k });
+    }
+
+    public override void _Ready()
+    {
+        MouseFilter = MouseFilterEnum.Stop;
+        MouseDefaultCursorShape = CursorShape.PointingHand;
+        AnchorLeft = 0.5f; AnchorRight = 0.5f; AnchorTop = 1; AnchorBottom = 1;
+        OffsetLeft = -430 * k; OffsetRight = 430 * k; OffsetTop = -104 * k; OffsetBottom = -44 * k;
+    }
+
+    public override void _Process(double delta)
+    {
+        left -= (float)delta;
+        if (left <= 0) { left = 0; QueueFree(); return; }
+        QueueRedraw();
+    }
+
+    public override void _GuiInput(InputEvent e)
+    {
+        if (e is InputEventMouseButton { Pressed: true }) { left = 0; QueueFree(); }
+    }
+
+    public override void _Draw()
+    {
+        float a = Mathf.Clamp(Mathf.Min(left, Life - left) * 3f, 0f, 1f);
+        var r = new Rect2(Vector2.Zero, Size);
+        Gfx.Plate(this, r, 10 * k, new Color(0.06f, 0.1f, 0.14f, 0.96f * a), new Color(UiTheme.Accent, 0.6f * a));
+        DrawRect(new Rect2(0, 0, 4 * k, r.Size.Y - 6 * k), new Color(UiTheme.Accent, a));
+        string name = L.Info(L.Lang)?.Name ?? L.Lang;
+        string head = L.AutoSource == "Windows"
+            ? L.F($"ValTrainer is now in {name}, like Windows")
+            : L.F($"ValTrainer is now in {name}, like your VALORANT");
+        int fs = UiTheme.Fs(17, k), ss = UiTheme.Fs(13.5f, k);
+        float x = 22 * k, w = r.Size.X - 40 * k;
+        Gfx.TextFit(this, UiTheme.Body, head, x, 25 * k, fs, new Color(UiTheme.Text, a), w);
+        string sub = L.IsEnglish || L.Status != "machine"
+            ? L.T("Change it in SETTINGS → Language")
+            : L.T("Machine translation · change it in SETTINGS → Language");
+        Gfx.TextFit(this, UiTheme.Body, sub, x, 47 * k, ss, new Color(UiTheme.Dim, a), w);
     }
 }

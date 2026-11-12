@@ -13,9 +13,9 @@ public sealed class MicroshotMode : TrainingMode
 {
     public override string Key => "microshot";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.NoShotguns;
-    public override string Name => "Microshot";
-    public override string Description => "Real-size heads 1.5–6° apart at 10–20 m: small, precise corrections without overshooting. Higher tiers: farther, wider apart, timed.";
-    public override string Category => "Aim";
+    public override string Name => L.N("Microshot");
+    public override string Description => L.N("Real-size heads 1.5–6° apart at 10–20 m: small, precise corrections without overshooting. Higher tiers: farther, wider apart, timed.");
+    public override string Category => L.N("Aim");
     public override string SimKind => "static";
     public override AimFocus? Focus => target != null ? new AimFocus(fid, target.GlobalPosition, target.Radius) : null;
 
@@ -117,20 +117,20 @@ public sealed class MicroshotMode : TrainingMode
 
     float OverPct => judged == 0 ? 0 : 100f * overs / judged;
 
-    public override string? Prompt => Now < 2.5f && Hits == 0 ? "Small moves: stop ON the head, then click" : null;
+    public override string? Prompt => Now < 2.5f && Hits == 0 ? L.N("Small moves: stop ON the head, then click") : null;
 
     public override IEnumerable<string> HudLines()
     {
-        if (lastMs >= 0) yield return $"Last head {lastMs:0} ms";
-        if (judged >= 3) yield return $"Overshoot {OverPct:0}% of heads";
+        if (lastMs >= 0) yield return L.F($"Last head {lastMs:0} ms");
+        if (judged >= 3) yield return L.F($"Overshoot {OverPct:0}% of heads");
     }
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Accuracy", $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
-        yield return ("Median time to hit", KillTimes.Count > 0 ? $"{Median(KillTimes):0} ms" : "—");
-        if (judged > 0) yield return ("Overshoot", $"{OverPct:0}% of heads ({overs}/{judged}) — lower is better");
-        if (AimPlusTiers.MicroLifetime(Tier) > 0) yield return ("Expired heads", expired.ToString());
+        yield return (L.N("Accuracy"), $"{Accuracy * 100:0.0}%  ({Hits}/{Shots})");
+        yield return (L.N("Median time to hit"), KillTimes.Count > 0 ? L.F($"{Median(KillTimes):0} ms") : "—");
+        if (judged > 0) yield return (L.N("Overshoot"), L.F($"{OverPct:0}% of heads ({overs}/{judged}) — lower is better"));
+        if (AimPlusTiers.MicroLifetime(Tier) > 0) yield return (L.N("Expired heads"), expired.ToString());
     }
 
     /// <summary>Median time to hit (needs ≥ 70% accuracy), thresholds per tier played.</summary>

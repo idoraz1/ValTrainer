@@ -1,4 +1,5 @@
 using Godot;
+using ValTrainer.Core;
 using ValTrainer.UI;
 using ValTrainer.Valorant;
 
@@ -50,22 +51,22 @@ public sealed partial class CrosshairFinderMode
         CrosshairView.DrawStyle(c, st, r.GetCenter().Round(), zoom);
     }
 
-    /// <summary>Word-wrapped text; returns the baseline after the last line.</summary>
+    /// <summary>Word-wrapped text (translated as a whole first, then cut into lines); returns the baseline after the last line.</summary>
     static float Wrap(CanvasItem c, Font f, string text, float x, float y, int fs, Color col, float maxW, float lineH)
     {
         var line = "";
-        foreach (var word in text.Split(' '))
+        foreach (var word in L.T(text).Split(' '))
         {
             string tryLine = line.Length == 0 ? word : line + " " + word;
-            if (line.Length > 0 && Gfx.TextW(f, tryLine, fs) > maxW)
+            if (line.Length > 0 && Gfx.RawW(f, tryLine, fs) > maxW)
             {
-                Gfx.Text(c, f, line, x, y, fs, col);
+                Gfx.TextRaw(c, f, line, x, y, fs, col);
                 y += lineH;
                 line = word;
             }
             else line = tryLine;
         }
-        if (line.Length > 0) { Gfx.Text(c, f, line, x, y, fs, col); y += lineH; }
+        if (line.Length > 0) { Gfx.TextRaw(c, f, line, x, y, fs, col); y += lineH; }
         return y;
     }
 
@@ -99,7 +100,7 @@ public sealed partial class CrosshairFinderMode
         c.DrawRect(new Rect2(top.Position, new Vector2(60 * k, 3 * k)), UiTheme.Accent);
         Gfx.Text(c, UiTheme.Display, "CROSSHAIR FINDER", x, top.Position.Y + 84 * k, UiTheme.Fs(64, k), UiTheme.Text);
         Gfx.Text(c, UiTheme.HudWide, "VISIBILITY + SHAPE TEST · VALORANT CODE AT THE END", x, top.Position.Y + 118 * k, UiTheme.Fs(14, k), UiTheme.Dim);
-        float y = Wrap(c, UiTheme.Body, "Finds the crosshair you see and shoot best with, and gives you its VALORANT code. Only the crosshair you test changes; the rest of your profile stays as it is.",
+        float y = Wrap(c, UiTheme.Body, L.N("Finds the crosshair you see and shoot best with, and gives you its VALORANT code. Only the crosshair you test changes; the rest of your profile stays as it is."),
             x, top.Position.Y + 164 * k, UiTheme.Fs(19, k), UiTheme.Text, w, 28 * k);
         Gfx.Text(c, UiTheme.Display, "WHICH CROSSHAIR? SHOOT ONE TO START", x, y + 24 * k, UiTheme.Fs(32, k), UiTheme.Accent);
 
@@ -109,9 +110,9 @@ public sealed partial class CrosshairFinderMode
         y = bottom.Position.Y + 38 * k;
         string[] paras =
         {
-            "Part 1 · Visibility: click the moment the crosshair appears over map and enemy backgrounds.",
-            "Part 2 · Shape: pick up to 4 shapes (or dot sizes), then play short rounds with crosshair A and B: flick to heads, fine-tune on far heads, kill an agent. After each matchup, shoot the one that felt better (or SAME). Your aim decides; your taste breaks ties. The winner then faces your own crosshair.",
-            "ADS rounds are played aimed down sights with the Vandal, sniper rounds scoped in with the Operator. ValTrainer never changes VALORANT: you import the code yourself. Esc pauses; the round is then replayed.",
+            L.N("Part 1 · Visibility: click the moment the crosshair appears over map and enemy backgrounds."),
+            L.N("Part 2 · Shape: pick up to 4 shapes (or dot sizes), then play short rounds with crosshair A and B: flick to heads, fine-tune on far heads, kill an agent. After each matchup, shoot the one that felt better (or SAME). Your aim decides; your taste breaks ties. The winner then faces your own crosshair."),
+            L.N("ADS rounds are played aimed down sights with the Vandal, sniper rounds scoped in with the Operator. ValTrainer never changes VALORANT: you import the code yourself. Esc pauses; the round is then replayed."),
         };
         foreach (var l in paras) y = Wrap(c, UiTheme.Body, l, x, y, UiTheme.Fs(17, k), UiTheme.Dim, w, 25 * k) + 8 * k;
 
@@ -135,13 +136,13 @@ public sealed partial class CrosshairFinderMode
         Gfx.Plate(c, r, 12 * k, new Color(0.06f, 0.1f, 0.14f, 0.97f), new Color(UiTheme.Text, 0.14f));
         if (hover) c.DrawRect(r.Grow(4 * k), UiTheme.Accent, false, 3 * k);
         float pad = 14 * k, x = r.Position.X + pad, w = r.Size.X - 2 * pad, y = r.Position.Y;
-        string title = t switch { XfTab.Ads => "ADS", XfTab.Sniper => "SNIPER", _ => "PRIMARY" };
+        string title = t switch { XfTab.Ads => L.N("ADS"), XfTab.Sniper => L.N("SNIPER"), _ => L.N("PRIMARY") };
         if (t == XfTab.Primary) Gfx.TextR(c, UiTheme.HudWide, "DEFAULT", r.End.X - pad, y + 26 * k, UiTheme.Fs(10, k), UiTheme.Faint);
         string why = t switch
         {
-            XfTab.Ads => "The crosshair you see while aiming down sights with rifles and SMGs.",
-            XfTab.Sniper => "The centre dot inside the Operator, Marshal and Outlaw scope.",
-            _ => "Your normal crosshair: hip fire with every gun.",
+            XfTab.Ads => L.N("The crosshair you see while aiming down sights with rifles and SMGs."),
+            XfTab.Sniper => L.N("The centre dot inside the Operator, Marshal and Outlaw scope."),
+            _ => L.N("Your normal crosshair: hip fire with every gun."),
         };
         Gfx.TextFit(c, UiTheme.Display, title, x, y + 44 * k, UiTheme.Fs(40, k), hover ? UiTheme.Text : new Color(UiTheme.Text, 0.85f), w);
         y = Wrap(c, UiTheme.Body, why, x, y + 70 * k, UiTheme.Fs(15, k), UiTheme.Dim, w, 19 * k);
@@ -154,11 +155,11 @@ public sealed partial class CrosshairFinderMode
         var rr = new Rect2(zr.End.X + 6 * k, zr.Position.Y, w - s - 6 * k, s);
         c.DrawRect(rr, Maps.MapSpots.All[2].Palette.Wall);
         TabReal(c, rr, t, cur);
-        Gfx.TextFit(c, UiTheme.Body, CurrentLook(t), x, zr.End.Y + 18 * k, UiTheme.Fs(13, k), UiTheme.Dim, w);
+        Gfx.TextFit(c, UiTheme.Body, CurrentLookText(t), x, zr.End.Y + 18 * k, UiTheme.Fs(13, k), UiTheme.Dim, w);
 
         int min = Mathf.Max(1, Mathf.RoundToInt(XfConfig.For(t, quick).EstimatedMinutes));
         Gfx.Text(c, UiTheme.HudWide, hover ? "SHOOT TO START" : "SHOOT TO PICK", x, r.End.Y - 12 * k, UiTheme.Fs(11, k), hover ? UiTheme.Accent : UiTheme.Faint);
-        Gfx.TextR(c, UiTheme.HudWide, $"ABOUT {min} MIN", r.End.X - pad, r.End.Y - 12 * k, UiTheme.Fs(10, k), UiTheme.Faint);
+        Gfx.TextR(c, UiTheme.HudWide, L.F($"ABOUT {min} MIN"), r.End.X - pad, r.End.Y - 12 * k, UiTheme.Fs(10, k), UiTheme.Faint);
     }
 
     // =====================================================================================
@@ -203,15 +204,19 @@ public sealed partial class CrosshairFinderMode
     {
         Dim(c, size, part == 1 ? 0.96f : 0.7f);
         float cx = size.X / 2, cy = size.Y * 0.42f;
-        string what = tab switch { XfTab.Ads => "ADS CROSSHAIR", XfTab.Sniper => "SNIPER SCOPE DOT", _ => "PRIMARY CROSSHAIR" };
-        Gfx.TextC(c, UiTheme.HudWide, $"{what} · PART {part} OF 2", cx, cy - 120 * k, UiTheme.Fs(18, k), UiTheme.Dim);
+        string what = tab switch { XfTab.Ads => L.N("ADS CROSSHAIR"), XfTab.Sniper => L.N("SNIPER SCOPE DOT"), _ => L.N("PRIMARY CROSSHAIR") };
+        Gfx.TextC(c, UiTheme.HudWide, L.F($"{L.T(what)} · PART {part} OF 2"), cx, cy - 120 * k, UiTheme.Fs(18, k), UiTheme.Dim);
         Gfx.TextC(c, UiTheme.Display, part == 1 ? "VISIBILITY" : tab == XfTab.Sniper ? "DOT SIZE" : "SHAPE", cx, cy + 20 * k, UiTheme.Fs(130, k), UiTheme.Text);
         string a = part == 1
-            ? tab == XfTab.Sniper ? "Look at the centre of the scope. Click the moment the dot appears." : "Look at the centre of the screen. Click the moment the crosshair appears."
-            : $"Your colour: {chosen.Name}. Now your {nPick} {ShapeWord}s, two at a time.";
-        string how = tab switch { XfTab.Ads => "Each round is aimed down sights: ", XfTab.Sniper => "Each round is scoped in: ", _ => "Each round: " };
-        string b = part == 1 ? "Don't click early, don't guess. Each colour is tried on several backgrounds."
-            : how + "flick to heads, fine-tune on far heads, kill the agent. Then pick the one that felt better.";
+            ? tab == XfTab.Sniper ? L.N("Look at the centre of the scope. Click the moment the dot appears.") : L.N("Look at the centre of the screen. Click the moment the crosshair appears.")
+            : tab == XfTab.Sniper ? L.F($"Your colour: {chosen.DisplayName}. Now your {nPick} dots, two at a time.")
+            : L.F($"Your colour: {chosen.DisplayName}. Now your {nPick} shapes, two at a time.");
+        string b = part == 1 ? L.N("Don't click early, don't guess. Each colour is tried on several backgrounds.") : tab switch
+        {
+            XfTab.Ads => L.N("Each round is aimed down sights: flick to heads, fine-tune on far heads, kill the agent. Then pick the one that felt better."),
+            XfTab.Sniper => L.N("Each round is scoped in: flick to heads, fine-tune on far heads, kill the agent. Then pick the one that felt better."),
+            _ => L.N("Each round: flick to heads, fine-tune on far heads, kill the agent. Then pick the one that felt better."),
+        };
         Gfx.TextC(c, UiTheme.Body, a, cx, cy + 80 * k, UiTheme.Fs(22, k), UiTheme.Text);
         Gfx.TextC(c, UiTheme.Body, b, cx, cy + 116 * k, UiTheme.Fs(19, k), UiTheme.Dim);
         float bw = 360 * k, by = cy + 150 * k, left = Mathf.Max(0, cfg.PartHeaderSec - phaseT);
@@ -262,7 +267,7 @@ public sealed partial class CrosshairFinderMode
         var r = Panel(c, size, k, 1180, 210 + n * 96);
         float x0 = r.Position.X + 44 * k, x1 = r.End.X - 44 * k, y = r.Position.Y + 76 * k;
         Gfx.Text(c, UiTheme.HudWide, "PART 1 RESULT · MOST VISIBLE FOR YOU", x0, y - 26 * k, UiTheme.Fs(13, k), UiTheme.Dim);
-        Gfx.TextFit(c, UiTheme.Display, chosen.Name.ToUpperInvariant(), x0, y + 26 * k, UiTheme.Fs(48, k), UiTheme.Text, x1 - x0);
+        Gfx.TextFit(c, UiTheme.Display, L.Upper(chosen.DisplayName), x0, y + 26 * k, UiTheme.Fs(48, k), UiTheme.Text, x1 - x0);
         y += 60 * k;
         DrawColorRows(c, new Rect2(x0, y, x1 - x0, n * 96 * k), k, 96 * k);
     }
@@ -302,7 +307,7 @@ public sealed partial class CrosshairFinderMode
                 }
             x += 14 * k;
             int ns = UiTheme.Fs(compact ? 15 : 20, k);
-            Gfx.TextFit(c, UiTheme.Body, col.Name + (col.IsCurrent ? "  (yours)" : ""), x, cy - (compact ? 2 : 6) * k, ns, pick ? UiTheme.Text : UiTheme.Dim, 260 * k);
+            Gfx.TextFit(c, UiTheme.Body, col.IsCurrent ? L.F($"{col.DisplayName}  (yours)") : col.DisplayName, x, cy - (compact ? 2 : 6) * k, ns, pick ? UiTheme.Text : UiTheme.Dim, 260 * k);
             if (pick) Gfx.Text(c, UiTheme.HudWide, "PICK", x, cy + 18 * k, UiTheme.Fs(11, k), UiTheme.Good);
             x += (compact ? 200 : 270) * k;
             float bw = r.End.X - x - (compact ? 60 : 110) * k;
@@ -313,8 +318,8 @@ public sealed partial class CrosshairFinderMode
             c.DrawRect(new Rect2(x, cy + 4 * k, bw, 6 * k), new Color(1, 1, 1, 0.06f));
             c.DrawRect(new Rect2(x, cy + 4 * k, bw * Mathf.Clamp(col.Contrast / Mathf.Max(0.01f, maxC), 0.02f, 1), 6 * k), new Color(UiTheme.Teal, pick ? 0.9f : 0.45f));
             int vs = UiTheme.Fs(compact ? 13 : 16, k);
-            Gfx.TextR(c, UiTheme.Hud, float.IsNaN(ms) ? "—" : $"{ms:0} ms", r.End.X, cy - 2 * k, vs, pick ? UiTheme.Text : UiTheme.Dim);
-            if (!compact) Gfx.TextR(c, UiTheme.Body, col.Misses > 0 ? $"{col.Misses} missed" : "contrast", r.End.X, cy + 20 * k, UiTheme.Fs(12, k), UiTheme.Faint);
+            Gfx.TextR(c, UiTheme.Hud, float.IsNaN(ms) ? "—" : L.F($"{ms:0} ms"), r.End.X, cy - 2 * k, vs, pick ? UiTheme.Text : UiTheme.Dim);
+            if (!compact) Gfx.TextR(c, UiTheme.Body, col.Misses > 0 ? L.P(col.Misses, $"{col.Misses} missed", $"{col.Misses} missed") : "contrast", r.End.X, cy + 20 * k, UiTheme.Fs(12, k), UiTheme.Faint);
         }
     }
 
@@ -328,10 +333,12 @@ public sealed partial class CrosshairFinderMode
         float cx = size.X / 2;
         var top = new Rect2(cx - 560 * k, 76 * k, 1120 * k, 104 * k); // below the HUD's mode title and clock
         c.DrawRect(top, new Color(0.03f, 0.05f, 0.08f, 0.85f));
-        string word = ShapeWord.ToUpperInvariant();
-        Gfx.TextC(c, UiTheme.HudWide, $"PART 2 · {XfTabs.Name(tab).ToUpperInvariant()} {(tab == XfTab.Sniper ? "DOT SIZE" : "SHAPE")} · YOUR COLOUR: {chosen.Name.ToUpperInvariant()}", cx, top.Position.Y + 24 * k, UiTheme.Fs(13, k), UiTheme.Dim);
-        Gfx.TextC(c, UiTheme.Display, $"PICK UP TO 4 {word}S", cx, top.Position.Y + 66 * k, UiTheme.Fs(42, k), UiTheme.Text);
-        Gfx.TextC(c, UiTheme.Body, $"Shoot a card to pick or drop it, then shoot START. The 4 recommended {ShapeWord}s are already picked.", cx, top.Position.Y + 92 * k, UiTheme.Fs(17, k), UiTheme.Dim);
+        bool dots = tab == XfTab.Sniper;
+        string tabKind = L.Upper(XfTabs.DisplayName(tab)) + " " + L.T(dots ? "DOT SIZE" : "SHAPE");
+        Gfx.TextC(c, UiTheme.HudWide, L.F($"PART 2 · {tabKind} · YOUR COLOUR: {L.Upper(chosen.DisplayName)}"), cx, top.Position.Y + 24 * k, UiTheme.Fs(13, k), UiTheme.Dim);
+        Gfx.TextC(c, UiTheme.Display, dots ? "PICK UP TO 4 DOTS" : "PICK UP TO 4 SHAPES", cx, top.Position.Y + 66 * k, UiTheme.Fs(42, k), UiTheme.Text);
+        Gfx.TextC(c, UiTheme.Body, dots ? "Shoot a card to pick or drop it, then shoot START. The 4 recommended dots are already picked."
+            : "Shoot a card to pick or drop it, then shoot START. The 4 recommended shapes are already picked.", cx, top.Position.Y + 92 * k, UiTheme.Fs(17, k), UiTheme.Dim);
         float left = Mathf.Clamp((pickDeadline - phaseT) / Mathf.Max(0.1f, cfg.PickTimeout), 0, 1);
         c.DrawRect(new Rect2(top.Position.X, top.End.Y, top.Size.X * left, 3 * k), UiTheme.Accent);
         if (Now < noticeUntil) Gfx.TextC(c, UiTheme.Body, notice, cx, top.End.Y + 30 * k, UiTheme.Fs(19, k), UiTheme.Warn);
@@ -388,7 +395,10 @@ public sealed partial class CrosshairFinderMode
         if (hover) c.DrawRect(r.Grow(4 * k), UiTheme.Text, false, 2 * k);
         float cy = r.GetCenter().Y;
         Gfx.TextC(c, UiTheme.Display, "START BRACKET", r.GetCenter().X, Gfx.Mid(cy - 9 * k, UiTheme.Fs(32, k)), UiTheme.Fs(32, k), UiTheme.Text);
-        string sub = $"{n} {ShapeWord.ToUpperInvariant()}{(n == 1 ? "" : "S")} PICKED · STARTS BY ITSELF IN {Mathf.CeilToInt(Mathf.Max(0, pickDeadline - phaseT))} S";
+        int sec = Mathf.CeilToInt(Mathf.Max(0, pickDeadline - phaseT));
+        string sub = tab == XfTab.Sniper
+            ? L.P(n, $"{n} DOT PICKED · STARTS BY ITSELF IN {sec} S", $"{n} DOTS PICKED · STARTS BY ITSELF IN {sec} S")
+            : L.P(n, $"{n} SHAPE PICKED · STARTS BY ITSELF IN {sec} S", $"{n} SHAPES PICKED · STARTS BY ITSELF IN {sec} S");
         Gfx.TextC(c, UiTheme.HudWide, sub, r.GetCenter().X, Gfx.Mid(cy + 20 * k, UiTheme.Fs(11, k)), UiTheme.Fs(11, k), new Color(UiTheme.Text, 0.85f));
     }
 
@@ -403,12 +413,17 @@ public sealed partial class CrosshairFinderMode
         char label = block!.Label;
         var col = label == 'A' ? ColA : ColB;
         float cx = size.X / 2, cy = size.Y * 0.36f;
-        Gfx.TextC(c, UiTheme.HudWide, $"{m.Title} · ROUND {blockIdx + 1} / {m.Order.Length}", cx, cy - 130 * k, UiTheme.Fs(18, k), UiTheme.Dim);
-        Gfx.TextC(c, UiTheme.Display, $"CROSSHAIR {label}", cx, cy + 20 * k, UiTheme.Fs(120, k), col);
+        Gfx.TextC(c, UiTheme.HudWide, L.F($"{L.T(m.Title)} · ROUND {blockIdx + 1} / {m.Order.Length}"), cx, cy - 130 * k, UiTheme.Fs(18, k), UiTheme.Dim);
+        Gfx.TextC(c, UiTheme.Display, L.F($"CROSSHAIR {label}"), cx, cy + 20 * k, UiTheme.Fs(120, k), col);
         var chip = new Rect2(cx - 70 * k, cy + 50 * k, 140 * k, 140 * k);
         TabChip(c, chip, tab, EntrantOf(block.Cond).Xhair, Mathf.Max(2f, Mathf.Round(4 * k)), null, new Color(col, 0.8f));
-        string aim = tab switch { XfTab.Ads => " You stay aimed down sights.", XfTab.Sniper => " You stay scoped in.", _ => "" };
-        Gfx.TextC(c, UiTheme.Body, $"{cfg.Flicks} flicks, {cfg.Micros} far heads, then kill the agent.{aim} Look around to get a feel for it.", cx, chip.End.Y + 40 * k, UiTheme.Fs(19, k), UiTheme.Dim);
+        string how = tab switch
+        {
+            XfTab.Ads => L.F($"{cfg.Flicks} flicks, {cfg.Micros} far heads, then kill the agent. You stay aimed down sights. Look around to get a feel for it."),
+            XfTab.Sniper => L.F($"{cfg.Flicks} flicks, {cfg.Micros} far heads, then kill the agent. You stay scoped in. Look around to get a feel for it."),
+            _ => L.F($"{cfg.Flicks} flicks, {cfg.Micros} far heads, then kill the agent. Look around to get a feel for it."),
+        };
+        Gfx.TextC(c, UiTheme.Body, how, cx, chip.End.Y + 40 * k, UiTheme.Fs(19, k), UiTheme.Dim);
         float left = Mathf.Max(0, cfg.RestSec - phaseT), bw = 360 * k, by = chip.End.Y + 62 * k;
         c.DrawRect(new Rect2(cx - bw / 2, by, bw, 4 * k), new Color(1, 1, 1, 0.12f));
         c.DrawRect(new Rect2(cx - bw / 2, by, bw * (cfg.RestSec > 0 ? left / cfg.RestSec : 0), 4 * k), col);
@@ -429,7 +444,7 @@ public sealed partial class CrosshairFinderMode
 
         var cam = c.GetViewport().GetCamera3D();
         if (cam == null) return;
-        string[] names = { "A", "SAME", "B" };
+        string[] names = { "A", L.N("SAME"), "B" };
         for (int i = 0; i < 3; i++)
         {
             var p = prefT[i].GlobalPosition;
@@ -459,12 +474,20 @@ public sealed partial class CrosshairFinderMode
         float x0 = r.Position.X + 44 * k, x1 = r.End.X - 44 * k, y = r.Position.Y;
 
         int hs = UiTheme.Fs(13, k);
-        string tagText = aborted ? "PROVISIONAL" : $"CROSSHAIR FINDER RESULT · {XfTabs.Name(tab).ToUpperInvariant()}";
+        string tagText = aborted ? L.N("PROVISIONAL") : L.F($"CROSSHAIR FINDER RESULT · {L.Upper(XfTabs.DisplayName(tab))}");
         var tag = new Rect2(x0, y + 30 * k, Gfx.TextW(UiTheme.HudWide, tagText, hs) + 18 * k, 22 * k);
         c.DrawRect(tag, aborted ? UiTheme.Warn : UiTheme.Accent);
         Gfx.Text(c, UiTheme.HudWide, tagText, tag.Position.X + 9 * k, Gfx.Mid(tag.GetCenter().Y, hs), hs, aborted ? Colors.Black : UiTheme.Text);
-        string what = tab switch { XfTab.Ads => "ADS CROSSHAIR", XfTab.Sniper => "SNIPER DOT", _ => "CROSSHAIR" };
-        string title = keepCurrent ? $"KEEP YOUR {what}: IT HELD UP" : $"YOUR {what}: {ResultName.ToUpperInvariant()}";
+        string rn = L.Upper(ResultName);
+        string title = (tab, keepCurrent) switch
+        {
+            (XfTab.Ads, true) => L.T("KEEP YOUR ADS CROSSHAIR: IT HELD UP"),
+            (XfTab.Sniper, true) => L.T("KEEP YOUR SNIPER DOT: IT HELD UP"),
+            (_, true) => L.T("KEEP YOUR CROSSHAIR: IT HELD UP"),
+            (XfTab.Ads, false) => L.F($"YOUR ADS CROSSHAIR: {rn}"),
+            (XfTab.Sniper, false) => L.F($"YOUR SNIPER DOT: {rn}"),
+            _ => L.F($"YOUR CROSSHAIR: {rn}"),
+        };
         Gfx.TextFit(c, UiTheme.Display, title, x0, y + 100 * k, UiTheme.Fs(52, k), UiTheme.Text, x1 - x0);
         c.DrawRect(new Rect2(x0, y + 122 * k, x1 - x0, 1), new Color(UiTheme.Text, 0.1f));
 
@@ -483,12 +506,12 @@ public sealed partial class CrosshairFinderMode
         Gfx.Text(c, UiTheme.HudWide, keepCurrent ? "YOUR CROSSHAIR AS A VALORANT CODE" : "VALORANT CROSSHAIR CODE (YOUR WHOLE PROFILE)", x0, by + 14 * k, UiTheme.Fs(12, k), UiTheme.Dim);
         var codeBox = new Rect2(x0, by + 24 * k, x1 - x0, 46 * k);
         c.DrawRect(codeBox, new Color(0, 0, 0, 0.35f));
-        Gfx.TextFit(c, UiTheme.Hud, code, codeBox.Position.X + 14 * k, Gfx.Mid(codeBox.GetCenter().Y, UiTheme.Fs(24, k)), UiTheme.Fs(24, k), UiTheme.Good, codeBox.Size.X - 28 * k);
+        Gfx.TextFit(c, UiTheme.Hud, L.Raw(code), codeBox.Position.X + 14 * k, Gfx.Mid(codeBox.GetCenter().Y, UiTheme.Fs(24, k)), UiTheme.Fs(24, k), UiTheme.Good, codeBox.Size.X - 28 * k);
         if (!keepCurrent) Gfx.TextFit(c, UiTheme.Body, ChangeNote, x0, by + 98 * k, UiTheme.Fs(18, k), UiTheme.Good, x1 - x0);
-        string note = aborted ? abortWhy
-            : "VALORANT › Settings › Crosshair › Import Profile Code. Copy it with the button on the next screen; ValTrainer never changes VALORANT.";
+        string note = aborted ? AbortWhy
+            : L.N("VALORANT › Settings › Crosshair › Import Profile Code. Copy it with the button on the next screen; ValTrainer never changes VALORANT.");
         Gfx.TextFit(c, UiTheme.Body, note, x0, by + (keepCurrent ? 98 : 126) * k, UiTheme.Fs(17, k), aborted ? UiTheme.Warn : UiTheme.Text, x1 - x0);
-        if (phaseT > 3f) Pulse(c, "CLICK TO CONTINUE", r.GetCenter().X, r.End.Y - 14 * k, k, 16);
+        if (phaseT > 3f) Pulse(c, L.N("CLICK TO CONTINUE"), r.GetCenter().X, r.End.Y - 14 * k, k, 16);
     }
 
     void DrawBigPreview(CanvasItem c, Rect2 r, float k)
@@ -501,13 +524,13 @@ public sealed partial class CrosshairFinderMode
         float zoom = Mathf.Max(3f, Mathf.Round(8 * k));
         if (tab == XfTab.Sniper) { Reticle(c, big, big.GetCenter().Round(), Mathf.Round(zoom * 0.5f)); XfDot.Draw(c, xh.SniperDotFor(), big.GetCenter().Round(), zoom); }
         else CrosshairView.DrawStyle(c, XfTabs.Style(tab, xh), big.GetCenter().Round(), zoom);
-        Gfx.TextFit(c, UiTheme.Body, result.IsCurrent ? $"{result.Name} ({cur.Name})" : $"{result.Name} · {result.Why}", big.Position.X + 10 * k, big.End.Y - 12 * k, UiTheme.Fs(14, k), UiTheme.Text, big.Size.X - 20 * k);
+        Gfx.TextFit(c, UiTheme.Body, result.IsCurrent ? result.DisplayName + " (" + cur.Name + ")" : result.DisplayName + " · " + result.DisplayWhy, big.Position.X + 10 * k, big.End.Y - 12 * k, UiTheme.Fs(14, k), UiTheme.Text, big.Size.X - 20 * k);
 
         // real size over the four maps and the enemy
         var maps = Maps.MapSpots.All;
         var swatches = new List<(string, Color)>();
-        foreach (var m in maps) swatches.Add((m.Map.ToUpperInvariant(), m.Palette.Wall));
-        swatches.Add(("ENEMY", G.Enemy));
+        foreach (var m in maps) swatches.Add((L.Raw(m.Map.ToUpperInvariant()), m.Palette.Wall)); // map names stay English
+        swatches.Add((L.N("ENEMY"), G.Enemy)); // English key (compared below), translated by the draw helper
         float sy = big.End.Y + 12 * k, sw = (r.Size.X - 4 * k * (swatches.Count - 1)) / swatches.Count, sh = Mathf.Min(90 * k, r.End.Y - sy - 22 * k);
         for (int i = 0; i < swatches.Count; i++)
         {
@@ -542,11 +565,11 @@ public sealed partial class CrosshairFinderMode
             var res = m.Result!;
             double t = res.T;
             int lead = t >= 0 ? 0 : 1;
-            string aim = Math.Abs(t) < 0.3 ? "aim even" : $"aim {m.Label[lead]} +{Math.Abs(t):0.0}σ";
-            string pick = m.Pref < 0 ? "pick same" : $"pick {m.Label[m.Pref]}";
+            string aim = Math.Abs(t) < 0.3 ? L.T("aim even") : L.F($"aim {m.Label[lead]} +{Math.Abs(t):0.0}σ");
+            string pick = m.Pref < 0 ? L.T("pick same") : L.F($"pick {m.Label[m.Pref]}");
             float rx = r.End.X - 8 * k, hy = y + 20 * k;
             Gfx.Text(c, UiTheme.HudWide, m.Title, r.Position.X + 8 * k, hy, UiTheme.Fs(11, k), UiTheme.Dim);
-            float vw = Gfx.TextR(c, UiTheme.HudWide, m.DecidedBy.ToUpperInvariant(), rx, hy, UiTheme.Fs(11, k), m.DecidedBy == "performance" ? UiTheme.Good : UiTheme.Warn);
+            float vw = Gfx.TextR(c, UiTheme.HudWide, L.Upper(L.T(m.DecidedBy)), rx, hy, UiTheme.Fs(11, k), m.DecidedBy == "performance" ? UiTheme.Good : UiTheme.Warn);
             Gfx.TextR(c, UiTheme.Body, $"{aim} · {pick} ·", rx - vw - 6 * k, hy, UiTheme.Fs(12, k), UiTheme.Faint);
             float chipS = Mathf.Min(rowH - 40 * k, 80 * k), x = r.Position.X + 8 * k, half = (r.Size.X - 16 * k) / 2;
             for (int cond = 0; cond < 2; cond++)
@@ -557,11 +580,11 @@ public sealed partial class CrosshairFinderMode
                 TabChip(c, chip, tab, e.Xhair, Mathf.Max(2f, Mathf.Round(2 * k)), null, win ? UiTheme.Good : new Color(UiTheme.Text, 0.12f));
                 float tx = chip.End.X + 8 * k, nw = half - chipS - 16 * k;
                 Gfx.TextFit(c, UiTheme.Body, e.Name, tx, chip.GetCenter().Y, UiTheme.Fs(15, k), win ? UiTheme.Text : UiTheme.Faint, nw);
-                Gfx.Text(c, UiTheme.HudWide, (win ? "WIN · " : "") + m.Label[cond], tx, chip.GetCenter().Y + 20 * k, UiTheme.Fs(11, k), m.Label[cond] == 'A' ? ColA : ColB);
+                Gfx.Text(c, UiTheme.HudWide, win ? L.F($"WIN · {m.Label[cond]}") : m.Label[cond].ToString(), tx, chip.GetCenter().Y + 20 * k, UiTheme.Fs(11, k), m.Label[cond] == 'A' ? ColA : ColB);
                 x += half;
             }
         }
         if (byeName.Length > 0)
-            Gfx.TextFit(c, UiTheme.Body, $"{byeName} had a bye to the final (3 shapes picked)", r.Position.X + 8 * k, top + rows.Count * rowH + 22 * k, UiTheme.Fs(13, k), UiTheme.Faint, r.Size.X - 16 * k);
+            Gfx.TextFit(c, UiTheme.Body, L.F($"{L.T(byeName)} had a bye to the final (3 shapes picked)"), r.Position.X + 8 * k, top + rows.Count * rowH + 22 * k, UiTheme.Fs(13, k), UiTheme.Faint, r.Size.X - 16 * k);
     }
 }

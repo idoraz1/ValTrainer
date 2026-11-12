@@ -72,8 +72,10 @@ public interface IGame
     /// <summary>Deal damage to the player from a world position (bots shooting back).</summary>
     void DamagePlayer(float dmg, Vector3 from);
     void Banner(string text, Color color);
-    /// <summary>Teleport the player (new round / new spot).</summary>
+    /// <summary>Teleport the player for a new life / round: full HP, a full magazine, no recoil.</summary>
     void Respawn(Vector3 feet, float yaw);
+    /// <summary>A full magazine now (a new duel / rep while alive); no reload in progress, recoil untouched.</summary>
+    void RefillGun();
     /// <summary>Clear view between two points: no map box in the way and no live smoke / gas or water wall
     /// (<see cref="Smokes"/>), so bots can't see through smokes either way.</summary>
     bool LineOfSight(Vector3 a, Vector3 b);
@@ -105,6 +107,29 @@ public interface IGame
     void SwitchWeapon(WeaponKind kind);
     /// <summary>Record a gameplay event for the aim coach (see <see cref="TelemetryEvent"/> for kinds).</summary>
     void Event(string kind, float a = 0, float b = 0);
+
+    // ---- Skin kill effects / finishers (skins2-design-1.19.md §4.4-4.5; contract: docs/research/skins2-contracts.md) ----
+
+    /// <summary>
+    /// The player's own bullet killed <c>kill.Bot</c>. Call it right after <c>bot.Die(...)</c> on the shared bot-kill path
+    /// (BotMode.ShootBots) and on direct kills (DefenseModes), with <see cref="Skins.KillInfo.For"/>. Cosmetic only: it records
+    /// nothing. The default does nothing; GameSession (Kills/FX agent) accepts it only while resolving one of the player's
+    /// bullets with a skinnable gun in hand, never in Demo, never with an ability in hand, never where the mode disallows
+    /// skin effects. Bot-on-bot and utility kills must not call it.
+    /// </summary>
+    void OnPlayerKill(Skins.KillInfo kill) { }
+
+    /// <summary>
+    /// A round / the match ended (finisher trigger, skins2-design §4.5). GameSession raises it itself from a read-only watch
+    /// of <c>Event("round_won")</c> and <c>Mode.Done</c>; a mode that ends rounds some other way may call it. Default: nothing.
+    /// </summary>
+    void OnRoundEnd(Skins.RoundEndInfo end) { }
+
+    /// <summary>
+    /// The multi-kill sound <paramref name="n"/> (1–5, the streak; <c>TrainingMode.RegisterKill</c>). Right after an accepted
+    /// <see cref="OnPlayerKill"/> a skin with escalating kill sounds plays its own set; otherwise the factory <c>kill&lt;n&gt;</c>.
+    /// </summary>
+    void KillSound(int n, float vol = 1f) => Sound("kill" + n, vol);
     /// <summary>Mouse 1 currently held (tracking drills).</summary>
     bool TriggerHeld { get; }
     /// <summary>Mouse 1 was pressed this frame (edge; valid during Mode.Update).</summary>

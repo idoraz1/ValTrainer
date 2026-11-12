@@ -35,9 +35,9 @@ public sealed partial class MobilityEntryMode : MapMode
 
     public override string Key => "mobility:" + Agent;
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => Agent == "jett-op" ? null : WeaponSets.Any;
-    public override string Name => "Mobility Entry";
-    public override string Description => "Use your movement ability to enter the site and take the first duel.";
-    public override string Category => "Agents";
+    public override string Name => L.N("Mobility Entry");
+    public override string Description => L.N("Use your movement ability to enter the site and take the first duel.");
+    public override string Category => L.N("Agents");
     public override string SimKind => "bot";
     public override float Duration => 120f;
     public override WeaponKind Weapon => Agent == "jett-op" ? WeaponKind.Operator : WeaponKind.Vandal;
@@ -155,7 +155,7 @@ public sealed partial class MobilityEntryMode : MapMode
         Deaths++;
         Score -= 100;
         DecideFirstDuel(false);
-        EndRound(false, "YOU DIED", UiTheme.Accent);
+        EndRound(false, L.N("YOU DIED"), UiTheme.Accent);
     }
 
     void DecideFirstDuel(bool win)
@@ -193,9 +193,9 @@ public sealed partial class MobilityEntryMode : MapMode
             }
         }
         if (defenders.Count > 0 && defenders.All(d => !d.Alive))
-            EndRound(true, $"SITE CLEAR  {RoundT:0.0}s", UiTheme.Good);
+            EndRound(true, L.F($"SITE CLEAR  {RoundT:0.0}s"), UiTheme.Good);
         else if (RoundT > RoundTime)
-            EndRound(false, "TIME", UiTheme.Warn);
+            EndRound(false, L.N("TIME"), UiTheme.Warn);
     }
 
     internal Vector3 PlayerFeet => G.View.Eye - new Vector3(0, G.Mover.EyeHeight, 0);
@@ -322,8 +322,9 @@ public sealed partial class MobilityEntryMode : MapMode
     {
         if (between > 0 || Kit == null) yield break;
         if (rounds <= 1 || (Kit.RoundsUsed == 0 && rounds <= 3))
-            foreach (var s in Kit.HowTo.Split(". ", StringSplitOptions.RemoveEmptyEntries)) yield return s.TrimEnd('.') + ".";
-        yield return $"Defenders left: {defenders.Count(d => d.Alive)}";
+            // one translated sentence per line (looked up again by the HUD: a harmless miss)
+            foreach (var s in Kit.HowTo) yield return s;
+        yield return L.F($"Defenders left: {defenders.Count(d => d.Alive)}");
         foreach (var l in Kit.StatusLines()) yield return l;
     }
 
@@ -355,8 +356,8 @@ public sealed partial class MobilityEntryMode : MapMode
             Gfx.TextC(c, UiTheme.Display, kt, key.GetCenter().X, Gfx.Mid(key.GetCenter().Y, ks), ks, UiTheme.Text);
             int ns = UiTheme.Fs(17, k), ss = UiTheme.Fs(12, k);
             float tx = key.End.X + 12 * k;
-            Gfx.TextFit(c, UiTheme.HudWide, s.Name.ToUpperInvariant(), tx, Gfx.Mid(r.Position.Y + 22 * k, ns), ns, UiTheme.Text, r.End.X - tx - 40 * k);
-            Gfx.TextFit(c, UiTheme.HudWide, Main.I.Valorant.Binds.Hint(s.State), tx, Gfx.Mid(r.Position.Y + 44 * k, ss), ss, s.Active ? accent : UiTheme.Dim, r.End.X - tx - 8 * k);
+            Gfx.TextFit(c, UiTheme.HudWide, L.Upper(L.T(s.Name)), tx, Gfx.Mid(r.Position.Y + 22 * k, ns), ns, UiTheme.Text, r.End.X - tx - 40 * k);
+            Gfx.TextFit(c, UiTheme.HudWide, Main.I.Valorant.Binds.Hint(L.T(s.State)), tx, Gfx.Mid(r.Position.Y + 44 * k, ss), ss, s.Active ? accent : UiTheme.Dim, r.End.X - tx - 8 * k);
             for (int j = 0; j < s.Max; j++)
             {
                 var pc = new Vector2(r.End.X - 16 * k - j * 16 * k, r.Position.Y + 22 * k);
@@ -375,25 +376,25 @@ public sealed partial class MobilityEntryMode : MapMode
 
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
-        yield return ("Map", $"{MapSpot.Map} {MapSpot.Name}");
-        yield return ("Agent", $"{AgentTitle} — {AbilityTitle}");
-        yield return ("Rounds won / lost", $"{won} / {lost}");
+        yield return (L.N("Map"), $"{MapSpot.Map} {MapSpot.Name}");
+        yield return (L.N("Agent"), $"{AgentTitle} — {AbilityTitle}");
+        yield return (L.N("Rounds won / lost"), $"{won} / {lost}");
         int duels = firstWon + firstLost;
-        if (duels > 0) yield return ("First duels won", $"{firstWon} of {duels}  ({100f * firstWon / duels:0}%)");
-        if (entryTimes.Count > 0) yield return ("Time to enter site", $"{entryTimes.Average():0.0} s  ({entered} of {rounds})");
+        if (duels > 0) yield return (L.N("First duels won"), L.F($"{firstWon} of {duels}  ({100f * firstWon / duels:0}%)"));
+        if (entryTimes.Count > 0) yield return (L.N("Time to enter site"), L.F($"{entryTimes.Average():0.0} s  ({entered} of {rounds})"));
         if (Kit != null)
         {
-            yield return ("Ability used", $"{Kit.RoundsUsed} of {rounds} rounds");
-            if (duels > 0) yield return ("Used before 1st duel", $"{firstWithAbility} of {duels}");
-            if (abilityToKillMs.Count > 0) yield return ("Ability → kill", $"{abilityToKillMs.Average():0} ms  ({abilityKills} kill{(abilityKills == 1 ? "" : "s")})");
-            if (seenBeforeAbility > 0) yield return ("Spotted before using it", seenBeforeAbility.ToString());
+            yield return (L.N("Ability used"), L.P(rounds, $"{Kit.RoundsUsed} of {rounds} round", $"{Kit.RoundsUsed} of {rounds} rounds"));
+            if (duels > 0) yield return (L.N("Used before 1st duel"), L.F($"{firstWithAbility} of {duels}"));
+            if (abilityToKillMs.Count > 0) yield return (L.N("Ability → kill"), L.P(abilityKills, $"{abilityToKillMs.Average():0} ms  ({abilityKills} kill)", $"{abilityToKillMs.Average():0} ms  ({abilityKills} kills)"));
+            if (seenBeforeAbility > 0) yield return (L.N("Spotted before using it"), seenBeforeAbility.ToString());
             foreach (var l in Kit.ResultLines()) yield return l;
         }
-        if (dodged > 0) yield return ("Hits dodged (speed)", dodged.ToString());
-        if (alertsHeard > 0) yield return ("Heard your ability", $"{alertsHeard} defender{(alertsHeard == 1 ? "" : "s")}");
-        if (clearTimes.Count > 0) yield return ("Avg clear time", $"{clearTimes.Average():0.0} s");
-        yield return ("Kills / deaths", $"{Kills} / {Deaths}");
-        if (Hits > 0) yield return ("Headshot %", $"{100f * HeadHits / Hits:0}%");
+        if (dodged > 0) yield return (L.N("Hits dodged (speed)"), dodged.ToString());
+        if (alertsHeard > 0) yield return (L.N("Heard your ability"), L.P(alertsHeard, $"{alertsHeard} defender", $"{alertsHeard} defenders"));
+        if (clearTimes.Count > 0) yield return (L.N("Avg clear time"), $"{clearTimes.Average():0.0} s");
+        yield return (L.N("Kills / deaths"), $"{Kills} / {Deaths}");
+        if (Hits > 0) yield return (L.N("Headshot %"), $"{100f * HeadHits / Hits:0}%");
         foreach (var l in MovementLines()) yield return l;
     }
 
@@ -426,7 +427,7 @@ public sealed partial class ChamberMode : MapMode
         Variant = Variants.Contains(v) ? v : "headhunter";
     }
     public override string Key => "chamber:" + Variant;
-    public override string Name => "Chamber Guns";
-    public override string Description => "One-tap drills with Headhunter and Tour De Force.";
-    public override string Category => "Agents";
+    public override string Name => L.N("Chamber Guns");
+    public override string Description => L.N("One-tap drills with Headhunter and Tour De Force.");
+    public override string Category => L.N("Agents");
 }

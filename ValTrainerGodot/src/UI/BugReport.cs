@@ -46,15 +46,15 @@ public static class BugReport
         public bool LogHasCrash;
     }
 
-    /// <summary>Why the report can't be sent yet (null = it can).</summary>
+    /// <summary>Why the report can't be sent yet (null = it can), in the UI language.</summary>
     public static string? Problem(Fields f)
     {
         int t = f.Title.Trim().Length, w = f.What.Trim().Length;
-        if (t < TitleMin && w < WhatMin) return $"Add a title ({TitleMin}+ characters) and say what happened ({WhatMin}+ characters)";
-        if (t < TitleMin) return $"The title needs at least {TitleMin} characters";
-        if (t > TitleMax) return $"The title can have at most {TitleMax} characters";
-        if (w < WhatMin) return $"Say what happened in at least {WhatMin} characters";
-        if (w > WhatMax) return $"\"What happened?\" can have at most {WhatMax} characters";
+        if (t < TitleMin && w < WhatMin) return L.F($"Add a title ({TitleMin}+ characters) and say what happened ({WhatMin}+ characters)");
+        if (t < TitleMin) return L.F($"The title needs at least {TitleMin} characters");
+        if (t > TitleMax) return L.F($"The title can have at most {TitleMax} characters");
+        if (w < WhatMin) return L.F($"Say what happened in at least {WhatMin} characters");
+        if (w > WhatMax) return L.F($"\"What happened?\" can have at most {WhatMax} characters");
         return null;
     }
 
@@ -185,8 +185,8 @@ public static class BugReport
         Add("rendering_method", SysInfo.RenderingMethod + " / " + SysInfo.DriverName);
         Add("tier", Difficulty.Get(app.Tier).Name);
         Add("map", app.MapKey);
-        Add("crosshair_source", st.UseFinderCrosshair && st.FinderCrosshairCode != null
-            ? "custom code" + (st.FinderCrosshairTab != null ? $" ({st.FinderCrosshairTab} tab)" : "") : "VALORANT");
+        Add("crosshair_source", Valorant.CrosshairList.SourceText());
+        Add("crosshair_list_count", Valorant.CrosshairList.All.Count.ToString(Inv));
         Add("valorant_import", v.Found ? "imported" : v.Status.ToString());
         Add("valorant_resolution", $"{v.ResX}x{v.ResY}");
         Add("valorant_anti_aliasing", SettingsScreen.AaName(v.AntiAliasing));
@@ -326,9 +326,13 @@ public static class BugReport
 
     // ---------------- feature suggestions (POST /suggest → #suggestions) ----------------
 
-    /// <summary>Suggestion categories: relay key and button label (the relay maps each key to a #suggestions tag).</summary>
+    /// <summary>Suggestion categories: relay key and button label (the relay maps each key to a #suggestions tag). The
+    /// label stays English here (the copied text says "Category: NEW DRILL"); the panel's buttons translate it.</summary>
     public static readonly (string Key, string Label)[] IdeaCategories =
-        { ("drill", "NEW DRILL"), ("agent", "AGENT"), ("map", "MAP"), ("coach", "COACH"), ("ui", "UI / SETTINGS"), ("other", "OTHER") };
+    {
+        ("drill", L.N("NEW DRILL")), ("agent", L.N("AGENT")), ("map", L.N("MAP")), ("coach", L.N("COACH")),
+        ("ui", L.N("UI / SETTINGS")), ("other", L.N("OTHER")),
+    };
 
     /// <summary>The relay's suggestion endpoint: the bug-report URL with /report → /suggest.</summary>
     public static string SuggestUrl(string reportUrl) =>
@@ -354,15 +358,16 @@ public static class BugReport
         }.ToJsonString(JsonOpts);
     }
 
-    /// <summary>Why the suggestion can't be sent yet (null = it can). Same limits as a bug report's title / "what".</summary>
+    /// <summary>Why the suggestion can't be sent yet (null = it can), in the UI language. Same limits as a bug report's
+    /// title / "what".</summary>
     public static string? IdeaProblem(string title, string what)
     {
         int t = title.Trim().Length, w = what.Trim().Length;
-        if (t < TitleMin && w < WhatMin) return $"Add a title ({TitleMin}+ characters) and describe your idea ({WhatMin}+ characters)";
-        if (t < TitleMin) return $"The title needs at least {TitleMin} characters";
-        if (t > TitleMax) return $"The title can have at most {TitleMax} characters";
-        if (w < WhatMin) return $"Describe your idea in at least {WhatMin} characters";
-        if (w > WhatMax) return $"The idea can have at most {WhatMax} characters";
+        if (t < TitleMin && w < WhatMin) return L.F($"Add a title ({TitleMin}+ characters) and describe your idea ({WhatMin}+ characters)");
+        if (t < TitleMin) return L.F($"The title needs at least {TitleMin} characters");
+        if (t > TitleMax) return L.F($"The title can have at most {TitleMax} characters");
+        if (w < WhatMin) return L.F($"Describe your idea in at least {WhatMin} characters");
+        if (w > WhatMax) return L.F($"The idea can have at most {WhatMax} characters");
         return null;
     }
 
@@ -746,9 +751,9 @@ public partial class BugReportPanel : Control
         col.AddThemeConstantOverride("separation", (int)(10 * k));
         panel.AddChild(col);
 
-        col.AddChild(Text(idea
+        col.AddChild(Text(L.T(idea
             ? "Your idea is posted in #suggestions on the ValTrainer Discord, where other players can see it and react. Join the server to follow it: we reply in your post and mark it Added when an update adds it."
-            : "Your report is posted in #bug-reports on the ValTrainer Discord, where server members can see it. Join the server to follow it: we reply in your post and mark it Fixed when an update fixes it. Personal details like your Windows user name are removed.", 15, UiTheme.Dim));
+            : "Your report is posted in #bug-reports on the ValTrainer Discord, where server members can see it. Join the server to follow it: we reply in your post and mark it Fixed when an update fixes it. Personal details like your Windows user name are removed."), 15, UiTheme.Dim));
 
         var body = new HBoxContainer();
         body.AddThemeConstantOverride("separation", (int)(22 * k));
@@ -766,48 +771,49 @@ public partial class BugReportPanel : Control
 
         var foot = new HBoxContainer();
         foot.AddThemeConstantOverride("separation", (int)(12 * k));
-        send = Button("SEND", VButton.Look.Primary, 170, Send);
+        send = Button(L.N("SEND"), VButton.Look.Primary, 170, Send);
         if (!DryRun && !HasRelay)
         {
             send.Label = "COPY REPORT & OPEN DISCORD";
             send.CustomMinimumSize = new Vector2(310 * k, 48 * k);
         }
         if (!DryRun && !HasRelay && idea) send.Label = "COPY IDEA & OPEN DISCORD";
-        send.TooltipText = DryRun ? "Dev run: prints the JSON to the log instead of sending it"
-            : idea ? (HasRelay ? "Posts your idea to #suggestions on the ValTrainer Discord"
-                : "This build can't send ideas itself: copies it, then opens the Discord invite so you can paste it in #suggestions")
-            : HasRelay ? "Posts the report and the info on the right to #bug-reports on the ValTrainer Discord"
-            : "This build can't send reports itself: copies the report, then opens the Discord invite so you can paste it in #bug-reports";
+        send.TooltipText = DryRun ? "Dev run: prints the JSON to the log instead of sending it" // dev only: English
+            : idea ? (HasRelay ? L.T("Posts your idea to #suggestions on the ValTrainer Discord")
+                : L.T("This build can't send ideas itself: copies it, then opens the Discord invite so you can paste it in #suggestions"))
+            : HasRelay ? L.T("Posts the report and the info on the right to #bug-reports on the ValTrainer Discord")
+            : L.T("This build can't send reports itself: copies the report, then opens the Discord invite so you can paste it in #bug-reports");
         foot.AddChild(send);
-        var copy = copyBtn = Button(idea ? "COPY IDEA" : "COPY REPORT", VButton.Look.Secondary, 170, Copy);
-        copy.TooltipText = idea ? "Copies your idea as text, to paste anywhere" : "Copies the report and the info on the right as text, to paste anywhere";
+        var copy = copyBtn = Button(idea ? L.N("COPY IDEA") : L.N("COPY REPORT"), VButton.Look.Secondary, 170, Copy);
+        copy.TooltipText = idea ? L.T("Copies your idea as text, to paste anywhere") : L.T("Copies the report and the info on the right as text, to paste anywhere");
         foot.AddChild(copy);
-        discord = Button("OPEN DISCORD", VButton.Look.Secondary, 170, () => OpenDiscord());
-        discord.TooltipText = "Opens the ValTrainer Discord invite in your browser";
+        discord = Button(L.N("OPEN DISCORD"), VButton.Look.Secondary, 170, () => OpenDiscord());
+        discord.TooltipText = L.T("Opens the ValTrainer Discord invite in your browser");
         discord.Visible = false;
         foot.AddChild(discord);
         // After SEND: the player's own post (they need to be in the server to see it).
-        myPost = Button(idea ? "VIEW MY IDEA" : "VIEW MY REPORT", VButton.Look.Secondary, 190, () =>
+        myPost = Button(idea ? L.N("VIEW MY IDEA") : L.N("VIEW MY REPORT"), VButton.Look.Secondary, 190, () =>
         {
             if (postId == null) return;
             if (Main.I.Dev) Log.Info($"Bug report: dev run, would open the post {postId}");
             else AppInfo.OpenDiscordPost(postId);
         });
-        myPost.TooltipText = $"Opens your {(idea ? "idea" : "report")} on the ValTrainer Discord (join the server first to see it)";
+        myPost.TooltipText = idea ? L.T("Opens your idea on the ValTrainer Discord (join the server first to see it)")
+            : L.T("Opens your report on the ValTrainer Discord (join the server first to see it)");
         myPost.Visible = false;
         foot.AddChild(myPost);
         if (AppInfo.HasRepo && !idea)
         {
-            var gh = ghBtn = Button("OPEN ON GITHUB", VButton.Look.Secondary, 190, () =>
+            var gh = ghBtn = Button(L.N("OPEN ON GITHUB"), VButton.Look.Secondary, 190, () =>
             {
                 if (Main.I.Dev) Log.Info($"Bug report: dev run, would open {AppInfo.NewIssueUrl}");
                 else AppInfo.OpenGitHub(AppInfo.NewIssueUrl);
             });
-            gh.TooltipText = "Opens GitHub's issue form in your browser instead (needs a GitHub account; attach godot.log there)";
+            gh.TooltipText = L.T("Opens GitHub's issue form in your browser instead (needs a GitHub account; attach godot.log there)");
             foot.AddChild(gh);
         }
         foot.AddChild(new Control { SizeFlagsHorizontal = SizeFlags.ExpandFill, MouseFilter = MouseFilterEnum.Ignore });
-        cancel = Button("CANCEL", VButton.Look.Secondary, 150, Close);
+        cancel = Button(L.N("CANCEL"), VButton.Look.Secondary, 150, Close);
         foot.AddChild(cancel);
         col.AddChild(foot);
 
@@ -844,14 +850,14 @@ public partial class BugReportPanel : Control
     /// <summary>Feature suggestion: title, idea, why, a category and the Discord name. Nothing about the PC is sent.</summary>
     void BuildIdeaForm(VBoxContainer form)
     {
-        titleEdit = Line("Short title, e.g. \"Drill with crouch-spamming bots\"", BugReport.TitleMax);
-        Head(form, "SHORT TITLE", true, null, () => titleEdit.Text.Trim().Length, BugReport.TitleMin, BugReport.TitleMax);
+        titleEdit = Line(L.T("Short title, e.g. \"Drill with crouch-spamming bots\""), BugReport.TitleMax);
+        Head(form, L.N("SHORT TITLE"), true, null, () => titleEdit.Text.Trim().Length, BugReport.TitleMin, BugReport.TitleMax);
         form.AddChild(titleEdit);
-        whatEdit = Area("What should ValTrainer have? A drill, a setting, a map spot…", BugReport.WhatMax, 124);
-        Head(form, "WHAT'S YOUR IDEA?", true, null, () => whatEdit.Text.Trim().Length, BugReport.WhatMin, BugReport.WhatMax);
+        whatEdit = Area(L.T("What should ValTrainer have? A drill, a setting, a map spot…"), BugReport.WhatMax, 124);
+        Head(form, L.N("WHAT'S YOUR IDEA?"), true, null, () => whatEdit.Text.Trim().Length, BugReport.WhatMin, BugReport.WhatMax);
         form.AddChild(whatEdit);
-        stepsEdit = Area("What would it help you practice or fix?", BugReport.StepsMax, 88);
-        Head(form, "WHY WOULD IT HELP?", false, "optional", () => stepsEdit.Text.Trim().Length, 0, BugReport.StepsMax);
+        stepsEdit = Area(L.T("What would it help you practice or fix?"), BugReport.StepsMax, 88);
+        Head(form, L.N("WHY WOULD IT HELP?"), false, L.N("optional"), () => stepsEdit.Text.Trim().Length, 0, BugReport.StepsMax);
         form.AddChild(stepsEdit);
 
         form.AddChild(new SectionLabel { Text = "CATEGORY", Note = "optional", K = k, CustomMinimumSize = new Vector2(0, 26 * k) });
@@ -867,10 +873,10 @@ public partial class BugReportPanel : Control
         }
         form.AddChild(cats);
 
-        contactEdit = Line("Your Discord username", BugReport.ContactMax);
-        Head(form, "DISCORD USERNAME", false, "optional, so we can reply", () => contactEdit.Text.Trim().Length, 0, BugReport.ContactMax);
+        contactEdit = Line(L.T("Your Discord username"), BugReport.ContactMax);
+        Head(form, L.N("DISCORD USERNAME"), false, L.N("optional, so we can reply"), () => contactEdit.Text.Trim().Length, 0, BugReport.ContactMax);
         form.AddChild(contactEdit);
-        form.AddChild(Text($"Sent with it: ValTrainer {AppInfo.Version} ({BugReport.InstallType()}). Nothing about your PC.", 13, UiTheme.Faint));
+        form.AddChild(Text(L.F($"Sent with it: ValTrainer {AppInfo.Version} ({BugReport.InstallType()}). Nothing about your PC."), 13, UiTheme.Faint));
     }
 
     /// <summary>Selects one category ("" = none); the picked button turns Primary.</summary>
@@ -888,20 +894,20 @@ public partial class BugReportPanel : Control
     /// <summary>Bug report: the player's fields on the left, everything sent automatically on the right.</summary>
     void BuildBugForm(VBoxContainer form, HBoxContainer body)
     {
-        titleEdit = Line("Short title, e.g. \"Crosshair is missing in Gridshot\"", BugReport.TitleMax);
-        Head(form, "SHORT TITLE", true, null, () => titleEdit.Text.Trim().Length, BugReport.TitleMin, BugReport.TitleMax);
+        titleEdit = Line(L.T("Short title, e.g. \"Crosshair is missing in Gridshot\""), BugReport.TitleMax);
+        Head(form, L.N("SHORT TITLE"), true, null, () => titleEdit.Text.Trim().Length, BugReport.TitleMin, BugReport.TitleMax);
         form.AddChild(titleEdit);
-        whatEdit = Area("What went wrong? Error messages, what you saw on screen…", BugReport.WhatMax, 124);
-        Head(form, "WHAT HAPPENED?", true, null, () => whatEdit.Text.Trim().Length, BugReport.WhatMin, BugReport.WhatMax);
+        whatEdit = Area(L.T("What went wrong? Error messages, what you saw on screen…"), BugReport.WhatMax, 124);
+        Head(form, L.N("WHAT HAPPENED?"), true, null, () => whatEdit.Text.Trim().Length, BugReport.WhatMin, BugReport.WhatMax);
         form.AddChild(whatEdit);
-        stepsEdit = Area("1. Open …  2. Click …  3. …", BugReport.StepsMax, 88);
-        Head(form, "STEPS TO REPRODUCE", false, "optional", () => stepsEdit.Text.Trim().Length, 0, BugReport.StepsMax);
+        stepsEdit = Area(L.T("1. Open …  2. Click …  3. …"), BugReport.StepsMax, 88);
+        Head(form, L.N("STEPS TO REPRODUCE"), false, L.N("optional"), () => stepsEdit.Text.Trim().Length, 0, BugReport.StepsMax);
         form.AddChild(stepsEdit);
-        expectedEdit = Area("What should have happened instead?", BugReport.ExpectedMax, 64);
-        Head(form, "WHAT DID YOU EXPECT?", false, "optional", () => expectedEdit.Text.Trim().Length, 0, BugReport.ExpectedMax);
+        expectedEdit = Area(L.T("What should have happened instead?"), BugReport.ExpectedMax, 64);
+        Head(form, L.N("WHAT DID YOU EXPECT?"), false, L.N("optional"), () => expectedEdit.Text.Trim().Length, 0, BugReport.ExpectedMax);
         form.AddChild(expectedEdit);
-        contactEdit = Line("Your Discord username", BugReport.ContactMax);
-        Head(form, "DISCORD USERNAME", false, "optional, so we can reply", () => contactEdit.Text.Trim().Length, 0, BugReport.ContactMax);
+        contactEdit = Line(L.T("Your Discord username"), BugReport.ContactMax);
+        Head(form, L.N("DISCORD USERNAME"), false, L.N("optional, so we can reply"), () => contactEdit.Text.Trim().Length, 0, BugReport.ContactMax);
         form.AddChild(contactEdit);
 
         var side = new VBoxContainer { SizeFlagsHorizontal = SizeFlags.ExpandFill, SizeFlagsStretchRatio = 0.9f };
@@ -935,12 +941,17 @@ public partial class BugReportPanel : Control
         {
             DisplayServer.ClipboardSet(CopyText());
             OpenDiscord();
-            Say($"Copied. Paste it in {Channel} on the ValTrainer Discord (Ctrl+V).", UiTheme.Good);
+            Say(L.F($"Copied. Paste it in {Channel} on the ValTrainer Discord (Ctrl+V)."), UiTheme.Good);
             discord.Visible = true;
             return;
         }
         double wait = MinGapSec - (DateTime.UtcNow - (idea ? lastIdea : lastSend)).TotalSeconds;
-        if (wait > 0) { Say($"You just sent {(idea ? "a suggestion" : "a report")}. You can send another in {Math.Ceiling(wait):0} s.", UiTheme.Warn); return; }
+        if (wait > 0)
+        {
+            double sec = Math.Ceiling(wait);
+            Say(idea ? L.F($"You just sent a suggestion. You can send another in {sec:0} s.") : L.F($"You just sent a report. You can send another in {sec:0} s."), UiTheme.Warn);
+            return;
+        }
         string json = idea ? BugReport.IdeaJson(titleEdit.Text, whatEdit.Text, stepsEdit.Text, category, contactEdit.Text) : BugReport.ToJson(snap, Fields);
         if (DryRun)
         {
@@ -962,7 +973,7 @@ public partial class BugReportPanel : Control
         }
         Log.Info($"Bug report: sending {Encoding.UTF8.GetByteCount(json)} bytes to {HostOf(Url)}");
         state = State.Sending;
-        message = "Sending…";
+        message = L.T("Sending…");
         messageColor = UiTheme.Dim;
         Refresh();
     }
@@ -976,9 +987,9 @@ public partial class BugReportPanel : Control
         {
             Fail((HttpRequest.Result)result switch
             {
-                HttpRequest.Result.Timeout => "no answer within 15 s",
-                HttpRequest.Result.CantResolve or HttpRequest.Result.CantConnect or HttpRequest.Result.ConnectionError => "no connection",
-                HttpRequest.Result.TlsHandshakeError => "secure connection failed",
+                HttpRequest.Result.Timeout => L.N("no answer within 15 s"),
+                HttpRequest.Result.CantResolve or HttpRequest.Result.CantConnect or HttpRequest.Result.ConnectionError => L.N("no connection"),
+                HttpRequest.Result.TlsHandshakeError => L.N("secure connection failed"),
                 var r => r.ToString(),
             });
             return;
@@ -990,8 +1001,8 @@ public partial class BugReportPanel : Control
         {
             state = State.Failed;
             int min = RetryMinutes(headers, body);
-            Say(idea ? $"Too many ideas, try again in {min} min. You can also COPY IDEA and post it in #suggestions."
-                : $"Too many reports, try again in {min} min. You can also COPY REPORT and post it in #bug-reports.", UiTheme.Warn);
+            Say(idea ? L.F($"Too many ideas, try again in {min} min. You can also COPY IDEA and post it in #suggestions.")
+                : L.F($"Too many reports, try again in {min} min. You can also COPY REPORT and post it in #bug-reports."), UiTheme.Warn);
             return;
         }
         Fail($"HTTP {code}");
@@ -1008,8 +1019,8 @@ public partial class BugReportPanel : Control
         myPost.Visible = postId != null;
         if (copyBtn != null) copyBtn.Visible = false; // sent: what matters now is following it on Discord
         if (ghBtn != null) ghBtn.Visible = false;
-        Say(idea ? "Sent, thanks! Join the ValTrainer Discord to follow it: we reply in your post, and it's marked Added when an update adds it."
-            : "Sent, thanks! Join the ValTrainer Discord to follow it: we reply in your post, and it's marked Fixed when an update fixes it.", UiTheme.Good);
+        Say(L.T(idea ? "Sent, thanks! Join the ValTrainer Discord to follow it: we reply in your post, and it's marked Added when an update adds it."
+            : "Sent, thanks! Join the ValTrainer Discord to follow it: we reply in your post, and it's marked Fixed when an update fixes it."), UiTheme.Good);
     }
 
     /// <summary>The new post's thread id from the relay's {"ok":true,"id":"..."}; null if missing or not numeric.</summary>
@@ -1041,18 +1052,19 @@ public partial class BugReportPanel : Control
         return sec < 0 ? 10 : Math.Max(1, (int)Math.Ceiling(sec / 60));
     }
 
+    /// <param name="why">English (logged as it is; shown translated).</param>
     void Fail(string why)
     {
         Log.Error($"Bug report: couldn't send ({why})");
         state = State.Failed;
-        Say($"Couldn't send ({why}). {(idea ? "COPY IDEA" : "COPY REPORT")} and post it in {Channel} on Discord instead.", UiTheme.Warn);
+        Say(L.F($"Couldn't send ({L.T(why)}). {L.T(idea ? "COPY IDEA" : "COPY REPORT")} and post it in {Channel} on Discord instead."), UiTheme.Warn);
     }
 
     void Copy()
     {
         DisplayServer.ClipboardSet(CopyText());
         copiedFlash = 4f;
-        Say(state is State.Failed ? $"Copied. Paste it in {Channel} on the ValTrainer Discord (Ctrl+V)." : "Copied. Paste it anywhere (Ctrl+V).", UiTheme.Good);
+        Say(state is State.Failed ? L.F($"Copied. Paste it in {Channel} on the ValTrainer Discord (Ctrl+V).") : L.T("Copied. Paste it anywhere (Ctrl+V)."), UiTheme.Good);
     }
 
     void OpenDiscord()
@@ -1061,6 +1073,7 @@ public partial class BugReportPanel : Control
         else if (!AppInfo.OpenSupport(AppInfo.DiscordUrl)) Log.Error($"Bug report: couldn't open {AppInfo.DiscordUrl}");
     }
 
+    /// <summary>Shows <paramref name="text"/> (already translated) in the status line.</summary>
     void Say(string text, Color c)
     {
         message = text;
@@ -1111,6 +1124,7 @@ public partial class BugReportPanel : Control
 
     /// <summary>"WHAT HAPPENED? *  ……  12 / 1500": red star for required fields, the counter turns yellow below the
     /// minimum and red at the maximum.</summary>
+    /// <param name="label">English (drawn translated); <paramref name="note"/> too.</param>
     void Head(VBoxContainer parent, string label, bool required, string? note, Func<int> count, int min, int max)
     {
         var d = new DrawBox

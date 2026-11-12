@@ -17,11 +17,30 @@ namespace ValTrainer.Game.Weapon;
 /// <para>Contact sheets: <c>--vmcycle all|Gun1,Gun2,… [--vmevery S]</c> rebuilds the viewmodel with each gun in turn (S
 /// seconds each, default 2.5), saves <c>prefix_&lt;Gun&gt;.png</c> near the end of each slot (with <c>--vmout prefix</c>),
 /// runs the ADS check per gun and quits after the last one.</para>
+/// <para>Gun skins: <c>--skin &lt;id&gt;</c> (any run, not only --vmtest: <see cref="GunSkins.DevSkin"/>) and
+/// <c>--skincycle all|id1,id2,… [--vmevery S]</c>, which works like --vmcycle over skins on one gun (factory first with
+/// "all"): saves <c>prefix_&lt;id&gt;.png</c> and quits after the last one. <c>--skinlive &lt;id&gt;</c> switches to that skin
+/// 2.5 s in through <see cref="GunSkins.Changed"/> (the skin picker's live re-skin of a running drill or demo).</para>
+/// <para>Skins 2 (skins2-design §5.1): --skincycle also takes choices (<c>honeycomb@2,phosphor/amber@5</c>) and
+/// <c>levels</c> (factory, then every line with levels or variants at each level, then its variants at the top level);
+/// <c>--skin-level N</c> adds <c>@N</c> to every cycled id without a level. Files are <c>prefix_&lt;line&gt;[.variant][_L&lt;n&gt;].png</c>.
+/// Level effects: <c>--vmkill [S]</c> simulates a player kill every S s (default 1.5: <see cref="Viewmodel.OnPlayerKill"/> and
+/// the kill counter +1); <c>--vmpulse fire|kill|both [D]</c> fires / kills D s (default 0.07) before every saved screenshot, so
+/// contact sheets catch the pulses; <c>--vmkills N</c> starts the counter at N; <c>--vmgg</c> shows the counter's "GG".</para>
 /// </summary>
 static class VmTest
 {
     public static bool Enabled, FxHold, Body, Fire, Crouch, Look, HoldFlash, Wall, ReloadLoop, NoHands, Hide, Bench, BenchFx;
+    /// <summary>--vmskin line[/variant][@level]: the viewmodel wears this state (InspectFx.DevState: the catalogue's line, or a
+    /// skins-3 stand-in from SkinLooks before the catalogue is merged), with its inspect flourish and special reload.</summary>
+    public static Skins.SkinState? DevState;
+    /// <summary>--vminspect [S]: start an inspect S s in (default 1) and again 1.2 s after each one ends;
+    /// --vminspect-fire T: fire at T s (the cancel).</summary>
+    static float inspectAt = -1f, inspectFireAt = -1f;
+    /// <summary>--vmreload loop length (s, default 2.5): --vmreloadlen.</summary>
+    static float reloadLen = 2.5f;
     public static WeaponKind? Kind;
+    public static (Vector3 Pos, Vector3 Rot)? HipOverride;
     public static bool? ForceLeft;
     public static float? Ads, Reload, Speed, Zoom;
     public static string? View, Hand;
@@ -31,6 +50,12 @@ static class VmTest
     static float[] shotTimes = Array.Empty<float>();
     static int shotIdx;
     static WeaponKind[] cycle = Array.Empty<WeaponKind>();
+    static string[] skinCycle = Array.Empty<string>();
+    static string? liveSkin;
+    static float killEvery, pulseD = 0.07f, killT;
+    static string? pulse;
+    static int kills;
+    static bool gg, pulsed;
     static int cycleIdx = -1;
     static float every = 2.5f, gunClock;
     static bool cycleShot;
@@ -71,7 +96,35 @@ static class VmTest
                 : cyc.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(Weapons.Parse).OfType<WeaponKind>().ToArray();
         every = F("--vmevery") ?? 2.5f;
         if (cycle.Length > 0) Kind = cycle[0];
+        var sc = Val("--skincycle");
+        if (sc != null && cycle.Length == 0)
+        {
+            skinCycle = sc == "all" ? GunSkins.All.Select(s => s.Id).Prepend(GunSkins.FactoryId).ToArray()
+                : sc == "levels" ? LevelCycle().Prepend(GunSkins.FactoryId).ToArray()
+                : sc.Split(',', StringSplitOptions.RemoveEmptyEntries).Where(id => id == GunSkins.FactoryId || GunSkins.Get(id) != null).ToArray();
+            if (F("--skin-level") is { } lv)
+                skinCycle = skinCycle.Select(id => id == GunSkins.FactoryId || id.Contains('@') ? id : $"{id}@{(int)lv}").ToArray();
+            if (skinCycle.Length > 0) GunSkins.DevSkin = skinCycle[0];
+        }
+        if (a.Contains("--vmkill")) killEvery = F("--vmkill") ?? 1.5f;
+        pulse = Val("--vmpulse");
+        int pi = Array.IndexOf(a, "--vmpulse");
+        if (pulse != null && pi + 2 < a.Length && float.TryParse(a[pi + 2], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var pd)) pulseD = pd;
+        kills = (int)(F("--vmkills") ?? 0f);
+        gg = a.Contains("--vmgg");
+        shotScale = Mathf.Clamp(F("--vmscale") ?? 0.6f, 0.1f, 1f);
+        liveSkin = Val("--skinlive");
+        DevState = Skins.InspectFx.DevState(Val("--vmskin"));
+        if (a.Contains("--vminspect")) inspectAt = F("--vminspect") ?? 1f;
+        inspectFireAt = F("--vminspect-fire") ?? -1f;
+        reloadLen = F("--vmreloadlen") ?? 2.5f;
         View = Val("--vmview");
+        // --vmhip x,y,z,pitch,yaw,roll: overrides the hip pose (framing studies)
+        if (Val("--vmhip") is { } hp && hp.Split(',') is { Length: 6 } hv)
+        {
+            var n = hv.Select(s => float.Parse(s, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+            HipOverride = (new Vector3(n[0], n[1], n[2]), new Vector3(n[3], n[4], n[5]));
+        }
         ViewD = F("--vmviewd") ?? 1f;
         Dist = F("--vmdist") ?? 7f;
         ViewOff = new Vector2(F("--vmviewz") ?? 0f, F("--vmviewy") ?? 0f);
@@ -81,6 +134,27 @@ static class VmTest
             .Select(x => float.Parse(x, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
         GD.Print($"[vmtest] fire={Fire} kind={Kind} left={ForceLeft} ads={Ads} reload={Reload}{(ReloadLoop ? " loop" : "")} view={View}");
     }
+
+    /// <summary>--skincycle levels: every line with levels or variants at each level, then its variants at the top level.</summary>
+    static IEnumerable<string> LevelCycle()
+    {
+        foreach (var l in Skins.SkinCatalog.Lines)
+        {
+            if (l.MaxLevel <= 1 && l.Variants.Count == 0) continue;
+            for (int n = 1; n <= l.MaxLevel; n++) yield return l.MaxLevel > 1 ? $"{l.Id}@{n}" : l.Id;
+            foreach (var v in l.Variants) yield return l.MaxLevel > 1 ? $"{l.Id}/{v.Id}@{l.MaxLevel}" : $"{l.Id}/{v.Id}";
+        }
+    }
+
+    /// <summary>Saved screenshots are 3/5 of the window (<c>--vmscale F</c> changes it, 1 = full size).</summary>
+    static void Shrink(Image img)
+    {
+        if (shotScale < 0.999f) img.Resize((int)(img.GetWidth() * shotScale), (int)(img.GetHeight() * shotScale), Image.Interpolation.Bilinear);
+    }
+    static float shotScale = 0.6f;
+
+    /// <summary>A skin choice as a file name part: <c>phosphor/amber@5</c> → <c>phosphor.amber_L5</c>.</summary>
+    static string FileId(string id) => id.Replace('/', '.').Replace("@", "_L");
 
     /// <summary>Debug view of the gun: distance and centre per layout (<see cref="VmPose.ViewD"/>, <see cref="VmPose.ViewZ"/>).</summary>
     public static Transform3D ViewXform(string view, VmPose pose)
@@ -226,41 +300,117 @@ static class VmTest
         {
             if (i >= cycle.Length) { cycle = Array.Empty<WeaponKind>(); vm.GetTree().CreateTimer(0.2).Timeout += () => vm.GetTree().Quit(); return; }
             if (cycleIdx >= 0) vm.Rebuild(cycle[i]);
-            cycleIdx = i; gunClock = clock - i * every; adsChecked = false; cycleShot = false;
+            cycleIdx = i; gunClock = clock - i * every; adsChecked = false; cycleShot = false; pulsed = false;
             fireT = 1.2f; burstLeft = 0; reloadT = 0f;
         }
         if (!cycleShot && shotPrefix != null && clock >= (i + 1) * every - 0.3f)
         {
             cycleShot = true;
             var img = vm.GetViewport().GetTexture().GetImage();
-            img.Resize(img.GetWidth() * 3 / 5, img.GetHeight() * 3 / 5, Image.Interpolation.Bilinear);
+            Shrink(img);
             img.SavePng($"{shotPrefix}_{cycle[i]}.png");
             GD.Print($"[vmtest] saved {shotPrefix}_{cycle[i]}.png");
         }
+    }
+
+    /// <summary>--skincycle: next skin every <see cref="every"/> s on the same gun; a screenshot 0.3 s before each switch.</summary>
+    static void SkinCycleTick(Viewmodel vm)
+    {
+        int i = (int)(clock / every);
+        if (i != cycleIdx)
+        {
+            if (i >= skinCycle.Length) { skinCycle = Array.Empty<string>(); vm.GetTree().CreateTimer(0.2).Timeout += () => vm.GetTree().Quit(); return; }
+            GunSkins.DevSkin = skinCycle[i];
+            if (cycleIdx >= 0) vm.Rebuild(vm.Held);
+            cycleIdx = i; gunClock = clock - i * every; cycleShot = false; pulsed = false;
+            fireT = 1.2f; burstLeft = 0; reloadT = 0f;
+            GD.Print($"[vmtest] skin {skinCycle[i]} on {vm.Held}");
+        }
+        if (!cycleShot && shotPrefix != null && clock >= (i + 1) * every - 0.3f)
+        {
+            cycleShot = true;
+            var img = vm.GetViewport().GetTexture().GetImage();
+            Shrink(img);
+            img.SavePng($"{shotPrefix}_{FileId(skinCycle[i])}.png");
+            GD.Print($"[vmtest] saved {shotPrefix}_{FileId(skinCycle[i])}.png");
+        }
+    }
+
+    /// <summary>--vmkill / --vmpulse / --vmkills / --vmgg: simulated kills and shots for the skin level effects.</summary>
+    static void SkinFxTick(Viewmodel vm, float dt)
+    {
+        if (killEvery > 0f)
+        {
+            killT += dt;
+            if (killT >= killEvery) { killT -= killEvery; Kill(vm); }
+        }
+        if (pulse != null && !pulsed)
+        {
+            // the next screenshot: the cycle's (0.3 s before each switch) or the next --vmshots time
+            float next = cycle.Length > 0 || skinCycle.Length > 0 ? (cycleIdx + 1) * every - 0.3f
+                : shotIdx < shotTimes.Length ? shotTimes[shotIdx] : float.MaxValue;
+            if (clock >= next - pulseD)
+            {
+                pulsed = true;
+                if (pulse is "fire" or "both") vm.OnFire();
+                if (pulse is "kill" or "both") Kill(vm);
+            }
+        }
+        vm.SetKillCount(kills, gg);
+    }
+
+    static void Kill(Viewmodel vm)
+    {
+        vm.OnPlayerKill();
+        kills++;
+        GD.Print($"[vmtest] kill {kills} at {clock:0.00}s");
     }
 
     public static void Tick(Viewmodel vm, float dt)
     {
         clock += dt;
         gunClock += dt;
+        SkinFxTick(vm, dt);
+        if (inspectAt >= 0f && clock >= inspectAt && !vm.Inspecting && vm.CanInspect)
+        {
+            vm.Inspect();
+            GD.Print($"[vmtest] inspect at {clock:0.00}s");
+            inspectAt = clock + VmInspect.For(vm.Held).Duration + 1.2f;
+        }
+        if (inspectFireAt >= 0f && clock >= inspectFireAt)
+        {
+            inspectFireAt = -1f;
+            GD.Print($"[vmtest] fire at {clock:0.00}s (inspecting {vm.Inspecting})");
+            vm.OnFire();
+        }
         if (cycle.Length > 0) CycleTick(vm);
+        else if (skinCycle.Length > 0) SkinCycleTick(vm);
+        // --skinlive <id>: 2.5 s in, every gun switches to that skin through GunSkins.Changed (the live re-skin path)
+        if (liveSkin != null && clock >= 2.5f)
+        {
+            GunSkins.DevSkin = liveSkin;
+            liveSkin = null;
+            GunSkins.NotifyChanged();
+            GD.Print($"[vmtest] live re-skin to {GunSkins.DevSkin}");
+        }
         AdsCheck(vm);
         if (Hide) vm.Hide();
         if (Bench) BenchTick(vm, dt);
         if (shotPrefix != null && shotIdx < shotTimes.Length && clock >= shotTimes[shotIdx])
         {
             var img = vm.GetViewport().GetTexture().GetImage();
-            img.Resize(img.GetWidth() * 3 / 5, img.GetHeight() * 3 / 5, Image.Interpolation.Bilinear);
+            Shrink(img);
             img.SavePng($"{shotPrefix}_{shotIdx}.png");
             GD.Print($"[vmtest] saved {shotPrefix}_{shotIdx}.png at {clock:0.00}s fps={Engine.GetFramesPerSecond()}");
             shotIdx++;
+            pulsed = false;
             if (shotIdx >= shotTimes.Length) vm.GetTree().CreateTimer(0.3).Timeout += () => vm.GetTree().Quit();
         }
         if (ReloadLoop)
         {
             reloadT += dt;
-            float cyc = reloadT % 3.4f;
-            Reload = cyc < 2.5f ? cyc / 2.5f : -1f;
+            float cyc = reloadT % (reloadLen + 0.9f);
+            Reload = cyc < reloadLen ? cyc / reloadLen : -1f;
         }
         var cam = vm.GetParent() as Camera3D;
         if (cam == null) return;

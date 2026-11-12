@@ -22,7 +22,17 @@ public sealed class ValorantProfile
     /// <summary>True when an account's settings were imported.</summary>
     public bool Found;
     public string? AccountId;
-    public string Source = "Not found — using Valorant defaults";
+    /// <summary>English (logs, bug reports); shown with <see cref="SourceText"/>.</summary>
+    public string Source = L.N("Not found — using Valorant defaults");
+    /// <summary>The imported account ("8a1b2c3d", "EU") and when its settings were saved, for <see cref="SourceText"/>.</summary>
+    public string? AccountShort, AccountRegion;
+    public DateTime AccountSaved;
+
+    /// <summary><see cref="Source"/> in the UI language: "Account 8a1b2c3d… (EU), saved 2026-11-05 21:14" (without
+    /// "Account " when <paramref name="account"/> is false).</summary>
+    public string SourceText(bool account = true) => !Found || AccountShort == null ? L.T(Source)
+        : account ? L.F($"Account {AccountShort}… ({AccountRegion}), saved {AccountSaved:yyyy-MM-dd HH:mm}")
+        : L.F($"{AccountShort}… ({AccountRegion}), saved {AccountSaved:yyyy-MM-dd HH:mm}");
     /// <summary>Why nothing was imported (meaningful when <see cref="Found"/> is false).</summary>
     public ValorantStatus Status = ValorantStatus.NotInstalled;
 
@@ -78,6 +88,12 @@ public sealed class ValorantProfile
     // Visual
     /// <summary>The active crosshair profile; VALORANT's factory crosshair when nothing could be read.</summary>
     public CrosshairSettings Crosshair = CrosshairCode.DefaultSettings();
+    /// <summary>Every crosshair profile on this PC in VALORANT's order (SavedCrosshairProfileData), <see cref="Crosshair"/>
+    /// among them. Without the profile JSON (cloud-only accounts, unreadable JSON) just <see cref="Crosshair"/>; empty when
+    /// nothing was imported. The crosshair switcher cycles through these (<see cref="CrosshairList"/>).</summary>
+    public List<CrosshairSettings> CrosshairProfiles = new();
+    /// <summary>Index of <see cref="Crosshair"/> in <see cref="CrosshairProfiles"/> (VALORANT's "currentProfile").</summary>
+    public int CrosshairActive;
     /// <summary>Why <see cref="Crosshair"/> may not be the player's (no profiles on this PC, unreadable profiles); null
     /// when the profiles were read or nothing was imported at all.</summary>
     public string? CrosshairNote;
@@ -205,6 +221,7 @@ public static partial class ValorantImporter
         p.Status = ValorantStatus.Ok;
         p.AccountId = acc.Id;
         p.Source = $"Account {acc.ShortId}… ({acc.Region}), saved {acc.LastModified:yyyy-MM-dd HH:mm}";
+        (p.AccountShort, p.AccountRegion, p.AccountSaved) = (acc.ShortId, acc.Region, acc.LastModified);
 
         if (rus.TryGetValue("MouseSensitivity", out var sens) && TryF(sens, out var sv)) { p.Sensitivity = sv; p.SensFromFile = true; }
         p.ZoomedSensMult = GetF(rus, "MouseSensitivityZoomed", 1f);
@@ -241,24 +258,38 @@ public static partial class ValorantImporter
     /// there but unreadable gives VALORANT's default crosshair, never the stale keys.</summary>
     static void ImportCrosshair(ValorantProfile p, Dictionary<string, string> rus)
     {
-        const string Paste = " Paste your crosshair code in Settings → Crosshair to use yours.";
+        ImportCrosshairCore(p, rus);
+        if (p.CrosshairProfiles.Count == 0) { p.CrosshairProfiles.Add(p.Crosshair); p.CrosshairActive = 0; }
+    }
+
+    static void ImportCrosshairCore(ValorantProfile p, Dictionary<string, string> rus)
+    {
+        // the notes are English here (CultureCheck reads them) and translated where Settings shows them (NoteRow: L.T)
         if (rus.TryGetValue("SavedCrosshairProfileData", out var xh))
         {
-            if (CrosshairSettings.FromProfileJson(UnquoteUe(xh)) is { } parsed) { p.Crosshair = parsed; return; }
+            // Every profile (the switcher cycles them); the active one is what VALORANT draws.
+            if (CrosshairSettings.AllFromProfileJson(UnquoteUe(xh), out int current) is { } all
+                && all.FindIndex(x => x.ProfileIndex == current) is var at and >= 0)
+            {
+                p.CrosshairProfiles = all;
+                p.CrosshairActive = at;
+                p.Crosshair = all[at];
+                return;
+            }
             Log.Error("Couldn't read VALORANT's crosshair profiles (SavedCrosshairProfileData): using VALORANT's default crosshair");
             p.Crosshair = CrosshairCode.DefaultSettings();
             p.Crosshair.Name = "VALORANT default (yours couldn't be read)";
-            p.CrosshairNote = "Couldn't read your VALORANT crosshair profiles, so this is VALORANT's default crosshair." + Paste;
+            p.CrosshairNote = L.N("Couldn't read your VALORANT crosshair profiles, so this is VALORANT's default crosshair. Paste your crosshair code in Settings → Crosshair to use yours.");
             return;
         }
         if (rus.Keys.Any(k => k.StartsWith("Crosshair", StringComparison.OrdinalIgnoreCase) || k.Equals("FadeCrosshairWithFiringError", StringComparison.OrdinalIgnoreCase)))
         {
             p.Crosshair = CrosshairSettings.FromLegacyKeys(rus);
-            p.CrosshairNote = "VALORANT keeps this account's crosshair profiles online, so this is the older crosshair saved on this PC; it may be out of date." + Paste;
+            p.CrosshairNote = L.N("VALORANT keeps this account's crosshair profiles online, so this is the older crosshair saved on this PC; it may be out of date. Paste your crosshair code in Settings → Crosshair to use yours.");
             return;
         }
         p.Crosshair = CrosshairCode.DefaultSettings();
-        p.CrosshairNote = "VALORANT keeps this account's crosshair profiles online, so this is VALORANT's default crosshair." + Paste;
+        p.CrosshairNote = L.N("VALORANT keeps this account's crosshair profiles online, so this is VALORANT's default crosshair. Paste your crosshair code in Settings → Crosshair to use yours.");
     }
 
     static void ApplyGameUserSettings(ValorantProfile p, Dictionary<string, string> g)

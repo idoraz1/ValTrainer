@@ -196,6 +196,31 @@ Anchors used:
 - Typical-mechanics archetypes (CoachCli self-test "calibration"): Iron → Bronze 1, Silver → Silver 2, Gold → Gold 2,
   Diamond → Platinum 3, Immortal → Ascendant 2 (the shrinkage toward the median is deliberate).
 
+### Calibration notes (v1.19, `Bench.Calibration = 2`)
+
+A player reported the estimate was far too high, and the developer's own data (true rank Gold 2, T ≈ 1.17–1.33) read
+Platinum 1 (T 1.58, band Gold 3 – Platinum 2). Full analysis: `docs/research/coach-calibration-1.19.md`. Causes:
+behaviour skills were measured in drills that make them easy or ask for them (crosshair placement from Deathmatch and
+pre-known peek angles, counter-strafing from the Counter-Strafe drill, spray on a static target), one global
+`Validity = 0.9` assumed aim explains 90% of rank, and the outlier clip around the weighted median lifted weak aim skills
+toward inflated behaviour skills. Changes:
+
+- Crosshair placement is normalised by drill: Peek Duel, Jiggle Peek and Recon's horizontal error no longer count, and
+  Deathmatch error is divided by 0.70.
+- Movement habits ignore the Counter-Strafe and Strafe Duel drills, which instruct them. Spray tables are ×0.8.
+- Each skill has its own validity, the clip is centred on the aim core, and behaviour can lift the overall at most +0.5
+  above it.
+- The likely range is ±(0.35 + 0.25·(1 − evidence)) and its label describes data coverage ("plenty / some / little
+  data"), not accuracy. The coach notes it rates aim only.
+- The player can enter their VALORANT rank (kept locally in coach.json) for a gap view, and copy an anonymous `vtcal1`
+  line to share for future fitting. The entered rank never feeds the estimate.
+- Progression stores `Bench.Calibration` with each coach sample and re-places the coach rank quietly when it changes;
+  unlocks are never taken back.
+
+The same data now gives Gold 2 (T ≈ 1.17, range Silver 2 – Platinum 1). Archetypes (CoachCli "calibration"): Iron 0.45,
+Silver 0.93, Gold 1.24, Diamond 1.71, Immortal 2.21. Regression cases: real Gold 2 profile in [1.05, 1.40]; core 1.0
+with behaviour 3.5 stays ≤ 1.4; flat Ascendant 2.5 gives [1.85, 2.15] (deliberate regression to the mean).
+
 ## C. Diagnoses
 
 Each rule is listed as **warning / severe** thresholds, with the minimum sample count in brackets.
