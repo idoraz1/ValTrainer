@@ -11,7 +11,7 @@ static class RunSummary
     static readonly HashSet<string> CoachModes = new()
     {
         "flick", "spider", "gridshot", "tracking", "strafebots", "peek", "counterstrafe", "peekduel", "siteclear", "flashmap", "deathmatch",
-        "reaction", "spray_vandal", "spray_phantom", "microshot", "popup", "longtaps", "sheriff", "jumppeek", "jigglepeek", "peek_mix",
+        "reaction", "spray_vandal", "spray_phantom", "microshot", "microshot_dense", "popup", "longtaps", "sheriff", "jumppeek", "jigglepeek", "peek_mix",
         "flashpeek", "recon", "smokeexec", "mobility", "chamber", "postplant", "retake", "anchor", "sound",
         "switch", "operator", "spray_transfer", "strafeduel",
     };
@@ -24,7 +24,7 @@ static class RunSummary
             return L.T("This drill doesn't feed the aim coach yet — your score and accuracy above are the measure. Head Flicks, Spidershot, Gridshot, Strafe Tracking, the bot drills and the spray drills all get a detailed review.");
         string need = mode switch
         {
-            "flick" or "microshot" or "popup" => L.N("hit at least 5 targets"),
+            "flick" or "microshot" or "microshot_dense" or "popup" => L.N("hit at least 5 targets"),
             "longtaps" or "sheriff" or "jumppeek" or "jigglepeek" or "peek_mix" or "chamber" or "sound" => L.N("let a few enemies show up and shoot them"),
             "flashpeek" or "recon" or "smokeexec" or "mobility" or "postplant" or "retake" or "anchor" => L.N("play a few rounds and take some duels"),
             "spider" or "gridshot" => L.N("play at least 15 seconds and hit a few targets"),

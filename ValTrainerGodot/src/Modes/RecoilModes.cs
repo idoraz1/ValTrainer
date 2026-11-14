@@ -48,6 +48,7 @@ public sealed class SprayControlMode : TrainingMode
     public override string Category => L.N("Recoil");
     public override WeaponKind Weapon => kind;
     public override bool InfiniteAmmo => false;   // real magazine: a full spray is 25 (Vandal) / 30 (Phantom)
+    public override bool AllowUnlimitedAmmo => false;
     public override bool InfiniteReserve => true;
     public override bool UsesHeadshots => true;
 

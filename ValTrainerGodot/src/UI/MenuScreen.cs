@@ -83,6 +83,7 @@ public partial class MenuScreen : ScreenBase
         else if (UpdatesPrompt.Pending)
             AddChild(new UpdatesPromptPanel(k, AnswerUpdatesPrompt));
         else ShowSupportIfDue();
+        RendererToast.ShowIfDue(this, k); // "switched to DirectX 12 after a graphics crash" once
         LanguageToast.ShowIfDue(this, k); // "ValTrainer is now in Français …" once, when Auto picked a language
 
         var body = HBox(34 * k);
@@ -1443,5 +1444,62 @@ public partial class LanguageToast : Control
             ? L.T("Change it in SETTINGS → Language")
             : L.T("Machine translation · change it in SETTINGS → Language");
         Gfx.TextFit(this, UiTheme.Body, sub, x, 47 * k, ss, new Color(UiTheme.Dim, a), w);
+    }
+}
+
+
+/// <summary>One-time notice after <see cref="RendererGuard"/> switched the renderer because the last session crashed in the
+/// graphics driver (same look and place as <see cref="LanguageToast"/>).</summary>
+public partial class RendererToast : Control
+{
+    const float Life = 14f;
+    static float left = -1;
+    static string what = "";
+    float k = 1f;
+
+    public static void ShowIfDue(Control parent, float k)
+    {
+        var st = Main.I.Settings;
+        if (left < 0)
+        {
+            if (st.RendererNotice is not { } r) return;
+            what = r == RendererGuard.OpenGl ? "OpenGL" : "DirectX 12";
+            st.RendererNotice = null;
+            st.Save();
+            left = Life;
+        }
+        if (left > 0) parent.AddChild(new RendererToast { k = k });
+    }
+
+    public override void _Ready()
+    {
+        MouseFilter = MouseFilterEnum.Stop;
+        MouseDefaultCursorShape = CursorShape.PointingHand;
+        AnchorLeft = 0.5f; AnchorRight = 0.5f; AnchorTop = 1; AnchorBottom = 1;
+        OffsetLeft = -430 * k; OffsetRight = 430 * k; OffsetTop = -176 * k; OffsetBottom = -116 * k;
+    }
+
+    public override void _Process(double delta)
+    {
+        left -= (float)delta;
+        if (left <= 0) { left = 0; QueueFree(); return; }
+        QueueRedraw();
+    }
+
+    public override void _GuiInput(InputEvent e)
+    {
+        if (e is InputEventMouseButton { Pressed: true }) { left = 0; QueueFree(); }
+    }
+
+    public override void _Draw()
+    {
+        float a = Mathf.Clamp(Mathf.Min(left, Life - left) * 3f, 0f, 1f);
+        var r = new Rect2(Vector2.Zero, Size);
+        Gfx.Plate(this, r, 10 * k, new Color(0.06f, 0.1f, 0.14f, 0.96f * a), new Color(UiTheme.Warn, 0.6f * a));
+        DrawRect(new Rect2(0, 0, 4 * k, r.Size.Y - 6 * k), new Color(UiTheme.Warn, a));
+        int fs = UiTheme.Fs(17, k), ss = UiTheme.Fs(13.5f, k);
+        float x = 22 * k, w = r.Size.X - 40 * k;
+        Gfx.TextFit(this, UiTheme.Body, L.F($"ValTrainer closed unexpectedly last time, so it now uses {what}"), x, 25 * k, fs, new Color(UiTheme.Text, a), w);
+        Gfx.TextFit(this, UiTheme.Body, L.T("It's usually a graphics driver problem · change it in SETTINGS → Renderer"), x, 47 * k, ss, new Color(UiTheme.Dim, a), w);
     }
 }

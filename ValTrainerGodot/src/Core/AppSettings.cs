@@ -46,6 +46,17 @@ public sealed class AppSettings
     /// <summary>Gun picker: the gun picked per drill, mode key → <see cref="WeaponKind"/> name. Wins over
     /// <see cref="PreferredWeapon"/>. Null = no picks.</summary>
     public Dictionary<string, string>? WeaponPicks;
+    /// <summary>Drills (mode keys) the player set to unlimited ammo in the drill preview (U; suggested on Discord). Only
+    /// drills with real magazines that allow it (<see cref="Modes.TrainingMode.AllowUnlimitedAmmo"/>). Such runs keep a score
+    /// and the coach review but stay out of personal bests (no reloads isn't comparable).</summary>
+    public HashSet<string>? UnlimitedAmmoDrills;
+    /// <summary>Renderer (Settings → Graphics): auto / vulkan / d3d12 / opengl. Set by the player or stepped down by
+    /// <see cref="Core.RendererGuard"/> after a graphics crash. Null = auto (Vulkan, Godot's fallbacks).</summary>
+    public string? Renderer;
+    /// <summary>The crashed log the renderer guard already handled (each crash counts once).</summary>
+    public string? RendererCrashSeen;
+    /// <summary>Set when the guard switched the renderer: the menu shows a one-time notice, then clears it.</summary>
+    public string? RendererNotice;
     /// <summary>Gun skins: the skin per gun, <see cref="WeaponKind"/> name → equip choice <c>line[/variant][@level]</c>
     /// (<see cref="Game.Skins.SkinChoice"/>; v1.19-dev plain skin ids are line ids and stay valid; "factory" keeps that gun
     /// factory under <see cref="GunSkinAll"/>). Wins over GunSkinAll. Null = none. A locked choice is kept and shows factory

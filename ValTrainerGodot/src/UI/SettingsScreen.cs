@@ -36,6 +36,15 @@ public partial class SettingsScreen : ScreenBase
     static readonly string[] WindowModes = { L.N("Fullscreen"), L.N("Windowed Fullscreen"), L.N("Windowed") };
     static readonly int[] FpsCaps = { 0, 60, 144, 165, 240, 360 };
     static readonly int[] Dpis = { 400, 800, 1000, 1200, 1600, 2000, 3200 };
+    /// <summary>A renderer choice / Godot driver name for the Settings row (API names stay English).</summary>
+    static string RendererName(string r) => r switch
+    {
+        RendererGuard.Auto => L.T("Auto (Vulkan)"),
+        RendererGuard.Vulkan or "vulkan" => L.Raw("Vulkan"),
+        RendererGuard.D3D12 or "d3d12" => L.Raw("DirectX 12"),
+        _ => L.T("OpenGL (safe graphics)"),
+    };
+
     internal static readonly string[] Qualities ={ L.N("Competitive (Low)"), L.N("Medium"), L.N("High"), L.N("Ultra") };
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
@@ -476,6 +485,13 @@ public partial class SettingsScreen : ScreenBase
         v.AddChild(Selector("Graphics quality", () => Qualities[Math.Clamp(St.Quality, 0, 3)],
             d => St.Quality = Wrap(St.Quality + d, 0, 3),
             note: () => L.N("Applies on next drill")));
+        v.AddChild(Selector("Renderer", () => RendererName(St.Renderer ?? RendererGuard.Auto),
+            d =>
+            {
+                int i = Array.IndexOf(RendererGuard.Choices, St.Renderer ?? RendererGuard.Auto);
+                St.Renderer = RendererGuard.Choices[Wrap((i < 0 ? 0 : i) + d, 0, RendererGuard.Choices.Length - 1)];
+            },
+            note: () => L.F($"Now: {RendererName(RendererGuard.Current)} · applies when you restart ValTrainer")));
 
         v.AddChild(Spacer(0, 6 * k));
         v.AddChild(new SectionLabel { Text = "GAMEPLAY", K = k });
@@ -871,6 +887,7 @@ public partial class SettingsScreen : ScreenBase
     static string SystemInfoText() =>
         $"ValTrainer {AppInfo.Version}{(App.Dev ? " (dev)" : "")}\n" +
         $"Renderer: {SysInfo.Summary}\n" +
+        $"Renderer: {St.Renderer ?? "auto"} (now {RendererGuard.Current})\n" +
         $"Graphics quality: {Qualities[Math.Clamp(St.Quality, 0, 3)]}{(St.AutoQualityReason != null ? $" (auto: {St.AutoQualityReason})" : "")}\n" +
         $"VALORANT settings: {(App.Valorant.Found ? "imported" : App.Valorant.Status.ToString())}\n" +
         $"Data folder: {Paths.DataDir}{(Paths.DataDirProblem != null ? $" [{Paths.DataDirProblem}]" : "")}\n" +

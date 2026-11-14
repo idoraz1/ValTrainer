@@ -245,6 +245,9 @@ public static class Difficulty
         new[] { 870f, 680, 530, 450, 395 },
         new[] { 950f, 750, 590, 485, 420 },
     };
+    /// <summary>Microshot Dense median ms between hits (lower is better; needs ≥ 70% accuracy). The next head is already on
+    /// screen and close (faster than Microshot's new head each time) but smaller (slower): Microshot's thresholds × 0.9.</summary>
+    public static readonly float[][] MicroDenseBadges = MicroshotBadges.Select(r => r.Select(v => v * 0.9f).ToArray()).ToArray();
     /// <summary>Target Switch kills per minute (higher is better; needs ≥ 30% accuracy).</summary>
     public static readonly float[][] SwitchBadges =
     {

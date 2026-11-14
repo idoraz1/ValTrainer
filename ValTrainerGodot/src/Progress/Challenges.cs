@@ -39,7 +39,7 @@ internal sealed partial class ProgressEngine
     public static IReadOnlyList<string> SkillDrills(string? skill) => skill switch
     {
         "Flicking" => new[] { "flick", "spider", "popup" },
-        "Precision" => new[] { "microshot", "longtaps", "flick" },
+        "Precision" => new[] { "microshot", "microshot_dense", "longtaps", "flick" },
         "Tracking" => new[] { "tracking", "strafebots" },
         "Reaction" => new[] { "reaction", "popup" },
         "CrosshairPlacement" => new[] { "peek", "peekduel", "jigglepeek" },

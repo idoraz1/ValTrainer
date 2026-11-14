@@ -157,6 +157,25 @@ public partial class DrillPreview : Control
             right.AddChild(gunRow);
         }
         else if (!info.Is2D && info.Weapon != WeaponKind.None) Row("Weapon", L.Raw(WeaponName(info.Weapon))); // gun names stay English
+        if (info.AllowUnlimitedAmmo)
+        {
+            var ammo = new VButton
+            {
+                Kind = VButton.Look.Select, K = k, FontPx = 14, CustomMinimumSize = new Vector2(0, 36 * k),
+                TooltipText = L.T("Unlimited ammo: no reloads. The run still gets a score and a coach review, but it doesn't count for your personal bests."),
+            };
+            void Refresh()
+            {
+                bool on = Unlimited;
+                ammo.Label = on ? L.Upper(L.T("Ammo: unlimited (practice) · U")) : L.Upper(L.T("Ammo: normal · U for unlimited"));
+                ammo.Selected = on;
+                ammo.QueueRedraw();
+            }
+            ammo.Pressed += () => { ToggleAmmo(); Refresh(); };
+            refreshAmmo = Refresh;
+            Refresh();
+            right.AddChild(ammo);
+        }
         // the map the demo is playing (a random map pick changes per run); RANDOM tag when the map picker is on random
         whereRow = new InfoRow
         {
@@ -211,6 +230,7 @@ public partial class DrillPreview : Control
         if (onFreePlay != null) keyParts.Add(L.T("F free play"));
         if (CanPick) keyParts.Add(buy == "B" ? L.T("B picks the gun, also mid-drill") : buy == "—" ? L.T("B picks the gun") : L.F($"B picks the gun ({buy} mid-drill)"));
         if (CanSkin) keyParts.Add(L.T("K skins"));
+        if (info.AllowUnlimitedAmmo) keyParts.Add(L.T("U unlimited ammo"));
         keyParts.Add(L.T("Esc goes back"));
         string keys = string.Join(", ", keyParts) + ".";
         var hint = Text(CanDemo(info) ? L.F($"Preview: the built-in simulated player, muted. {keys}") : keys, 14, UiTheme.Faint);
@@ -537,6 +557,16 @@ public partial class DrillPreview : Control
         else if (key.Keycode == Key.Escape) { GetViewport().SetInputAsHandled(); Close(); }
         else if (key.Keycode is Key.Space or Key.Enter or Key.KpEnter) { GetViewport().SetInputAsHandled(); UiTheme.ClickSound(); Start(); }
         else if (key.Keycode == Key.F && onFreePlay != null) { GetViewport().SetInputAsHandled(); UiTheme.ClickSound(); Start(true); }
+        else if (key.Keycode == Key.U && info.AllowUnlimitedAmmo) { GetViewport().SetInputAsHandled(); UiTheme.ClickSound(); ToggleAmmo(); refreshAmmo?.Invoke(); }
+    }
+
+    Action? refreshAmmo;
+    bool Unlimited => Main.I.Settings.UnlimitedAmmoDrills?.Contains(info.Key) ?? false;
+    void ToggleAmmo()
+    {
+        var set = Main.I.Settings.UnlimitedAmmoDrills ??= new HashSet<string>();
+        if (!set.Remove(info.Key)) set.Add(info.Key);
+        Main.I.Settings.Save();
     }
 
     public override void _ExitTree() => StopDemo(true);

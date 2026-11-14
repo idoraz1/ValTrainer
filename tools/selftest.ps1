@@ -21,7 +21,7 @@ param(
   # Drills for the smoke test (keys from src\Modes). Reaction Test and Sens Finder need real input and are left out.
   [string[]]$Modes = @("peek_mix", "flick", "gridshot", "spider", "tracking", "strafebots", "peek", "operator", "spray_vandal",
                        "spray_phantom", "spray_transfer", "counterstrafe", "peekduel", "siteclear", "flashmap", "deathmatch",
-                       "microshot", "switch", "popup", "longtaps", "sheriff", "strafeduel", "jumppeek", "jigglepeek", "postplant", "retake",
+                       "microshot", "microshot_dense", "switch", "popup", "longtaps", "sheriff", "strafeduel", "jumppeek", "jigglepeek", "postplant", "retake",
                        "anchor", "sound", "flashpeek:phoenix", "recon:sova", "smokeexec:omen", "mobility:jett", "chamber:headhunter"),
   # Smoke runs with a picked gun ("mode@Gun", dev --gun): each class of gun (shotgun, sidearm, sniper, SMG, machine gun)
   # in a drill that offers it. The run must play that gun, finish, and its telemetry and 3D Rewind header must name it.

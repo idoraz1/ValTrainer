@@ -421,7 +421,7 @@ public partial class GameSession : Node3D, IGame
         int ads = binds.Match(e, GameAction.AltFire);
         if (ads != 0) OnAdsButton(ads > 0, wheel, binds);
 
-        if (binds.Pressed(e, GameAction.Reload) && State == St.Running && Gun != null && !Mode.InfiniteAmmo)
+        if (binds.Pressed(e, GameAction.Reload) && State == St.Running && Gun != null && !InfAmmo)
             Gun.StartReload(Mode.InfiniteReserve);
         // Wheel notches have no hold: queue the jump (key / mouse-button jumps are polled by the Mover).
         if (wheel && State == St.Running && binds.Pressed(e, GameAction.Jump)) Mover.QueueJump();
@@ -581,7 +581,7 @@ public partial class GameSession : Node3D, IGame
         {
             bool wasScoped = Gun.Scoped;
             bool gunInHand = !Player.Dead && !abilityInHand; // an ability in hand owns mouse 1 (AbilitySession.cs)
-            var shots = Gun.Tick(Now, dt, View, Mover, Rng, (fireHeld || fireTap) && gunInHand, firePressedEdge && gunInHand, Mode.InfiniteAmmo, Mode.InfiniteReserve, Mode.Movement,
+            var shots = Gun.Tick(Now, dt, View, Mover, Rng, (fireHeld || fireTap) && gunInHand, firePressedEdge && gunInHand, InfAmmo, Mode.InfiniteReserve, Mode.Movement,
                 altFireEdge && gunInHand);
             Volleys(shots);
             if (DevGunLog && !Demo && shots.Count > 0) GunLog(shots);
@@ -870,8 +870,8 @@ public partial class GameSession : Node3D, IGame
         }
         catch (Exception ex) { GD.PushWarning($"Coach failed: {ex.Message}"); }
         bool adaptive = Mode.SupportsAdaptive && Adaptive != null;
-        // a real run (stats.json, PBs, stars, score challenges): kept, fixed tier, the drill's own full length or completed
-        bool real = Progression.XpRules.RealRun(KeepInStats, adaptive, Mode.Timed, Mode.Duration, RunDuration);
+        // a real run (stats.json, PBs, stars, score challenges): kept, fixed tier, the drill's own full length or completed // RealRun: unlimited ammo is practice (no bests)
+        bool real = Progression.XpRules.RealRun(KeepInStats && !UnlimitedAmmo, adaptive, Mode.Timed, Mode.Duration, RunDuration);
         if (adaptive)
         {
             // Lock-In calibration drills: the level held at the target hit rate (Threshold; the final level if too few trials).
@@ -915,6 +915,10 @@ public partial class GameSession : Node3D, IGame
     public float? SessionSens { get; set; }
     /// <summary>False keeps the run out of stats.json (e.g. played at a shifted sens). Telemetry is still written.</summary>
     public bool KeepInStats { get; set; } = true;
+    /// <summary>The player set this drill to unlimited ammo (drill preview, U): no reloads. Not in demos.</summary>
+    public bool UnlimitedAmmo => !Demo && Mode.AllowUnlimitedAmmo && (Main.I.Settings.UnlimitedAmmoDrills?.Contains(Mode.Key) ?? false);
+    /// <summary>Ammo never runs out: the drill's own rule or the player's unlimited-ammo choice.</summary>
+    public bool InfAmmo => Mode.InfiniteAmmo || UnlimitedAmmo;
     /// <summary>Routine mode: called once when the run ends (after it is recorded) instead of leaving the results screen up.</summary>
     public Action<GameSession>? OnFinished { get; set; }
     /// <summary>Routine: play this run at another tier (e.g. Main.I.Tier - 1 for the easy activation drills). null = Main.I.Tier.</summary>

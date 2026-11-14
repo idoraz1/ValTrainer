@@ -190,7 +190,7 @@ public partial class Hud : Control
         if (!m.Is2D)
         {
             if (m.ShowScore) DrawVitals(size, k);
-            if (s.Gun != null && !m.InfiniteAmmo) DrawAmmo(size, k);
+            if (s.Gun != null && !s.InfAmmo) DrawAmmo(size, k);
             if (m.Movement) DrawSpeed(size, k);
             DrawReload(size, k);
         }
@@ -246,6 +246,8 @@ public partial class Hud : Control
             TC(UiTheme.HudWide, "NO SCORE · ESC TO STOP", cx, top + bh + 18 * k, fls, UiTheme.Dim);
             return;
         }
+        if (s.UnlimitedAmmo)
+            TC(UiTheme.HudWide, L.Upper(L.T("Unlimited ammo · practice")), cx, top + bh + 40 * k, UiTheme.Fs(12, k), UiTheme.Dim);
 
         // timer
         float remain = m.Timed ? Mathf.Max(0, m.Duration - s.Now) : s.Now;
@@ -855,7 +857,7 @@ public partial class Hud : Control
             : s.PrevBest;
         int badge = rec?.Badge ?? m.Badge();
         int score = rec?.Score ?? m.Score;
-        bool first = prev < 0, pb = !first && score > prev;
+        bool first = prev < 0, pb = !first && score > prev && !s.UnlimitedAmmo; // unlimited ammo: practice, never a best
         var tier = Difficulty.Get(tierId);
         string scoreText = score.ToString("#,0", Inv);
         // display text below is translated here (gun names stay English) and drawn through the Gfx helpers, whose
@@ -866,6 +868,7 @@ public partial class Hud : Control
         string? subUp = m.Subtitle is { } msub ? L.Upper(L.T(msub)) : null;
         string chip = pb ? L.T("NEW PERSONAL BEST") + (showGun ? $" · {gunUp}" : "")
             : showGun && gun != m.Weapon ? L.F($"FIRST RUN WITH THE {gunUp} AT {tierUp}") : L.F($"FIRST RUN AT {tierUp}");
+        if (s.UnlimitedAmmo) chip = L.T("UNLIMITED AMMO · PRACTICE, NOT SAVED TO YOUR BESTS");
         string bestOf = showGun ? L.F($"{tier.DisplayName} best with the {gunName}") : L.F($"{tier.DisplayName} best");
         string prevText = pb ? L.F($"previous best {prev.ToString("#,0", Inv)}") : $"{bestOf}: {prev.ToString("#,0", Inv)}  ({(score - prev).ToString("+#,0;-#,0;0", Inv)})";
         // badges are calibrated on the drill's own gun (and the Phantom where it's the Vandal): other guns are unrated

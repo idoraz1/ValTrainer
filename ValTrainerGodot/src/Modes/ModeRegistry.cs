@@ -26,6 +26,7 @@ public static class ModeRegistry
         () => new DeathmatchMode(),
         // v1.4.0
         () => new MicroshotMode(),
+        () => new MicroshotDenseMode(),
         () => new TargetSwitchMode(),
         () => new PopupMode(),
         () => new LongTapsMode(),

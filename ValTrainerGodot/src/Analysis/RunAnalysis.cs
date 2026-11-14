@@ -12,7 +12,7 @@ static class RunAnalysis
 {
     /// <summary>First sightings further off the crosshair than this aren't crosshair placement (= TrainingMode.SeenMaxDeg).</summary>
     const float SeenMaxDeg = 60f;
-    static readonly HashSet<string> StaticModes = new() { "flick", "spider", "gridshot", "microshot", "popup" };
+    static readonly HashSet<string> StaticModes = new() { "flick", "spider", "gridshot", "microshot", "microshot_dense", "popup" };
     static readonly HashSet<string> SpawnBotModes = new() { "strafebots", "counterstrafe", "switch", "strafeduel" };
     static readonly HashSet<string> SeenBotModes = new()
     {

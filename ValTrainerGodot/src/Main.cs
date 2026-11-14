@@ -53,6 +53,9 @@ public partial class Main : Node
         // One ValTrainer at a time (dev / automated runs excepted; dev: --single-instance tests it): a second launch brings
         // this one to the front and quits.
         var startArgs = OS.GetCmdlineUserArgs().Concat(OS.GetCmdlineArgs()).ToArray();
+        // Graphics-driver crash recovery / Settings → Renderer: may restart ValTrainer once with another renderer (before
+        // the single-instance claim, so the new copy can claim it).
+        if (RendererGuard.CheckAtStartup(Settings, startArgs)) { singleInstanceExit = true; GetTree().Quit(); return; }
         if ((!startArgs.Contains("--dev") || startArgs.Contains("--single-instance")) && !SingleInstance.Claim())
         {
             Log.Info("ValTrainer is already running: brought that window to the front; quitting this copy");

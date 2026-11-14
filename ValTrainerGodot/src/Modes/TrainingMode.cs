@@ -53,6 +53,9 @@ public abstract class TrainingMode
         && (ForcePick || WeaponChoice?.Contains(p) == true) ? p : Weapon;
     /// <summary>Bottomless magazine: pure aim drills never make you reload.</summary>
     public virtual bool InfiniteAmmo => true;
+    /// <summary>The player may switch this drill to unlimited ammo in its preview (drills with real magazines). The spray
+    /// drills say no: the magazine is the spray.</summary>
+    public virtual bool AllowUnlimitedAmmo => !InfiniteAmmo;
     /// <summary>Reloads never run dry (bot drills keep real magazines + reloads but can't run out).</summary>
     public virtual bool InfiniteReserve => true;
     public virtual bool Movement => false;

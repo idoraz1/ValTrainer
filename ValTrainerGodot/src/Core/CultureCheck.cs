@@ -970,6 +970,36 @@ public static class CultureCheck
                 Progress.DevUnlockAll = true;
                 Check("--progress-unlock-all / --skins-unlock-all unlock everything", Progress.AllItems.All(Progress.IsUnlocked) && GunSkins.IdFor(WeaponKind.Vandal, s) == "glasswork");
                 Progress.DevUnlockAll = false;
+                // renderer guard (Core/RendererGuard.cs): a crashed Vulkan session steps down to DirectX 12, a crashed D3D12 one to
+                // OpenGL; a clean exit, an already-handled log and a renderer the player picked by hand stay as they are
+                {
+                    string gd = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "vt_rguard_" + System.Guid.NewGuid().ToString("N"));
+                    System.IO.Directory.CreateDirectory(gd);
+                    try
+                    {
+                        string Log1(string name, string body) { var f = System.IO.Path.Combine(gd, name); System.IO.File.WriteAllText(f, body); return f; }
+                        Log1("godot.log", "this session");
+                        Log1("godot2026-11-14T02.20.26.log", "Vulkan 1.3.215 - Forward+ - Using Device #0: Intel" + System.Environment.NewLine + "[ValTrainer] ValTrainer 1.19.0" + System.Environment.NewLine + "");
+                        var g = new AppSettings();
+                        RendererGuard.StepDownAfterCrash(g, gd, save: false);
+                        Check("renderer guard: Vulkan crash -> DirectX 12 + notice", g.Renderer == RendererGuard.D3D12 && g.RendererNotice == RendererGuard.D3D12, $"{g.Renderer} {g.RendererNotice}");
+                        g.RendererNotice = null;
+                        RendererGuard.StepDownAfterCrash(g, gd, save: false);
+                        Check("renderer guard: the same crash counts once", g.Renderer == RendererGuard.D3D12 && g.RendererNotice == null);
+                        System.IO.File.SetLastWriteTimeUtc(Log1("godot2026-11-15T01.00.00.log", "D3D12 12_0 - Forward+" + System.Environment.NewLine + ""), System.DateTime.UtcNow.AddMinutes(1));
+                        RendererGuard.StepDownAfterCrash(g, gd, save: false);
+                        Check("renderer guard: DirectX 12 crash -> OpenGL", g.Renderer == RendererGuard.OpenGl, $"{g.Renderer}");
+                        System.IO.File.SetLastWriteTimeUtc(Log1("godot2026-11-15T02.00.00.log", "Vulkan 1.3" + System.Environment.NewLine + "[ValTrainer] " + UI.BugReport.CleanExit + "" + System.Environment.NewLine + ""), System.DateTime.UtcNow.AddMinutes(2));
+                        var c = new AppSettings();
+                        RendererGuard.StepDownAfterCrash(c, gd, save: false);
+                        Check("renderer guard: a clean exit changes nothing", c.Renderer == null && c.RendererNotice == null);
+                        System.IO.File.SetLastWriteTimeUtc(Log1("godot2026-11-15T03.00.00.log", "Vulkan 1.3" + System.Environment.NewLine + ""), System.DateTime.UtcNow.AddMinutes(3));
+                        var v = new AppSettings { Renderer = RendererGuard.OpenGl };
+                        RendererGuard.StepDownAfterCrash(v, gd, save: false);
+                        Check("renderer guard: a renderer picked by hand is kept", v.Renderer == RendererGuard.OpenGl && v.RendererNotice == null);
+                    }
+                    finally { try { System.IO.Directory.Delete(gd, true); } catch { } }
+                }
                 // supporter codes (Core/Supporter.cs): the dev test key's code unlocks every item; a changed code nothing
                 var app = Main.I?.Settings;
                 if (app != null)
