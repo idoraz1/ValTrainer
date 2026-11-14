@@ -8,6 +8,9 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Added
+- Sens Finder: aiming style and mousepad (suggested on Discord). On its start screen, press T to pick Wrist, Hybrid or Arm, and P to pick the width of mousepad you can actually use (25, 32, 40, 45 or 90 cm; [ and ] fine-tune it by 1 cm). The test then only tries sensitivities that suit you: wrist aimers get a higher-sens range that fits a comfortable wrist turn, arm aimers a lower one, and a 180° turn always fits on your pad. The result says what was searched, e.g. "Wrist aimer · 40 cm pad: searched 15–40 cm/360". ValTrainer remembers both. If you leave them on Hybrid and not set, the test works exactly as before.
+
 ## [1.19.0] - 2026-11-12
 
 ### Added

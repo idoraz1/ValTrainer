@@ -331,3 +331,67 @@ public static class SfUnits
         return cm < lo ? SensForCm(lo, dpi) : cm > hi ? SensForCm(hi, dpi) : sens;
     }
 }
+
+/// <summary>How the player aims (Sens Finder intro, T; AppSettings.SensFinderStyle, stored as the int value).</summary>
+public enum SfStyle { Wrist = 0, Hybrid = 1, Arm = 2 }
+
+/// <summary>
+/// The cm/360 range one Sens Finder run may search, from the aiming style and the usable mousepad width
+/// (docs/coach_spec.md §E "Aiming style and mousepad"; asked for on Discord). <see cref="StartLo"/>–<see cref="StartHi"/>
+/// clamps the start centre, <see cref="Lo"/>–<see cref="Hi"/> the whole run. When <see cref="Strict"/>, every step's
+/// centre is clamped so that both L = C/hw and H = C·hw stay inside [Lo, Hi]. Hybrid with no pad set is the old
+/// behaviour exactly (start 20–80 cm, centre and result 15–100 cm, L/H not clamped).
+/// </summary>
+public readonly record struct SfRange(SfStyle Style, int PadCm, float StartLo, float StartHi, float Lo, float Hi, bool Strict)
+{
+    /// <summary>Pad presets cycled with P (0 = not set). [ and ] fine-tune by 1 cm within PadMin–PadMax.</summary>
+    public static readonly int[] PadPresets = { 0, 25, 32, 40, 45, 90 };
+    public const int PadMin = 15, PadMax = 120;
+    /// <summary>A 180° turn must fit in 80% of the usable width: cm/360 ≤ 2 · 0.8 · pad.</summary>
+    public const float PadFactor = 1.6f;
+    /// <summary>Hi / Lo is kept at ≥ 2 so the first ±40% step (ratio 1.96) always fits.</summary>
+    public const float MinRatio = 2f;
+
+    public static SfRange For(SfStyle style, int padCm)
+    {
+        // cm/360: start clamp and run range per style
+        var (sLo, sHi, lo, hi) = style switch
+        {
+            SfStyle.Wrist => (20f, 35f, 15f, 40f),  // a 90° turn within a ~10 cm wrist arc → ≤ 40; wrist aimers ~15–30
+            SfStyle.Arm => (40f, 80f, 30f, 100f),   // arm aimers ~30–60+; VALORANT pros (150–400 eDPI) 32–87
+            _ => (20f, 80f, 15f, 100f),             // the old defaults
+        };
+        bool hasPad = padCm > 0;
+        if (hasPad) hi = Math.Min(hi, PadFactor * padCm);
+        if (hi / lo < MinRatio) lo = hi / MinRatio;
+        sHi = Math.Min(sHi, hi);
+        sLo = Math.Min(Math.Max(sLo, lo), sHi);
+        return new SfRange(style, hasPad ? padCm : 0, sLo, sHi, lo, hi, style != SfStyle.Hybrid || hasPad);
+    }
+
+    /// <summary>The start centre C₁ for the player's current sens.</summary>
+    public float StartCentre(float sens, int dpi) => SfUnits.ClampCm(sens, dpi, StartLo, StartHi);
+
+    /// <summary>A step's centre: strict = both L and H (cm · hw and cm / hw) inside [Lo, Hi]; otherwise unchanged.</summary>
+    public float StepCentre(float sens, int dpi, float hw) => Strict ? SfUnits.ClampCm(sens, dpi, Lo * hw, Hi / hw) : sens;
+
+    /// <summary>A tested sens (L or H): strict = inside [Lo, Hi] (a guard: <see cref="StepCentre"/> already makes it fit).</summary>
+    public float Tested(float sens, int dpi) => Strict ? SfUnits.ClampCm(sens, dpi, Lo, Hi) : sens;
+
+    /// <summary>The centre after a move, and the result: always inside [Lo, Hi] (15–100 cm by default, as before).</summary>
+    public float Run(float sens, int dpi) => SfUnits.ClampCm(sens, dpi, Lo, Hi);
+
+    /// <summary>The next pad preset after <paramref name="padCm"/> (a custom value goes to the next larger preset; after 90: not set).</summary>
+    public static int NextPad(int padCm)
+    {
+        foreach (int p in PadPresets) if (p > padCm) return p;
+        return 0;
+    }
+
+    /// <summary>[ / ]: ±1 cm (not set + ] starts at 40 cm; not set + [ stays not set).</summary>
+    public static int NudgePad(int padCm, int delta) =>
+        padCm <= 0 ? (delta > 0 ? 40 : 0) : Math.Clamp(padCm + delta, PadMin, PadMax);
+
+    public static string StyleName(SfStyle s) => s switch { SfStyle.Wrist => L.N("Wrist"), SfStyle.Arm => L.N("Arm"), _ => L.N("Hybrid") };
+    public static string AimerName(SfStyle s) => s switch { SfStyle.Wrist => L.N("Wrist aimer"), SfStyle.Arm => L.N("Arm aimer"), _ => L.N("Hybrid aimer") };
+}

@@ -37,7 +37,7 @@ public sealed partial class SensFinderMode
     void DrawIntro(CanvasItem c, Vector2 size, float k)
     {
         Dim(c, size, 0.72f);
-        float pw = Mathf.Min(size.X - 40 * k, 1040 * k), ph = 560 * k;
+        float pw = Mathf.Min(size.X - 40 * k, 1040 * k), ph = 650 * k;
         var r = new Rect2(size.X / 2 - pw / 2, size.Y / 2 - ph / 2 - 30 * k, pw, ph);
         Gfx.Plate(c, r, 22 * k, new Color(0.06f, 0.1f, 0.14f, 0.96f), new Color(UiTheme.Text, 0.14f));
         c.DrawRect(new Rect2(r.Position, new Vector2(60 * k, 3 * k)), UiTheme.Accent);
@@ -74,6 +74,19 @@ public sealed partial class SensFinderMode
         Gfx.TextFit(c, UiTheme.Body, cfg.IsShort ? L.N("Short test: ON (fewer, shorter rounds)  ·  press Q for the full test")
             : L.N("Full test  ·  press Q for the short test (about half the time)"),
             x, y, UiTheme.Fs(17, k), cfg.IsShort ? UiTheme.Warn : UiTheme.Dim, w);
+        y += 30 * k;
+        Gfx.TextFit(c, UiTheme.Body, L.F($"Aiming style: {L.T(SfRange.StyleName(range.Style))}  ·  press T for wrist / hybrid / arm"),
+            x, y, UiTheme.Fs(17, k), range.Style == SfStyle.Hybrid ? UiTheme.Dim : UiTheme.Good, w);
+        y += 30 * k;
+        Gfx.TextFit(c, UiTheme.Body, range.PadCm > 0
+                ? L.F($"Mousepad: {range.PadCm} cm of usable width  ·  P for presets, [ and ] to fine-tune")
+                : L.N("Mousepad: not set  ·  press P to set the width you can actually use"),
+            x, y, UiTheme.Fs(17, k), range.PadCm > 0 ? UiTheme.Good : UiTheme.Dim, w);
+        y += 30 * k;
+        Gfx.TextFit(c, UiTheme.Body, range.Strict
+                ? L.F($"Searching {range.Lo:0}–{range.Hi:0} cm/360 (a 180° turn fits your pad; wrist aimers stay higher, arm aimers lower)")
+                : L.N("Searching your current sens ±50%. Set your aiming style and mousepad to narrow it."),
+            x, y, UiTheme.Fs(17, k), UiTheme.Dim, w);
         if (phaseT > 2f)
         {
             float a = 0.55f + 0.45f * Mathf.Sin(RealNow * 4f);
@@ -124,6 +137,7 @@ public sealed partial class SensFinderMode
         var tag = new Rect2(x0, y + 30 * k, Gfx.TextW(UiTheme.HudWide, tagText, hs) + 18 * k, 22 * k);
         c.DrawRect(tag, aborted ? UiTheme.Warn : UiTheme.Accent);
         Gfx.Text(c, UiTheme.HudWide, tagText, tag.Position.X + 9 * k, Gfx.Mid(tag.GetCenter().Y, hs), hs, aborted ? Colors.Black : UiTheme.Text);
+        if (range.Strict) Gfx.TextR(c, UiTheme.Body, RangeLine(), x1, Gfx.Mid(tag.GetCenter().Y, UiTheme.Fs(16, k)), UiTheme.Fs(16, k), UiTheme.Dim);
         string title = aborted ? (KeepSens ? L.F($"KEEP {current:0.000} FOR NOW") : L.F($"PROVISIONAL {rec:0.000}: KEEP {current:0.000} FOR NOW"))
             : KeepSens ? L.F($"KEEP YOUR SENSITIVITY: {rec:0.000}")
             : L.F($"SET VALORANT SENSITIVITY TO {rec:0.000}  (WAS {current:0.000})");
@@ -153,6 +167,11 @@ public sealed partial class SensFinderMode
             Gfx.TextC(c, UiTheme.HudWide, "CLICK TO CONTINUE", r.GetCenter().X, r.End.Y - 26 * k, UiTheme.Fs(18, k), new Color(UiTheme.Accent, a));
         }
     }
+
+    /// <summary>"Wrist aimer · 40 cm pad: searched 20–40 cm/360" (only shown when a style or pad was picked).</summary>
+    string RangeLine() => range.PadCm > 0
+        ? L.F($"{L.T(SfRange.AimerName(range.Style))} · {range.PadCm} cm pad: searched {range.Lo:0}–{range.Hi:0} cm/360")
+        : L.F($"{L.T(SfRange.AimerName(range.Style))}: searched {range.Lo:0}–{range.Hi:0} cm/360");
 
     void DrawNumbers(CanvasItem c, Rect2 r, float k)
     {
