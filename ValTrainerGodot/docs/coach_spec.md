@@ -287,9 +287,35 @@ This is a blind, performance-scored version of the PSA method that bisects in lo
 
 ### Search
 
-- **Start:** C₁ = current S. If that is outside 20–80 cm/360, start at the nearest bound.
+- **Start:** C₁ = current S. If that is outside 20–80 cm/360 (or the style / pad range below), start at the nearest bound.
 - **Steps:** 5 steps with half-widths h = ln of 1.40, 1.25, 1.15, 1.09 and 1.05.
 - **Each step** compares L = C·e^(−h) against H = C·e^(+h).
+
+### Aiming style and mousepad
+
+Set on the intro screen (T: Wrist / Hybrid / Arm, default Hybrid; P: usable pad width 25 / 32 / 40 / 45 / 90 cm or not
+set, [ ] ±1 cm, 15–120 cm), saved as AppSettings.SensFinderStyle / SensFinderPadCm (`SfRange.For`). Like Oblivity, which
+asks wrist / arm / mix and the mousepad space first to set the range of candidate sens, then tests inside it.
+
+| Style | Start C₁ clamp | Whole run | Why |
+|---|---|---|---|
+| Wrist | 20–35 cm/360 | 15–40 | A 90–120° turn should fit a comfortable wrist arc of ~8–12 cm: 90° in 10 cm = 40 cm/360, 120° in 12 cm = 36. Community guides put wrist aimers at ~10–25 cm/360 (high eDPI, 800+). |
+| Hybrid | 20–80 | 15–100 | Unchanged defaults (most players mix: arm for big turns, wrist for corrections). |
+| Arm | 40–80 | 30–100 | Arm aimers sit at ~30–60+ cm/360 (eDPI ~200–400); VALORANT pros at 150–400 eDPI are 32–87 cm/360 at 800 DPI. |
+
+- **Pad cap:** a 180° turn must fit in 80% of the usable width: cm/360 ≤ 2 × 0.8 × pad = 1.6 × pad
+  (25 cm → 40, 32 → 51, 40 → 64, 45 → 72, 90 → no cap below 100).
+- **Minimum span:** if the cap leaves Hi/Lo < 2, Lo = Hi/2, so the first ±40% step (ratio 1.96) still fits
+  (arm on a 25 cm pad: 20–40).
+- **Strict mode** (any style other than Hybrid, or a pad set): before each step C is clamped to [Lo·hw, Hi/hw] cm, so
+  both L and H lie in [Lo, Hi]; moves and the result are clamped to [Lo, Hi]. The confirmation still tests the current S,
+  wherever it is. Hybrid with no pad is exactly the old behaviour (L/H not clamped). Checked by the culture test.
+- The result screen shows "Wrist aimer · 40 cm pad: searched 15–40 cm/360" when a style or pad was set.
+- Sources: Oblivity's questions (mein-mmo.de, "Steam game promises to make you better in all other shooters");
+  novustools.pages.dev/gamer-sens/guides/wrist-vs-arm-aim (wrist eDPI 800+, arm 200–400); search summaries of
+  aiming.pro, attackshark and mouse-sensitivity.com forum threads (wrist ~15–20, hybrid ~25–35, arm ~40–60 cm/360);
+  the pro median used in §D. These are community norms, not studies: the ranges are wide on purpose and the A/B test
+  still decides inside them.
 
 ### Round composition
 

@@ -16,7 +16,7 @@ namespace ValTrainer.Modes;
 /// preferred on their own (<see cref="SfStats.ComponentBest"/>).
 /// No gun: clicks are read from the trigger's rising edge, so there is no spread, recoil or fire-rate limit.
 /// Dev flags (with --dev): --sfquick (short protocol), --sfnomicro (skip the micro test), --sfsens X / --sfcm X (pretend current sens),
-/// --sfseed N (reproducible), --sfexit (quit when the result is computed), --sftimescale N (fast-forward screenshots),
+/// --sfstyle wrist|hybrid|arm / --sfpad CM (aiming style and pad width, not saved), --sfseed N (reproducible), --sfexit (quit when the result is computed), --sftimescale N (fast-forward screenshots),
 /// --sfshot DIR (save PNGs of the game's own viewport at key moments, then of the results screen; quits after).
 /// </summary>
 public sealed partial class SensFinderMode : TrainingMode
@@ -37,7 +37,7 @@ public sealed partial class SensFinderMode : TrainingMode
     enum Ph { Intro, Rest, Flick, Micro, TrackReady, Track, Summary }
     Ph phase;
     float phaseT;
-    bool done, prevHeld, prevMKey, prevQKey;
+    bool done, prevHeld, prevMKey, prevQKey, prevTKey, prevPKey, prevLbKey, prevRbKey;
     ulong lastRealUsec;
 
     SensFinderConfig cfg = null!;
@@ -45,6 +45,7 @@ public sealed partial class SensFinderMode : TrainingMode
     int dpi;
     float current;        // the player's sens S when the drill started
     float centre;         // C
+    SfRange range;        // cm/360 limits from the aiming style and the mousepad (SfRange.For)
     int ties, flips, lastDir, doneBlocks;
     bool aborted;
     string abortWhy = "", notice = "";
@@ -123,7 +124,11 @@ public sealed partial class SensFinderMode : TrainingMode
         current = Main.I.Sens > 0 ? Main.I.Sens : SfUnits.SensForCm(40f, dpi);
         if (dev && ArgFloat("--sfsens") is { } ss) current = ss;
         if (dev && ArgFloat("--sfcm") is { } cm) current = SfUnits.SensForCm(cm, dpi);
-        centre = SfUnits.ClampCm(current, dpi, 20f, 80f);
+        var style = (SfStyle)Math.Clamp(Main.I.Settings.SensFinderStyle, 0, 2);
+        int pad = Math.Clamp(Main.I.Settings.SensFinderPadCm, 0, SfRange.PadMax);
+        if (dev && ArgAfter("--sfstyle") is { } sty && Enum.TryParse<SfStyle>(sty, true, out var sv)) style = sv;
+        if (dev && int.TryParse(ArgAfter("--sfpad"), NumberStyles.Integer, Inv, out var pv)) pad = Math.Clamp(pv, 0, SfRange.PadMax);
+        SetRange(style, pad);
         G.TrialSens = current;
         Event("sens_set", current, -1);
 
@@ -139,6 +144,25 @@ public sealed partial class SensFinderMode : TrainingMode
         phaseT = 0;
         lastRealUsec = Time.GetTicksUsec();
         GD.Print($"[sf] start seed={seed} quick={cfg.Steps < 5} short={cfg.IsShort} micro={cfg.Micro} dpi={dpi} current={current:0.000} ({SfUnits.Cm360(current, dpi):0.0} cm/360) C1={centre:0.000} ({SfUnits.Cm360(centre, dpi):0.0} cm)");
+    }
+
+    /// <summary>Applies an aiming style and pad width: the run's cm/360 range and the start centre.</summary>
+    void SetRange(SfStyle style, int pad)
+    {
+        range = SfRange.For(style, pad);
+        centre = range.StartCentre(current, dpi);
+        GD.Print($"[sf] range style={range.Style} pad={range.PadCm} start {range.StartLo:0.#}-{range.StartHi:0.#} run {range.Lo:0.#}-{range.Hi:0.#} cm/360 strict={range.Strict} C1={centre:0.000} ({Cm(centre):0.0} cm)");
+    }
+
+    /// <summary>Saves a changed style / pad and re-derives the range.</summary>
+    void ChangeRange(SfStyle style, int pad)
+    {
+        if (style == range.Style && pad == range.PadCm) return;
+        Main.I.Settings.SensFinderStyle = (int)style;
+        Main.I.Settings.SensFinderPadCm = pad;
+        Main.I.Settings.Save();
+        SetRange(style, pad);
+        G.Sound("tick", 0.3f, 1.2f);
     }
 
     // =====================================================================================
@@ -189,6 +213,14 @@ public sealed partial class SensFinderMode : TrainingMode
                     G.Sound("tick", 0.3f, 1.2f);
                 }
                 prevQKey = qKey;
+                // T cycles the aiming style, P the mousepad presets, [ and ] fine-tune the pad by 1 cm (all remembered).
+                bool tKey = Input.IsKeyPressed(Godot.Key.T), pKey = Input.IsKeyPressed(Godot.Key.P);
+                bool lbKey = Input.IsKeyPressed(Godot.Key.Bracketleft), rbKey = Input.IsKeyPressed(Godot.Key.Bracketright);
+                if (tKey && !prevTKey) ChangeRange((SfStyle)(((int)range.Style + 1) % 3), range.PadCm);
+                if (pKey && !prevPKey) ChangeRange(range.Style, SfRange.NextPad(range.PadCm));
+                if (lbKey && !prevLbKey) ChangeRange(range.Style, SfRange.NudgePad(range.PadCm, -1));
+                if (rbKey && !prevRbKey) ChangeRange(range.Style, SfRange.NudgePad(range.PadCm, +1));
+                prevTKey = tKey; prevPKey = pKey; prevLbKey = lbKey; prevRbKey = rbKey;
                 if ((phaseT > 2f && pressed) || (Main.I.Dev && phaseT > 3f)) BeginStage(0);
                 break;
             }
@@ -266,9 +298,10 @@ public sealed partial class SensFinderMode : TrainingMode
     void BeginStage(int step)
     {
         float hw = cfg.HalfWidths[step];
+        centre = range.StepCentre(centre, dpi, hw); // style / pad: both tested sens inside the range
         var st = new SfStage { Step = step, Centre = centre, HalfWidth = hw };
-        st.Sens[0] = centre / hw;
-        st.Sens[1] = centre * hw;
+        st.Sens[0] = range.Tested(centre / hw, dpi);
+        st.Sens[1] = range.Tested(centre * hw, dpi);
         SetupStage(st);
     }
 
@@ -362,7 +395,7 @@ public sealed partial class SensFinderMode : TrainingMode
             float h = Mathf.Log(st.HalfWidth);
             if (win == 0) centre *= Mathf.Exp(-h / 2);
             else if (win == 1) centre *= Mathf.Exp(h / 2);
-            centre = SfUnits.ClampCm(centre, dpi, 15f, 100f);
+            centre = range.Run(centre, dpi);
             st.Winner = win;
             st.NewCentre = centre;
             ties = win < 0 ? ties + 1 : 0;
@@ -714,7 +747,7 @@ public sealed partial class SensFinderMode : TrainingMode
         confirmed = conf?.Result != null;
         adoptC = !confirmed || confT >= -0.5f;
         float r = adoptC ? centre : Mathf.Sqrt(centre * current);
-        r = SfUnits.ClampCm(r, dpi, 15f, 100f);
+        r = range.Run(r, dpi);
         rec = Mathf.Max(0.001f, Mathf.Round(r * 1000f) / 1000f);
         if (Mathf.Abs(rec / current - 1f) < 0.02f) rec = current; // "keep": show exactly the current numbers
 

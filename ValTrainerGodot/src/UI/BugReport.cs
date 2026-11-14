@@ -175,6 +175,7 @@ public static class BugReport
         Add("ads_sens_multiplier", F(v.AdsSensMult));
         Add("hold_to_scope", v.HoldToScope ? "on" : "off");
         Add("dpi", $"{st.Dpi} (as set in ValTrainer, eDPI {F(app.Sens * st.Dpi)})");
+        Add("sens_finder", $"style {(Modes.SfStyle)Math.Clamp(st.SensFinderStyle, 0, 2)}, pad {(st.SensFinderPadCm > 0 ? st.SensFinderPadCm.ToString(Inv) + " cm" : "not set")}");
         Add("viewmodel_fov", F(st.ViewmodelFov));
         Add("fps_cap", Src(st.FpsCapOverride, v.FrameRateLimit <= 0 ? "unlimited" : F(v.FrameRateLimit), st.FpsCapOverride == 0 ? "unlimited" : st.FpsCapOverride.ToString(Inv)));
         Add("vsync", Src(st.VSyncOverride, v.VSync ? "on" : "off", st.VSyncOverride == 1 ? "on" : "off"));

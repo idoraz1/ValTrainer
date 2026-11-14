@@ -8,7 +8,7 @@
     "src/UI/RewindView3D.cs:390"
   ],
   " ab ": [
-    "src/UI/BugReport.cs:537"
+    "src/UI/BugReport.cs:538"
   ],
   "\"What happened?\" can have at most {0} characters": [
     "src/UI/BugReport.cs:57"
@@ -71,7 +71,7 @@
     "src/Modes/Agents/ChamberDrill.cs:312"
   ],
   "1. Open …  2. Click …  3. …": [
-    "src/UI/BugReport.cs:903"
+    "src/UI/BugReport.cs:904"
   ],
   "15 MINUTES IN · THE REST IS OPTIONAL · FINISH WHEN YOU LIKE": [
     "src/Warmup/WarmupCard.cs:216"
@@ -470,13 +470,13 @@
     "src/Modes/Agents/InitiatorDrill.cs:647"
   ],
   "ABORTED": [
-    "src/Modes/SensFinderDraw.cs:123"
+    "src/Modes/SensFinderDraw.cs:136"
   ],
   "aborted": [
-    "src/Modes/SensFinderMode.cs:732"
+    "src/Modes/SensFinderMode.cs:765"
   ],
   "aborted (fatigue)": [
-    "src/Modes/SensFinderMode.cs:801"
+    "src/Modes/SensFinderMode.cs:834"
   ],
   "ABOUT": [
     "src/UI/SettingsScreen.cs:92"
@@ -521,7 +521,7 @@
     "src/Modes/CrosshairFinderMode.cs:111"
   ],
   "Accuracy fell to {0:0}% (below {1:0}%). You're probably tired. Take a break and run it again later.": [
-    "src/Modes/SensFinderMode.cs:388"
+    "src/Modes/SensFinderMode.cs:421"
   ],
   "Accurate first motions: your flicks land within {0:0}% of the distance.": [
     "src/Analysis/Assess.cs:732"
@@ -570,7 +570,7 @@
     "src/UI/SettingsScreen.cs:313"
   ],
   "Add a title ({0}+ characters) and describe your idea ({1}+ characters)": [
-    "src/UI/BugReport.cs:366"
+    "src/UI/BugReport.cs:367"
   ],
   "Add a title ({0}+ characters) and say what happened ({1}+ characters)": [
     "src/UI/BugReport.cs:53"
@@ -623,7 +623,7 @@
     "src/Analysis/Assess.cs:548"
   ],
   "AGENT": [
-    "src/UI/BugReport.cs:333"
+    "src/UI/BugReport.cs:334"
   ],
   "Agent": [
     "src/Modes/DefenseModes.cs:707",
@@ -738,6 +738,9 @@
   "Aiming down sights: your primary. Use Advanced Options is off, so VALORANT ignores the ADS tab.": [
     "src/UI/CrosshairView.cs:410"
   ],
+  "Aiming style: {0}  ·  press T for wrist / hybrid / arm": [
+    "src/Modes/SensFinderDraw.cs:78"
+  ],
   "AIRBORNE — inaccurate": [
     "src/Modes/MovementPlusModes.cs:128"
   ],
@@ -841,7 +844,7 @@
     "src/Game/Skins/SkinCatalog.cs:64"
   ],
   "another day": [
-    "src/Modes/SensFinderMode.cs:810"
+    "src/Modes/SensFinderMode.cs:843"
   ],
   "answer|no": [
     "src/Modes/Agents/ControllerDraw.cs:642"
@@ -876,6 +879,12 @@
   ],
   "Arc Roses shot": [
     "src/Modes/MapModes.cs:614"
+  ],
+  "Arm": [
+    "src/Modes/SensFinderCore.cs:395"
+  ],
+  "Arm aimer": [
+    "src/Modes/SensFinderCore.cs:396"
   ],
   "ARMING…": [
     "src/Modes/Agents/DuelistKits.cs:1191"
@@ -917,7 +926,7 @@
     "src/UI/SettingsScreen.cs:1192"
   ],
   "at search limit": [
-    "src/Modes/SensFinderMode.cs:738"
+    "src/Modes/SensFinderMode.cs:771"
   ],
   "At startup and every 6 hours, asks GitHub whether a newer release is out (nothing about you is sent)": [
     "src/UI/SettingsScreen.cs:716"
@@ -1209,7 +1218,7 @@
     "src/UI/RewindDraw.cs:332"
   ],
   "BOTH BEST AT {0}": [
-    "src/Modes/SensFinderDraw.cs:189"
+    "src/Modes/SensFinderDraw.cs:208"
   ],
   "BOTS": [
     "src/Warmup/WarmupPlan.cs:164"
@@ -1358,8 +1367,8 @@
     "src/Core/UpdaterInstall.cs:73"
   ],
   "CANCEL": [
-    "src/UI/BugReport.cs:816",
-    "src/UI/BugReport.cs:1093",
+    "src/UI/BugReport.cs:817",
+    "src/UI/BugReport.cs:1094",
     "src/UI/ProfileScreen.cs:381"
   ],
   "Cancelled": [
@@ -1378,7 +1387,7 @@
     "src/Game/Skins/SkinCatalog.cs:78"
   ],
   "CATEGORY": [
-    "src/UI/BugReport.cs:863"
+    "src/UI/BugReport.cs:864"
   ],
   "Caught by your setup": [
     "src/Modes/DefenseModes.cs:716"
@@ -1405,10 +1414,10 @@
     "src/Modes/Agents/DuelistDrills.cs:430"
   ],
   "CHANGE": [
-    "src/Modes/SensFinderDraw.cs:173"
+    "src/Modes/SensFinderDraw.cs:192"
   ],
   "Change": [
-    "src/Modes/SensFinderMode.cs:805"
+    "src/Modes/SensFinderMode.cs:838"
   ],
   "Change it in SETTINGS → Language": [
     "src/UI/MenuScreen.cs:1444"
@@ -1435,7 +1444,7 @@
     "src/Analysis/Assess.cs:495"
   ],
   "CHECK": [
-    "src/Modes/SensFinderDraw.cs:232"
+    "src/Modes/SensFinderDraw.cs:251"
   ],
   "Check for updates": [
     "src/UI/SettingsScreen.cs:707"
@@ -1490,7 +1499,7 @@
     "src/Modes/MovementPlusModes.cs:320"
   ],
   "cleaner at {0}": [
-    "src/Modes/SensFinderMode.cs:807"
+    "src/Modes/SensFinderMode.cs:840"
   ],
   "CLEAR": [
     "src/Agents/AgentDrills.cs:312"
@@ -1532,7 +1541,7 @@
     "src/UI/SkinPicker.cs:368"
   ],
   "click error {0:0.00} vs {1:0.00} head radii · hits {2:0} vs {3:0}%": [
-    "src/Modes/SensFinderDraw.cs:197"
+    "src/Modes/SensFinderDraw.cs:216"
   ],
   "CLICK mark / remove   ·   RIGHT-CLICK launch   ·   {0} put away": [
     "src/Modes/Agents/ControllerDraw.cs:378"
@@ -1554,7 +1563,7 @@
   ],
   "CLICK TO CONTINUE": [
     "src/Modes/CrosshairFinderDraw.cs:514",
-    "src/Modes/SensFinderDraw.cs:153"
+    "src/Modes/SensFinderDraw.cs:167"
   ],
   "Click to pick from the buy menu · B in a drill's preview": [
     "src/UI/SettingsScreen.cs:518"
@@ -1566,7 +1575,7 @@
     "src/UI/SettingsCrosshair.cs:142"
   ],
   "CLICK TO START": [
-    "src/Modes/SensFinderDraw.cs:80"
+    "src/Modes/SensFinderDraw.cs:93"
   ],
   "click to switch back": [
     "src/UI/ProfileScreen.cs:685"
@@ -1587,7 +1596,7 @@
     "src/Analysis/Assess.cs:397"
   ],
   "CLOSE": [
-    "src/UI/BugReport.cs:1093",
+    "src/UI/BugReport.cs:1094",
     "src/UI/SupportPrompt.cs:137"
   ],
   "Close": [
@@ -1616,7 +1625,7 @@
     "src/UI/SettingsScreen.cs:438"
   ],
   "COACH": [
-    "src/UI/BugReport.cs:333",
+    "src/UI/BugReport.cs:334",
     "src/UI/MenuScreen.cs:306",
     "src/UI/MenuScreen.cs:829"
   ],
@@ -1709,11 +1718,11 @@
     "src/Modes/DefenseModes.cs:683"
   ],
   "CONFIDENCE": [
-    "src/Modes/SensFinderDraw.cs:176",
+    "src/Modes/SensFinderDraw.cs:195",
     "src/Warmup/LockInCheckIn.cs:205"
   ],
   "Confidence": [
-    "src/Modes/SensFinderMode.cs:806"
+    "src/Modes/SensFinderMode.cs:839"
   ],
   "confidence|High": [
     "src/Analysis/SensAdvisor.cs:137"
@@ -1734,13 +1743,13 @@
     "src/Analysis/SensAdvisor.cs:84"
   ],
   "confirm {0:+0.0;-0.0}σ": [
-    "src/Modes/SensFinderMode.cs:737"
+    "src/Modes/SensFinderMode.cs:770"
   ],
   "CONFIRM?": [
     "src/UI/SettingsScreen.cs:1132"
   ],
   "Confirmation · round {0} / {1}": [
-    "src/Modes/SensFinderMode.cs:778"
+    "src/Modes/SensFinderMode.cs:811"
   ],
   "Confirmed overall rank-up (coach)": [
     "src/UI/ProgressScreen.cs:124"
@@ -1784,20 +1793,20 @@
     "src/UI/SettingsScreen.cs:413"
   ],
   "Copied. Paste it anywhere (Ctrl+V).": [
-    "src/UI/BugReport.cs:1067"
+    "src/UI/BugReport.cs:1068"
   ],
   "Copied. Paste it in {0} on the ValTrainer Discord (Ctrl+V).": [
-    "src/UI/BugReport.cs:944",
-    "src/UI/BugReport.cs:1067"
+    "src/UI/BugReport.cs:945",
+    "src/UI/BugReport.cs:1068"
   ],
   "Copies one anonymous line (your rank and skill numbers, no names) to paste in #coach-calibration on the ValTrainer Discord. It helps calibrate the rank estimate.": [
     "src/UI/ProfileScreen.cs:321"
   ],
   "Copies the report and the info on the right as text, to paste anywhere": [
-    "src/UI/BugReport.cs:788"
+    "src/UI/BugReport.cs:789"
   ],
   "Copies your idea as text, to paste anywhere": [
-    "src/UI/BugReport.cs:788"
+    "src/UI/BugReport.cs:789"
   ],
   "copies your primary": [
     "src/Modes/CrosshairFinderMode.cs:202"
@@ -1816,11 +1825,11 @@
     "src/UI/MenuScreen.cs:708"
   ],
   "COPY IDEA": [
-    "src/UI/BugReport.cs:787",
-    "src/UI/BugReport.cs:1060"
+    "src/UI/BugReport.cs:788",
+    "src/UI/BugReport.cs:1061"
   ],
   "COPY IDEA & OPEN DISCORD": [
-    "src/UI/BugReport.cs:780"
+    "src/UI/BugReport.cs:781"
   ],
   "Copy it in VALORANT (Export Profile Code), then PASTE here": [
     "src/UI/SettingsScreen.cs:314"
@@ -1829,11 +1838,11 @@
     "src/Modes/CrosshairFinderMode.cs:1034"
   ],
   "COPY REPORT": [
-    "src/UI/BugReport.cs:787",
-    "src/UI/BugReport.cs:1060"
+    "src/UI/BugReport.cs:788",
+    "src/UI/BugReport.cs:1061"
   ],
   "COPY REPORT & OPEN DISCORD": [
-    "src/UI/BugReport.cs:777"
+    "src/UI/BugReport.cs:778"
   ],
   "COPY SYSTEM INFO": [
     "src/UI/SettingsScreen.cs:809"
@@ -1872,7 +1881,7 @@
     "src/Valorant/ValorantImporter.cs:282"
   ],
   "Couldn't send ({0}). {1} and post it in {2} on Discord instead.": [
-    "src/UI/BugReport.cs:1060"
+    "src/UI/BugReport.cs:1061"
   ],
   "Couldn't use {0} ({1}); saving to {2} instead": [
     "src/Core/Paths.cs:69"
@@ -2001,11 +2010,11 @@
     "src/Warmup/WarmupScreen.cs:225"
   ],
   "CURRENT": [
-    "src/Modes/SensFinderDraw.cs:282",
+    "src/Modes/SensFinderDraw.cs:301",
     "src/UI/ProfileScreen.cs:729"
   ],
   "current": [
-    "src/Modes/SensFinderDraw.cs:257"
+    "src/Modes/SensFinderDraw.cs:276"
   ],
   "CURRENT · FROM VALORANT": [
     "src/UI/ProfileScreen.cs:729"
@@ -2219,7 +2228,7 @@
     "src/UI/SettingsScreen.cs:796"
   ],
   "Describe your idea in at least {0} characters": [
-    "src/UI/BugReport.cs:369"
+    "src/UI/BugReport.cs:370"
   ],
   "Desert Camo": [
     "src/Game/Skins/SkinCatalog.cs:63"
@@ -2296,8 +2305,8 @@
     "src/UI/SettingsScreen.cs:791"
   ],
   "DISCORD USERNAME": [
-    "src/UI/BugReport.cs:877",
-    "src/UI/BugReport.cs:910"
+    "src/UI/BugReport.cs:878",
+    "src/UI/BugReport.cs:911"
   ],
   "DISPLAY": [
     "src/UI/SettingsScreen.cs:459"
@@ -2579,10 +2588,10 @@
     "src/UI/MenuScreen.cs:670"
   ],
   "eDPI 240 · {0:0} cm": [
-    "src/Modes/SensFinderDraw.cs:179"
+    "src/Modes/SensFinderDraw.cs:198"
   ],
   "EDPI · CM/360": [
-    "src/Modes/SensFinderDraw.cs:172"
+    "src/Modes/SensFinderDraw.cs:191"
   ],
   "Elite": [
     "src/Core/Difficulty.cs:38"
@@ -2766,7 +2775,7 @@
     "src/UI/ProgressScreen.cs:334"
   ],
   "Every step pointed {0}: your best may be beyond one run's reach (±50%). Use this for a few days, then run the finder again.": [
-    "src/Modes/SensFinderDraw.cs:147"
+    "src/Modes/SensFinderDraw.cs:161"
   ],
   "Everyone it touches can only see 7.5 m for 2 s.": [
     "src/Modes/Agents/InitiatorAbilities.cs:48"
@@ -2844,10 +2853,10 @@
     "src/Analysis/Assess.cs:710"
   ],
   "faster at {0}": [
-    "src/Modes/SensFinderMode.cs:808"
+    "src/Modes/SensFinderMode.cs:841"
   ],
   "faster than the pro median": [
-    "src/Modes/SensFinderDraw.cs:178"
+    "src/Modes/SensFinderDraw.cs:197"
   ],
   "Feeling flat? Put on your own up-tempo music for the first drills. Turn it off before the deathmatch.": [
     "src/Warmup/LockInWidgets.cs:22"
@@ -2879,7 +2888,7 @@
     "src/Modes/CrosshairFinderMode.cs:1003"
   ],
   "FINAL CHECK · ROUND {0} / {1}": [
-    "src/Modes/SensFinderDraw.cs:93"
+    "src/Modes/SensFinderDraw.cs:106"
   ],
   "Find a rhythm. Land on each target, then click.": [
     "src/Warmup/WarmupPlan.cs:61"
@@ -3037,13 +3046,13 @@
     "src/Analysis/InsightsBuilder.cs:142"
   ],
   "Flick to the head and click it": [
-    "src/Modes/SensFinderMode.cs:789"
+    "src/Modes/SensFinderMode.cs:822"
   ],
   "Flick to the head and shoot it": [
     "src/Modes/CrosshairFinderMode.cs:1015"
   ],
   "Flick {0} / {1}": [
-    "src/Modes/SensFinderMode.cs:781"
+    "src/Modes/SensFinderMode.cs:814"
   ],
   "FLICKING": [
     "src/UI/CoachUi.cs:113"
@@ -3055,7 +3064,7 @@
     "src/UI/CoachUi.cs:302"
   ],
   "Flicks": [
-    "src/Modes/SensFinderMode.cs:808"
+    "src/Modes/SensFinderMode.cs:841"
   ],
   "flicks": [
     "src/Analysis/Assess.cs:349",
@@ -3063,7 +3072,7 @@
     "src/Analysis/Assess.cs:470"
   ],
   "flicks and micro-adjustments were close at every step": [
-    "src/Modes/SensFinderDraw.cs:199"
+    "src/Modes/SensFinderDraw.cs:218"
   ],
   "Flicks have no micro-adjustment": [
     "src/Analysis/Assess.cs:356"
@@ -3072,10 +3081,10 @@
     "src/Analysis/Assess.cs:435"
   ],
   "flicks {0:+0.00;-0.00} · micro {1:+0.00;-0.00} · tracking {2:+0.00;-0.00}": [
-    "src/Modes/SensFinderDraw.cs:265"
+    "src/Modes/SensFinderDraw.cs:284"
   ],
   "flicks {0:+0.00;-0.00} · tracking {1:+0.00;-0.00}": [
-    "src/Modes/SensFinderDraw.cs:266"
+    "src/Modes/SensFinderDraw.cs:285"
   ],
   "Flicks {0} fall short the most ({1:+0;-0}%, {2} flicks).": [
     "src/UI/RewindDraw.cs:684"
@@ -3487,17 +3496,17 @@
     "src/UI/ProfileScreen.cs:758"
   ],
   "higher": [
-    "src/Modes/SensFinderDraw.cs:147",
+    "src/Modes/SensFinderDraw.cs:161",
     "src/UI/ProfileScreen.cs:758"
   ],
   "higher sens (less arm)": [
-    "src/Modes/SensFinderDraw.cs:173"
+    "src/Modes/SensFinderDraw.cs:192"
   ],
   "Higher than {0} of your last {1} Lock-In (vs your usual).|Higher than {0} of your last {1} Lock-Ins (vs your usual).": [
     "src/Warmup/WarmupSummary.cs:163"
   ],
   "HIGHER {0:+0.0;-0.0}σ": [
-    "src/Modes/SensFinderDraw.cs:261"
+    "src/Modes/SensFinderDraw.cs:280"
   ],
   "HIGHER → YOUR SENS": [
     "src/Warmup/WarmupScreen.cs:145"
@@ -3637,6 +3646,12 @@
   "Hunter initiator who reveals, chases down and pins enemies in place.": [
     "src/Agents/AgentRoster.cs:101"
   ],
+  "Hybrid": [
+    "src/Modes/SensFinderCore.cs:395"
+  ],
+  "Hybrid aimer": [
+    "src/Modes/SensFinderCore.cs:396"
+  ],
   "Ice": [
     "src/Game/Skins/SkinLooks.cs:101"
   ],
@@ -3647,7 +3662,7 @@
     "src/Analysis/Assess.cs:364"
   ],
   "If within 10%": [
-    "src/Modes/SensFinderMode.cs:811"
+    "src/Modes/SensFinderMode.cs:844"
   ],
   "IMM": [
     "src/UI/CoachUi.cs:21"
@@ -3674,7 +3689,7 @@
     "src/UI/SettingsScreen.cs:625"
   ],
   "in a few days": [
-    "src/Modes/SensFinderMode.cs:810"
+    "src/Modes/SensFinderMode.cs:843"
   ],
   "IN FLIGHT": [
     "src/Modes/Agents/DuelistKits.cs:501"
@@ -3687,7 +3702,7 @@
   ],
   "In VALORANT": [
     "src/Modes/CrosshairFinderMode.cs:1031",
-    "src/Modes/SensFinderMode.cs:812"
+    "src/Modes/SensFinderMode.cs:845"
   ],
   "IN YOUR USUAL RANGE": [
     "src/Warmup/WarmupData.cs:279"
@@ -3815,7 +3830,7 @@
     "src/Modes/MovementPlusModes.cs:204"
   ],
   "JOIN DISCORD": [
-    "src/UI/BugReport.cs:1016"
+    "src/UI/BugReport.cs:1017"
   ],
   "Join the ValTrainer Discord: release news, help, bug reports, suggestions and voice chats by rank": [
     "src/UI/MenuScreen.cs:343"
@@ -3867,7 +3882,7 @@
     "src/Modes/CrosshairFinderMode.cs:1062"
   ],
   "Keep my sens": [
-    "src/Modes/SensFinderMode.cs:830"
+    "src/Modes/SensFinderMode.cs:863"
   ],
   "keep practising": [
     "src/UI/Hud.cs:876"
@@ -3897,7 +3912,7 @@
     "src/Modes/CrosshairFinderDraw.cs:484"
   ],
   "Keep your crosshair on the target": [
-    "src/Modes/SensFinderMode.cs:792"
+    "src/Modes/SensFinderMode.cs:825"
   ],
   "KEEP YOUR CROSSHAIR: IT HELD UP": [
     "src/Modes/CrosshairFinderDraw.cs:486"
@@ -3915,7 +3930,7 @@
     "src/Analysis/SensAdvisor.cs:151"
   ],
   "KEEP YOUR SENSITIVITY: {0:0.000}": [
-    "src/Modes/SensFinderDraw.cs:128"
+    "src/Modes/SensFinderDraw.cs:142"
   ],
   "KEEP YOUR SNIPER DOT: IT HELD UP": [
     "src/Modes/CrosshairFinderDraw.cs:485"
@@ -3924,7 +3939,7 @@
     "src/Modes/CrosshairFinderMode.cs:1025"
   ],
   "KEEP {0:0.000} FOR NOW": [
-    "src/Modes/SensFinderDraw.cs:127"
+    "src/Modes/SensFinderDraw.cs:141"
   ],
   "Keeping the crosshair on a strafing target: time on target, lag behind it and how fast you re-acquire after a reversal.": [
     "src/UI/CoachUi.cs:137"
@@ -4468,14 +4483,14 @@
     "src/UI/ProfileScreen.cs:758"
   ],
   "lower": [
-    "src/Modes/SensFinderDraw.cs:147",
+    "src/Modes/SensFinderDraw.cs:161",
     "src/UI/ProfileScreen.cs:758"
   ],
   "lower sens (more arm)": [
-    "src/Modes/SensFinderDraw.cs:173"
+    "src/Modes/SensFinderDraw.cs:192"
   ],
   "LOWER {0:+0.0;-0.0}σ": [
-    "src/Modes/SensFinderDraw.cs:261"
+    "src/Modes/SensFinderDraw.cs:280"
   ],
   "LOWER → YOUR SENS": [
     "src/Warmup/WarmupScreen.cs:146"
@@ -4529,7 +4544,7 @@
     "src/Analysis/Assess.cs:381"
   ],
   "MAP": [
-    "src/UI/BugReport.cs:333",
+    "src/UI/BugReport.cs:334",
     "src/UI/MenuScreen.cs:1029",
     "src/UI/MenuScreen.cs:1047",
     "src/UI/MenuScreen.cs:1198",
@@ -4638,13 +4653,13 @@
     "src/Agents/AgentDrills.cs:303"
   ],
   "micro {0} vs {1}: settle {2:0} vs {3:0} ms · overshoot {4:0} vs {5:0}%": [
-    "src/Modes/SensFinderDraw.cs:196"
+    "src/Modes/SensFinderDraw.cs:215"
   ],
   "MICRO {0} · FLICKS {1}": [
-    "src/Modes/SensFinderDraw.cs:190"
+    "src/Modes/SensFinderDraw.cs:209"
   ],
   "Micro-adjust": [
-    "src/Modes/SensFinderMode.cs:807"
+    "src/Modes/SensFinderMode.cs:840"
   ],
   "Micro-adjustment after the flick: first-shot accuracy, how long you need to settle and how many corrections you make.": [
     "src/UI/CoachUi.cs:136"
@@ -4656,13 +4671,13 @@
     "src/Modes/SensFinderDraw.cs:71"
   ],
   "Micro-adjustment {0} / {1}": [
-    "src/Modes/SensFinderMode.cs:782"
+    "src/Modes/SensFinderMode.cs:815"
   ],
   "MICRO-ADJUSTMENTS VS FLICKS": [
-    "src/Modes/SensFinderDraw.cs:201"
+    "src/Modes/SensFinderDraw.cs:220"
   ],
   "micro-adjustments were close at every step": [
-    "src/Modes/SensFinderDraw.cs:200"
+    "src/Modes/SensFinderDraw.cs:219"
   ],
   "Microshot": [
     "src/Modes/AimPlusMicroshot.cs:16"
@@ -4752,6 +4767,12 @@
   "Mouse DPI": [
     "src/UI/SettingsScreen.cs:206"
   ],
+  "Mousepad: not set  ·  press P to set the width you can actually use": [
+    "src/Modes/SensFinderDraw.cs:83"
+  ],
+  "Mousepad: {0} cm of usable width  ·  P for presets, [ and ] to fine-tune": [
+    "src/Modes/SensFinderDraw.cs:82"
+  ],
   "Move (forward left back right)": [
     "src/UI/SettingsScreen.cs:613"
   ],
@@ -4812,16 +4833,16 @@
     "src/UI/MenuScreen.cs:946"
   ],
   "new": [
-    "src/Modes/SensFinderDraw.cs:257"
+    "src/Modes/SensFinderDraw.cs:276"
   ],
   "NEW BORDER": [
     "src/UI/ProgressWidgets.cs:552"
   ],
   "NEW DRILL": [
-    "src/UI/BugReport.cs:333"
+    "src/UI/BugReport.cs:334"
   ],
   "NEW HOLDS {0:+0.0;-0.0}σ": [
-    "src/Modes/SensFinderDraw.cs:260"
+    "src/Modes/SensFinderDraw.cs:279"
   ],
   "NEW PERSONAL BEST": [
     "src/UI/Hud.cs:869"
@@ -4849,7 +4870,7 @@
     "src/UI/ProgressScreen.cs:177"
   ],
   "NEXT ROUND": [
-    "src/Modes/SensFinderDraw.cs:91"
+    "src/Modes/SensFinderDraw.cs:104"
   ],
   "NEXT ROUND IN {0}  ·  CLICK TO CONTINUE": [
     "src/Modes/Agents/ControllerDraw.cs:611"
@@ -4885,7 +4906,7 @@
     "src/Core/UpdateCheck.cs:262"
   ],
   "no answer within 15 s": [
-    "src/UI/BugReport.cs:990"
+    "src/UI/BugReport.cs:991"
   ],
   "No breathing guide": [
     "src/Warmup/LockInCheckIn.cs:234"
@@ -4909,11 +4930,11 @@
     "src/Analysis/RunSummary.cs:63"
   ],
   "NO CLEAR SPLIT": [
-    "src/Modes/SensFinderDraw.cs:188"
+    "src/Modes/SensFinderDraw.cs:207"
   ],
   "no clear winner": [
-    "src/Modes/SensFinderMode.cs:807",
-    "src/Modes/SensFinderMode.cs:808"
+    "src/Modes/SensFinderMode.cs:840",
+    "src/Modes/SensFinderMode.cs:841"
   ],
   "NO COACHED RUNS YET": [
     "src/UI/ProfileScreen.cs:168"
@@ -4922,7 +4943,7 @@
     "src/Warmup/WarmupData.cs:276"
   ],
   "no connection": [
-    "src/UI/BugReport.cs:991"
+    "src/UI/BugReport.cs:992"
   ],
   "NO DATA": [
     "src/Warmup/WarmupCharts.cs:309"
@@ -5489,10 +5510,10 @@
     "src/UI/ProgressScreen.cs:333"
   ],
   "OPEN DISCORD": [
-    "src/UI/BugReport.cs:790"
+    "src/UI/BugReport.cs:791"
   ],
   "OPEN ON GITHUB": [
-    "src/UI/BugReport.cs:807"
+    "src/UI/BugReport.cs:808"
   ],
   "open sightline  ·  green = cut by your smoke": [
     "src/Modes/Agents/ControllerReplay.cs:144"
@@ -5507,7 +5528,7 @@
     "src/UI/SettingsScreen.cs:45"
   ],
   "Opens GitHub's issue form in your browser instead (needs a GitHub account; attach godot.log there)": [
-    "src/UI/BugReport.cs:812"
+    "src/UI/BugReport.cs:813"
   ],
   "Opens the Crosshair Finder (leaves this screen)": [
     "src/Warmup/LockInSetupCheck.cs:73"
@@ -5523,16 +5544,16 @@
     "src/UI/WhatsNewPanel.cs:148"
   ],
   "Opens the ValTrainer Discord invite in your browser": [
-    "src/UI/BugReport.cs:791"
+    "src/UI/BugReport.cs:792"
   ],
   "Opens the ValTrainer Discord invite: help, bug reports, suggestions and voice chats": [
     "src/UI/SettingsScreen.cs:792"
   ],
   "Opens your idea on the ValTrainer Discord (join the server first to see it)": [
-    "src/UI/BugReport.cs:801"
+    "src/UI/BugReport.cs:802"
   ],
   "Opens your report on the ValTrainer Discord (join the server first to see it)": [
-    "src/UI/BugReport.cs:802"
+    "src/UI/BugReport.cs:803"
   ],
   "Opens {0} in your browser": [
     "src/UI/SettingsScreen.cs:774",
@@ -5540,18 +5561,18 @@
     "src/UI/SupportPrompt.cs:119"
   ],
   "optional": [
-    "src/UI/BugReport.cs:860",
-    "src/UI/BugReport.cs:863",
-    "src/UI/BugReport.cs:904",
-    "src/UI/BugReport.cs:907",
+    "src/UI/BugReport.cs:861",
+    "src/UI/BugReport.cs:864",
+    "src/UI/BugReport.cs:905",
+    "src/UI/BugReport.cs:908",
     "src/UI/SupportPrompt.cs:89"
   ],
   "optional · T": [
     "src/Warmup/LockInCheckIn.cs:211"
   ],
   "optional, so we can reply": [
-    "src/UI/BugReport.cs:877",
-    "src/UI/BugReport.cs:910"
+    "src/UI/BugReport.cs:878",
+    "src/UI/BugReport.cs:911"
   ],
   "Optional. Saved on this PC only.": [
     "src/Warmup/LockInMatchLog.cs:388"
@@ -5579,7 +5600,7 @@
     "src/Game/Skins/SkinCatalog.cs:72"
   ],
   "OTHER": [
-    "src/UI/BugReport.cs:334"
+    "src/UI/BugReport.cs:335"
   ],
   "Other": [
     "src/Modes/AimModes.cs:333"
@@ -5987,16 +6008,16 @@
     "src/Modes/TacticalModes.cs:29"
   ],
   "posted in #bug-reports on Discord": [
-    "src/UI/BugReport.cs:745"
+    "src/UI/BugReport.cs:746"
   ],
   "posted in #suggestions on Discord": [
-    "src/UI/BugReport.cs:745"
+    "src/UI/BugReport.cs:746"
   ],
   "Posts the report and the info on the right to #bug-reports on the ValTrainer Discord": [
-    "src/UI/BugReport.cs:784"
+    "src/UI/BugReport.cs:785"
   ],
   "Posts your idea to #suggestions on the ValTrainer Discord": [
-    "src/UI/BugReport.cs:782"
+    "src/UI/BugReport.cs:783"
   ],
   "PRACTISE": [
     "src/UI/Hud.cs:1222",
@@ -6109,10 +6130,10 @@
     "src/Core/Difficulty.cs:39"
   ],
   "PRO MEDIAN": [
-    "src/Modes/SensFinderDraw.cs:179"
+    "src/Modes/SensFinderDraw.cs:198"
   ],
   "Pro median": [
-    "src/Modes/SensFinderMode.cs:809"
+    "src/Modes/SensFinderMode.cs:842"
   ],
   "PROGRESS": [
     "src/UI/ProgressScreen.cs:35"
@@ -6130,13 +6151,13 @@
     "src/Modes/CrosshairFinderDraw.cs:477"
   ],
   "Provisional": [
-    "src/Modes/SensFinderMode.cs:802"
+    "src/Modes/SensFinderMode.cs:835"
   ],
   "provisional (fatigue)": [
     "src/Modes/CrosshairFinderMode.cs:1023"
   ],
   "PROVISIONAL {0:0.000}: KEEP {1:0.000} FOR NOW": [
-    "src/Modes/SensFinderDraw.cs:127"
+    "src/Modes/SensFinderDraw.cs:141"
   ],
   "Pull at a constant speed for the first second; the Vandal climbs about 5°/s.": [
     "src/Analysis/Assess.cs:643"
@@ -6352,7 +6373,7 @@
   ],
   "RECOMMENDED": [
     "src/Modes/CrosshairFinderDraw.cs:388",
-    "src/Modes/SensFinderDraw.cs:283",
+    "src/Modes/SensFinderDraw.cs:302",
     "src/UI/ProfileScreen.cs:759",
     "src/UI/ProfileScreen.cs:765"
   ],
@@ -6431,7 +6452,7 @@
     "src/UI/ProfileScreen.cs:556"
   ],
   "REPORT A BUG": [
-    "src/UI/BugReport.cs:745",
+    "src/UI/BugReport.cs:746",
     "src/UI/MenuScreen.cs:336",
     "src/UI/SettingsScreen.cs:795"
   ],
@@ -6495,7 +6516,7 @@
   ],
   "Result": [
     "src/Modes/CrosshairFinderMode.cs:1023",
-    "src/Modes/SensFinderMode.cs:801"
+    "src/Modes/SensFinderMode.cs:834"
   ],
   "RESULTS": [
     "src/UI/Hud.cs:973",
@@ -6562,7 +6583,7 @@
     "src/Modes/MovementPlusModes.cs:212"
   ],
   "right at the pro median": [
-    "src/Modes/SensFinderDraw.cs:178"
+    "src/Modes/SensFinderDraw.cs:197"
   ],
   "Right side": [
     "src/Modes/MovementPlusModes.cs:28"
@@ -6632,7 +6653,7 @@
   ],
   "Round restarted after the pause": [
     "src/Modes/CrosshairFinderMode.cs:251",
-    "src/Modes/SensFinderMode.cs:161"
+    "src/Modes/SensFinderMode.cs:185"
   ],
   "Round {0}   Won {1}  Lost {2}": [
     "src/Modes/TacticalModes.cs:435",
@@ -6679,13 +6700,13 @@
     "src/UI/ProgressWidgets.cs:596"
   ],
   "Run again": [
-    "src/Modes/SensFinderMode.cs:810"
+    "src/Modes/SensFinderMode.cs:843"
   ],
   "RUN SENS FINDER": [
     "src/UI/ProfileScreen.cs:660"
   ],
   "Run the Sens Finder again on another day. If both runs agree within 10%, use the average of the two.": [
-    "src/Modes/SensFinderDraw.cs:148"
+    "src/Modes/SensFinderDraw.cs:162"
   ],
   "running from the Godot editor": [
     "src/Core/UpdaterInstall.cs:42"
@@ -6789,6 +6810,12 @@
   "Search agents, abilities or utility": [
     "src/UI/AgentsScreen.cs:149"
   ],
+  "Searching your current sens ±50%. Set your aiming style and mousepad to narrow it.": [
+    "src/Modes/SensFinderDraw.cs:88"
+  ],
+  "Searching {0:0}–{1:0} cm/360 (a 180° turn fits your pad; wrist aimers stay higher, arm aimers lower)": [
+    "src/Modes/SensFinderDraw.cs:87"
+  ],
   "SEARCHING…": [
     "src/UI/ProfileScreen.cs:581"
   ],
@@ -6796,7 +6823,7 @@
     "src/UI/SettingsKeybinds.cs:254"
   ],
   "secure connection failed": [
-    "src/UI/BugReport.cs:992"
+    "src/UI/BugReport.cs:993"
   ],
   "See it, flick, click. Let targets go once they're gone.": [
     "src/Agents/AgentDrills.cs:252"
@@ -6826,8 +6853,8 @@
     "src/Modes/CrosshairFinderMode.cs:1005"
   ],
   "SEND": [
-    "src/UI/BugReport.cs:774",
-    "src/UI/BugReport.cs:1091"
+    "src/UI/BugReport.cs:775",
+    "src/UI/BugReport.cs:1092"
   ],
   "Send a tether ahead and teleport to it when the moment is right.": [
     "src/Agents/AgentRoster.cs:89"
@@ -6842,10 +6869,10 @@
     "src/Agents/AgentDrills.cs:282"
   ],
   "SENDING…": [
-    "src/UI/BugReport.cs:1089"
+    "src/UI/BugReport.cs:1090"
   ],
   "Sending…": [
-    "src/UI/BugReport.cs:976"
+    "src/UI/BugReport.cs:977"
   ],
   "SENS": [
     "src/Warmup/WarmupCharts.cs:350",
@@ -6858,7 +6885,7 @@
     "src/Modes/SensFinderMode.cs:28"
   ],
   "SENS FINDER RESULT": [
-    "src/Modes/SensFinderDraw.cs:123"
+    "src/Modes/SensFinderDraw.cs:136"
   ],
   "SENS SHIFT {0:+0;-0}% → {1:+0;-0}%": [
     "src/Warmup/WarmupCharts.cs:249"
@@ -6907,19 +6934,19 @@
     "src/UI/ProfileScreen.cs:797"
   ],
   "SENT": [
-    "src/UI/BugReport.cs:1090"
+    "src/UI/BugReport.cs:1091"
   ],
   "Sent 7 m ahead. Press the key again to switch it on: for 9 s it zaps enemy utility within 18 m — their flashes die before they pop.": [
     "src/Modes/DefenseKit.cs:64"
   ],
   "Sent with it: ValTrainer {0} ({1}). Nothing about your PC.": [
-    "src/UI/BugReport.cs:879"
+    "src/UI/BugReport.cs:880"
   ],
   "Sent, thanks! Join the ValTrainer Discord to follow it: we reply in your post, and it's marked Added when an update adds it.": [
-    "src/UI/BugReport.cs:1022"
+    "src/UI/BugReport.cs:1023"
   ],
   "Sent, thanks! Join the ValTrainer Discord to follow it: we reply in your post, and it's marked Fixed when an update fixes it.": [
-    "src/UI/BugReport.cs:1023"
+    "src/UI/BugReport.cs:1024"
   ],
   "Sentinel": [
     "src/UI/AgentsWidgets.cs:112"
@@ -6940,7 +6967,7 @@
     "src/UI/Hud.cs:832"
   ],
   "set it yourself": [
-    "src/Modes/SensFinderMode.cs:812"
+    "src/Modes/SensFinderMode.cs:845"
   ],
   "set on the menu": [
     "src/UI/AgentsScreen.cs:138"
@@ -6952,7 +6979,7 @@
     "src/Agents/AgentDrills.cs:285"
   ],
   "SET VALORANT SENSITIVITY TO {0:0.000}  (WAS {1:0.000})": [
-    "src/Modes/SensFinderDraw.cs:129"
+    "src/Modes/SensFinderDraw.cs:143"
   ],
   "Set VALORANT sensitivity to {0:0.000} (was {1:0.000}, {2:+0;-0}%): eDPI {3:0}, {4:0.0} cm/360, higher than {5:0}% of pros' sens.{6}{7} Confidence: {8}.": [
     "src/Analysis/SensAdvisor.cs:167"
@@ -6973,10 +7000,10 @@
     "src/UI/ProfileScreen.cs:285"
   ],
   "SETTING {0}": [
-    "src/Modes/SensFinderDraw.cs:92"
+    "src/Modes/SensFinderDraw.cs:105"
   ],
   "Setting {0}": [
-    "src/Modes/SensFinderMode.cs:780"
+    "src/Modes/SensFinderMode.cs:813"
   ],
   "SETTINGS": [
     "src/Core/I18nCheck.cs:76",
@@ -7005,7 +7032,7 @@
     "src/Warmup/LockInSetupCheck.cs:33"
   ],
   "SF-dev": [
-    "src/Modes/SensFinderMode.cs:118"
+    "src/Modes/SensFinderMode.cs:119"
   ],
   "Shadowy controller who smokes from afar and teleports to unexpected angles.": [
     "src/Agents/AgentRoster.cs:182"
@@ -7106,14 +7133,14 @@
     "src/Modes/SensFinderDraw.cs:74"
   ],
   "SHORT TITLE": [
-    "src/UI/BugReport.cs:854",
-    "src/UI/BugReport.cs:898"
+    "src/UI/BugReport.cs:855",
+    "src/UI/BugReport.cs:899"
   ],
   "Short title, e.g. \"Crosshair is missing in Gridshot\"": [
-    "src/UI/BugReport.cs:897"
+    "src/UI/BugReport.cs:898"
   ],
   "Short title, e.g. \"Drill with crouch-spamming bots\"": [
-    "src/UI/BugReport.cs:853"
+    "src/UI/BugReport.cs:854"
   ],
   "Shot Dizzy": [
     "src/Modes/MapModes.cs:431"
@@ -7370,7 +7397,7 @@
     "src/Modes/DefenseModes.cs:683"
   ],
   "slower than the pro median": [
-    "src/Modes/SensFinderDraw.cs:178"
+    "src/Modes/SensFinderDraw.cs:197"
   ],
   "small corrections until on it": [
     "src/UI/RewindDraw.cs:553"
@@ -7589,7 +7616,7 @@
     "src/UI/GunPicker.cs:346"
   ],
   "SPLIT {0:+0.0;-0.0}σ": [
-    "src/Modes/SensFinderDraw.cs:260"
+    "src/Modes/SensFinderDraw.cs:279"
   ],
   "Spots (mid-jump)": [
     "src/Modes/MovementPlusModes.cs:146"
@@ -7709,7 +7736,7 @@
     "src/Modes/CrosshairFinderDraw.cs:397"
   ],
   "start from the new sens": [
-    "src/Modes/SensFinderMode.cs:811"
+    "src/Modes/SensFinderMode.cs:844"
   ],
   "Start it just before you swing.": [
     "src/Modes/Agents/DuelistKits.cs:1276"
@@ -7772,16 +7799,16 @@
     "src/Modes/Agents/InitiatorDrill.cs:596"
   ],
   "STEP {0} / {1} · ROUND {2} / {3}": [
-    "src/Modes/SensFinderDraw.cs:94"
+    "src/Modes/SensFinderDraw.cs:107"
   ],
   "Step {0} / {1} · round {2} / {3}": [
-    "src/Modes/SensFinderMode.cs:779"
+    "src/Modes/SensFinderMode.cs:812"
   ],
   "STEP {0} ±{1:0}%": [
-    "src/Modes/SensFinderDraw.cs:232"
+    "src/Modes/SensFinderDraw.cs:251"
   ],
   "STEPS TO REPRODUCE": [
-    "src/UI/BugReport.cs:904"
+    "src/UI/BugReport.cs:905"
   ],
   "still target": [
     "src/UI/RewindDraw.cs:397"
@@ -7853,7 +7880,7 @@
     "src/Modes/Agents/DuelistKits.cs:501"
   ],
   "SUGGEST A FEATURE": [
-    "src/UI/BugReport.cs:745",
+    "src/UI/BugReport.cs:746",
     "src/UI/MenuScreen.cs:339",
     "src/UI/SettingsScreen.cs:799"
   ],
@@ -8080,7 +8107,7 @@
     "src/Modes/CrosshairFinderCore.cs:397"
   ],
   "The idea can have at most {0} characters": [
-    "src/UI/BugReport.cs:370"
+    "src/UI/BugReport.cs:371"
   ],
   "The lock-in graph and every drill's result": [
     "src/Warmup/LockInHandoff.cs:77"
@@ -8111,11 +8138,11 @@
   ],
   "The title can have at most {0} characters": [
     "src/UI/BugReport.cs:55",
-    "src/UI/BugReport.cs:368"
+    "src/UI/BugReport.cs:369"
   ],
   "The title needs at least {0} characters": [
     "src/UI/BugReport.cs:54",
-    "src/UI/BugReport.cs:367"
+    "src/UI/BugReport.cs:368"
   ],
   "The VALORANT code of this crosshair: paste it in VALORANT → Settings → Crosshair → Import Profile Code": [
     "src/UI/MenuScreen.cs:711"
@@ -8139,7 +8166,7 @@
     "src/Core/Stats.cs:130"
   ],
   "Then": [
-    "src/Modes/SensFinderMode.cs:811"
+    "src/Modes/SensFinderMode.cs:844"
   ],
   "These are ValTrainer recordings (.vtt run data + .vtr 3D replay), played back inside ValTrainer's Rewind — not video files.": [
     "src/UI/SettingsScreen.cs:1121"
@@ -8172,10 +8199,10 @@
     "src/UI/AboutLicenses.cs:85"
   ],
   "This build can't send ideas itself: copies it, then opens the Discord invite so you can paste it in #suggestions": [
-    "src/UI/BugReport.cs:783"
+    "src/UI/BugReport.cs:784"
   ],
   "This build can't send reports itself: copies the report, then opens the Discord invite so you can paste it in #bug-reports": [
-    "src/UI/BugReport.cs:785"
+    "src/UI/BugReport.cs:786"
   ],
   "This code isn't valid: paste the whole code": [
     "src/UI/SettingsScreen.cs:988"
@@ -8248,7 +8275,7 @@
     "src/Game/Skins/SkinCatalog.cs:70"
   ],
   "TIE {0:+0.0;-0.0}σ": [
-    "src/Modes/SensFinderDraw.cs:261"
+    "src/Modes/SensFinderDraw.cs:280"
   ],
   "Tied for the lead ({0})": [
     "src/Modes/DeathmatchMode.cs:423"
@@ -8308,7 +8335,7 @@
     "src/Modes/AimPlusLongTaps.cs:21"
   ],
   "Tiny moves: settle on the small head, then click": [
-    "src/Modes/SensFinderMode.cs:790"
+    "src/Modes/SensFinderMode.cs:823"
   ],
   "Tip: {0}.": [
     "src/Modes/RecoilModes.cs:154"
@@ -8371,10 +8398,10 @@
     "src/Modes/DefenseSetup.cs:207"
   ],
   "Too many ideas, try again in {0} min. You can also COPY IDEA and post it in #suggestions.": [
-    "src/UI/BugReport.cs:1004"
+    "src/UI/BugReport.cs:1005"
   ],
   "Too many reports, try again in {0} min. You can also COPY REPORT and post it in #bug-reports.": [
-    "src/UI/BugReport.cs:1005"
+    "src/UI/BugReport.cs:1006"
   ],
   "Too many tries: wait an hour and try again": [
     "src/UI/SettingsScreen.cs:1053"
@@ -8431,10 +8458,10 @@
     "src/UI/CoachUi.cs:303"
   ],
   "Tracking next: keep your crosshair on the target": [
-    "src/Modes/SensFinderMode.cs:791"
+    "src/Modes/SensFinderMode.cs:824"
   ],
   "Tracking · {0:0} s": [
-    "src/Modes/SensFinderMode.cs:783"
+    "src/Modes/SensFinderMode.cs:816"
   ],
   "Trade my entry": [
     "src/Warmup/LockInWidgets.cs:14"
@@ -8569,7 +8596,7 @@
     "src/UI/DrillPreview.cs:233"
   ],
   "UI / SETTINGS": [
-    "src/UI/BugReport.cs:334"
+    "src/UI/BugReport.cs:335"
   ],
   "UI quality / Anisotropic": [
     "src/UI/SettingsScreen.cs:623"
@@ -8704,7 +8731,7 @@
     "src/Valorant/Keybinds.cs:351"
   ],
   "use the average": [
-    "src/Modes/SensFinderMode.cs:811"
+    "src/Modes/SensFinderMode.cs:844"
   ],
   "Use the same pull every time: start by bullet 2–3 and keep a steady speed.": [
     "src/Analysis/Assess.cs:652"
@@ -8734,7 +8761,7 @@
     "src/UI/ProfileScreen.cs:688"
   ],
   "Use {0} in ValTrainer": [
-    "src/Modes/SensFinderMode.cs:821"
+    "src/Modes/SensFinderMode.cs:854"
   ],
   "Use {0} to get in fast, stop, and win the first duel.": [
     "src/Agents/AgentDrills.cs:284"
@@ -8815,7 +8842,7 @@
     "src/Valorant/CrosshairList.cs:162"
   ],
   "VALORANT isn't changed automatically: set it yourself in VALORANT › Settings › General › Mouse › Sensitivity: Aim.": [
-    "src/Modes/SensFinderDraw.cs:144"
+    "src/Modes/SensFinderDraw.cs:158"
   ],
   "VALORANT keeps this account's crosshair profiles online, so this is the older crosshair saved on this PC; it may be out of date. Paste your crosshair code in Settings → Crosshair to use yours.": [
     "src/Valorant/ValorantImporter.cs:288"
@@ -8833,10 +8860,10 @@
     "src/UI/SettingsCrosshair.cs:41"
   ],
   "VALORANT sens": [
-    "src/Modes/SensFinderMode.cs:802"
+    "src/Modes/SensFinderMode.cs:835"
   ],
   "VALORANT SENSITIVITY": [
-    "src/Modes/SensFinderDraw.cs:171"
+    "src/Modes/SensFinderDraw.cs:190"
   ],
   "VALORANT {0}/{1}": [
     "src/Valorant/CrosshairList.cs:33"
@@ -8960,10 +8987,10 @@
     "src/UI/RewindView3D.cs:414"
   ],
   "VIEW MY IDEA": [
-    "src/UI/BugReport.cs:795"
+    "src/UI/BugReport.cs:796"
   ],
   "VIEW MY REPORT": [
-    "src/UI/BugReport.cs:795"
+    "src/UI/BugReport.cs:796"
   ],
   "Viewmodel (first-person gun)": [
     "src/UI/SettingsScreen.cs:502"
@@ -9045,10 +9072,10 @@
     "src/Analysis/Assess.cs:467"
   ],
   "was {0:0} · {1:0.0} cm  ({2} DPI)": [
-    "src/Modes/SensFinderDraw.cs:172"
+    "src/Modes/SensFinderDraw.cs:191"
   ],
   "was {0}": [
-    "src/Modes/SensFinderDraw.cs:171"
+    "src/Modes/SensFinderDraw.cs:190"
   ],
   "Watch the body for the moment it plants, then reverse immediately.": [
     "src/Analysis/Assess.cs:551"
@@ -9091,22 +9118,22 @@
     "src/Progress/Retro.cs:49"
   ],
   "WHAT DID YOU EXPECT?": [
-    "src/UI/BugReport.cs:907"
+    "src/UI/BugReport.cs:908"
   ],
   "what each one does · the drills that train it": [
     "src/UI/AgentsScreen.cs:461"
   ],
   "WHAT GETS SENT": [
-    "src/UI/BugReport.cs:916"
+    "src/UI/BugReport.cs:917"
   ],
   "WHAT HAPPENED?": [
-    "src/UI/BugReport.cs:901"
+    "src/UI/BugReport.cs:902"
   ],
   "What should have happened instead?": [
-    "src/UI/BugReport.cs:906"
+    "src/UI/BugReport.cs:907"
   ],
   "What should ValTrainer have? A drill, a setting, a map spot…": [
-    "src/UI/BugReport.cs:856"
+    "src/UI/BugReport.cs:857"
   ],
   "what the research supports": [
     "src/Warmup/WarmupScreen.cs:177"
@@ -9122,17 +9149,17 @@
     "src/Warmup/LockInHandoff.cs:204"
   ],
   "What went wrong? Error messages, what you saw on screen…": [
-    "src/UI/BugReport.cs:900"
+    "src/UI/BugReport.cs:901"
   ],
   "WHAT WON EACH STEP (HIGHER SENS →)": [
-    "src/Modes/SensFinderDraw.cs:208"
+    "src/Modes/SensFinderDraw.cs:227"
   ],
   "WHAT WORKS FOR YOU": [
     "src/Warmup/LockInMatchLog.cs:141",
     "src/Warmup/LockInMatchLog.cs:143"
   ],
   "What would it help you practice or fix?": [
-    "src/UI/BugReport.cs:859"
+    "src/UI/BugReport.cs:860"
   ],
   "WHAT YOU DO WELL": [
     "src/UI/ProfileScreen.cs:475"
@@ -9145,7 +9172,7 @@
     "src/UI/WhatsNewPanel.cs:121"
   ],
   "WHAT'S YOUR IDEA?": [
-    "src/UI/BugReport.cs:857"
+    "src/UI/BugReport.cs:858"
   ],
   "When it lands it reveals the enemies it can see and leaves a trail to them.": [
     "src/Modes/Agents/InitiatorAbilities.cs:54"
@@ -9193,7 +9220,7 @@
     "src/Warmup/WarmupScreen.cs:177"
   ],
   "WHY WOULD IT HELP?": [
-    "src/UI/BugReport.cs:860"
+    "src/UI/BugReport.cs:861"
   ],
   "Wide": [
     "src/Modes/PeekMixMode.cs:35"
@@ -9247,7 +9274,7 @@
     "src/UI/Hud.cs:1062"
   ],
   "with your text above, nothing else": [
-    "src/UI/BugReport.cs:916"
+    "src/UI/BugReport.cs:917"
   ],
   "with {0}'s own utility": [
     "src/UI/AgentsScreen.cs:486"
@@ -9256,7 +9283,7 @@
     "src/UI/AgentsScreen.cs:526"
   ],
   "within 2%: keep your sens": [
-    "src/Modes/SensFinderDraw.cs:173"
+    "src/Modes/SensFinderDraw.cs:192"
   ],
   "Without": [
     "src/Warmup/LockInMatchLog.cs:123"
@@ -9278,6 +9305,12 @@
   ],
   "won {0}/{1}, lost {2}, unfinished {3}": [
     "src/Modes/PeekMixMode.cs:441"
+  ],
+  "Wrist": [
+    "src/Modes/SensFinderCore.cs:395"
+  ],
+  "Wrist aimer": [
+    "src/Modes/SensFinderCore.cs:396"
   ],
   "X  {0} — PLACE YOUR STARS": [
     "src/Modes/Agents/ControllerDraw.cs:510"
@@ -9348,10 +9381,10 @@
     "src/UI/MenuScreen.cs:1359"
   ],
   "You just sent a report. You can send another in {0:0} s.": [
-    "src/UI/BugReport.cs:952"
+    "src/UI/BugReport.cs:953"
   ],
   "You just sent a suggestion. You can send another in {0:0} s.": [
-    "src/UI/BugReport.cs:952"
+    "src/UI/BugReport.cs:953"
   ],
   "You killed {0}": [
     "src/Modes/DeathmatchMode.cs:316"
@@ -9534,8 +9567,8 @@
     "src/Warmup/LockInHandoff.cs:136"
   ],
   "Your Discord username": [
-    "src/UI/BugReport.cs:876",
-    "src/UI/BugReport.cs:909"
+    "src/UI/BugReport.cs:877",
+    "src/UI/BugReport.cs:910"
   ],
   "YOUR ESTIMATED RANK · WHAT HOLDS YOU BACK · HOW TO FIX IT": [
     "src/UI/ProfileScreen.cs:106"
@@ -9610,7 +9643,7 @@
     "src/Warmup/LockInHandoff.cs:178"
   ],
   "Your idea is posted in #suggestions on the ValTrainer Discord, where other players can see it and react. Join the server to follow it: we reply in your post and mark it Added when an update adds it.": [
-    "src/UI/BugReport.cs:755"
+    "src/UI/BugReport.cs:756"
   ],
   "YOUR KEYBINDS": [
     "src/UI/SettingsKeybinds.cs:282"
@@ -9665,7 +9698,7 @@
     "src/UI/DrillPreview.cs:190"
   ],
   "Your report is posted in #bug-reports on the ValTrainer Discord, where server members can see it. Join the server to follow it: we reply in your post and mark it Fixed when an update fixes it. Personal details like your Windows user name are removed.": [
-    "src/UI/BugReport.cs:756"
+    "src/UI/BugReport.cs:757"
   ],
   "YOUR RUNS PER DRILL AND TIER · SCORES ARE ONLY COMPARABLE WITHIN A TIER": [
     "src/UI/StatsScreen.cs:73"
@@ -9769,7 +9802,7 @@
     "src/Progress/ProgressApi.cs:301"
   ],
   "yours is {0} (pros: 150–400 eDPI)": [
-    "src/Modes/SensFinderDraw.cs:179"
+    "src/Modes/SensFinderDraw.cs:198"
   ],
   "YOURS NOW": [
     "src/Modes/CrosshairFinderDraw.cs:152"
@@ -9782,7 +9815,7 @@
     "src/Core/I18nCheck.cs:73"
   ],
   "{0:+0.0;-0.0}% · keep yours": [
-    "src/Modes/SensFinderMode.cs:805"
+    "src/Modes/SensFinderMode.cs:838"
   ],
   "{0:+0;-0} pts": [
     "src/Warmup/WarmupSummary.cs:115"
@@ -9791,7 +9824,7 @@
     "src/Modes/RecoilModes.cs:365"
   ],
   "{0:0.0}  (was {1:0.0})": [
-    "src/Modes/SensFinderMode.cs:804"
+    "src/Modes/SensFinderMode.cs:837"
   ],
   "{0:0.0} corrections": [
     "src/Analysis/Assess.cs:182"
@@ -9875,10 +9908,10 @@
     "src/UI/RewindDraw.cs:387"
   ],
   "{0:0}  (was {1:0})": [
-    "src/Modes/SensFinderMode.cs:803"
+    "src/Modes/SensFinderMode.cs:836"
   ],
   "{0:0} cm": [
-    "src/Modes/SensFinderDraw.cs:280"
+    "src/Modes/SensFinderDraw.cs:299"
   ],
   "{0:0} eDPI · {1:0.0} cm/360": [
     "src/UI/ProfileScreen.cs:726"
@@ -9969,7 +10002,7 @@
     "src/UI/DrillPreview.cs:152"
   ],
   "{0:0} · {1:0.0} cm": [
-    "src/Modes/SensFinderDraw.cs:172"
+    "src/Modes/SensFinderDraw.cs:191"
   ],
   "{0:0} · {1:0.0} cm @ {2} DPI": [
     "src/UI/MenuScreen.cs:670"
@@ -10110,7 +10143,7 @@
     "src/Modes/Agents/DuelistKits.cs:1212"
   ],
   "{0}  (was {1})": [
-    "src/Modes/SensFinderMode.cs:802"
+    "src/Modes/SensFinderMode.cs:835"
   ],
   "{0}  (yours)": [
     "src/Modes/CrosshairFinderDraw.cs:310"
@@ -10339,7 +10372,7 @@
     "src/Modes/Agents/InitiatorDrill.cs:362"
   ],
   "{0} flicks, then {1:0} s tracking": [
-    "src/Modes/SensFinderDraw.cs:97"
+    "src/Modes/SensFinderDraw.cs:110"
   ],
   "{0} flicks, {1} far heads, then kill the agent. Look around to get a feel for it.": [
     "src/Modes/CrosshairFinderDraw.cs:424"
@@ -10351,10 +10384,10 @@
     "src/Modes/CrosshairFinderDraw.cs:423"
   ],
   "{0} flicks, {1} micro-adjustments, then {2:0} s tracking": [
-    "src/Modes/SensFinderDraw.cs:96"
+    "src/Modes/SensFinderDraw.cs:109"
   ],
   "{0} flip|{0} flips": [
-    "src/Modes/SensFinderMode.cs:736"
+    "src/Modes/SensFinderMode.cs:769"
   ],
   "{0} found · most important first · click to expand": [
     "src/UI/ProfileScreen.cs:450"
@@ -10723,11 +10756,14 @@
   "{0} · {1} ({2} sample)|{0} · {1} ({2} samples)": [
     "src/UI/CoachUi.cs:647"
   ],
+  "{0} · {1} cm pad: searched {2:0}–{3:0} cm/360": [
+    "src/Modes/SensFinderDraw.cs:173"
+  ],
   "{0} · {1} drill|{0} · {1} drills": [
     "src/Warmup/WarmupCharts.cs:101"
   ],
   "{0} · {1} flip|{0} · {1} flips": [
-    "src/Modes/SensFinderMode.cs:806"
+    "src/Modes/SensFinderMode.cs:839"
   ],
   "{0} · {1} TIER · {2} IN TOTAL · {3} DRILLS": [
     "src/Warmup/LockInHandoff.cs:72"
@@ -10785,7 +10821,7 @@
     "src/UI/GunPicker.cs:336"
   ],
   "{0}. Move your mouse to get a feel for it.": [
-    "src/Modes/SensFinderDraw.cs:98"
+    "src/Modes/SensFinderDraw.cs:111"
   ],
   "{0}/s · {1} rds · {2}": [
     "src/UI/GunPicker.cs:505"
@@ -10794,7 +10830,7 @@
     "src/Modes/SheriffMode.cs:340"
   ],
   "{0}/{1} decisive": [
-    "src/Modes/SensFinderMode.cs:734"
+    "src/Modes/SensFinderMode.cs:767"
   ],
   "{0}/{1} on target": [
     "src/Modes/RecoilModes.cs:245"
@@ -10834,6 +10870,9 @@
   ],
   "{0}: scope early, crosshair where they'll appear, one clean shot.": [
     "src/Agents/AgentDrills.cs:287"
+  ],
+  "{0}: searched {1:0}–{2:0} cm/360": [
+    "src/Modes/SensFinderDraw.cs:174"
   ],
   "{0}: switch the Interceptor on": [
     "src/Modes/DefenseModes.cs:583"

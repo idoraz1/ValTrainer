@@ -40,6 +40,7 @@ public static class CultureCheck
             DataChecks(root);
             DisplayChecks(fixActive);
             SkinAudioChecks();
+            SensFinderRangeChecks();
         }
         catch (Exception e) { Fail("unexpected exception", e.ToString()); }
         finally
@@ -1042,6 +1043,69 @@ public static class CultureCheck
 
     /// <summary>Skin sound sets (skins2-design §5.4): every line with sound features has every file it needs
     /// (assets/audio/skins, tools/sfx/skin_sfx.py), and every gun has a fire-layer class.</summary>
+    /// <summary>Sens Finder aiming style / mousepad range (SfRange): Hybrid with no pad is the old behaviour, the pad caps
+    /// cm/360 at 1.6 × width, wrist searches higher sens than arm, and a simulated bisection (random winners, every
+    /// half-width set) never proposes a sens outside [Lo, Hi].</summary>
+    static void SensFinderRangeChecks()
+    {
+        const int dpi = 800;
+        var def = Modes.SfRange.For(Modes.SfStyle.Hybrid, 0);
+        Check("sens finder: hybrid + no pad = old 20-80 start, 15-100 run, not strict",
+            def.StartLo == 20f && def.StartHi == 80f && def.Lo == 15f && def.Hi == 100f && !def.Strict, def.ToString());
+        float s0 = Modes.SfUnits.SensForCm(120f, dpi);
+        Check("sens finder: default step centre / tested sens unchanged", def.StepCentre(s0, dpi, 1.4f) == s0 && def.Tested(s0, dpi) == s0);
+        var w = Modes.SfRange.For(Modes.SfStyle.Wrist, 40);
+        var arm = Modes.SfRange.For(Modes.SfStyle.Arm, 40);
+        Check("sens finder: wrist searches higher sens than arm", w.Hi < arm.Hi && w.Lo < arm.Lo && w.StartHi <= arm.StartLo, $"{w} / {arm}");
+        var cfgs = new[] { Modes.SensFinderConfig.Full(), Modes.SensFinderConfig.Short(), Modes.SensFinderConfig.Quick() };
+        var rng = new Random(7);
+        var bad = new List<string>();
+        int runs = 0;
+        foreach (var style in Enum.GetValues<Modes.SfStyle>())
+            foreach (int pad in Modes.SfRange.PadPresets.Concat(new[] { 15, 20, 60, 120 }))
+            {
+                var r = Modes.SfRange.For(style, pad);
+                if (!(r.Lo > 0 && r.Hi / r.Lo >= Modes.SfRange.MinRatio - 1e-4f && r.StartLo >= r.Lo && r.StartHi <= r.Hi && r.StartLo <= r.StartHi))
+                    bad.Add($"shape {r}");
+                if (pad > 0 && r.Hi > Modes.SfRange.PadFactor * pad + 1e-3f) bad.Add($"pad cap {r}");
+                if (!r.Strict) continue;
+                foreach (var cfg in cfgs)
+                    foreach (float startCm in new[] { 8f, 18f, 30f, 45f, 70f, 140f })
+                        for (int rep = 0; rep < 20; rep++)
+                        {
+                            runs++;
+                            float c = r.StartCentre(Modes.SfUnits.SensForCm(startCm, dpi), dpi);
+                            foreach (float hw in cfg.HalfWidths)
+                            {
+                                c = r.StepCentre(c, dpi, hw);
+                                foreach (float t in new[] { r.Tested(c / hw, dpi), r.Tested(c * hw, dpi) })
+                                {
+                                    float cm = Modes.SfUnits.Cm360(t, dpi);
+                                    if (cm < r.Lo - 0.01f || cm > r.Hi + 0.01f) bad.Add($"{style}/{pad} start {startCm}: tested {cm:0.0} cm outside {r.Lo:0.0}-{r.Hi:0.0}");
+                                }
+                                // untouched L / H must already fit (the guard in Tested should never be needed)
+                                float lCm = Modes.SfUnits.Cm360(c / hw, dpi), hCm = Modes.SfUnits.Cm360(c * hw, dpi);
+                                if (lCm > r.Hi + 0.01f || hCm < r.Lo - 0.01f) bad.Add($"{style}/{pad}: step centre lets L/H out ({hCm:0.0}-{lCm:0.0})");
+                                int win = rng.Next(3);
+                                float h = MathF.Log(hw);
+                                if (win == 0) c *= MathF.Exp(-h / 2); else if (win == 1) c *= MathF.Exp(h / 2);
+                                c = r.Run(c, dpi);
+                            }
+                            float rec = r.Run(MathF.Sqrt(c * Modes.SfUnits.SensForCm(startCm, dpi)), dpi);
+                            float recCm = Modes.SfUnits.Cm360(rec, dpi);
+                            if (recCm < r.Lo - 0.01f || recCm > r.Hi + 0.01f) bad.Add($"{style}/{pad}: result {recCm:0.0} cm outside");
+                        }
+            }
+        Check($"sens finder: style/pad ranges keep every tested sens and result inside [Lo, Hi] ({runs} simulated runs)", bad.Count == 0,
+            string.Join("; ", bad.Distinct().Take(6)));
+        var wrist40 = Modes.SfRange.For(Modes.SfStyle.Wrist, 40);
+        var arm25 = Modes.SfRange.For(Modes.SfStyle.Arm, 25);
+        Check("sens finder: arm + 25 cm pad = 20-40 cm/360; wrist + 40 cm = 15-40",
+            MathF.Abs(arm25.Lo - 20f) < 1e-3f && MathF.Abs(arm25.Hi - 40f) < 1e-3f && wrist40.Lo == 15f && wrist40.Hi == 40f, $"{arm25} / {wrist40}");
+        Godot.GD.Print("[culture-test] sens finder ranges (cm/360): " + string.Join(" | ", Enum.GetValues<Modes.SfStyle>().SelectMany(st =>
+            Modes.SfRange.PadPresets.Select(pd => { var q = Modes.SfRange.For(st, pd); return FormattableString.Invariant($"{st}/{pd}: {q.Lo:0.#}-{q.Hi:0.#} start {q.StartLo:0.#}-{q.StartHi:0.#}"); }))));
+    }
+
     static void SkinAudioChecks()
     {
         var missing = new List<string>();

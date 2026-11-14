@@ -12,10 +12,10 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 - Microshot Dense (suggested on Discord): a new Aim drill with two small heads on screen at once, close together. Hit one and it reappears right next to the other, so every shot is a tiny, precise correction at speed. Higher tiers bring smaller gaps and farther heads. Accidental double-clicks are forgiven, like in Microshot and Gridshot.
 - Unlimited ammo (suggested on Discord): drills with real magazines (the bot drills, Sheriff One-Taps, the peek drills, Operator and more) get an AMMO row in their preview. Press U or click it to play without reloads; ValTrainer remembers it per drill. These runs still get a score and a coach review but don't count for your personal bests, because skipping reloads makes scores incomparable. The spray drills keep their real magazine: the magazine is the spray.
 - Settings → Graphics → Renderer: pick Vulkan, DirectX 12 or OpenGL (safe graphics), or leave it on Auto. It applies when you restart ValTrainer.
+- Sens Finder: aiming style and mousepad (suggested on Discord). On its start screen, press T to pick Wrist, Hybrid or Arm, and P to pick the width of mousepad you can actually use (25, 32, 40, 45 or 90 cm; [ and ] fine-tune it by 1 cm). The test then only tries sensitivities that suit you: wrist aimers get a higher-sens range that fits a comfortable wrist turn, arm aimers a lower one, and a 180° turn always fits on your pad. The result says what was searched, e.g. "Wrist aimer · 40 cm pad: searched 15–40 cm/360". ValTrainer remembers both. If you leave them on Hybrid and not set, the test works exactly as before.
 
 ### Fixed
 - ValTrainer closing by itself as soon as a bot appeared on some laptops with Intel graphics (reported on Discord). That was the graphics driver crashing on Vulkan. Now, if ValTrainer didn't close normally last time, it restarts on DirectX 12 and says so on the menu, and if DirectX 12 crashes too, it switches to OpenGL. You can change it back in Settings → Graphics → Renderer. If you're affected on 1.19.0, start ValTrainer with the "ValTrainer (safe graphics)" shortcut in the Start menu until you update.
-
 
 ## [1.19.0] - 2026-11-12
 
