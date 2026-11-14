@@ -20,7 +20,7 @@ public sealed record AgentInfo(string Key, string Name, string Mono, AgentRole R
 }
 
 /// <summary>
-/// All 29 playable agents (valorant-api.com, isPlayableCharacter). Names of agents and abilities are used descriptively;
+/// All 30 playable agents (valorant-api.com, isPlayableCharacter; Hush, patch 13.09, added by hand). Names of agents and abilities are used descriptively;
 /// every summary is our own wording. Keys follow the in-game keybinds (C / Q / E / X), which for Phoenix and Deadlock
 /// differ from the API's internal slot names.
 /// </summary>
@@ -31,6 +31,14 @@ public static class AgentRoster
     public static readonly AgentInfo[] All =
     {
         // ---------------- duelists ----------------
+        new("hush", "Hush", "HU", AgentRole.Duelist, L.N("Telekinetic duelist who grapples to odd angles, drags defenders out of cover and flashes the way in."), new[]
+        {
+            A("C", "Flow", L.N("Drops an anchor where you aim and pulls you to it, even up onto a ledge."), "mobility:hush"),
+            A("Q", "Flashbulb", L.N("A flash you can steer toward your crosshair in flight."), "flashpeek:hush"),
+            A("E", "Displacement", L.N("Drags nearby enemies toward its blast and concusses on impact."), "mobility:hush"),
+            A("X", "Suspension", L.N("Steer an orb with your crosshair, then burst it to lift everyone caught into the air.")),
+            A("", "Telekinesis", L.N("Grab guns and the spike, and use switches, from afar.")),
+        }),
         new("iso", "Iso", "IS", AgentRole.Duelist, L.N("Duel specialist who shields up and takes fights one enemy at a time."), new[]
         {
             A("C", "Contingency", L.N("Pushes a bulletproof wall of energy ahead of you.")),

@@ -22,7 +22,8 @@ param(
   [string[]]$Modes = @("peek_mix", "flick", "gridshot", "spider", "tracking", "strafebots", "peek", "operator", "spray_vandal",
                        "spray_phantom", "spray_transfer", "counterstrafe", "peekduel", "siteclear", "flashmap", "deathmatch",
                        "microshot", "switch", "popup", "longtaps", "sheriff", "strafeduel", "jumppeek", "jigglepeek", "postplant", "retake",
-                       "anchor", "sound", "flashpeek:phoenix", "recon:sova", "smokeexec:omen", "mobility:jett", "chamber:headhunter"),
+                       "anchor", "sound", "flashpeek:phoenix", "recon:sova", "smokeexec:omen", "mobility:jett", "chamber:headhunter",
+                       "flashpeek:hush", "mobility:hush"),
   # Smoke runs with a picked gun ("mode@Gun", dev --gun): each class of gun (shotgun, sidearm, sniper, SMG, machine gun)
   # in a drill that offers it. The run must play that gun, finish, and its telemetry and 3D Rewind header must name it.
   [string[]]$GunRuns = @("peek@Judge", "gridshot@Ghost", "operator@Outlaw", "spray_transfer@Spectre", "strafebots@Odin",
@@ -191,9 +192,12 @@ Report "skin audio test$detail" ($why -eq "") $why $r
 # ---- 4. Smoke test: each drill runs 5 s with the simulated player, then its telemetry must load in the coach ----
 if (-not $SkipSmoke) {
   foreach ($m in $Modes) {
+    # Agent drills also cast their abilities (dev auto-input: --autoability for Mobility Entry, --autothrow for Flash & Peek
+    # and Recon), so the smoke run exercises the kit and not just the gun.
+    $auto = if ($m -like "mobility:*") { @("--autoability") } elseif ($m -like "flashpeek:*" -or $m -like "recon:*") { @("--autothrow") } else { @() }
     # 3 s countdown + 5 s run = 8 s = 960 fixed frames; quit after 1500 frames (12.5 s of game time).
     $r = Invoke-Godot "smoke-$m" (@("--headless", "--fixed-fps", "120", "--quit-after", "1500", "--path", $Project, "--") + $sandbox +
-                                  @("--mode", $m, "--simaim", "good", "--duration", "5", "--telemetry-out", $tel))
+                                  @("--mode", $m, "--simaim", "good", "--duration", "5", "--telemetry-out", $tel) + $auto)
     $safe = $m -replace '[:\/*?"<>|]', '-'   # telemetry file names replace ':' (agent drills) with '-'
     $vtt = @(Get-ChildItem $tel -Filter "*_$safe.vtt" -ErrorAction SilentlyContinue)
     $ex = Get-Exceptions $r.Text

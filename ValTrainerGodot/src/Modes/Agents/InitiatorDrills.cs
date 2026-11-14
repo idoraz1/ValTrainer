@@ -10,7 +10,7 @@ namespace ValTrainer.Modes;
 public sealed class FlashPeekMode : InitiatorDrill
 {
     /// <summary>Arguments this drill supports (lower-case agent keys); the Agents screen lists one entry per item.</summary>
-    public static readonly string[] Agents = { "phoenix", "skye", "yoru", "kayo", "breach", "gekko", "reyna", "omen" };
+    public static readonly string[] Agents = { "phoenix", "skye", "yoru", "kayo", "breach", "gekko", "reyna", "omen", "hush" };
     public readonly string Agent;
 
     public FlashPeekMode(string agent = "phoenix") : base(AbilityFor(agent)) => Agent = Ability.AgentKey;

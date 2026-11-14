@@ -6,7 +6,7 @@ namespace ValTrainer.Game.Fx;
 /// <summary>
 /// Synthesized cues for the duelist drills (no samples; built once): wind gust (Tailwind prime / dash), updraft whoosh,
 /// sprint hum and slide (High Gear), satchel throw / beep / blast (Blast Pack), soul orb, intangible (Dismiss), rift tether
-/// hum and teleport (Gatecrash), light dash and refract (Waylay), shield form / break and orb (Double Tap). Same flat
+/// hum and teleport (Gatecrash), light dash and refract (Waylay), shield form / break and orb (Double Tap), Flow, Displacement and Flashbulb (Hush). Same flat
 /// VALORANT-like distance curve and pooling as <see cref="AbilitySfx"/>.
 /// </summary>
 public static class DuelistSfx
@@ -63,6 +63,21 @@ public static class DuelistSfx
         Add("shield_on", 0.6f, t => (Sin(520f, t) * 0.3f + Sin(780f, t) * 0.2f + Sin(1040f, t) * 0.1f) * Env(t, 0.05f, 0.22f));
         Add("shield_break", 0.5f, t => (LP(N(), 0.7f) * 0.7f + Sin(1400f - 1000f * t, t) * 0.3f) * Env(t, 0.002f, 0.12f));
         Add("iso_orb", 0.4f, t => (Sin(660f, t) * 0.25f + Sin(990f, t) * 0.15f) * Env(t, 0.01f, 0.15f));
+        // Hush (our own synthesis): Flow anchor ping + rising pull, Displacement thrum / implosion, Flashbulb throw / turn / stick.
+        Add("flow_anchor", 0.5f, t => (Sin(740f, t) * 0.25f + Sin(1110f, t) * 0.12f + Sin(55f, t) * Env(t, 0.003f, 0.06f) * 0.4f) * Env(t, 0.004f, 0.18f));
+        Add("flow_pull", 0.7f, t => (LP(N(), 0.08f + 0.25f * Env(t, 0.05f, 0.25f)) * 1.1f + Sin(200f + 700f * t, t) * 0.16f) * Env(t, 0.03f, 0.25f));
+        Add("displace_throw", 0.35f, t => (LP(N(), 0.25f) * 0.6f + Sin(260f + 200f * Sin(18f, t), t) * 0.2f) * Env(t, 0.005f, 0.1f));
+        Add("displace_stick", 0.25f, t => (LP(N(), 0.6f) * 0.5f + Sin(900f - 600f * t, t) * 0.2f) * Env(t, 0.002f, 0.06f));
+        Add("displace_blast", 1.1f, t =>
+        {
+            float suck = Sin(90f + 260f * MathF.Max(0f, 0.25f - t) * 4f, t) * Env(t, 0.01f, 0.3f) * 0.6f; // falling "inhale"
+            float whoosh = LP(N(), 0.05f + 0.2f * Env(t, 0.15f, 0.2f)) * Env(t, 0.12f, 0.35f) * 1.6f;
+            float thud = Sin(48f, t) * Env(t - 0.18f, 0.004f, 0.2f) * 0.8f;
+            return suck + whoosh + thud;
+        });
+        Add("flashbulb_throw", 0.3f, t => (LP(N(), 0.3f) * 0.5f + Sin(1500f + 900f * t, t) * 0.12f) * Env(t, 0.004f, 0.08f));
+        Add("flashbulb_redirect", 0.35f, t => (Sin(1250f + 1500f * t, t) * 0.22f + Sin(2500f + 3000f * t, t) * 0.08f) * Env(t, 0.003f, 0.1f));
+        Add("flashbulb_stick", 0.2f, t => (LP(N(), 0.7f) * 0.4f + Sin(1800f, t) * 0.15f) * Env(t, 0.001f, 0.05f));
         Add("empty", 0.16f, t => Sin(220, t) * Env(t, 0.002f, 0.05f) * 0.4f);
     }
 

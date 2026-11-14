@@ -8,6 +8,13 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Added
+- Hush, the new Duelist (suggested on Discord), on the Agents screen with two signature drills played with her own abilities on your VALORANT keybinds:
+  - **Mobility Entry (Hush):** Flow (C) drops an anchor where you aim and pulls you to it, even up onto a ledge, for an off-angle entry. Displacement (E) drags defenders out of cover toward its blast and concusses anyone who slams into a wall or another player. LMB throws it, RMB sticks it to a wall, and the key again sends it toward your crosshair.
+  - **Flash & Peek (Hush):** throw Flashbulb (Q) and redirect it toward your crosshair in flight (or stick it to a wall and launch it later), then swing while the defenders are blind.
+
+  Riot has only published the inputs, Displacement's reset every two kills and the 8-point ultimate. Every distance, speed and time here (Flow's 15 m reach, 0.4 s delay and 18 m/s, the 7 m pull, the flash's 2 s blind and so on) is an estimate, and will be updated when real values are known. Her sounds and effects are ValTrainer's own. Suspension and Telekinesis are listed, but don't have a drill.
+
 ## [1.19.0] - 2026-11-12
 
 ### Added

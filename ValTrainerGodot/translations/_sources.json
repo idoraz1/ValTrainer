@@ -158,76 +158,76 @@
     "src/Modes/DefenseModes.cs:597"
   ],
   "A bending wall of flame that blocks sight and burns whoever crosses it.": [
-    "src/Agents/AgentRoster.cs:58"
+    "src/Agents/AgentRoster.cs:66"
   ],
   "a bold centre that stays visible on busy walls": [
     "src/Modes/CrosshairFinderCore.cs:388"
   ],
   "A bolt that bounces once and concusses where it hits.": [
-    "src/Agents/AgentRoster.cs:52"
+    "src/Agents/AgentRoster.cs:60"
   ],
   "A bolt that slips through walls and leaves enemies vulnerable.": [
-    "src/Agents/AgentRoster.cs:37"
+    "src/Agents/AgentRoster.cs:45"
   ],
   "A BOT": [
     "src/Modes/DeathmatchMode.cs:300"
   ],
   "A bot that hunts enemies in range and leaves them vulnerable.": [
-    "src/Agents/AgentRoster.cs:223"
+    "src/Agents/AgentRoster.cs:231"
   ],
   "A buddy that runs ahead to concuss the first enemy, or plants and defuses.": [
-    "src/Agents/AgentRoster.cs:111"
+    "src/Agents/AgentRoster.cs:119"
   ],
   "A buddy that soars forward and blinds enemies with plasma.": [
-    "src/Agents/AgentRoster.cs:112"
+    "src/Agents/AgentRoster.cs:120"
   ],
   "A burst of light that badly slows movement and firing nearby.": [
-    "src/Agents/AgentRoster.cs:80"
+    "src/Agents/AgentRoster.cs:88"
   ],
   "A burst of metal thorns that jams enemies' main weapons.": [
-    "src/Agents/AgentRoster.cs:246"
+    "src/Agents/AgentRoster.cs:254"
   ],
   "A canister that leaves a damaging acid pool.": [
-    "src/Agents/AgentRoster.cs:191"
+    "src/Agents/AgentRoster.cs:199"
   ],
   "A charge that goes through a wall and bursts three times on the far side.": [
-    "src/Agents/AgentRoster.cs:96"
+    "src/Agents/AgentRoster.cs:104"
   ],
   "A charged quake that dazes everyone along a long strip.": [
-    "src/Agents/AgentRoster.cs:98"
+    "src/Agents/AgentRoster.cs:106"
   ],
   "A charged sonic blast that knocks back, deafens and slows.": [
-    "src/Agents/AgentRoster.cs:180"
+    "src/Agents/AgentRoster.cs:188"
   ],
   "a check-in, aim, role and signature drills and a deathmatch in about 10 minutes, then your goal and cue.": [
     "src/UI/AgentsScreen.cs:227"
   ],
   "A cluster grenade that splits into more blasts.": [
-    "src/Agents/AgentRoster.cs:68"
+    "src/Agents/AgentRoster.cs:76"
   ],
   "A combat stim and speed boost for you and a teammate, refreshed by kills.": [
-    "src/Agents/AgentRoster.cs:178"
+    "src/Agents/AgentRoster.cs:186"
   ],
   "A copy in your list stays when you switch accounts": [
     "src/UI/SettingsCrosshair.cs:71"
   ],
   "A creature that chases an enemy or a trail and nearsights on contact.": [
-    "src/Agents/AgentRoster.cs:103"
+    "src/Agents/AgentRoster.cs:111"
   ],
   "a crisp box the head fits inside": [
     "src/Modes/CrosshairFinderCore.cs:415"
   ],
   "A custom sniper that kills with one upper-body hit and slows around the kill.": [
-    "src/Agents/AgentRoster.cs:204"
+    "src/Agents/AgentRoster.cs:212"
   ],
   "A decoy that runs like you and flashes whoever shoots it.": [
-    "src/Agents/AgentRoster.cs:87"
+    "src/Agents/AgentRoster.cs:95"
   ],
   "A device whose sound waves either concuss enemies or heal players.": [
-    "src/Agents/AgentRoster.cs:177"
+    "src/Agents/AgentRoster.cs:185"
   ],
   "A disc that grows barriers to block movement through a path.": [
-    "src/Agents/AgentRoster.cs:217"
+    "src/Agents/AgentRoster.cs:225"
   ],
   "a dot to aim with, a ring to frame the head": [
     "src/Modes/CrosshairFinderCore.cs:406"
@@ -242,76 +242,79 @@
     "src/UI/ProfileScreen.cs:579"
   ],
   "A fireball that leaves a burning patch on the floor.": [
-    "src/Agents/AgentRoster.cs:59"
+    "src/Agents/AgentRoster.cs:67"
   ],
   "A flash fired through a wall that pops on the other side.": [
-    "src/Agents/AgentRoster.cs:97"
+    "src/Agents/AgentRoster.cs:105"
   ],
   "A flash grenade: a full throw, or a quick lob that pops sooner.": [
-    "src/Agents/AgentRoster.cs:118"
+    "src/Agents/AgentRoster.cs:126"
   ],
   "A flash that hooks left or right around a corner before it pops.": [
-    "src/Agents/AgentRoster.cs:60"
+    "src/Agents/AgentRoster.cs:68"
   ],
   "A flash that ricochets off a wall before it pops.": [
-    "src/Agents/AgentRoster.cs:88"
+    "src/Agents/AgentRoster.cs:96"
+  ],
+  "A flash you can steer toward your crosshair in flight.": [
+    "src/Agents/AgentRoster.cs:37"
   ],
   "A fragile eye that nearsights every enemy who looks at it.": [
-    "src/Agents/AgentRoster.cs:73"
+    "src/Agents/AgentRoster.cs:81"
   ],
   "A fragment that erupts and decays everyone caught inside.": [
-    "src/Agents/AgentRoster.cs:164"
+    "src/Agents/AgentRoster.cs:172"
   ],
   "A frenzy of faster shooting and reloading; soul orbs never run out.": [
-    "src/Agents/AgentRoster.cs:76"
+    "src/Agents/AgentRoster.cs:84"
   ],
   "A gas emitter you switch on and off, fuelled by your toxin.": [
-    "src/Agents/AgentRoster.cs:192"
+    "src/Agents/AgentRoster.cs:200"
   ],
   "A glow on your gun only": [
     "src/UI/SettingsScreen.cs:525"
   ],
   "A grenade that forces everyone inside to crouch and move slowly.": [
-    "src/Agents/AgentRoster.cs:215"
+    "src/Agents/AgentRoster.cs:223"
   ],
   "A heavy pistol with a scope: precise, and deadly to the head.": [
-    "src/Agents/AgentRoster.cs:202"
+    "src/Agents/AgentRoster.cs:210"
   ],
   "A hidden flower you trigger to flash everyone looking at it.": [
-    "src/Agents/AgentRoster.cs:245"
+    "src/Agents/AgentRoster.cs:253"
   ],
   "A hidden grenade you set off to release a damaging swarm.": [
-    "src/Agents/AgentRoster.cs:222"
+    "src/Agents/AgentRoster.cs:230"
   ],
   "A hidden nest you trigger into a field that slows and cuts.": [
-    "src/Agents/AgentRoster.cs:243"
+    "src/Agents/AgentRoster.cs:251"
   ],
   "A hidden trap that raises a wall behind the first enemy through.": [
-    "src/Agents/AgentRoster.cs:244"
+    "src/Agents/AgentRoster.cs:252"
   ],
   "A hidden tripwire that reveals and holds whoever crosses it.": [
-    "src/Agents/AgentRoster.cs:208"
+    "src/Agents/AgentRoster.cs:216"
   ],
   "A hit blinds them.": [
-    "src/Modes/Agents/InitiatorAbilities.cs:42"
+    "src/Modes/Agents/InitiatorAbilities.cs:47"
   ],
   "A huge toxic cloud that hides you and drains enemies inside.": [
-    "src/Agents/AgentRoster.cs:194"
+    "src/Agents/AgentRoster.cs:202"
   ],
   "A knife that suppresses abilities and reveals enemies in its blast.": [
-    "src/Agents/AgentRoster.cs:119"
+    "src/Agents/AgentRoster.cs:127"
   ],
   "A lamp on, not a dark room": [
     "src/Warmup/LockInSetupCheck.cs:22"
   ],
   "A launched grenade that leaves a burning zone.": [
-    "src/Agents/AgentRoster.cs:157"
+    "src/Agents/AgentRoster.cs:165"
   ],
   "a little bigger, easy to find": [
     "src/Modes/CrosshairFinderTabs.cs:275"
   ],
   "A long gas wall that runs straight through walls, toggled with fuel.": [
-    "src/Agents/AgentRoster.cs:193"
+    "src/Agents/AgentRoster.cs:201"
   ],
   "A match depends on much more than a warm-up.": [
     "src/Warmup/LockInMatchLog.cs:217"
@@ -332,31 +335,31 @@
     "src/Warmup/WarmupPlan.cs:81"
   ],
   "A quick puff of smoke you can bend while it flies; it fades fast.": [
-    "src/Agents/AgentRoster.cs:43"
+    "src/Agents/AgentRoster.cs:51"
   ],
   "A remote cage that blocks sight and slows enemies passing through.": [
-    "src/Agents/AgentRoster.cs:209"
+    "src/Agents/AgentRoster.cs:217"
   ],
   "A rocket launcher with huge splash damage.": [
-    "src/Agents/AgentRoster.cs:69"
+    "src/Agents/AgentRoster.cs:77"
   ],
   "A rolling bot that chases the first enemy it spots and explodes.": [
-    "src/Agents/AgentRoster.cs:66"
+    "src/Agents/AgentRoster.cs:74"
   ],
   "A sensor that concusses an area when it hears steps, shots or loud noise.": [
-    "src/Agents/AgentRoster.cs:216"
+    "src/Agents/AgentRoster.cs:224"
   ],
   "A shadow flies 25 m straight ahead, through walls.": [
-    "src/Modes/Agents/InitiatorAbilities.cs:48"
+    "src/Modes/Agents/InitiatorAbilities.cs:53"
   ],
   "A shadow that passes through walls and nearsights everyone it touches.": [
-    "src/Agents/AgentRoster.cs:185"
+    "src/Agents/AgentRoster.cs:193"
   ],
   "A SHORT ROUTINE BEFORE RANKED · {0} TIER · EVERYTHING AT YOUR REAL SENS · ENDS WITH YOUR GOAL AND CUE": [
     "src/Warmup/WarmupScreen.cs:65"
   ],
   "A short teleport to a spot you can see.": [
-    "src/Agents/AgentRoster.cs:184"
+    "src/Agents/AgentRoster.cs:192"
   ],
   "a signature drill": [
     "src/Agents/AgentDrills.cs:215"
@@ -365,73 +368,73 @@
     "src/Warmup/LockInMatchLog.cs:216"
   ],
   "A star becomes a short pulse that concusses.": [
-    "src/Agents/AgentRoster.cs:149"
+    "src/Agents/AgentRoster.cs:157"
   ],
   "A star becomes a smoke, or fades into a brief fake one and comes back.": [
-    "src/Agents/AgentRoster.cs:150"
+    "src/Agents/AgentRoster.cs:158"
   ],
   "A star becomes a well that pulls players in, then leaves them vulnerable.": [
-    "src/Agents/AgentRoster.cs:148"
+    "src/Agents/AgentRoster.cs:156"
   ],
   "A steerable water wall along the floor that blocks sight and slows.": [
-    "src/Agents/AgentRoster.cs:171"
+    "src/Agents/AgentRoster.cs:179"
   ],
   "A sticky charge: set it off to launch yourself or hurt enemies.": [
-    "src/Agents/AgentRoster.cs:67"
+    "src/Agents/AgentRoster.cs:75"
   ],
   "A sticky grenade that concusses and hurts; it can bounce once.": [
-    "src/Agents/AgentRoster.cs:140"
+    "src/Agents/AgentRoster.cs:148"
   ],
   "A sticky grenade that pulses damage, deadliest at its centre.": [
-    "src/Agents/AgentRoster.cs:117"
+    "src/Agents/AgentRoster.cs:125"
   ],
   "A surge of water that nearsights and slows the enemies it hits.": [
-    "src/Agents/AgentRoster.cs:173"
+    "src/Agents/AgentRoster.cs:181"
   ],
   "A thrown creature that spreads out and blows up after a moment.": [
-    "src/Agents/AgentRoster.cs:110"
+    "src/Agents/AgentRoster.cs:118"
   ],
   "A thrown snare that drops and pins nearby enemies, deafening and decaying them.": [
-    "src/Agents/AgentRoster.cs:104"
+    "src/Agents/AgentRoster.cs:112"
   ],
   "A thrown trap that grabs the first enemy to step in and holds them.": [
-    "src/Agents/AgentRoster.cs:237"
+    "src/Agents/AgentRoster.cs:245"
   ],
   "A thrown watcher that reveals the enemies it sees and leaves trails to them.": [
-    "src/Agents/AgentRoster.cs:105"
+    "src/Agents/AgentRoster.cs:113"
   ],
   "A tight grip or fingertip-only aiming adds tremor and constant over-corrections.": [
     "src/Analysis/Assess.cs:533"
   ],
   "A trap that slows enemies who walk into its range.": [
-    "src/Agents/AgentRoster.cs:201"
+    "src/Agents/AgentRoster.cs:209"
   ],
   "A turret that shoots at enemies in its field of view.": [
-    "src/Agents/AgentRoster.cs:224"
+    "src/Agents/AgentRoster.cs:232"
   ],
   "A vortex you can teleport to when you look at it in range.": [
-    "src/Agents/AgentRoster.cs:236"
+    "src/Agents/AgentRoster.cs:244"
   ],
   "A wall camera you look through and fire a tracking dart from.": [
-    "src/Agents/AgentRoster.cs:210"
+    "src/Agents/AgentRoster.cs:218"
   ],
   "A warm-up wakes up skill you already have. About 10 to 15 minutes at the sens you play with is enough; longer mostly adds fatigue.": [
     "src/Warmup/WarmupScreen.cs:205"
   ],
   "A water smoke you can shield so it stops bullets.": [
-    "src/Agents/AgentRoster.cs:172"
+    "src/Agents/AgentRoster.cs:180"
   ],
   "A wave of nightmare that marks, deafens and decays everyone it hits.": [
-    "src/Agents/AgentRoster.cs:106"
+    "src/Agents/AgentRoster.cs:114"
   ],
   "A week counts with 2 training days. Missed weeks use a rest token automatically.": [
     "src/UI/ProgressScreen.cs:151"
   ],
   "A whirlpool that slows and nearsights players caught in it.": [
-    "src/Agents/AgentRoster.cs:170"
+    "src/Agents/AgentRoster.cs:178"
   ],
   "A wide cone of quakes that throws enemies up and dazes them.": [
-    "src/Agents/AgentRoster.cs:99"
+    "src/Agents/AgentRoster.cs:107"
   ],
   "A-D strafing bots. Real damage of your gun (a Vandal kills with 1 head or 4 body). Kill before they leave.": [
     "src/Modes/BotModes.cs:96"
@@ -456,18 +459,18 @@
     "src/Valorant/Keybinds.cs:352"
   ],
   "Ability used": [
-    "src/Modes/Agents/DuelistDrills.cs:387"
+    "src/Modes/Agents/DuelistDrills.cs:391"
   ],
   "Ability → kill": [
-    "src/Modes/Agents/DuelistDrills.cs:389"
+    "src/Modes/Agents/DuelistDrills.cs:393"
   ],
   "ability|OUT": [
     "src/Modes/DefenseModes.cs:657",
-    "src/Modes/Agents/InitiatorDrill.cs:647"
+    "src/Modes/Agents/InitiatorDrill.cs:662"
   ],
   "ability|READY": [
     "src/Modes/DefenseModes.cs:657",
-    "src/Modes/Agents/InitiatorDrill.cs:647"
+    "src/Modes/Agents/InitiatorDrill.cs:662"
   ],
   "ABORTED": [
     "src/Modes/SensFinderDraw.cs:123"
@@ -605,7 +608,7 @@
     "src/Warmup/LockInMatchLog.cs:152"
   ],
   "After a wind-up, detains every enemy in a large radius.": [
-    "src/Agents/AgentRoster.cs:225"
+    "src/Agents/AgentRoster.cs:233"
   ],
   "After every kill, reset the crosshair to head level — not down.": [
     "src/Analysis/Assess.cs:571"
@@ -628,8 +631,8 @@
   "Agent": [
     "src/Modes/DefenseModes.cs:707",
     "src/Modes/Agents/ControllerDrills.cs:617",
-    "src/Modes/Agents/DuelistDrills.cs:380",
-    "src/Modes/Agents/InitiatorDrill.cs:720"
+    "src/Modes/Agents/DuelistDrills.cs:384",
+    "src/Modes/Agents/InitiatorDrill.cs:735"
   ],
   "Agent abilities + aim": [
     "src/UI/DrillPreview.cs:491"
@@ -656,7 +659,7 @@
     "src/Modes/DefenseModes.cs:42",
     "src/Modes/Agents/ControllerDrills.cs:45",
     "src/Modes/Agents/DuelistDrills.cs:40",
-    "src/Modes/Agents/DuelistDrills.cs:432",
+    "src/Modes/Agents/DuelistDrills.cs:436",
     "src/Modes/Agents/InitiatorDrill.cs:27"
   ],
   "Agents left: {0}": [
@@ -681,7 +684,7 @@
     "src/Modes/DefenseKit.cs:40"
   ],
   "Aim at a wall up to 35 m away and up to 10 m thick, then fire.": [
-    "src/Modes/Agents/InitiatorAbilities.cs:39"
+    "src/Modes/Agents/InitiatorAbilities.cs:44"
   ],
   "Aim at a wall within {0:0} m": [
     "src/Modes/DefenseSetup.cs:175"
@@ -791,19 +794,19 @@
     "src/Valorant/Keybinds.cs:350"
   ],
   "An afterimage beam slows enemies, then you get a big speed boost.": [
-    "src/Agents/AgentRoster.cs:83"
+    "src/Agents/AgentRoster.cs:91"
   ],
   "An aim-only estimate: ValTrainer rates your mechanics (aim, movement, flash dodging).\nYour in-game rank also depends on game sense, comms and utility.": [
     "src/UI/ProfileScreen.cs:85"
   ],
   "An anchor you can teleport back to while you're in range.": [
-    "src/Agents/AgentRoster.cs:203"
+    "src/Agents/AgentRoster.cs:211"
   ],
   "An arrow that bursts with electric damage where it lands.": [
-    "src/Agents/AgentRoster.cs:132"
+    "src/Agents/AgentRoster.cs:140"
   ],
   "An arrow that pulses and reveals every enemy in its sight.": [
-    "src/Agents/AgentRoster.cs:133"
+    "src/Agents/AgentRoster.cs:141"
   ],
   "An Operator holds a long angle. Jump-peek to spot him and get back before he shoots; if he misses, swing and kill him during his bolt.": [
     "src/Modes/MovementPlusModes.cs:20"
@@ -819,6 +822,9 @@
   ],
   "ANCHOR": [
     "src/Agents/AgentDrills.cs:302"
+  ],
+  "ANCHORED…": [
+    "src/Modes/Agents/HushKit.cs:383"
   ],
   "ANIMATED": [
     "src/UI/SkinLevelTrack.cs:71",
@@ -844,7 +850,7 @@
     "src/UI/SettingsScreen.cs:608"
   ],
   "Anyone who looks at it can only see 6 m.": [
-    "src/Modes/Agents/InitiatorAbilities.cs:45"
+    "src/Modes/Agents/InitiatorAbilities.cs:50"
   ],
   "Apex": [
     "src/Game/Skins/SkinCatalog.cs:104"
@@ -874,7 +880,7 @@
     "src/Modes/Agents/DuelistKits.cs:1191"
   ],
   "Arrows can bounce off walls; hold fire to send them farther.": [
-    "src/Agents/AgentRoster.cs:135"
+    "src/Agents/AgentRoster.cs:143"
   ],
   "Arrows: every other gun · click to pick per gun": [
     "src/UI/SettingsScreen.cs:513"
@@ -966,8 +972,8 @@
   ],
   "Avg clear time": [
     "src/Modes/MapModes.cs:146",
-    "src/Modes/Agents/DuelistDrills.cs:395",
-    "src/Modes/Agents/InitiatorDrill.cs:722"
+    "src/Modes/Agents/DuelistDrills.cs:399",
+    "src/Modes/Agents/InitiatorDrill.cs:737"
   ],
   "Avg counter-strafe stop": [
     "src/Modes/MovementModes.cs:25"
@@ -1074,7 +1080,7 @@
     "src/Modes/MovementPlusModes.cs:297"
   ],
   "Ballistics initiator who scouts with a drone and pounds positions with missiles.": [
-    "src/Agents/AgentRoster.cs:137"
+    "src/Agents/AgentRoster.cs:145"
   ],
   "Bank it off a wall into the site.": [
     "src/Modes/Agents/InitiatorAbilities.cs:33"
@@ -1172,7 +1178,7 @@
     "src/Modes/SensFinderDraw.cs:47"
   ],
   "BLIND {0:0.0}": [
-    "src/Modes/Agents/InitiatorDrill.cs:697"
+    "src/Modes/Agents/InitiatorDrill.cs:712"
   ],
   "Blinded by your smokes": [
     "src/Modes/Agents/ControllerDrills.cs:632"
@@ -1246,7 +1252,7 @@
     "src/Game/Skins/SkinCatalog.cs:80"
   ],
   "Breaching initiator who flashes and stuns straight through walls.": [
-    "src/Agents/AgentRoster.cs:94"
+    "src/Agents/AgentRoster.cs:102"
   ],
   "Breathe in through your nose… long slow breath out.": [
     "src/Warmup/LockInWidgets.cs:24"
@@ -1264,7 +1270,7 @@
     "src/Warmup/LockInBreath.cs:129"
   ],
   "Brings a fallen teammate back to life.": [
-    "src/Agents/AgentRoster.cs:232"
+    "src/Agents/AgentRoster.cs:240"
   ],
   "BRNZ": [
     "src/UI/CoachUi.cs:21"
@@ -1301,7 +1307,7 @@
     "src/Modes/RecoilModes.cs:170"
   ],
   "Bursts into a field that slows everyone walking through it.": [
-    "src/Agents/AgentRoster.cs:230"
+    "src/Agents/AgentRoster.cs:238"
   ],
   "BUY ME A COFFEE": [
     "src/UI/SettingsScreen.cs:754",
@@ -1323,10 +1329,10 @@
     "src/Warmup/WarmupCard.cs:208"
   ],
   "Calls a lingering laser down onto a spot you choose.": [
-    "src/Agents/AgentRoster.cs:159"
+    "src/Agents/AgentRoster.cs:167"
   ],
   "Calls a long line of explosions along a path you draw.": [
-    "src/Agents/AgentRoster.cs:142"
+    "src/Agents/AgentRoster.cs:150"
   ],
   "Calm": [
     "src/Warmup/LockInHandoff.cs:124",
@@ -1392,7 +1398,7 @@
     "src/UI/ProgressScreen.cs:206"
   ],
   "Chamber Guns": [
-    "src/Modes/Agents/DuelistDrills.cs:430"
+    "src/Modes/Agents/DuelistDrills.cs:434"
   ],
   "CHANGE": [
     "src/Modes/SensFinderDraw.cs:173"
@@ -1419,7 +1425,10 @@
     "src/Game/Skins/SkinCatalog.cs:71"
   ],
   "CHARGE {0}/3 · BOUNCES {1}": [
-    "src/Modes/Agents/InitiatorDrill.cs:645"
+    "src/Modes/Agents/InitiatorDrill.cs:660"
+  ],
+  "Charges wasted": [
+    "src/Modes/Agents/HushKit.cs:418"
   ],
   "Chasing the target instead of matching it": [
     "src/Analysis/Assess.cs:495"
@@ -1640,7 +1649,7 @@
     "src/Progress/ProgressApi.cs:298"
   ],
   "Cocoons the first enemy hit and drags them to their death unless freed.": [
-    "src/Agents/AgentRoster.cs:218"
+    "src/Agents/AgentRoster.cs:226"
   ],
   "Code": [
     "src/Modes/CrosshairFinderMode.cs:1034"
@@ -1847,7 +1856,7 @@
     "src/UI/SettingsScreen.cs:518"
   ],
   "Cosmic controller who places stars across the map and turns them into smokes, pulls or stuns.": [
-    "src/Agents/AgentRoster.cs:146"
+    "src/Agents/AgentRoster.cs:154"
   ],
   "Couldn't check for updates": [
     "src/UI/SettingsScreen.cs:856"
@@ -1883,7 +1892,7 @@
     "src/Modes/MovementModes.cs:39"
   ],
   "Counter-utility sentinel who deletes enemy abilities and forces honest gunfights.": [
-    "src/Agents/AgentRoster.cs:234"
+    "src/Agents/AgentRoster.cs:242"
   ],
   "covers the least of the target": [
     "src/Modes/CrosshairFinderCore.cs:339"
@@ -2048,7 +2057,7 @@
     "src/Modes/Agents/ControllerDraw.cs:304"
   ],
   "Cuts sightlines with smokes and walls so fights happen where the team wants them.": [
-    "src/Agents/AgentRoster.cs:276"
+    "src/Agents/AgentRoster.cs:284"
   ],
   "cuts the angles onto the entry": [
     "src/Modes/Agents/ControllerDraw.cs:311"
@@ -2092,7 +2101,7 @@
     "src/Modes/Agents/DuelistKits.cs:1188"
   ],
   "DAZED": [
-    "src/Modes/Agents/InitiatorDrill.cs:697"
+    "src/Modes/Agents/InitiatorDrill.cs:712"
   ],
   "death": [
     "src/UI/RewindScreen.cs:518"
@@ -2164,11 +2173,14 @@
   "Defenders left: {0}": [
     "src/Modes/MapModes.cs:139",
     "src/Modes/Agents/ControllerDrills.cs:610",
-    "src/Modes/Agents/DuelistDrills.cs:327",
-    "src/Modes/Agents/InitiatorDrill.cs:608"
+    "src/Modes/Agents/DuelistDrills.cs:330",
+    "src/Modes/Agents/InitiatorDrill.cs:623"
   ],
   "Defenders nearsighted": [
     "src/Modes/Agents/InitiatorDrills.cs:43"
+  ],
+  "Defenders pulled": [
+    "src/Modes/Agents/HushKit.cs:415"
   ],
   "DEFUSED": [
     "src/Modes/TacticalCore.cs:396"
@@ -2289,6 +2301,9 @@
     "src/UI/BugReport.cs:877",
     "src/UI/BugReport.cs:910"
   ],
+  "Displacement: nobody pulled": [
+    "src/Modes/Agents/HushKit.cs:358"
+  ],
   "DISPLAY": [
     "src/UI/SettingsScreen.cs:450"
   ],
@@ -2309,7 +2324,7 @@
     "src/Modes/RecoilModes.cs:160"
   ],
   "Dizzy flies forward, charges, then spits plasma at every enemy she can see within 45 m.": [
-    "src/Modes/Agents/InitiatorAbilities.cs:42"
+    "src/Modes/Agents/InitiatorAbilities.cs:47"
   ],
   "DIZZY'D 2.0s · Gekko Dizzy": [
     "src/Modes/MapModes.cs:419"
@@ -2416,11 +2431,14 @@
   "Drag to rotate": [
     "src/UI/SkinPicker.cs:672"
   ],
+  "Drags nearby enemies toward its blast and concusses on impact.": [
+    "src/Agents/AgentRoster.cs:38"
+  ],
   "Drags you and one enemy into an arena for a one-on-one.": [
-    "src/Agents/AgentRoster.cs:39"
+    "src/Agents/AgentRoster.cs:47"
   ],
   "Drain a fallen enemy you hurt for speed and temporary health.": [
-    "src/Agents/AgentRoster.cs:163"
+    "src/Agents/AgentRoster.cs:171"
   ],
   "Draw": [
     "src/Warmup/LockInMatchLog.cs:299"
@@ -2460,16 +2478,19 @@
     "src/Valorant/Keybinds.cs:354"
   ],
   "Drop a beacon, then rush back to it while nothing can hurt you.": [
-    "src/Agents/AgentRoster.cs:82"
+    "src/Agents/AgentRoster.cs:90"
   ],
   "Drops a beacon that speeds up teammates' movement and firing.": [
-    "src/Agents/AgentRoster.cs:156"
+    "src/Agents/AgentRoster.cs:164"
+  ],
+  "Drops an anchor where you aim and pulls you to it, even up onto a ledge.": [
+    "src/Agents/AgentRoster.cs:36"
   ],
   "Dry peeks (no utility on them)": [
     "src/Modes/Agents/InitiatorDrills.cs:48"
   ],
   "Duel specialist who shields up and takes fights one enemy at a time.": [
-    "src/Agents/AgentRoster.cs:34"
+    "src/Agents/AgentRoster.cs:42"
   ],
   "Duelist": [
     "src/UI/AgentsWidgets.cs:112"
@@ -2559,10 +2580,10 @@
     "src/Warmup/WarmupPlan.cs:31"
   ],
   "Eat a soul orb from a kill to heal up fast.": [
-    "src/Agents/AgentRoster.cs:74"
+    "src/Agents/AgentRoster.cs:82"
   ],
   "Eat a soul orb to turn intangible and reposition.": [
-    "src/Agents/AgentRoster.cs:75"
+    "src/Agents/AgentRoster.cs:83"
   ],
   "eDPI / cm per 360": [
     "src/UI/MenuScreen.cs:669"
@@ -2604,7 +2625,7 @@
     "src/Analysis/Assess.cs:580"
   ],
   "Enemies can shoot her first.": [
-    "src/Modes/Agents/InitiatorAbilities.cs:42"
+    "src/Modes/Agents/InitiatorAbilities.cs:47"
   ],
   "Enemies revealed": [
     "src/Modes/DefenseModes.cs:717",
@@ -2696,7 +2717,8 @@
     "src/Modes/DefenseModes.cs:654",
     "src/Modes/Agents/DuelistKits.cs:909",
     "src/Modes/Agents/DuelistKits.cs:1188",
-    "src/Modes/Agents/InitiatorDrill.cs:643"
+    "src/Modes/Agents/HushKit.cs:388",
+    "src/Modes/Agents/InitiatorDrill.cs:658"
   ],
   "Esc cancels · Backspace / Delete = VALORANT's bind": [
     "src/UI/SettingsKeybinds.cs:307"
@@ -2758,7 +2780,7 @@
     "src/Modes/SensFinderDraw.cs:147"
   ],
   "Everyone it touches can only see 7.5 m for 2 s.": [
-    "src/Modes/Agents/InitiatorAbilities.cs:48"
+    "src/Modes/Agents/InitiatorAbilities.cs:53"
   ],
   "Everything is unlocked. Levels and stars keep counting.": [
     "src/UI/ProgressScreen.cs:302"
@@ -2783,7 +2805,7 @@
     "src/Modes/AimModes.cs:176"
   ],
   "Explosive duelist who blasts into a site and flushes out its corners.": [
-    "src/Agents/AgentRoster.cs:64"
+    "src/Agents/AgentRoster.cs:72"
   ],
   "F free play": [
     "src/UI/DrillPreview.cs:211"
@@ -2848,7 +2870,7 @@
     "src/Warmup/LockInMatchLog.cs:385"
   ],
   "Fight freely: die during it and you're back at your marker.": [
-    "src/Agents/AgentRoster.cs:61"
+    "src/Agents/AgentRoster.cs:69"
   ],
   "Fills your coach profile": [
     "src/Progress/ProgressApi.cs:296"
@@ -2877,7 +2899,7 @@
     "src/Progress/ProgressEngine.cs:142"
   ],
   "Finds and flushes defenders with recon, flashes and stuns, then trades in behind.": [
-    "src/Agents/AgentRoster.cs:275"
+    "src/Agents/AgentRoster.cs:283"
   ],
   "Finds the crosshair you see and shoot best with, and gives you its VALORANT code. Only the crosshair you test changes; the rest of your profile stays as it is.": [
     "src/Modes/CrosshairFinderDraw.cs:103"
@@ -2944,7 +2966,7 @@
     "src/UI/RewindDraw.cs:541"
   ],
   "First duels won": [
-    "src/Modes/Agents/DuelistDrills.cs:383"
+    "src/Modes/Agents/DuelistDrills.cs:387"
   ],
   "FIRST RUN AT {0}": [
     "src/UI/Hud.cs:868"
@@ -3076,19 +3098,20 @@
     "src/Modes/Agents/DuelistKits.cs:1396"
   ],
   "FLOWING": [
-    "src/Modes/Agents/ControllerTools.cs:715"
+    "src/Modes/Agents/ControllerTools.cs:715",
+    "src/Modes/Agents/HushKit.cs:383"
   ],
   "Fly a drone and tag an enemy with a revealing dart.": [
-    "src/Agents/AgentRoster.cs:131"
+    "src/Agents/AgentRoster.cs:139"
   ],
   "Fly a drone, then pulse it to suppress and reveal enemies.": [
-    "src/Agents/AgentRoster.cs:139"
+    "src/Agents/AgentRoster.cs:147"
   ],
   "FLYING": [
     "src/Modes/Agents/ControllerTools.cs:509"
   ],
   "Focus for a one-hit shield; shoot the orbs your kills drop to keep it.": [
-    "src/Agents/AgentRoster.cs:38"
+    "src/Agents/AgentRoster.cs:46"
   ],
   "FOCUSING…": [
     "src/Modes/Agents/DuelistKits.cs:1396"
@@ -3181,7 +3204,7 @@
     "src/UI/Hud.cs:1283"
   ],
   "Full mutation: combat stim, regeneration and immunity to debuffs.": [
-    "src/Agents/AgentRoster.cs:239"
+    "src/Agents/AgentRoster.cs:247"
   ],
   "Full routine": [
     "src/Warmup/LockInMatchLog.cs:124"
@@ -3198,7 +3221,7 @@
     "src/Warmup/LockInSetupCheck.cs:101"
   ],
   "Gadget sentinel whose turret, alarm bot and swarm grenades lock a site down.": [
-    "src/Agents/AgentRoster.cs:220"
+    "src/Agents/AgentRoster.cs:228"
   ],
   "GAMEPLAY": [
     "src/UI/SettingsScreen.cs:481"
@@ -3286,6 +3309,9 @@
   ],
   "Got past you": [
     "src/Modes/Agents/ChamberDrill.cs:325"
+  ],
+  "Grab guns and the spike, and use switches, from afar.": [
+    "src/Agents/AgentRoster.cs:40"
   ],
   "GRAPHICS": [
     "src/UI/SettingsScreen.cs:475"
@@ -3414,10 +3440,10 @@
     "src/Modes/Agents/DuelistKits.cs:694"
   ],
   "Heals a teammate, or yourself, over a few seconds.": [
-    "src/Agents/AgentRoster.cs:231"
+    "src/Agents/AgentRoster.cs:239"
   ],
   "Heals nearby teammates while you channel it.": [
-    "src/Agents/AgentRoster.cs:124"
+    "src/Agents/AgentRoster.cs:132"
   ],
   "Health packs": [
     "src/Modes/DeathmatchMode.cs:467"
@@ -3426,7 +3452,7 @@
     "src/Agents/AgentDrills.cs:255"
   ],
   "Heard your ability": [
-    "src/Modes/Agents/DuelistDrills.cs:394"
+    "src/Modes/Agents/DuelistDrills.cs:398"
   ],
   "Heaven": [
     "src/Modes/MovementPlusModes.cs:26"
@@ -3527,7 +3553,7 @@
     "src/Analysis/Assess.cs:425"
   ],
   "Hits dodged (speed)": [
-    "src/Modes/Agents/DuelistDrills.cs:393"
+    "src/Modes/Agents/DuelistDrills.cs:397"
   ],
   "Hive": [
     "src/Game/Skins/SkinCatalog.cs:75"
@@ -3554,13 +3580,13 @@
     "src/Analysis/RunSummary.cs:31"
   ],
   "Hold jump while falling to glide down slowly.": [
-    "src/Agents/AgentRoster.cs:47"
+    "src/Agents/AgentRoster.cs:55"
   ],
   "Hold LMB to charge (3 bars = farther), RMB adds a bounce (0–2).": [
-    "src/Modes/Agents/InitiatorAbilities.cs:51"
+    "src/Modes/Agents/InitiatorAbilities.cs:56"
   ],
   "Hold LMB: charge · release: shoot": [
-    "src/Modes/Agents/InitiatorAbilities.cs:50"
+    "src/Modes/Agents/InitiatorAbilities.cs:55"
   ],
   "Hold Mouse 1 on a target that A-D strafes like a real player (realistic stops and reversals).": [
     "src/Modes/AimModes.cs:265"
@@ -3624,7 +3650,7 @@
     "src/Modes/StrafeDuelMode.cs:222"
   ],
   "Hunter initiator who reveals, chases down and pins enemies in place.": [
-    "src/Agents/AgentRoster.cs:101"
+    "src/Agents/AgentRoster.cs:109"
   ],
   "Ice": [
     "src/Game/Skins/SkinLooks.cs:101"
@@ -3648,7 +3674,7 @@
     "src/UI/CoachUi.cs:18"
   ],
   "Immortal controller who keeps smoking after death and fights back from it.": [
-    "src/Agents/AgentRoster.cs:161"
+    "src/Agents/AgentRoster.cs:169"
   ],
   "Import Profile Code": [
     "src/Modes/CrosshairFinderMode.cs:1031"
@@ -3666,7 +3692,8 @@
     "src/Modes/SensFinderMode.cs:810"
   ],
   "IN FLIGHT": [
-    "src/Modes/Agents/DuelistKits.cs:501"
+    "src/Modes/Agents/DuelistKits.cs:501",
+    "src/Modes/Agents/HushKit.cs:387"
   ],
   "IN HAND": [
     "src/UI/SkinPicker.cs:253"
@@ -3694,7 +3721,7 @@
     "src/UI/AgentsWidgets.cs:124"
   ],
   "Initiator whose reusable creature buddies flash, stun and even plant for him.": [
-    "src/Agents/AgentRoster.cs:108"
+    "src/Agents/AgentRoster.cs:116"
   ],
   "Initiators": [
     "src/UI/AgentsWidgets.cs:118"
@@ -3773,8 +3800,11 @@
   "Iron – Bronze": [
     "src/Core/Difficulty.cs:35"
   ],
+  "It drags defenders out of cover toward the blast. Shoot them while they're concussed.": [
+    "src/Modes/Agents/HushKit.cs:64"
+  ],
   "It has 60 HP — they will shoot it.": [
-    "src/Modes/Agents/InitiatorAbilities.cs:45"
+    "src/Modes/Agents/InitiatorAbilities.cs:50"
   ],
   "it looks like {0} (not confirmed yet — keep an eye on it)": [
     "src/Analysis/RunSummary.cs:52"
@@ -4010,6 +4040,9 @@
   "kills / min": [
     "src/Warmup/WarmupData.cs:179"
   ],
+  "Kills after a pull": [
+    "src/Modes/Agents/HushKit.cs:416"
+  ],
   "Kills drop a soul orb for 3 s.": [
     "src/Modes/Agents/DuelistKits.cs:574"
   ],
@@ -4230,13 +4263,13 @@
     "src/UI/SettingsScreen.cs:1140"
   ],
   "Light-speed duelist who dashes in, strikes and zips back to safety.": [
-    "src/Agents/AgentRoster.cs:78"
+    "src/Agents/AgentRoster.cs:86"
   ],
   "Line your mouse pad up with the monitor and sit square to it.": [
     "src/Analysis/Assess.cs:444"
   ],
   "Liquid-metal sentinel who traps, cuts off and disarms attackers.": [
-    "src/Agents/AgentRoster.cs:241"
+    "src/Agents/AgentRoster.cs:249"
   ],
   "LIST FULL": [
     "src/Valorant/CrosshairList.cs:256"
@@ -4256,8 +4289,11 @@
   "LMB sends the hawk; keep LMB held to steer it with your crosshair.": [
     "src/Modes/Agents/InitiatorAbilities.cs:30"
   ],
+  "LMB throws it: it pops on the first surface it hits, or after about a second.": [
+    "src/Modes/Agents/InitiatorAbilities.cs:36"
+  ],
   "LMB: cast the eye": [
-    "src/Modes/Agents/InitiatorAbilities.cs:44"
+    "src/Modes/Agents/InitiatorAbilities.cs:49"
   ],
   "LMB: curve left": [
     "src/Modes/Agents/InitiatorAbilities.cs:26"
@@ -4266,16 +4302,16 @@
     "src/Modes/Agents/DuelistKits.cs:1197"
   ],
   "LMB: fire into a wall": [
-    "src/Modes/Agents/InitiatorAbilities.cs:38"
+    "src/Modes/Agents/InitiatorAbilities.cs:43"
   ],
   "LMB: fire the shadow": [
-    "src/Modes/Agents/InitiatorAbilities.cs:47"
+    "src/Modes/Agents/InitiatorAbilities.cs:52"
   ],
   "LMB: overhand": [
-    "src/Modes/Agents/InitiatorAbilities.cs:35"
+    "src/Modes/Agents/InitiatorAbilities.cs:40"
   ],
   "LMB: overhand — pops 1.6 s after the throw, or 0.8 s after its first bounce.": [
-    "src/Modes/Agents/InitiatorAbilities.cs:36"
+    "src/Modes/Agents/InitiatorAbilities.cs:41"
   ],
   "LMB: place on a wall": [
     "src/Modes/DefenseKit.cs:39",
@@ -4293,7 +4329,7 @@
     "src/Modes/DefenseKit.cs:54"
   ],
   "LMB: send Dizzy": [
-    "src/Modes/Agents/InitiatorAbilities.cs:41"
+    "src/Modes/Agents/InitiatorAbilities.cs:46"
   ],
   "LMB: send it 7 m ahead": [
     "src/Modes/DefenseKit.cs:63"
@@ -4307,7 +4343,8 @@
   "LMB: throw": [
     "src/Modes/DefenseKit.cs:45",
     "src/Modes/DefenseKit.cs:57",
-    "src/Modes/DefenseKit.cs:60"
+    "src/Modes/DefenseKit.cs:60",
+    "src/Modes/Agents/InitiatorAbilities.cs:35"
   ],
   "LMB: throw at a wall": [
     "src/Modes/Agents/InitiatorAbilities.cs:32"
@@ -4316,7 +4353,10 @@
     "src/Modes/DefenseKit.cs:48"
   ],
   "LMB: throw the watcher": [
-    "src/Modes/Agents/InitiatorAbilities.cs:53"
+    "src/Modes/Agents/InitiatorAbilities.cs:58"
+  ],
+  "LMB: throw · RMB: stick it to a wall": [
+    "src/Modes/Agents/HushKit.cs:395"
   ],
   "Loading 3D replay…": [
     "src/UI/RewindView3D.cs:240"
@@ -4387,7 +4427,7 @@
     "src/UI/SkinPicker.cs:715"
   ],
   "Locks down a site or a flank with traps and holds angles on their own.": [
-    "src/Agents/AgentRoster.cs:277"
+    "src/Agents/AgentRoster.cs:285"
   ],
   "Logs (attach godot.log to bug reports)": [
     "src/UI/SettingsScreen.cs:686"
@@ -4405,7 +4445,7 @@
     "src/Modes/SheriffMode.cs:340"
   ],
   "Long-range smokes you can even send through walls.": [
-    "src/Agents/AgentRoster.cs:186"
+    "src/Agents/AgentRoster.cs:194"
   ],
   "Long-range Taps": [
     "src/Modes/AimPlusLongTaps.cs:20"
@@ -4426,7 +4466,7 @@
     "src/Warmup/LockInMatchLog.cs:299"
   ],
   "Lost it off the map": [
-    "src/Modes/Agents/InitiatorDrill.cs:273"
+    "src/Modes/Agents/InitiatorDrill.cs:276"
   ],
   "Lost to the defuse": [
     "src/Modes/TacticalModes.cs:453"
@@ -4551,10 +4591,10 @@
     "src/UI/MenuScreen.cs:1203"
   ],
   "Mark spots on a map view and raise smokes there.": [
-    "src/Agents/AgentRoster.cs:179"
+    "src/Agents/AgentRoster.cs:187"
   ],
   "Marksman sentinel with his own custom guns and a teleport to escape.": [
-    "src/Agents/AgentRoster.cs:199"
+    "src/Agents/AgentRoster.cs:207"
   ],
   "Match the target's speed first, then fine-tune the position.": [
     "src/Analysis/Assess.cs:502"
@@ -4766,13 +4806,13 @@
     "src/UI/RewindDraw.cs:397"
   ],
   "Nanowire sentinel who stops pushes cold with barriers, nets and sound sensors.": [
-    "src/Agents/AgentRoster.cs:213"
+    "src/Agents/AgentRoster.cs:221"
   ],
   "Nature initiator who scouts with a tiger and flashes with guiding birds.": [
-    "src/Agents/AgentRoster.cs:122"
+    "src/Agents/AgentRoster.cs:130"
   ],
   "NEARSIGHTED": [
-    "src/Modes/Agents/InitiatorDrill.cs:697"
+    "src/Modes/Agents/InitiatorDrill.cs:712"
   ],
   "Nearsighted: {0} · utility kills: {1}": [
     "src/Modes/Agents/InitiatorDrills.cs:36"
@@ -4849,7 +4889,7 @@
     "src/Modes/RecoilModes.cs:146"
   ],
   "Nimble entry duelist: dash in, win the opening duel, get out before the trade.": [
-    "src/Agents/AgentRoster.cs:41"
+    "src/Agents/AgentRoster.cs:49"
   ],
   "No agent or ability matches \"{0}\" among the {1}.": [
     "src/UI/AgentsScreen.cs:207"
@@ -4871,12 +4911,13 @@
   ],
   "NO CHARGE": [
     "src/Modes/Agents/DuelistKits.cs:138",
-    "src/Modes/Agents/DuelistKits.cs:1190"
+    "src/Modes/Agents/DuelistKits.cs:1190",
+    "src/Modes/Agents/HushKit.cs:388"
   ],
   "NO CHARGES": [
     "src/Modes/Agents/DuelistKits.cs:501",
     "src/Modes/Agents/DuelistKits.cs:914",
-    "src/Modes/Agents/InitiatorDrill.cs:647"
+    "src/Modes/Agents/InitiatorDrill.cs:662"
   ],
   "No charges left this round": [
     "src/Modes/Agents/InitiatorKit.cs:123"
@@ -5061,7 +5102,7 @@
     "src/Modes/DefenseSetup.cs:189"
   ],
   "No wall hit — the shard faded": [
-    "src/Modes/Agents/InitiatorDrill.cs:272"
+    "src/Modes/Agents/InitiatorDrill.cs:274"
   ],
   "No wall within 35 m": [
     "src/Game/Fx/PlayerFlash.cs:250"
@@ -5076,7 +5117,7 @@
     "src/UI/DrillPreview.cs:429"
   ],
   "Nobody flashed": [
-    "src/Modes/Agents/InitiatorDrill.cs:360"
+    "src/Modes/Agents/InitiatorDrill.cs:368"
   ],
   "None": [
     "src/UI/SettingsScreen.cs:42",
@@ -5343,7 +5384,7 @@
     "src/UI/SettingsScreen.cs:525"
   ],
   "Once switched on, it destroys enemy utility thrown near it.": [
-    "src/Agents/AgentRoster.cs:238"
+    "src/Agents/AgentRoster.cs:246"
   ],
   "One click, one head with the Sheriff at 8–45 m. Past 30 m a head does 145 and won't kill a full shield: tap again. Spamming is punished.": [
     "src/Modes/SheriffMode.cs:30"
@@ -5388,7 +5429,7 @@
     "src/Warmup/WarmupCharts.cs:157"
   ],
   "One-tap drills with Headhunter and Tour De Force.": [
-    "src/Modes/Agents/DuelistDrills.cs:431"
+    "src/Modes/Agents/DuelistDrills.cs:435"
   ],
   "One-tap kills": [
     "src/Modes/SheriffMode.cs:339"
@@ -5607,7 +5648,7 @@
     "src/Modes/AimPlusSwitch.cs:201"
   ],
   "Overload to suppress everyone nearby; teammates can bring you back up.": [
-    "src/Agents/AgentRoster.cs:120"
+    "src/Agents/AgentRoster.cs:128"
   ],
   "OVERRIDE": [
     "src/UI/MenuScreen.cs:672"
@@ -5756,7 +5797,7 @@
     "src/Modes/CrosshairFinderDraw.cs:569"
   ],
   "Pick spots on a map and drop long-lasting smokes there.": [
-    "src/Agents/AgentRoster.cs:158"
+    "src/Agents/AgentRoster.cs:166"
   ],
   "Pick the gun for this drill (B)": [
     "src/UI/GunPicker.cs:533"
@@ -5771,7 +5812,7 @@
     "src/Modes/CrosshairFinderDraw.cs:339"
   ],
   "Pick up to two spots on a map and send missiles there.": [
-    "src/Agents/AgentRoster.cs:141"
+    "src/Agents/AgentRoster.cs:149"
   ],
   "Pick your current competitive rank. The coach shows how your aim compares with it.": [
     "src/UI/ProfileScreen.cs:346"
@@ -5783,7 +5824,7 @@
     "src/Modes/CrosshairFinderDraw.cs:387"
   ],
   "Pilot a creature into the enemy, then pounce to detain everyone close by.": [
-    "src/Agents/AgentRoster.cs:113"
+    "src/Agents/AgentRoster.cs:121"
   ],
   "Pink": [
     "src/Valorant/CrosshairCode.cs:79"
@@ -5792,7 +5833,7 @@
     "src/Modes/DefenseModes.cs:655"
   ],
   "Place stars from above; the ultimate draws a long wall that stops bullets and sound.": [
-    "src/Agents/AgentRoster.cs:151"
+    "src/Agents/AgentRoster.cs:159"
   ],
   "PLACE YOUR SMOKES": [
     "src/Modes/Agents/ControllerDraw.cs:456"
@@ -5947,7 +5988,7 @@
     "src/Modes/AimPlusPopup.cs:155"
   ],
   "Pops you straight up for high angles or a drop from above.": [
-    "src/Agents/AgentRoster.cs:44"
+    "src/Agents/AgentRoster.cs:52"
   ],
   "POSSIBLE": [
     "src/UI/CoachUi.cs:168",
@@ -5994,7 +6035,7 @@
     "src/Analysis/Assess.cs:712"
   ],
   "Precise throwing knives; every kill hands the knives back.": [
-    "src/Agents/AgentRoster.cs:46"
+    "src/Agents/AgentRoster.cs:54"
   ],
   "PRECISION": [
     "src/UI/CoachUi.cs:114",
@@ -6031,6 +6072,9 @@
   ],
   "Press the key again to pop it — a longer flight blinds longer.": [
     "src/Modes/Agents/InitiatorAbilities.cs:30"
+  ],
+  "Press the key again while it flies to send it toward your crosshair.": [
+    "src/Modes/Agents/InitiatorAbilities.cs:37"
   ],
   "PREVIEW": [
     "src/UI/SkinPicker.cs:470"
@@ -6073,7 +6117,7 @@
     "src/Modes/Agents/DuelistKits.cs:51"
   ],
   "Prime it, then burst a short way in the direction you're moving.": [
-    "src/Agents/AgentRoster.cs:45"
+    "src/Agents/AgentRoster.cs:53"
   ],
   "PRIMING…": [
     "src/Modes/Agents/DuelistKits.cs:138"
@@ -6132,6 +6176,12 @@
   "Pulled the spray {0:0.0}° under the target": [
     "src/Analysis/InsightsBuilder.cs:216"
   ],
+  "Pulled yourself": [
+    "src/Modes/Agents/HushKit.cs:417"
+  ],
+  "PULLING": [
+    "src/Modes/Agents/HushKit.cs:387"
+  ],
   "Pulling down against recoil: how far bullets 4–15 drift vertically and sideways, and how early you start pulling.": [
     "src/UI/CoachUi.cs:140"
   ],
@@ -6151,7 +6201,7 @@
     "src/UI/UiTheme.cs:31"
   ],
   "Pushes a bulletproof wall of energy ahead of you.": [
-    "src/Agents/AgentRoster.cs:36"
+    "src/Agents/AgentRoster.cs:44"
   ],
   "Q orb: CLICK throws, RIGHT-CLICK lobs · E wall: CLICK fires it along your aim (through walls) · Q / E again = gas on/off (fuel)": [
     "src/Modes/Agents/ControllerKit.cs:103"
@@ -6180,7 +6230,7 @@
     "src/Modes/DefenseKit.cs:55"
   ],
   "Raises a tall, sturdy wall to block a path or boost a teammate up.": [
-    "src/Agents/AgentRoster.cs:229"
+    "src/Agents/AgentRoster.cs:237"
   ],
   "Rally": [
     "src/Game/Skins/SkinCatalog.cs:73"
@@ -6287,10 +6337,10 @@
     "src/Modes/Agents/DuelistKits.cs:325"
   ],
   "READY TO CAST": [
-    "src/Modes/Agents/InitiatorDrill.cs:644"
+    "src/Modes/Agents/InitiatorDrill.cs:659"
   ],
   "READY · BOUNCES {0}": [
-    "src/Modes/Agents/InitiatorDrill.cs:649"
+    "src/Modes/Agents/InitiatorDrill.cs:664"
   ],
   "REAL PB +{0:0.0}% · {1}": [
     "src/Progress/ProgressEngine.cs:194"
@@ -6336,7 +6386,7 @@
     "src/Modes/Agents/InitiatorDrills.cs:78"
   ],
   "Recon initiator who finds enemies with arrows and a drone before the team commits.": [
-    "src/Agents/AgentRoster.cs:129"
+    "src/Agents/AgentRoster.cs:137"
   ],
   "Recon shot down": [
     "src/Modes/Agents/InitiatorDrills.cs:92"
@@ -6348,6 +6398,9 @@
   "red": [
     "src/Modes/CrosshairHint.cs:35"
   ],
+  "REDIRECTED": [
+    "src/Modes/Agents/HushKit.cs:387"
+  ],
   "Regular": [
     "src/Core/Difficulty.cs:36"
   ],
@@ -6358,7 +6411,7 @@
     "src/Analysis/Assess.cs:536"
   ],
   "Release LMB to shoot   ·   RMB: bounces ({0})": [
-    "src/Modes/Agents/InitiatorDrill.cs:595"
+    "src/Modes/Agents/InitiatorDrill.cs:603"
   ],
   "RELEASED KEYS": [
     "src/UI/Hud.cs:418"
@@ -6504,7 +6557,7 @@
     "src/Modes/Agents/InitiatorDrills.cs:83"
   ],
   "Revive after dying; get a kill or assist quickly or fall again.": [
-    "src/Agents/AgentRoster.cs:166"
+    "src/Agents/AgentRoster.cs:174"
   ],
   "REWIND": [
     "src/UI/Hud.cs:916",
@@ -6542,11 +6595,14 @@
   "Right-click a bind to unbind it in ValTrainer": [
     "src/UI/SettingsKeybinds.cs:315"
   ],
+  "RMB sticks it to a wall; the key launches it from there.": [
+    "src/Modes/Agents/InitiatorAbilities.cs:38"
+  ],
   "RMB TO SLIDE": [
     "src/Modes/Agents/DuelistKits.cs:327"
   ],
   "RMB: add a bounce": [
-    "src/Modes/Agents/InitiatorAbilities.cs:50"
+    "src/Modes/Agents/InitiatorAbilities.cs:55"
   ],
   "RMB: aim down sights (1.5×, perfect first shot).": [
     "src/Modes/Agents/ChamberDrill.cs:313"
@@ -6566,14 +6622,17 @@
   "RMB: slide (forward or sideways)": [
     "src/Modes/Agents/DuelistKits.cs:331"
   ],
-  "RMB: underhand": [
+  "RMB: stick it to a wall": [
     "src/Modes/Agents/InitiatorAbilities.cs:35"
   ],
+  "RMB: underhand": [
+    "src/Modes/Agents/InitiatorAbilities.cs:40"
+  ],
   "RMB: underhand lob — pops after 1 s.": [
-    "src/Modes/Agents/InitiatorAbilities.cs:36"
+    "src/Modes/Agents/InitiatorAbilities.cs:41"
   ],
   "Robot initiator who shuts down enemy abilities and flashes the way in.": [
-    "src/Agents/AgentRoster.cs:115"
+    "src/Agents/AgentRoster.cs:123"
   ],
   "ROLE": [
     "src/UI/AgentsScreen.cs:226"
@@ -6636,8 +6695,8 @@
     "src/Modes/MapModes.cs:145",
     "src/Modes/TacticalModes.cs:450",
     "src/Modes/Agents/ControllerDrills.cs:620",
-    "src/Modes/Agents/DuelistDrills.cs:381",
-    "src/Modes/Agents/InitiatorDrill.cs:721"
+    "src/Modes/Agents/DuelistDrills.cs:385",
+    "src/Modes/Agents/InitiatorDrill.cs:736"
   ],
   "Rounds won {0}/{1}": [
     "src/Modes/RecoilModes.cs:358"
@@ -6730,7 +6789,7 @@
     "src/Warmup/LockInHandoff.cs:141"
   ],
   "Scan: nobody seen": [
-    "src/Modes/Agents/InitiatorDrill.cs:393"
+    "src/Modes/Agents/InitiatorDrill.cs:401"
   ],
   "scope": [
     "src/UI/GunPicker.cs:344"
@@ -6777,7 +6836,7 @@
     "src/Modes/Agents/InitiatorDrills.cs:47"
   ],
   "Self-reliant duelist who flashes for himself and heals in his own flames.": [
-    "src/Agents/AgentRoster.cs:56"
+    "src/Agents/AgentRoster.cs:64"
   ],
   "SEMI-FINAL": [
     "src/Modes/CrosshairFinderMode.cs:618"
@@ -6802,7 +6861,7 @@
     "src/UI/BugReport.cs:1091"
   ],
   "Send a tether ahead and teleport to it when the moment is right.": [
-    "src/Agents/AgentRoster.cs:89"
+    "src/Agents/AgentRoster.cs:97"
   ],
   "Send an idea for a drill, an agent, a map or a setting to #suggestions on the ValTrainer Discord": [
     "src/UI/SettingsScreen.cs:784"
@@ -6918,7 +6977,7 @@
     "src/UI/AgentsScreen.cs:138"
   ],
   "Set smokes from a map view; it works even after you die.": [
-    "src/Agents/AgentRoster.cs:165"
+    "src/Agents/AgentRoster.cs:173"
   ],
   "Set up {0}, hold your angle and stall the push until it breaks.": [
     "src/Agents/AgentDrills.cs:285"
@@ -6980,7 +7039,7 @@
     "src/Modes/SensFinderMode.cs:118"
   ],
   "Shadowy controller who smokes from afar and teleports to unexpected angles.": [
-    "src/Agents/AgentRoster.cs:182"
+    "src/Agents/AgentRoster.cs:190"
   ],
   "SHAKY": [
     "src/Warmup/LockInCheckIn.cs:205"
@@ -7222,7 +7281,7 @@
   ],
   "SITE CLEAR  {0:0.0}s": [
     "src/Modes/MapModes.cs:106",
-    "src/Modes/Agents/DuelistDrills.cs:196",
+    "src/Modes/Agents/DuelistDrills.cs:197",
     "src/Modes/Agents/InitiatorDrill.cs:171"
   ],
   "SITE CLEAR — DEFUSE!": [
@@ -7303,7 +7362,7 @@
     "src/Modes/CrosshairFinderMode.cs:908"
   ],
   "Slip into another dimension: unseen and untouchable while you scout.": [
-    "src/Agents/AgentRoster.cs:90"
+    "src/Agents/AgentRoster.cs:98"
   ],
   "Slow corrections": [
     "src/UI/RewindData.cs:96"
@@ -7414,7 +7473,7 @@
     "src/UI/SkinPicker.cs:39"
   ],
   "Snowballing duelist: every kill fuels a heal or an escape.": [
-    "src/Agents/AgentRoster.cs:71"
+    "src/Agents/AgentRoster.cs:79"
   ],
   "Soft big dot": [
     "src/Modes/CrosshairFinderTabs.cs:277"
@@ -7465,7 +7524,7 @@
     "src/Modes/DefenseSound.cs:24"
   ],
   "Sound-powered controller who smokes, stims his team and rattles defenders.": [
-    "src/Agents/AgentRoster.cs:175"
+    "src/Agents/AgentRoster.cs:183"
   ],
   "SOUNDS": [
     "src/UI/SkinLevelTrack.cs:71"
@@ -7570,7 +7629,7 @@
     "src/Modes/MovementPlusModes.cs:126"
   ],
   "Spotted before using it": [
-    "src/Modes/Agents/DuelistDrills.cs:390"
+    "src/Modes/Agents/DuelistDrills.cs:394"
   ],
   "Spotted in": [
     "src/Modes/CrosshairFinderMode.cs:1028"
@@ -7630,7 +7689,7 @@
     "src/Modes/Agents/DuelistKits.cs:327"
   ],
   "Sprint flat out and slide once it's charged; kills refill the slide.": [
-    "src/Agents/AgentRoster.cs:53"
+    "src/Agents/AgentRoster.cs:61"
   ],
   "Sprint up to the angle, slide wide past it, shoot from the slide.": [
     "src/Modes/Agents/DuelistKits.cs:225"
@@ -7639,10 +7698,10 @@
     "src/Modes/Agents/DuelistKits.cs:325"
   ],
   "Sprinting duelist who closes the distance before defenders can line up a shot.": [
-    "src/Agents/AgentRoster.cs:49"
+    "src/Agents/AgentRoster.cs:57"
   ],
   "Spy sentinel who watches flanks with tripwires, cages and a camera.": [
-    "src/Agents/AgentRoster.cs:206"
+    "src/Agents/AgentRoster.cs:214"
   ],
   "Stained-glass panels in lead came, jewel tones lit from within": [
     "src/Game/Skins/SkinCatalog.cs:69"
@@ -7732,16 +7791,19 @@
     "src/Modes/CrosshairFinderTabs.cs:276"
   ],
   "Steer a hawk and burst it into a flash; you hear if it caught someone.": [
-    "src/Agents/AgentRoster.cs:126"
+    "src/Agents/AgentRoster.cs:134"
   ],
   "Steer a tiger that pounces on an enemy and concusses them.": [
-    "src/Agents/AgentRoster.cs:125"
+    "src/Agents/AgentRoster.cs:133"
+  ],
+  "Steer an orb with your crosshair, then burst it to lift everyone caught into the air.": [
+    "src/Agents/AgentRoster.cs:39"
   ],
   "STEERING": [
-    "src/Modes/Agents/InitiatorDrill.cs:646"
+    "src/Modes/Agents/InitiatorDrill.cs:661"
   ],
   "Steering — {0} to pop it": [
-    "src/Modes/Agents/InitiatorDrill.cs:596"
+    "src/Modes/Agents/InitiatorDrill.cs:604"
   ],
   "STEP {0} / {1} · ROUND {2} / {3}": [
     "src/Modes/SensFinderDraw.cs:94"
@@ -7821,6 +7883,9 @@
   "Streak": [
     "src/Progress/ProgressEngine.cs:111"
   ],
+  "STUCK": [
+    "src/Modes/Agents/HushKit.cs:387"
+  ],
   "STUCK · {0} TO BLOW": [
     "src/Modes/Agents/DuelistKits.cs:501"
   ],
@@ -7836,7 +7901,7 @@
     "src/UI/SettingsScreen.cs:747"
   ],
   "Support sentinel who walls, slows and heals, and can bring a teammate back.": [
-    "src/Agents/AgentRoster.cs:227"
+    "src/Agents/AgentRoster.cs:235"
   ],
   "SUPPORT VALTRAINER": [
     "src/UI/MenuScreen.cs:332",
@@ -7895,7 +7960,7 @@
     "src/Analysis/RunSummary.cs:32"
   ],
   "Takes the first fight: makes space with movement and wins the opening duel.": [
-    "src/Agents/AgentRoster.cs:274"
+    "src/Agents/AgentRoster.cs:282"
   ],
   "Tall crate": [
     "src/Modes/MovementPlusModes.cs:30"
@@ -7943,8 +8008,11 @@
   "TARGET {0} OF {1}": [
     "src/UI/RewindDraw.cs:332"
   ],
+  "Telekinetic duelist who grapples to odd angles, drags defenders out of cover and flashes the way in.": [
+    "src/Agents/AgentRoster.cs:34"
+  ],
   "Teleport anywhere on the map.": [
-    "src/Agents/AgentRoster.cs:187"
+    "src/Agents/AgentRoster.cs:195"
   ],
   "Teleport distance": [
     "src/Modes/Agents/DuelistKits.cs:939"
@@ -7986,7 +8054,10 @@
     "src/Modes/CrosshairFinderDraw.cs:144"
   ],
   "The charge bursts out of the far side 0.5 s later.": [
-    "src/Modes/Agents/InitiatorAbilities.cs:39"
+    "src/Modes/Agents/InitiatorAbilities.cs:44"
+  ],
+  "The charge faded before you launched it": [
+    "src/Modes/Agents/HushKit.cs:267"
   ],
   "The click is chained to the flick: you fire the moment your hand stops, not when the crosshair is actually on the head.": [
     "src/Analysis/Assess.cs:360"
@@ -8019,10 +8090,13 @@
     "src/UI/SettingsScreen.cs:1016"
   ],
   "The eye drifts 10 m forward, straight through walls.": [
-    "src/Modes/Agents/InitiatorAbilities.cs:45"
+    "src/Modes/Agents/InitiatorAbilities.cs:50"
   ],
   "The first big motion onto a target: how fast you start, how fast you get there and how close the flick lands.": [
     "src/UI/CoachUi.cs:135"
+  ],
+  "The flash faded before you launched it": [
+    "src/Modes/Agents/InitiatorDrill.cs:275"
   ],
   "The flick is planned too long, or the arm is tense and brakes late. Undoing an overshoot costs more time than finishing a short flick: you have to stop, reverse and re-aim.": [
     "src/Analysis/Assess.cs:317"
@@ -8096,7 +8170,7 @@
     "src/Warmup/LockInHandoff.cs:99"
   ],
   "The watcher flies 1.5 s, then drops (press the key again to drop it early).": [
-    "src/Modes/Agents/InitiatorAbilities.cs:54"
+    "src/Modes/Agents/InitiatorAbilities.cs:59"
   ],
   "The wrist arcs instead of moving in a straight line, or the mouse pad sits at an angle, so flicks curve and land low.": [
     "src/Analysis/Assess.cs:440"
@@ -8129,7 +8203,7 @@
     "src/Modes/DefenseSound.cs:516"
   ],
   "They shot your {0}": [
-    "src/Modes/Agents/InitiatorDrill.cs:278"
+    "src/Modes/Agents/InitiatorDrill.cs:281"
   ],
   "THEY'RE COMING": [
     "src/Modes/DefenseModes.cs:230"
@@ -8190,7 +8264,7 @@
     "src/UI/ProgressScreen.cs:244"
   ],
   "Three seekers chase down the closest enemies and nearsight them.": [
-    "src/Agents/AgentRoster.cs:127"
+    "src/Agents/AgentRoster.cs:135"
   ],
   "Three strafing agents (real damage of your gun; a Vandal kills with 1 head or 4 body). Kill one, switch to the next — fast switches, no flicking past them.": [
     "src/Modes/AimPlusSwitch.cs:19"
@@ -8237,7 +8311,7 @@
   "TIME": [
     "src/Modes/MapModes.cs:113",
     "src/Modes/Agents/ControllerDrills.cs:367",
-    "src/Modes/Agents/DuelistDrills.cs:198",
+    "src/Modes/Agents/DuelistDrills.cs:199",
     "src/Modes/Agents/InitiatorDrill.cs:173"
   ],
   "Time on target": [
@@ -8247,7 +8321,7 @@
     "src/Modes/AimPlusSwitch.cs:210"
   ],
   "Time to enter site": [
-    "src/Modes/Agents/DuelistDrills.cs:384"
+    "src/Modes/Agents/DuelistDrills.cs:388"
   ],
   "TIME TO HIT": [
     "src/UI/RewindScreen.cs:265"
@@ -8376,13 +8450,13 @@
     "src/UI/ProgressScreen.cs:178"
   ],
   "Top speed plus a lightning beam that stays accurate while you run.": [
-    "src/Agents/AgentRoster.cs:54"
+    "src/Agents/AgentRoster.cs:62"
   ],
   "TOTAL RUNS": [
     "src/UI/StatsScreen.cs:185"
   ],
   "Toxic controller who walls off space with gas that wears enemies down.": [
-    "src/Agents/AgentRoster.cs:189"
+    "src/Agents/AgentRoster.cs:197"
   ],
   "TRACERS": [
     "src/UI/SkinLevelTrack.cs:72"
@@ -8472,7 +8546,7 @@
     "src/Analysis/Assess.cs:486"
   ],
   "Trickster duelist who fakes, teleports and flashes to strike from odd angles.": [
-    "src/Agents/AgentRoster.cs:85"
+    "src/Agents/AgentRoster.cs:93"
   ],
   "Trust the first confirmation — speed up the click, not the flick.": [
     "src/Analysis/Assess.cs:421"
@@ -8520,7 +8594,7 @@
     "src/Modes/DefenseModes.cs:487"
   ],
   "Two electric walls race along the floor and cut off vision.": [
-    "src/Agents/AgentRoster.cs:51"
+    "src/Agents/AgentRoster.cs:59"
   ],
   "Two-Tone Polymer": [
     "src/Game/Skins/SkinCatalog.cs:66"
@@ -8618,10 +8692,10 @@
     "src/Modes/CrosshairFinderMode.cs:563"
   ],
   "Up to three long energy blasts that go through walls.": [
-    "src/Agents/AgentRoster.cs:134"
+    "src/Agents/AgentRoster.cs:142"
   ],
   "Up to two quick forward dashes; aim the first one up to gain height.": [
-    "src/Agents/AgentRoster.cs:81"
+    "src/Agents/AgentRoster.cs:89"
   ],
   "Update failed — open the release page": [
     "src/Core/Updater.cs:427"
@@ -8705,13 +8779,13 @@
     "src/Modes/Agents/DuelistKits.cs:1396"
   ],
   "Used before 1st duel": [
-    "src/Modes/Agents/DuelistDrills.cs:388"
+    "src/Modes/Agents/DuelistDrills.cs:392"
   ],
   "USED ✓": [
     "src/UI/SettingsScreen.cs:320"
   ],
   "Uses a dead enemy to show where their whole team is.": [
-    "src/Agents/AgentRoster.cs:211"
+    "src/Agents/AgentRoster.cs:219"
   ],
   "Uses {0}": [
     "src/Agents/AgentDrills.cs:135",
@@ -8900,7 +8974,7 @@
     "src/UI/ProgressWidgets.cs:596"
   ],
   "Veteran controller who calls in smokes, fire and an orbital strike from above.": [
-    "src/Agents/AgentRoster.cs:154"
+    "src/Agents/AgentRoster.cs:162"
   ],
   "VIDEO & GAMEPLAY": [
     "src/UI/SettingsScreen.cs:115"
@@ -9010,7 +9084,7 @@
     "src/Analysis/Assess.cs:654"
   ],
   "Water controller who covers pushes with moving walls and a bulletproof dome.": [
-    "src/Agents/AgentRoster.cs:168"
+    "src/Agents/AgentRoster.cs:176"
   ],
   "Weapon": [
     "src/UI/DrillPreview.cs:155",
@@ -9099,7 +9173,7 @@
     "src/UI/BugReport.cs:857"
   ],
   "When it lands it reveals the enemies it can see and leaves a trail to them.": [
-    "src/Modes/Agents/InitiatorAbilities.cs:54"
+    "src/Modes/Agents/InitiatorAbilities.cs:59"
   ],
   "When the target changed direction you ran {0:0.00}° past it — {1:0.00}° more than a normal reaction carries you": [
     "src/Analysis/Assess.cs:515"
@@ -9111,7 +9185,7 @@
     "src/UI/DrillPreview.cs:163"
   ],
   "Where the bolt sticks it scans twice and reveals the enemies it can see.": [
-    "src/Modes/Agents/InitiatorAbilities.cs:51"
+    "src/Modes/Agents/InitiatorAbilities.cs:56"
   ],
   "WHERE THEY COME FROM": [
     "src/UI/SettingsKeybinds.cs:327"
@@ -9546,7 +9620,7 @@
     "src/Analysis/RunSummary.cs:75"
   ],
   "Your gas eats away at enemies' health while they stay in it.": [
-    "src/Agents/AgentRoster.cs:195"
+    "src/Agents/AgentRoster.cs:203"
   ],
   "YOUR GOAL": [
     "src/Warmup/LockInHandoff.cs:133"
@@ -9589,7 +9663,7 @@
     "src/Modes/CrosshairFinderDraw.cs:145"
   ],
   "Your own fire heals you instead of hurting you.": [
-    "src/Agents/AgentRoster.cs:62"
+    "src/Agents/AgentRoster.cs:70"
   ],
   "YOUR PICK": [
     "src/UI/DrillPreview.cs:267",
@@ -9668,7 +9742,7 @@
     "src/Modes/TacticalModes.cs:436"
   ],
   "Your stars are placed from a top-down view of the map.": [
-    "src/Agents/AgentRoster.cs:152"
+    "src/Agents/AgentRoster.cs:160"
   ],
   "Your stops took {0:0} ms on average to reach accurate speed (best ≈ 105)": [
     "src/Analysis/Assess.cs:621"
@@ -9766,7 +9840,7 @@
     "src/Modes/MapModes.cs:146"
   ],
   "{0:0.0} s  ({1} of {2})": [
-    "src/Modes/Agents/DuelistDrills.cs:384"
+    "src/Modes/Agents/DuelistDrills.cs:388"
   ],
   "{0:0.0} s avg": [
     "src/Modes/TacticalModes.cs:743"
@@ -9846,7 +9920,7 @@
     "src/Modes/AimPlusMicroshot.cs:131"
   ],
   "{0:0} ms  ({1} kill)|{0:0} ms  ({1} kills)": [
-    "src/Modes/Agents/DuelistDrills.cs:389"
+    "src/Modes/Agents/DuelistDrills.cs:393"
   ],
   "{0:0} ms (median)": [
     "src/Modes/CrosshairFinderMode.cs:1028"
@@ -10060,6 +10134,9 @@
   "{0}  (avg {1:0.0} m)": [
     "src/Modes/Agents/DuelistKits.cs:1212"
   ],
+  "{0}  (avg {1:0.0} m, {2} up a level)": [
+    "src/Modes/Agents/HushKit.cs:413"
+  ],
   "{0}  (was {1})": [
     "src/Modes/SensFinderMode.cs:802"
   ],
@@ -10072,8 +10149,14 @@
   "{0}  ({1} cast)|{0}  ({1} casts)": [
     "src/Modes/Agents/InitiatorDrills.cs:43"
   ],
+  "{0}  ({1} concussed)": [
+    "src/Modes/Agents/HushKit.cs:415"
+  ],
   "{0}  ({1} from a fight)": [
     "src/Modes/Agents/DuelistKits.cs:1213"
+  ],
+  "{0}  ({1} redirected)": [
+    "src/Modes/Agents/HushKit.cs:414"
   ],
   "{0}  ({1} spotted)": [
     "src/Modes/Agents/DuelistKits.cs:159"
@@ -10246,7 +10329,7 @@
     "src/UI/DrillPreview.cs:469"
   ],
   "{0} defender|{0} defenders": [
-    "src/Modes/Agents/DuelistDrills.cs:394"
+    "src/Modes/Agents/DuelistDrills.cs:398"
   ],
   "{0} destroyed": [
     "src/Modes/DefenseModes.cs:507"
@@ -10280,14 +10363,17 @@
   "{0} equips {1}: LMB dashes twice, RMB once (9 m each; aim up for height on the first).": [
     "src/Modes/Agents/DuelistKits.cs:1008"
   ],
+  "{0} equips {1}: LMB throws it, RMB sticks it to a wall, {2} again sends it toward your crosshair.": [
+    "src/Modes/Agents/HushKit.cs:63"
+  ],
   "{0} faded": [
     "src/Modes/Agents/DuelistKits.cs:76"
   ],
   "{0} FLASHED ({1} partial)|{0} FLASHED ({1} partial)": [
-    "src/Modes/Agents/InitiatorDrill.cs:361"
+    "src/Modes/Agents/InitiatorDrill.cs:369"
   ],
   "{0} FLASHED|{0} FLASHED": [
-    "src/Modes/Agents/InitiatorDrill.cs:362"
+    "src/Modes/Agents/InitiatorDrill.cs:370"
   ],
   "{0} flicks, then {1:0} s tracking": [
     "src/Modes/SensFinderDraw.cs:97"
@@ -10419,7 +10505,7 @@
   ],
   "{0} of {1}  ({2:0}%)": [
     "src/Modes/Agents/ChamberDrill.cs:326",
-    "src/Modes/Agents/DuelistDrills.cs:383"
+    "src/Modes/Agents/DuelistDrills.cs:387"
   ],
   "{0} of {1}  ({2} cast)|{0} of {1}  ({2} casts)": [
     "src/Modes/Agents/InitiatorDrills.cs:89"
@@ -10457,7 +10543,7 @@
   ],
   "{0} of {1} round|{0} of {1} rounds": [
     "src/Modes/MovementPlusModes.cs:316",
-    "src/Modes/Agents/DuelistDrills.cs:387"
+    "src/Modes/Agents/DuelistDrills.cs:391"
   ],
   "{0} of {1} shots": [
     "src/UI/RewindDraw.cs:538",
@@ -10487,6 +10573,15 @@
   "{0} profile from VALORANT|{0} profiles from VALORANT": [
     "src/UI/SettingsCrosshair.cs:43"
   ],
+  "{0} PULLED ({1} concussed)|{0} PULLED ({1} concussed)": [
+    "src/Modes/Agents/HushKit.cs:359"
+  ],
+  "{0} PULLED|{0} PULLED": [
+    "src/Modes/Agents/HushKit.cs:359"
+  ],
+  "{0} pulls": [
+    "src/Modes/Agents/HushKit.cs:412"
+  ],
   "{0} RANK-UP · {1}": [
     "src/Progress/CoachTrack.cs:146"
   ],
@@ -10503,13 +10598,14 @@
     "src/Modes/Agents/DuelistKits.cs:67",
     "src/Modes/Agents/DuelistKits.cs:790",
     "src/Modes/Agents/DuelistKits.cs:1029",
-    "src/Modes/Agents/InitiatorDrill.cs:577"
+    "src/Modes/Agents/HushKit.cs:92",
+    "src/Modes/Agents/InitiatorDrill.cs:585"
   ],
   "{0} returns": [
     "src/Modes/Agents/DuelistKits.cs:1213"
   ],
   "{0} REVEALED|{0} REVEALED": [
-    "src/Modes/Agents/InitiatorDrill.cs:393"
+    "src/Modes/Agents/InitiatorDrill.cs:401"
   ],
   "{0} rounds/s": [
     "src/UI/GunPicker.cs:335"
@@ -10583,6 +10679,9 @@
   ],
   "{0} tab only": [
     "src/Modes/CrosshairFinderMode.cs:1032"
+  ],
+  "{0} throws": [
+    "src/Modes/Agents/HushKit.cs:414"
   ],
   "{0} throws a {1} that sticks where it lands; {2} again sets it off and launches you (no self-damage).": [
     "src/Modes/Agents/DuelistKits.cs:411"
@@ -10663,7 +10762,7 @@
     "src/Modes/CrosshairFinderMode.cs:994"
   ],
   "{0} · you flashed yourself": [
-    "src/Modes/Agents/InitiatorDrill.cs:363"
+    "src/Modes/Agents/InitiatorDrill.cs:371"
   ],
   "{0} · {1:0.0}s after sound": [
     "src/Modes/TacticalModes.cs:454"
@@ -10769,7 +10868,7 @@
     "src/Modes/Agents/DuelistKits.cs:506"
   ],
   "{0}: drop the watcher now": [
-    "src/Modes/Agents/InitiatorDrill.cs:597"
+    "src/Modes/Agents/InitiatorDrill.cs:607"
   ],
   "{0}: held {1} at level {2} (your last Lock-Ins: {3}).": [
     "src/Warmup/LockInHandoff.cs:181"
@@ -10777,14 +10876,29 @@
   "{0}: held {1} at level {2}.": [
     "src/Warmup/LockInHandoff.cs:182"
   ],
+  "{0}: launch it toward your crosshair": [
+    "src/Modes/Agents/HushKit.cs:397"
+  ],
+  "{0}: launch the flash toward your crosshair": [
+    "src/Modes/Agents/InitiatorDrill.cs:609"
+  ],
   "{0}: one precise tap at a time, reset between shots.": [
     "src/Agents/AgentDrills.cs:288"
   ],
   "{0}: pop the flash": [
-    "src/Modes/Agents/InitiatorDrill.cs:597"
+    "src/Modes/Agents/InitiatorDrill.cs:611"
+  ],
+  "{0}: pulling you to the anchor…": [
+    "src/Modes/Agents/HushKit.cs:398"
+  ],
+  "{0}: redirect the flash toward your crosshair": [
+    "src/Modes/Agents/InitiatorDrill.cs:610"
   ],
   "{0}: scope early, crosshair where they'll appear, one clean shot.": [
     "src/Agents/AgentDrills.cs:287"
+  ],
+  "{0}: send it toward your crosshair": [
+    "src/Modes/Agents/HushKit.cs:397"
   ],
   "{0}: switch the Interceptor on": [
     "src/Modes/DefenseModes.cs:583"
@@ -10803,6 +10917,9 @@
   ],
   "{0}: {1} back to the beacon": [
     "src/Modes/Agents/DuelistKits.cs:1197"
+  ],
+  "{0}: {1} drops an anchor where you aim (up to 15 m) and pulls you to it 0.4 s later. Aim at a ledge to land on it.": [
+    "src/Modes/Agents/HushKit.cs:62"
   ],
   "{0}: {1} — 1 s focus (no gun), then a shield eats the next hit.": [
     "src/Modes/Agents/DuelistKits.cs:1274"
