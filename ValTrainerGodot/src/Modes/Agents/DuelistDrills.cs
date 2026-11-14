@@ -12,7 +12,7 @@ namespace ValTrainer.Modes;
 /// <summary>
 /// Mobility Entry ("mobility:&lt;agent&gt;"): attack a real site with a duelist's movement ability — Jett's Tailwind / Updraft /
 /// Drift, Neon's High Gear sprint and slide, Raze's Blast Pack boost, Reyna's Dismiss / Devour after a kill, Yoru's
-/// Gatecrash teleport (and fake), Waylay's Lightspeed dashes and Refract escape, Iso's Double Tap shield. Site Clear's
+/// Gatecrash teleport (and fake), Waylay's Lightspeed dashes and Refract escape, Iso's Double Tap shield, Hush's Flow grapple and Displacement pull. Site Clear's
 /// rounds: you start behind the choke, 2–4 tier-scaled defenders hold real angles and duel you. Higher tiers also react to
 /// loud ability cues (a satchel blast, a teleport arrival) by turning toward them. Hits on a target moving faster than the
 /// knife run speed (a dash, a launch) miss more often (tracking is harder). Scored on round wins, the first duel of each
@@ -24,7 +24,7 @@ namespace ValTrainer.Modes;
 public sealed partial class MobilityEntryMode : MapMode
 {
     /// <summary>Arguments this drill supports (lower-case agent keys); the Agents screen lists one entry per item.</summary>
-    public static readonly string[] Agents = { "jett", "neon", "raze", "reyna", "yoru", "waylay", "iso" };
+    public static readonly string[] Agents = { "jett", "neon", "raze", "reyna", "yoru", "waylay", "iso", "hush" };
     public readonly string Agent;
 
     public MobilityEntryMode(string agent = "jett")
@@ -47,14 +47,14 @@ public sealed partial class MobilityEntryMode : MapMode
 
     string AgentTitle => Agent switch
     {
-        "neon" => "Neon", "raze" => "Raze", "reyna" => "Reyna", "yoru" => "Yoru", "waylay" => "Waylay", "iso" => "Iso",
+        "neon" => "Neon", "raze" => "Raze", "reyna" => "Reyna", "yoru" => "Yoru", "waylay" => "Waylay", "iso" => "Iso", "hush" => "Hush",
         "jett-op" => "Jett (Operator)", _ => "Jett",
     };
 
     string AbilityTitle => Agent switch
     {
         "neon" => "High Gear", "raze" => "Blast Pack", "reyna" => "Dismiss / Devour", "yoru" => "Gatecrash",
-        "waylay" => "Lightspeed / Refract", "iso" => "Double Tap", _ => "Tailwind / Updraft",
+        "waylay" => "Lightspeed / Refract", "iso" => "Double Tap", "hush" => "Flow / Displacement", _ => "Tailwind / Updraft",
     };
 
     internal DuelistKit Kit = null!;
@@ -101,6 +101,7 @@ public sealed partial class MobilityEntryMode : MapMode
             "yoru" => new YoruKit(G, this),
             "waylay" => new WaylayKit(G, this),
             "iso" => new IsoKit(G, this),
+            "hush" => new HushKit(G, this),
             _ => new JettKit(G, this),
         };
         DuelistSfx.Prewarm();
@@ -211,6 +212,8 @@ public sealed partial class MobilityEntryMode : MapMode
     }
 
     internal IEnumerable<BotCharacter> LiveDefenders => defenders.Where(d => d.Alive).Select(d => d.Body);
+    /// <summary>Living defenders with their brains (Hush's Displacement drags and concusses them).</summary>
+    internal IEnumerable<(BotCharacter Body, BotBrain Brain)> LiveDefenderBrains => defenders.Where(d => d.Alive).Select(d => (d.Body, d.Brain));
     internal bool AnyDefenderVisible => defenders.Any(d => d.Alive && G.LineOfSight(G.View.Eye, d.Body.Head));
     internal bool AnyDefenderSeesPlayer => defenders.Any(d => d.Alive && d.Brain.SeesPlayer);
 
@@ -354,9 +357,10 @@ public sealed partial class MobilityEntryMode : MapMode
             string kt = InputBinding.Cap(s.Key is { } sk ? Main.I.Valorant.Binds.Hint(sk) : DuelistKit.KeyText(s.Slot));
             int ks = UiTheme.Fs(kt.Length > 2 ? 12 : 22, k);
             Gfx.TextC(c, UiTheme.Display, kt, key.GetCenter().X, Gfx.Mid(key.GetCenter().Y, ks), ks, UiTheme.Text);
-            int ns = UiTheme.Fs(17, k), ss = UiTheme.Fs(12, k);
+            string name = L.Upper(L.T(s.Name));
+            int ns = UiTheme.Fs(name.Length > 10 ? 14 : 17, k), ss = UiTheme.Fs(12, k); // long names (Displacement) in a smaller size
             float tx = key.End.X + 12 * k;
-            Gfx.TextFit(c, UiTheme.HudWide, L.Upper(L.T(s.Name)), tx, Gfx.Mid(r.Position.Y + 22 * k, ns), ns, UiTheme.Text, r.End.X - tx - 40 * k);
+            Gfx.TextFit(c, UiTheme.HudWide, name, tx, Gfx.Mid(r.Position.Y + 22 * k, ns), ns, UiTheme.Text, r.End.X - tx - (12 + 16 * s.Max) * k);
             Gfx.TextFit(c, UiTheme.HudWide, Main.I.Valorant.Binds.Hint(L.T(s.State)), tx, Gfx.Mid(r.Position.Y + 44 * k, ss), ss, s.Active ? accent : UiTheme.Dim, r.End.X - tx - 8 * k);
             for (int j = 0; j < s.Max; j++)
             {

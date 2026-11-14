@@ -198,6 +198,7 @@ public abstract partial class InitiatorDrill : MapMode
             case UtilKind.Paranoia: u = new Paranoia(G, hand, aim, visual); break;
             case UtilKind.ReconBolt: u = new ReconBolt(G, hand, aim, bars, bounces, visual); break;
             case UtilKind.Haunt: u = new Haunt(G, hand, aim, visual); break;
+            case UtilKind.Flashbulb: u = new Flashbulb(G, hand, aim, prepare: !primary, visual); break;
             default: return null;
         }
         if (!visual) return u;
@@ -218,6 +219,7 @@ public abstract partial class InitiatorDrill : MapMode
             case UtilKind.Haunt: AbilitySfx.Play(G, "haunt", 0.6f); break;
             case UtilKind.Leer: AbilitySfx.Play(G, "leer", 0.7f); break;
             case UtilKind.Paranoia: AbilitySfx.Play(G, "paranoia", 0.8f); break;
+            case UtilKind.Flashbulb: DuelistSfx.Play(G, "flashbulb_throw", 0.7f); break;
         }
         return u;
     }
@@ -270,6 +272,7 @@ public abstract partial class InitiatorDrill : MapMode
                 fizzles++;
                 Event("util_fizzle", (int)Ability.Kind);
                 if (u is Blindside) G.Banner(L.N("No wall hit — the shard faded"), UiTheme.Dim);
+                else if (u is Flashbulb) G.Banner(L.N("The flash faded before you launched it"), UiTheme.Dim);
                 else if (u is ReconBolt or Haunt) G.Banner(L.N("Lost it off the map"), UiTheme.Dim);
                 break;
             case UtilEventKind.Destroyed:
@@ -283,6 +286,11 @@ public abstract partial class InitiatorDrill : MapMode
                 if (u is ReconBolt) AbilitySfx.PlayAt(G, "bolt_tick", e.At, 1f);
                 else if (u is Haunt) AbilitySfx.PlayAt(G, "haunt", e.At, 0.7f);
                 else if (u is Blindside) G.SoundAt("shatter", e.At, maxRange: 50f, floor: 0.6f, vol: 0.6f);
+                else if (u is Flashbulb)
+                {
+                    if (e.Value > 0f) { DuelistSfx.PlayAt(G, "flashbulb_redirect", e.At, 0.8f); Event("flash_redirect", RoundT * 1000f); }
+                    else DuelistSfx.PlayAt(G, "flashbulb_stick", e.At, 0.7f);
+                }
                 break;
         }
     }
@@ -594,7 +602,14 @@ public abstract partial class InitiatorDrill : MapMode
                 AbilityKit.Phase.Equipping or AbilityKit.Phase.Equipped => Ability.Alt != null ? L.T(Ability.Primary) + "   ·   " + L.T(Ability.Alt) : Ability.Primary,
                 AbilityKit.Phase.Charging => L.F($"Release LMB to shoot   ·   RMB: bounces ({Kit.Bounces})"),
                 AbilityKit.Phase.Steering => L.F($"Steering — {Kit.KeyText} to pop it"),
-                _ => utils.Any(u => u.CanRecast) ? Ability.Kind == UtilKind.Haunt ? L.F($"{Kit.KeyText}: drop the watcher now") : L.F($"{Kit.KeyText}: pop the flash") : null,
+                _ => utils.Any(u => u.CanRecast) ? Ability.Kind switch
+                {
+                    UtilKind.Haunt => L.F($"{Kit.KeyText}: drop the watcher now"),
+                    UtilKind.Flashbulb => utils.OfType<Flashbulb>().Any(f => f.Stuck)
+                        ? L.F($"{Kit.KeyText}: launch the flash toward your crosshair")
+                        : L.F($"{Kit.KeyText}: redirect the flash toward your crosshair"),
+                    _ => L.F($"{Kit.KeyText}: pop the flash"),
+                } : null,
             };
         }
     }

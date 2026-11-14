@@ -7,7 +7,7 @@ namespace ValTrainer.Modes;
 public enum AbilitySlot { C, Q, E, X }
 
 /// <summary>Which initiator-drill ability (how it is cast and what it does).</summary>
-public enum UtilKind { Curveball, GuidingLight, Blindside, FlashDrive, Flashpoint, Dizzy, Leer, Paranoia, ReconBolt, Haunt }
+public enum UtilKind { Curveball, GuidingLight, Blindside, FlashDrive, Flashpoint, Dizzy, Leer, Paranoia, ReconBolt, Haunt, Flashbulb }
 
 /// <summary>
 /// A player ability in the initiator drills. Slot, charges and equip times are from the official VALORANT wiki
@@ -31,6 +31,11 @@ public sealed record InitiatorAbility(
         new("yoru", "Yoru", "Blindside", AbilitySlot.Q, UtilKind.Blindside, 1, 0.8f, 0.8f, Color.Color8(90, 140, 255),
             L.N("LMB: throw at a wall"), null,
             L.N("The shard only arms when it hits a surface: it bounces off and pops 0.6 s later.") + " " + L.N("Bank it off a wall into the site.")),
+        new("hush", "Hush", "Flashbulb", AbilitySlot.Q, UtilKind.Flashbulb, 2, 0.8f, 0.8f, Color.Color8(235, 120, 200),
+            L.N("LMB: throw"), L.N("RMB: stick it to a wall"),
+            L.N("LMB throws it: it pops on the first surface it hits, or after about a second.") + " " +
+            L.N("Press the key again while it flies to send it toward your crosshair.") + " " +
+            L.N("RMB sticks it to a wall; the key launches it from there.")),
         new("kayo", "KAY/O", "FLASH/drive", AbilitySlot.Q, UtilKind.FlashDrive, 2, 0.8f, 0.9f, Color.Color8(90, 220, 255),
             L.N("LMB: overhand"), L.N("RMB: underhand"),
             L.N("LMB: overhand — pops 1.6 s after the throw, or 0.8 s after its first bounce.") + " " + L.N("RMB: underhand lob — pops after 1 s.")),
@@ -60,9 +65,9 @@ public sealed record InitiatorAbility(
     public static InitiatorAbility Get(string agent) => All.First(a => a.AgentKey == agent);
 
     /// <summary>Flash-type abilities (blind with the on-screen rule); the rest nearsight or reveal.</summary>
-    public bool IsFlash => Kind is UtilKind.Curveball or UtilKind.GuidingLight or UtilKind.Blindside or UtilKind.FlashDrive or UtilKind.Flashpoint or UtilKind.Dizzy;
+    public bool IsFlash => Kind is UtilKind.Curveball or UtilKind.GuidingLight or UtilKind.Blindside or UtilKind.FlashDrive or UtilKind.Flashpoint or UtilKind.Dizzy or UtilKind.Flashbulb;
     public bool IsNearsight => Kind is UtilKind.Leer or UtilKind.Paranoia;
     public bool IsRecon => Kind is UtilKind.ReconBolt or UtilKind.Haunt;
-    /// <summary>Pressing the ability key again while it flies does something (Skye: pop, Fade: drop).</summary>
-    public bool Recastable => Kind is UtilKind.GuidingLight or UtilKind.Haunt;
+    /// <summary>Pressing the ability key again while it flies does something (Skye: pop, Fade: drop, Hush: redirect).</summary>
+    public bool Recastable => Kind is UtilKind.GuidingLight or UtilKind.Haunt or UtilKind.Flashbulb;
 }

@@ -178,6 +178,11 @@ public abstract partial class InitiatorDrill
             case UtilKind.Curveball: case UtilKind.FlashDrive: variants.Add((true, 0, 0, -1)); variants.Add((false, 0, 0, -1)); break;
             case UtilKind.GuidingLight: foreach (var r in new[] { 0.45f, 0.75f, 1.05f, 1.4f }) variants.Add((true, 0, 0, r)); break;
             case UtilKind.Haunt: variants.Add((true, 0, 0, -1)); foreach (var r in new[] { 0.35f, 0.7f, 1.0f }) variants.Add((true, 0, 0, r)); break;
+            case UtilKind.Flashbulb:
+                variants.Add((true, 0, 0, -1));
+                foreach (var r in new[] { 0.2f, 0.4f }) variants.Add((true, 0, 0, r));   // redirect in flight
+                foreach (var r in new[] { 0.6f, 1.0f }) variants.Add((false, 0, 0, r));  // stick, then launch
+                break;
             case UtilKind.ReconBolt: for (int b = 0; b < 4; b++) for (int n = 0; n < 3; n++) variants.Add((true, b, n, -1)); break;
             default: variants.Add((true, 0, 0, -1)); break;
         }
