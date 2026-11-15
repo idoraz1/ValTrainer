@@ -724,6 +724,12 @@ public static class CultureCheck
         Check("unknown gun name 'Knife': no throw, never counts as a real gun", knifeOk);
         Check("badges count rated guns only (Vandal / Phantom, not the Spectre)", st.BestBadge(grid) == 3
             && GunRating.IsRated(grid, WeaponKind.Phantom) && !GunRating.IsRated(grid, WeaponKind.Spectre), st.BestBadge(grid).ToString(CultureInfo.InvariantCulture));
+        // 1.20: per-tier best badge (a Radiant-tier run with a lower badge shows that badge on Radiant, not the overall best)
+        st.Runs.Add(new RunRecord { Mode = "gridshot", When = new DateTime(2026, 10, 2, 9, 0, 0), Score = 20000, Tier = 6, Badge = 1, Weapon = "Vandal" });
+        st.Runs.Add(new RunRecord { Mode = "gridshot", When = new DateTime(2026, 10, 2, 9, 5, 0), Score = 25000, Tier = 6, Badge = 4, Weapon = "Spectre" });
+        Check("best badge per tier: tier 6 = 1 (Spectre unrated), tier 2 = 3, none at tier 0, overall still 3",
+            st.BestBadge(grid, 6) == 1 && st.BestBadge(grid, 2) == 3 && st.BestBadge(grid, 0) == -1 && st.BestBadge(grid) == 3,
+            $"{st.BestBadge(grid, 6)} / {st.BestBadge(grid, 2)} / {st.BestBadge(grid, 0)}");
         var op = new GunTestDrill("operator", WeaponSets.Snipers, WeaponKind.Operator);
         Check("Operator drill: only the Operator is rated", GunRating.IsRated(op, WeaponKind.Operator) && !GunRating.IsRated(op, WeaponKind.Marshal)
             && GunRating.RatedText(op) == "the Operator" && GunRating.RatedText(grid) == "the Vandal or Phantom", GunRating.RatedText(grid));

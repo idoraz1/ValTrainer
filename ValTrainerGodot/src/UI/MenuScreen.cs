@@ -899,7 +899,7 @@ public partial class ModeCard : BaseButton
         // default), best badge with a rated gun
         gun = WeaponPicks.Resolve(info) ?? info.Weapon;
         pb = stats.Best(info, Main.I.Tier, gun);
-        badge = stats.BestBadge(info);
+        badge = stats.BestBadge(info, Main.I.Tier);
         pbText = pb >= 0 ? pb.ToString("#,0", CultureInfo.InvariantCulture) : "—";
         QueueRedraw();
     }

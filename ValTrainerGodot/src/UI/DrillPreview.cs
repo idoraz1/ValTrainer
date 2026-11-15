@@ -429,7 +429,7 @@ public partial class DrillPreview : Control
         // this gun's runs (old runs without a gun count as the drill's default)
         var runs = stats.ForGun(info.Key, gun, info.Weapon).Where(r => r.Tier == tier && !r.Warmup).OrderBy(r => r.When).ToList();
         int best = runs.Count > 0 ? runs.Max(r => r.Score) : -1;
-        int badge = stats.BestBadge(info);
+        int badge = stats.BestBadge(info, tier);
         bool rated = GunRating.IsRated(info, gun);
         float y = 4 * k;
         int ls = UiTheme.Fs(13, k), vs = UiTheme.Fs(30, k), ss = UiTheme.Fs(14, k);
@@ -459,9 +459,9 @@ public partial class DrillPreview : Control
                 Gfx.TextFit(d, UiTheme.Body, L.F($"{GunPicker.GunName(other.Gun)} best {other.Score.ToString("#,0", inv)}"), 2 * k, y + ls + vs + 42 * k, UiTheme.Fs(13, k),
                     UiTheme.Faint, d.Size.X * 0.57f);
         }
-        // best badge ever (any tier, rated guns only) + the last scores at this tier
+        // best badge at this tier (rated guns only) + the last scores at this tier
         float bx = d.Size.X * 0.6f;
-        if (badge >= -1 && stats.For(info.Key).Any())
+        if (badge >= -1 && stats.For(info.Key).Any(r => r.Tier == tier))
         {
             RankEmblem.Draw(d, new Vector2(bx + 16 * k, y + 26 * k), 16 * k, badge, badge >= 0 ? 1f : 0.55f);
             int ts = UiTheme.Fs(10, k);

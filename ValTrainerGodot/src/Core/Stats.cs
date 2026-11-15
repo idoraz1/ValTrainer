@@ -102,6 +102,11 @@ public sealed class StatsStore
     /// <summary>Rated best badge of drill <paramref name="m"/> (its default gun and rated guns from the drill).</summary>
     public int BestBadge(Modes.TrainingMode m) => BestBadge(m.Key, g => GunRating.IsRated(m, g), m.Weapon);
 
+    /// <summary>Rated best badge of drill <paramref name="m"/> earned at one difficulty tier (1.20, Discord suggestion: on
+    /// Radiant, show the best badge from Radiant runs, not the best from any tier).</summary>
+    public int BestBadge(Modes.TrainingMode m, int tier) =>
+        For(m.Key).Where(r => r.Tier == tier && GunRating.IsRated(m, GunOf(r, m.Weapon))).Select(r => r.Badge).DefaultIfEmpty(-1).Max();
+
     /// <summary>Personal best of drill <paramref name="m"/> at a tier with <paramref name="gun"/>.</summary>
     public int Best(Modes.TrainingMode m, int tier, WeaponKind gun) => Best(m.Key, tier, gun, m.Weapon);
 }

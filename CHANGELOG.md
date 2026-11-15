@@ -19,6 +19,9 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
   Riot has only published the inputs, Displacement's reset every two kills and the 8-point ultimate. Every distance, speed and time here (Flow's 15 m reach, 0.4 s delay and 18 m/s, the 7 m pull, the flash's 2 s blind and so on) is an estimate, and will be updated when real values are known. Her sounds and effects are ValTrainer's own. Suspension and Telekinesis are listed, but don't have a drill.
 
+### Changed
+- Best badge per difficulty (suggested on Discord): the drill cards and the drill preview now show the best badge you earned at the difficulty you have selected, next to your best score at that difficulty. Before, they showed your best badge from any difficulty, so a badge from an easy tier also showed on Radiant.
+
 ### Fixed
 - ValTrainer closing by itself as soon as a bot appeared on some laptops with Intel graphics (reported on Discord). That was the graphics driver crashing on Vulkan. Now, if ValTrainer didn't close normally last time, it restarts on DirectX 12 and says so on the menu, and if DirectX 12 crashes too, it switches to OpenGL. You can change it back in Settings → Graphics → Renderer. If you're affected on 1.19.0, start ValTrainer with the "ValTrainer (safe graphics)" shortcut in the Start menu until you update.
 
