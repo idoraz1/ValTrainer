@@ -19,9 +19,6 @@
   "% OF YOUR USUAL": [
     "src/Warmup/WarmupCharts.cs:223"
   ],
-  "(click the head), then {0:0} s of tracking (keep your crosshair on the strafing target).": [
-    "src/Modes/SensFinderDraw.cs:58"
-  ],
   "(first time)": [
     "src/Warmup/WarmupSummary.cs:133"
   ],
@@ -94,6 +91,9 @@
   "2 smokes · 4.72 m · 17 s · 55 m from you": [
     "src/Modes/Agents/ControllerKit.cs:122"
   ],
+  "25 cm wide · a basic pad": [
+    "src/Modes/SensFinderSetup.cs:265"
+  ],
   "2nd": [
     "src/Modes/DeathmatchMode.cs:471"
   ],
@@ -105,6 +105,9 @@
   ],
   "30 s": [
     "src/Warmup/WarmupCharts.cs:97"
+  ],
+  "32 cm wide · most gaming pads": [
+    "src/Modes/SensFinderSetup.cs:266"
   ],
   "3D": [
     "src/UI/RewindView3D.cs:415"
@@ -133,6 +136,9 @@
   "4 seconds in, 6 seconds out.": [
     "src/Warmup/LockInBreath.cs:135"
   ],
+  "45 cm wide · a large pad": [
+    "src/Modes/SensFinderSetup.cs:267"
+  ],
   "5 LEVELS · FINISHER · VARIANTS": [
     "src/Game/Skins/SkinCatalog.cs:112"
   ],
@@ -141,6 +147,9 @@
   ],
   "5: completely": [
     "src/Warmup/LockInMatchLog.cs:312"
+  ],
+  "90 cm wide · a desk mat": [
+    "src/Modes/SensFinderSetup.cs:268"
   ],
   "; average stop {0:0} ms to accurate speed (best ≈ 105)": [
     "src/Analysis/Assess.cs:620"
@@ -473,16 +482,19 @@
     "src/Modes/Agents/InitiatorDrill.cs:662"
   ],
   "ABORTED": [
-    "src/Modes/SensFinderDraw.cs:136"
+    "src/Modes/SensFinderDraw.cs:76"
   ],
   "aborted": [
-    "src/Modes/SensFinderMode.cs:765"
+    "src/Modes/SensFinderMode.cs:767"
   ],
   "aborted (fatigue)": [
-    "src/Modes/SensFinderMode.cs:834"
+    "src/Modes/SensFinderMode.cs:836"
   ],
   "ABOUT": [
     "src/UI/SettingsScreen.cs:92"
+  ],
+  "about half the time": [
+    "src/Modes/SensFinderSetup.cs:150"
   ],
   "about right": [
     "src/UI/RewindDraw.cs:659"
@@ -524,7 +536,7 @@
     "src/Modes/CrosshairFinderMode.cs:111"
   ],
   "Accuracy fell to {0:0}% (below {1:0}%). You're probably tired. Take a break and run it again later.": [
-    "src/Modes/SensFinderMode.cs:421"
+    "src/Modes/SensFinderMode.cs:423"
   ],
   "Accurate first motions: your flicks land within {0:0}% of the distance.": [
     "src/Analysis/Assess.cs:732"
@@ -741,9 +753,6 @@
   "Aiming down sights: your primary. Use Advanced Options is off, so VALORANT ignores the ADS tab.": [
     "src/UI/CrosshairView.cs:410"
   ],
-  "Aiming style: {0}  ·  press T for wrist / hybrid / arm": [
-    "src/Modes/SensFinderDraw.cs:78"
-  ],
   "AIRBORNE — inaccurate": [
     "src/Modes/MovementPlusModes.cs:128"
   ],
@@ -850,7 +859,7 @@
     "src/Game/Skins/SkinCatalog.cs:64"
   ],
   "another day": [
-    "src/Modes/SensFinderMode.cs:843"
+    "src/Modes/SensFinderMode.cs:845"
   ],
   "answer|no": [
     "src/Modes/Agents/ControllerDraw.cs:642"
@@ -886,11 +895,20 @@
   "Arc Roses shot": [
     "src/Modes/MapModes.cs:614"
   ],
+  "ARM": [
+    "src/Modes/SensFinderSetup.cs:182"
+  ],
   "Arm": [
     "src/Modes/SensFinderCore.cs:395"
   ],
   "Arm aimer": [
     "src/Modes/SensFinderCore.cs:396"
+  ],
+  "Arm for big turns, wrist for fine aim.": [
+    "src/Modes/SensFinderSetup.cs:187"
+  ],
+  "Arm stays still, the wrist turns the mouse.": [
+    "src/Modes/SensFinderSetup.cs:185"
   ],
   "ARMING…": [
     "src/Modes/Agents/DuelistKits.cs:1191"
@@ -932,7 +950,7 @@
     "src/UI/SettingsScreen.cs:1192"
   ],
   "at search limit": [
-    "src/Modes/SensFinderMode.cs:771"
+    "src/Modes/SensFinderMode.cs:773"
   ],
   "At startup and every 6 hours, asks GitHub whether a newer release is out (nothing about you is sent)": [
     "src/UI/SettingsScreen.cs:716"
@@ -1194,7 +1212,7 @@
     "src/Modes/SensFinderMode.cs:29"
   ],
   "BLIND A/B TEST · ABOUT {0} MINUTES": [
-    "src/Modes/SensFinderDraw.cs:47"
+    "src/Modes/SensFinderSetup.cs:110"
   ],
   "BLIND {0:0.0}": [
     "src/Modes/Agents/InitiatorDrill.cs:712"
@@ -1224,7 +1242,7 @@
     "src/UI/RewindDraw.cs:332"
   ],
   "BOTH BEST AT {0}": [
-    "src/Modes/SensFinderDraw.cs:208"
+    "src/Modes/SensFinderDraw.cs:148"
   ],
   "BOTS": [
     "src/Warmup/WarmupPlan.cs:164"
@@ -1420,10 +1438,10 @@
     "src/Modes/Agents/DuelistDrills.cs:434"
   ],
   "CHANGE": [
-    "src/Modes/SensFinderDraw.cs:192"
+    "src/Modes/SensFinderDraw.cs:132"
   ],
   "Change": [
-    "src/Modes/SensFinderMode.cs:838"
+    "src/Modes/SensFinderMode.cs:840"
   ],
   "Change it in SETTINGS → Language": [
     "src/UI/MenuScreen.cs:1444"
@@ -1453,7 +1471,7 @@
     "src/Analysis/Assess.cs:495"
   ],
   "CHECK": [
-    "src/Modes/SensFinderDraw.cs:251"
+    "src/Modes/SensFinderDraw.cs:191"
   ],
   "Check for updates": [
     "src/UI/SettingsScreen.cs:707"
@@ -1508,7 +1526,7 @@
     "src/Modes/MovementPlusModes.cs:320"
   ],
   "cleaner at {0}": [
-    "src/Modes/SensFinderMode.cs:840"
+    "src/Modes/SensFinderMode.cs:842"
   ],
   "CLEAR": [
     "src/Agents/AgentDrills.cs:312"
@@ -1550,7 +1568,7 @@
     "src/UI/SkinPicker.cs:368"
   ],
   "click error {0:0.00} vs {1:0.00} head radii · hits {2:0} vs {3:0}%": [
-    "src/Modes/SensFinderDraw.cs:216"
+    "src/Modes/SensFinderDraw.cs:156"
   ],
   "CLICK mark / remove   ·   RIGHT-CLICK launch   ·   {0} put away": [
     "src/Modes/Agents/ControllerDraw.cs:378"
@@ -1572,7 +1590,7 @@
   ],
   "CLICK TO CONTINUE": [
     "src/Modes/CrosshairFinderDraw.cs:514",
-    "src/Modes/SensFinderDraw.cs:167"
+    "src/Modes/SensFinderDraw.cs:107"
   ],
   "Click to pick from the buy menu · B in a drill's preview": [
     "src/UI/SettingsScreen.cs:518"
@@ -1582,9 +1600,6 @@
   ],
   "Click to rename · {0}": [
     "src/UI/SettingsCrosshair.cs:142"
-  ],
-  "CLICK TO START": [
-    "src/Modes/SensFinderDraw.cs:93"
   ],
   "click to switch back": [
     "src/UI/ProfileScreen.cs:685"
@@ -1727,11 +1742,11 @@
     "src/Modes/DefenseModes.cs:683"
   ],
   "CONFIDENCE": [
-    "src/Modes/SensFinderDraw.cs:195",
+    "src/Modes/SensFinderDraw.cs:135",
     "src/Warmup/LockInCheckIn.cs:205"
   ],
   "Confidence": [
-    "src/Modes/SensFinderMode.cs:839"
+    "src/Modes/SensFinderMode.cs:841"
   ],
   "confidence|High": [
     "src/Analysis/SensAdvisor.cs:137"
@@ -1752,13 +1767,13 @@
     "src/Analysis/SensAdvisor.cs:84"
   ],
   "confirm {0:+0.0;-0.0}σ": [
-    "src/Modes/SensFinderMode.cs:770"
+    "src/Modes/SensFinderMode.cs:772"
   ],
   "CONFIRM?": [
     "src/UI/SettingsScreen.cs:1132"
   ],
   "Confirmation · round {0} / {1}": [
-    "src/Modes/SensFinderMode.cs:811"
+    "src/Modes/SensFinderMode.cs:813"
   ],
   "Confirmed overall rank-up (coach)": [
     "src/UI/ProgressScreen.cs:124"
@@ -2019,11 +2034,11 @@
     "src/Warmup/WarmupScreen.cs:225"
   ],
   "CURRENT": [
-    "src/Modes/SensFinderDraw.cs:301",
+    "src/Modes/SensFinderDraw.cs:241",
     "src/UI/ProfileScreen.cs:729"
   ],
   "current": [
-    "src/Modes/SensFinderDraw.cs:276"
+    "src/Modes/SensFinderDraw.cs:216"
   ],
   "CURRENT · FROM VALORANT": [
     "src/UI/ProfileScreen.cs:729"
@@ -2071,6 +2086,9 @@
   ],
   "CUSTOM · {0:0.0} CM/360 · CLICK TO TYPE · SHIFT ±0.001": [
     "src/UI/Hud.cs:818"
+  ],
+  "Custom: {0} cm ([ and ] to adjust)": [
+    "src/Modes/SensFinderSetup.cs:154"
   ],
   "CUT THESE SIGHTLINES": [
     "src/Modes/Agents/ControllerDraw.cs:304"
@@ -2387,9 +2405,6 @@
   "DON'T SHOW AGAIN": [
     "src/UI/SupportPrompt.cs:131"
   ],
-  "Don't try to work out which setting is which. Just aim as well as you can.": [
-    "src/Modes/SensFinderDraw.cs:59"
-  ],
   "Donated on Ko-fi or Buy Me a Coffee? Enter the email you paid with": [
     "src/UI/SettingsScreen.cs:1024"
   ],
@@ -2609,10 +2624,10 @@
     "src/UI/MenuScreen.cs:670"
   ],
   "eDPI 240 · {0:0} cm": [
-    "src/Modes/SensFinderDraw.cs:198"
+    "src/Modes/SensFinderDraw.cs:138"
   ],
   "EDPI · CM/360": [
-    "src/Modes/SensFinderDraw.cs:191"
+    "src/Modes/SensFinderDraw.cs:131"
   ],
   "Elite": [
     "src/Core/Difficulty.cs:38"
@@ -2797,7 +2812,7 @@
     "src/UI/ProgressScreen.cs:334"
   ],
   "Every step pointed {0}: your best may be beyond one run's reach (±50%). Use this for a few days, then run the finder again.": [
-    "src/Modes/SensFinderDraw.cs:161"
+    "src/Modes/SensFinderDraw.cs:101"
   ],
   "Everyone it touches can only see 7.5 m for 2 s.": [
     "src/Modes/Agents/InitiatorAbilities.cs:53"
@@ -2826,6 +2841,9 @@
   ],
   "Explosive duelist who blasts into a site and flushes out its corners.": [
     "src/Agents/AgentRoster.cs:72"
+  ],
+  "EXTENDED": [
+    "src/Modes/SensFinderSetup.cs:260"
   ],
   "F free play": [
     "src/UI/DrillPreview.cs:230"
@@ -2871,14 +2889,17 @@
   "Fast flicks ({0} level).": [
     "src/Analysis/Assess.cs:709"
   ],
+  "Fast to slow: {0:0}–{1:0} cm/360": [
+    "src/Modes/SensFinderSetup.cs:190"
+  ],
   "Fast, accurate flicks ({0} level): they land within {1:0}% of the distance.": [
     "src/Analysis/Assess.cs:710"
   ],
   "faster at {0}": [
-    "src/Modes/SensFinderMode.cs:841"
+    "src/Modes/SensFinderMode.cs:843"
   ],
   "faster than the pro median": [
-    "src/Modes/SensFinderDraw.cs:197"
+    "src/Modes/SensFinderDraw.cs:137"
   ],
   "Feeling flat? Put on your own up-tempo music for the first drills. Turn it off before the deathmatch.": [
     "src/Warmup/LockInWidgets.cs:22"
@@ -2910,7 +2931,7 @@
     "src/Modes/CrosshairFinderMode.cs:1003"
   ],
   "FINAL CHECK · ROUND {0} / {1}": [
-    "src/Modes/SensFinderDraw.cs:106"
+    "src/Modes/SensFinderDraw.cs:46"
   ],
   "Find a rhythm. Land on each target, then click.": [
     "src/Warmup/WarmupPlan.cs:61"
@@ -2923,9 +2944,6 @@
   ],
   "Finds the crosshair you see and shoot best with, and gives you its VALORANT code. Only the crosshair you test changes; the rest of your profile stays as it is.": [
     "src/Modes/CrosshairFinderDraw.cs:103"
-  ],
-  "Finds the sensitivity you actually aim best with, not the one that feels best.": [
-    "src/Modes/SensFinderDraw.cs:52"
   ],
   "Fine dot": [
     "src/Modes/CrosshairFinderTabs.cs:272"
@@ -3068,13 +3086,13 @@
     "src/Analysis/InsightsBuilder.cs:142"
   ],
   "Flick to the head and click it": [
-    "src/Modes/SensFinderMode.cs:822"
+    "src/Modes/SensFinderMode.cs:824"
   ],
   "Flick to the head and shoot it": [
     "src/Modes/CrosshairFinderMode.cs:1015"
   ],
   "Flick {0} / {1}": [
-    "src/Modes/SensFinderMode.cs:814"
+    "src/Modes/SensFinderMode.cs:816"
   ],
   "FLICKING": [
     "src/UI/CoachUi.cs:113"
@@ -3086,7 +3104,7 @@
     "src/UI/CoachUi.cs:302"
   ],
   "Flicks": [
-    "src/Modes/SensFinderMode.cs:841"
+    "src/Modes/SensFinderMode.cs:843"
   ],
   "flicks": [
     "src/Analysis/Assess.cs:349",
@@ -3094,7 +3112,7 @@
     "src/Analysis/Assess.cs:470"
   ],
   "flicks and micro-adjustments were close at every step": [
-    "src/Modes/SensFinderDraw.cs:218"
+    "src/Modes/SensFinderDraw.cs:158"
   ],
   "Flicks have no micro-adjustment": [
     "src/Analysis/Assess.cs:356"
@@ -3103,10 +3121,10 @@
     "src/Analysis/Assess.cs:435"
   ],
   "flicks {0:+0.00;-0.00} · micro {1:+0.00;-0.00} · tracking {2:+0.00;-0.00}": [
-    "src/Modes/SensFinderDraw.cs:284"
+    "src/Modes/SensFinderDraw.cs:224"
   ],
   "flicks {0:+0.00;-0.00} · tracking {1:+0.00;-0.00}": [
-    "src/Modes/SensFinderDraw.cs:285"
+    "src/Modes/SensFinderDraw.cs:225"
   ],
   "Flicks {0} fall short the most ({1:+0;-0}%, {2} flicks).": [
     "src/UI/RewindDraw.cs:684"
@@ -3228,9 +3246,6 @@
   ],
   "Full routine": [
     "src/Warmup/LockInMatchLog.cs:124"
-  ],
-  "Full test  ·  press Q for the short test (about half the time)": [
-    "src/Modes/SensFinderDraw.cs:75"
   ],
   "Full-auto guns only: this drill is about spraying": [
     "src/UI/GunPicker.cs:100"
@@ -3522,17 +3537,17 @@
     "src/UI/ProfileScreen.cs:758"
   ],
   "higher": [
-    "src/Modes/SensFinderDraw.cs:161",
+    "src/Modes/SensFinderDraw.cs:101",
     "src/UI/ProfileScreen.cs:758"
   ],
   "higher sens (less arm)": [
-    "src/Modes/SensFinderDraw.cs:192"
+    "src/Modes/SensFinderDraw.cs:132"
   ],
   "Higher than {0} of your last {1} Lock-In (vs your usual).|Higher than {0} of your last {1} Lock-Ins (vs your usual).": [
     "src/Warmup/WarmupSummary.cs:163"
   ],
   "HIGHER {0:+0.0;-0.0}σ": [
-    "src/Modes/SensFinderDraw.cs:280"
+    "src/Modes/SensFinderDraw.cs:220"
   ],
   "HIGHER → YOUR SENS": [
     "src/Warmup/WarmupScreen.cs:145"
@@ -3650,6 +3665,9 @@
   "How did your first match after Lock-In go?": [
     "src/Warmup/LockInMatchLog.cs:28"
   ],
+  "HOW DO YOU AIM?": [
+    "src/Modes/SensFinderSetup.cs:140"
+  ],
   "HOW IT WORKS": [
     "src/UI/AgentsScreen.cs:218"
   ],
@@ -3672,6 +3690,9 @@
   "Hunter initiator who reveals, chases down and pins enemies in place.": [
     "src/Agents/AgentRoster.cs:109"
   ],
+  "HYBRID": [
+    "src/Modes/SensFinderSetup.cs:182"
+  ],
   "Hybrid": [
     "src/Modes/SensFinderCore.cs:395"
   ],
@@ -3688,7 +3709,7 @@
     "src/Analysis/Assess.cs:364"
   ],
   "If within 10%": [
-    "src/Modes/SensFinderMode.cs:844"
+    "src/Modes/SensFinderMode.cs:846"
   ],
   "IMM": [
     "src/UI/CoachUi.cs:21"
@@ -3715,7 +3736,7 @@
     "src/UI/SettingsScreen.cs:625"
   ],
   "in a few days": [
-    "src/Modes/SensFinderMode.cs:843"
+    "src/Modes/SensFinderMode.cs:845"
   ],
   "IN FLIGHT": [
     "src/Modes/Agents/DuelistKits.cs:501",
@@ -3729,7 +3750,7 @@
   ],
   "In VALORANT": [
     "src/Modes/CrosshairFinderMode.cs:1031",
-    "src/Modes/SensFinderMode.cs:845"
+    "src/Modes/SensFinderMode.cs:847"
   ],
   "IN YOUR USUAL RANGE": [
     "src/Warmup/WarmupData.cs:279"
@@ -3912,7 +3933,7 @@
     "src/Modes/CrosshairFinderMode.cs:1062"
   ],
   "Keep my sens": [
-    "src/Modes/SensFinderMode.cs:863"
+    "src/Modes/SensFinderMode.cs:865"
   ],
   "keep practising": [
     "src/UI/Hud.cs:876"
@@ -3942,7 +3963,7 @@
     "src/Modes/CrosshairFinderDraw.cs:484"
   ],
   "Keep your crosshair on the target": [
-    "src/Modes/SensFinderMode.cs:825"
+    "src/Modes/SensFinderMode.cs:827"
   ],
   "KEEP YOUR CROSSHAIR: IT HELD UP": [
     "src/Modes/CrosshairFinderDraw.cs:486"
@@ -3960,7 +3981,7 @@
     "src/Analysis/SensAdvisor.cs:151"
   ],
   "KEEP YOUR SENSITIVITY: {0:0.000}": [
-    "src/Modes/SensFinderDraw.cs:142"
+    "src/Modes/SensFinderDraw.cs:82"
   ],
   "KEEP YOUR SNIPER DOT: IT HELD UP": [
     "src/Modes/CrosshairFinderDraw.cs:485"
@@ -3969,7 +3990,7 @@
     "src/Modes/CrosshairFinderMode.cs:1025"
   ],
   "KEEP {0:0.000} FOR NOW": [
-    "src/Modes/SensFinderDraw.cs:141"
+    "src/Modes/SensFinderDraw.cs:81"
   ],
   "Keeping the crosshair on a strafing target: time on target, lag behind it and how fast you re-acquire after a reversal.": [
     "src/UI/CoachUi.cs:137"
@@ -3982,6 +4003,9 @@
   ],
   "KEYBINDS": [
     "src/UI/SettingsScreen.cs:92"
+  ],
+  "keyboard": [
+    "src/Modes/SensFinderSetup.cs:295"
   ],
   "Keys, mouse buttons 1–5 and the wheel all work": [
     "src/UI/SettingsKeybinds.cs:314"
@@ -4116,6 +4140,9 @@
   ],
   "Language": [
     "src/UI/SettingsScreen.cs:171"
+  ],
+  "LARGE": [
+    "src/Modes/SensFinderSetup.cs:260"
   ],
   "LAST": [
     "src/Warmup/WarmupScreen.cs:223"
@@ -4523,14 +4550,14 @@
     "src/UI/ProfileScreen.cs:758"
   ],
   "lower": [
-    "src/Modes/SensFinderDraw.cs:161",
+    "src/Modes/SensFinderDraw.cs:101",
     "src/UI/ProfileScreen.cs:758"
   ],
   "lower sens (more arm)": [
-    "src/Modes/SensFinderDraw.cs:192"
+    "src/Modes/SensFinderDraw.cs:132"
   ],
   "LOWER {0:+0.0;-0.0}σ": [
-    "src/Modes/SensFinderDraw.cs:280"
+    "src/Modes/SensFinderDraw.cs:220"
   ],
   "LOWER → YOUR SENS": [
     "src/Warmup/WarmupScreen.cs:146"
@@ -4669,6 +4696,7 @@
     "src/Analysis/Assess.cs:477"
   ],
   "MEDIUM": [
+    "src/Modes/SensFinderSetup.cs:260",
     "src/UI/CoachUi.cs:97"
   ],
   "Medium": [
@@ -4692,32 +4720,32 @@
   "MICRO": [
     "src/Agents/AgentDrills.cs:303"
   ],
+  "MICRO TEST: OFF": [
+    "src/Modes/SensFinderSetup.cs:149"
+  ],
+  "MICRO TEST: ON": [
+    "src/Modes/SensFinderSetup.cs:149"
+  ],
   "micro {0} vs {1}: settle {2:0} vs {3:0} ms · overshoot {4:0} vs {5:0}%": [
-    "src/Modes/SensFinderDraw.cs:215"
+    "src/Modes/SensFinderDraw.cs:155"
   ],
   "MICRO {0} · FLICKS {1}": [
-    "src/Modes/SensFinderDraw.cs:209"
+    "src/Modes/SensFinderDraw.cs:149"
   ],
   "Micro-adjust": [
-    "src/Modes/SensFinderMode.cs:840"
+    "src/Modes/SensFinderMode.cs:842"
   ],
   "Micro-adjustment after the flick: first-shot accuracy, how long you need to settle and how many corrections you make.": [
     "src/UI/CoachUi.cs:136"
   ],
-  "Micro-adjustment test: OFF  ·  press M to include it": [
-    "src/Modes/SensFinderDraw.cs:71"
-  ],
-  "Micro-adjustment test: ON  ·  press M to skip it": [
-    "src/Modes/SensFinderDraw.cs:71"
-  ],
   "Micro-adjustment {0} / {1}": [
-    "src/Modes/SensFinderMode.cs:815"
+    "src/Modes/SensFinderMode.cs:817"
   ],
   "MICRO-ADJUSTMENTS VS FLICKS": [
-    "src/Modes/SensFinderDraw.cs:220"
+    "src/Modes/SensFinderDraw.cs:160"
   ],
   "micro-adjustments were close at every step": [
-    "src/Modes/SensFinderDraw.cs:219"
+    "src/Modes/SensFinderDraw.cs:159"
   ],
   "Microshot": [
     "src/Modes/AimPlusMicroshot.cs:16"
@@ -4807,12 +4835,6 @@
   "Mouse DPI": [
     "src/UI/SettingsScreen.cs:206"
   ],
-  "Mousepad: not set  ·  press P to set the width you can actually use": [
-    "src/Modes/SensFinderDraw.cs:83"
-  ],
-  "Mousepad: {0} cm of usable width  ·  P for presets, [ and ] to fine-tune": [
-    "src/Modes/SensFinderDraw.cs:82"
-  ],
   "Move (forward left back right)": [
     "src/UI/SettingsScreen.cs:613"
   ],
@@ -4873,7 +4895,7 @@
     "src/UI/MenuScreen.cs:946"
   ],
   "new": [
-    "src/Modes/SensFinderDraw.cs:276"
+    "src/Modes/SensFinderDraw.cs:216"
   ],
   "NEW BORDER": [
     "src/UI/ProgressWidgets.cs:552"
@@ -4882,7 +4904,7 @@
     "src/UI/BugReport.cs:334"
   ],
   "NEW HOLDS {0:+0.0;-0.0}σ": [
-    "src/Modes/SensFinderDraw.cs:279"
+    "src/Modes/SensFinderDraw.cs:219"
   ],
   "NEW PERSONAL BEST": [
     "src/UI/Hud.cs:869"
@@ -4910,7 +4932,7 @@
     "src/UI/ProgressScreen.cs:177"
   ],
   "NEXT ROUND": [
-    "src/Modes/SensFinderDraw.cs:104"
+    "src/Modes/SensFinderDraw.cs:44"
   ],
   "NEXT ROUND IN {0}  ·  CLICK TO CONTINUE": [
     "src/Modes/Agents/ControllerDraw.cs:611"
@@ -4971,11 +4993,11 @@
     "src/Analysis/RunSummary.cs:63"
   ],
   "NO CLEAR SPLIT": [
-    "src/Modes/SensFinderDraw.cs:207"
+    "src/Modes/SensFinderDraw.cs:147"
   ],
   "no clear winner": [
-    "src/Modes/SensFinderMode.cs:840",
-    "src/Modes/SensFinderMode.cs:841"
+    "src/Modes/SensFinderMode.cs:842",
+    "src/Modes/SensFinderMode.cs:843"
   ],
   "NO COACHED RUNS YET": [
     "src/UI/ProfileScreen.cs:168"
@@ -5294,6 +5316,9 @@
   ],
   "Not rated yet — click to play {0}": [
     "src/UI/CoachUi.cs:649"
+  ],
+  "NOT SURE": [
+    "src/Modes/SensFinderSetup.cs:260"
   ],
   "Not translated yet: shows English · help translate it on ValTrainer's GitHub": [
     "src/UI/SettingsScreen.cs:269"
@@ -5877,6 +5902,12 @@
   "Pink": [
     "src/Valorant/CrosshairCode.cs:79"
   ],
+  "pivot: elbow + wrist": [
+    "src/Modes/SensFinderSetup.cs:244"
+  ],
+  "pivot: wrist": [
+    "src/Modes/SensFinderSetup.cs:244"
+  ],
   "PLACE IT": [
     "src/Modes/DefenseModes.cs:655"
   ],
@@ -6174,10 +6205,10 @@
     "src/Core/Difficulty.cs:39"
   ],
   "PRO MEDIAN": [
-    "src/Modes/SensFinderDraw.cs:198"
+    "src/Modes/SensFinderDraw.cs:138"
   ],
   "Pro median": [
-    "src/Modes/SensFinderMode.cs:842"
+    "src/Modes/SensFinderMode.cs:844"
   ],
   "PROGRESS": [
     "src/UI/ProgressScreen.cs:35"
@@ -6195,13 +6226,13 @@
     "src/Modes/CrosshairFinderDraw.cs:477"
   ],
   "Provisional": [
-    "src/Modes/SensFinderMode.cs:835"
+    "src/Modes/SensFinderMode.cs:837"
   ],
   "provisional (fatigue)": [
     "src/Modes/CrosshairFinderMode.cs:1023"
   ],
   "PROVISIONAL {0:0.000}: KEEP {1:0.000} FOR NOW": [
-    "src/Modes/SensFinderDraw.cs:141"
+    "src/Modes/SensFinderDraw.cs:81"
   ],
   "Pull at a constant speed for the first second; the Vandal climbs about 5°/s.": [
     "src/Analysis/Assess.cs:643"
@@ -6423,7 +6454,7 @@
   ],
   "RECOMMENDED": [
     "src/Modes/CrosshairFinderDraw.cs:388",
-    "src/Modes/SensFinderDraw.cs:302",
+    "src/Modes/SensFinderDraw.cs:242",
     "src/UI/ProfileScreen.cs:759",
     "src/UI/ProfileScreen.cs:765"
   ],
@@ -6569,7 +6600,7 @@
   ],
   "Result": [
     "src/Modes/CrosshairFinderMode.cs:1023",
-    "src/Modes/SensFinderMode.cs:834"
+    "src/Modes/SensFinderMode.cs:836"
   ],
   "RESULTS": [
     "src/UI/Hud.cs:973",
@@ -6636,7 +6667,7 @@
     "src/Modes/MovementPlusModes.cs:212"
   ],
   "right at the pro median": [
-    "src/Modes/SensFinderDraw.cs:197"
+    "src/Modes/SensFinderDraw.cs:137"
   ],
   "Right side": [
     "src/Modes/MovementPlusModes.cs:28"
@@ -6759,13 +6790,13 @@
     "src/UI/ProgressWidgets.cs:596"
   ],
   "Run again": [
-    "src/Modes/SensFinderMode.cs:843"
+    "src/Modes/SensFinderMode.cs:845"
   ],
   "RUN SENS FINDER": [
     "src/UI/ProfileScreen.cs:660"
   ],
   "Run the Sens Finder again on another day. If both runs agree within 10%, use the average of the two.": [
-    "src/Modes/SensFinderDraw.cs:162"
+    "src/Modes/SensFinderDraw.cs:102"
   ],
   "running from the Godot editor": [
     "src/Core/UpdaterInstall.cs:42"
@@ -6869,11 +6900,17 @@
   "Search agents, abilities or utility": [
     "src/UI/AgentsScreen.cs:149"
   ],
-  "Searching your current sens ±50%. Set your aiming style and mousepad to narrow it.": [
-    "src/Modes/SensFinderDraw.cs:88"
+  "Searches around your current sens": [
+    "src/Modes/SensFinderSetup.cs:190"
   ],
-  "Searching {0:0}–{1:0} cm/360 (a 180° turn fits your pad; wrist aimers stay higher, arm aimers lower)": [
-    "src/Modes/SensFinderDraw.cs:87"
+  "Searching around your current sens. Pick how you aim and your mousepad below to narrow it down.": [
+    "src/Modes/SensFinderSetup.cs:120"
+  ],
+  "Searching {0:0}–{1:0} cm/360 · {2} aiming": [
+    "src/Modes/SensFinderSetup.cs:119"
+  ],
+  "Searching {0:0}–{1:0} cm/360 · {2} aiming · {3} cm pad": [
+    "src/Modes/SensFinderSetup.cs:118"
   ],
   "SEARCHING…": [
     "src/UI/ProfileScreen.cs:581"
@@ -6886,6 +6923,9 @@
   ],
   "See it, flick, click. Let targets go once they're gone.": [
     "src/Agents/AgentDrills.cs:252"
+  ],
+  "SELECTED": [
+    "src/Modes/SensFinderSetup.cs:192"
   ],
   "Self-flashes": [
     "src/Modes/Agents/InitiatorDrills.cs:47"
@@ -6938,13 +6978,13 @@
     "src/Warmup/WarmupSummary.cs:187"
   ],
   "SENS FINDER": [
-    "src/Modes/SensFinderDraw.cs:45"
+    "src/Modes/SensFinderSetup.cs:109"
   ],
   "Sens Finder": [
     "src/Modes/SensFinderMode.cs:28"
   ],
   "SENS FINDER RESULT": [
-    "src/Modes/SensFinderDraw.cs:136"
+    "src/Modes/SensFinderDraw.cs:76"
   ],
   "SENS SHIFT {0:+0;-0}% → {1:+0;-0}%": [
     "src/Warmup/WarmupCharts.cs:249"
@@ -7026,7 +7066,7 @@
     "src/UI/Hud.cs:832"
   ],
   "set it yourself": [
-    "src/Modes/SensFinderMode.cs:845"
+    "src/Modes/SensFinderMode.cs:847"
   ],
   "set on the menu": [
     "src/UI/AgentsScreen.cs:138"
@@ -7038,7 +7078,7 @@
     "src/Agents/AgentDrills.cs:285"
   ],
   "SET VALORANT SENSITIVITY TO {0:0.000}  (WAS {1:0.000})": [
-    "src/Modes/SensFinderDraw.cs:143"
+    "src/Modes/SensFinderDraw.cs:83"
   ],
   "Set VALORANT sensitivity to {0:0.000} (was {1:0.000}, {2:+0;-0}%): eDPI {3:0}, {4:0.0} cm/360, higher than {5:0}% of pros' sens.{6}{7} Confidence: {8}.": [
     "src/Analysis/SensAdvisor.cs:167"
@@ -7059,10 +7099,10 @@
     "src/UI/ProfileScreen.cs:285"
   ],
   "SETTING {0}": [
-    "src/Modes/SensFinderDraw.cs:105"
+    "src/Modes/SensFinderDraw.cs:45"
   ],
   "Setting {0}": [
-    "src/Modes/SensFinderMode.cs:813"
+    "src/Modes/SensFinderMode.cs:815"
   ],
   "SETTINGS": [
     "src/Core/I18nCheck.cs:76",
@@ -7139,6 +7179,9 @@
   "SHIFTED SENS": [
     "src/Warmup/WarmupCharts.cs:218"
   ],
+  "SHOOT A CARD TO CHOOSE · SHOOT START WHEN YOU'RE READY": [
+    "src/Modes/SensFinderSetup.cs:123"
+  ],
   "Shoot a card to pick or drop it, then shoot START. The 4 recommended dots are already picked.": [
     "src/Modes/CrosshairFinderDraw.cs:340"
   ],
@@ -7179,6 +7222,9 @@
   "Short flicks": [
     "src/UI/RewindData.cs:92"
   ],
+  "Short rounds with two hidden settings, A and B. Don't guess which is which: just aim as well as you can.": [
+    "src/Modes/SensFinderSetup.cs:112"
+  ],
   "Short shoulder peeks to bait the shot, then punish the miss.": [
     "src/Agents/AgentDrills.cs:247"
   ],
@@ -7188,8 +7234,11 @@
   "Short sprays (not counted)": [
     "src/Modes/RecoilModes.cs:174"
   ],
-  "Short test: ON (fewer, shorter rounds)  ·  press Q for the full test": [
-    "src/Modes/SensFinderDraw.cs:74"
+  "SHORT TEST: OFF": [
+    "src/Modes/SensFinderSetup.cs:150"
+  ],
+  "SHORT TEST: ON": [
+    "src/Modes/SensFinderSetup.cs:150"
   ],
   "SHORT TITLE": [
     "src/UI/BugReport.cs:855",
@@ -7397,6 +7446,9 @@
   "SKIP THIS VERSION": [
     "src/UI/MenuScreen.cs:236"
   ],
+  "Skip: search around your sens": [
+    "src/Modes/SensFinderSetup.cs:264"
+  ],
   "skipped": [
     "src/Warmup/WarmupCard.cs:165",
     "src/Warmup/WarmupSummary.cs:205"
@@ -7456,7 +7508,10 @@
     "src/Modes/DefenseModes.cs:683"
   ],
   "slower than the pro median": [
-    "src/Modes/SensFinderDraw.cs:197"
+    "src/Modes/SensFinderDraw.cs:137"
+  ],
+  "SMALL": [
+    "src/Modes/SensFinderSetup.cs:260"
   ],
   "small corrections until on it": [
     "src/UI/RewindDraw.cs:553"
@@ -7675,7 +7730,7 @@
     "src/UI/GunPicker.cs:346"
   ],
   "SPLIT {0:+0.0;-0.0}σ": [
-    "src/Modes/SensFinderDraw.cs:279"
+    "src/Modes/SensFinderDraw.cs:219"
   ],
   "Spots (mid-jump)": [
     "src/Modes/MovementPlusModes.cs:146"
@@ -7795,7 +7850,7 @@
     "src/Modes/CrosshairFinderDraw.cs:397"
   ],
   "start from the new sens": [
-    "src/Modes/SensFinderMode.cs:844"
+    "src/Modes/SensFinderMode.cs:846"
   ],
   "Start it just before you swing.": [
     "src/Modes/Agents/DuelistKits.cs:1276"
@@ -7822,7 +7877,7 @@
     "src/Analysis/InsightsBuilder.cs:218"
   ],
   "Starting from your current sens {0:0.000} ({1:0.0} cm/360 at {2} DPI).": [
-    "src/Modes/SensFinderDraw.cs:69"
+    "src/Modes/SensFinderSetup.cs:115"
   ],
   "STARTING IN {0}": [
     "src/Warmup/WarmupCard.cs:234"
@@ -7861,13 +7916,13 @@
     "src/Modes/Agents/InitiatorDrill.cs:604"
   ],
   "STEP {0} / {1} · ROUND {2} / {3}": [
-    "src/Modes/SensFinderDraw.cs:107"
+    "src/Modes/SensFinderDraw.cs:47"
   ],
   "Step {0} / {1} · round {2} / {3}": [
-    "src/Modes/SensFinderMode.cs:812"
+    "src/Modes/SensFinderMode.cs:814"
   ],
   "STEP {0} ±{1:0}%": [
-    "src/Modes/SensFinderDraw.cs:251"
+    "src/Modes/SensFinderDraw.cs:191"
   ],
   "STEPS TO REPRODUCE": [
     "src/UI/BugReport.cs:905"
@@ -8192,9 +8247,6 @@
   "the most common pro shape": [
     "src/Modes/CrosshairFinderCore.cs:347"
   ],
-  "The numbers are revealed at the end. Esc pauses; the current round is then replayed.": [
-    "src/Modes/SensFinderDraw.cs:61"
-  ],
   "the same check-in, cards and hand-off as LOCK IN on the menu": [
     "src/UI/AgentsScreen.cs:571"
   ],
@@ -8227,6 +8279,12 @@
   "The watcher flies 1.5 s, then drops (press the key again to drop it early).": [
     "src/Modes/Agents/InitiatorAbilities.cs:59"
   ],
+  "the whole arm moves": [
+    "src/Modes/SensFinderSetup.cs:244"
+  ],
+  "The whole forearm slides across the pad.": [
+    "src/Modes/SensFinderSetup.cs:186"
+  ],
   "The wrist arcs instead of moving in a straight line, or the mouse pad sits at an angle, so flicks curve and land low.": [
     "src/Analysis/Assess.cs:440"
   ],
@@ -8240,7 +8298,7 @@
     "src/Core/Stats.cs:130"
   ],
   "Then": [
-    "src/Modes/SensFinderMode.cs:844"
+    "src/Modes/SensFinderMode.cs:846"
   ],
   "These are ValTrainer recordings (.vtt run data + .vtr 3D replay), played back inside ValTrainer's Rewind — not video files.": [
     "src/UI/SettingsScreen.cs:1121"
@@ -8349,7 +8407,7 @@
     "src/Game/Skins/SkinCatalog.cs:70"
   ],
   "TIE {0:+0.0;-0.0}σ": [
-    "src/Modes/SensFinderDraw.cs:280"
+    "src/Modes/SensFinderDraw.cs:220"
   ],
   "Tied for the lead ({0})": [
     "src/Modes/DeathmatchMode.cs:423"
@@ -8408,8 +8466,11 @@
   "Tiny heads at 30–50 m with the Vandal: make the first bullet count, then let the recoil reset before the next tap. Higher tiers add strafers and peekers.": [
     "src/Modes/AimPlusLongTaps.cs:21"
   ],
+  "tiny heads next to your crosshair": [
+    "src/Modes/SensFinderSetup.cs:149"
+  ],
   "Tiny moves: settle on the small head, then click": [
-    "src/Modes/SensFinderMode.cs:823"
+    "src/Modes/SensFinderMode.cs:825"
   ],
   "Tip: {0}.": [
     "src/Modes/RecoilModes.cs:154"
@@ -8532,10 +8593,10 @@
     "src/UI/CoachUi.cs:303"
   ],
   "Tracking next: keep your crosshair on the target": [
-    "src/Modes/SensFinderMode.cs:824"
+    "src/Modes/SensFinderMode.cs:826"
   ],
   "Tracking · {0:0} s": [
-    "src/Modes/SensFinderMode.cs:816"
+    "src/Modes/SensFinderMode.cs:818"
   ],
   "Trade my entry": [
     "src/Warmup/LockInWidgets.cs:14"
@@ -8805,7 +8866,7 @@
     "src/Valorant/Keybinds.cs:351"
   ],
   "use the average": [
-    "src/Modes/SensFinderMode.cs:844"
+    "src/Modes/SensFinderMode.cs:846"
   ],
   "Use the same pull every time: start by bullet 2–3 and keep a steady speed.": [
     "src/Analysis/Assess.cs:652"
@@ -8835,7 +8896,7 @@
     "src/UI/ProfileScreen.cs:688"
   ],
   "Use {0} in ValTrainer": [
-    "src/Modes/SensFinderMode.cs:854"
+    "src/Modes/SensFinderMode.cs:856"
   ],
   "Use {0} to get in fast, stop, and win the first duel.": [
     "src/Agents/AgentDrills.cs:284"
@@ -8916,7 +8977,7 @@
     "src/Valorant/CrosshairList.cs:162"
   ],
   "VALORANT isn't changed automatically: set it yourself in VALORANT › Settings › General › Mouse › Sensitivity: Aim.": [
-    "src/Modes/SensFinderDraw.cs:158"
+    "src/Modes/SensFinderDraw.cs:98"
   ],
   "VALORANT keeps this account's crosshair profiles online, so this is the older crosshair saved on this PC; it may be out of date. Paste your crosshair code in Settings → Crosshair to use yours.": [
     "src/Valorant/ValorantImporter.cs:288"
@@ -8934,10 +8995,10 @@
     "src/UI/SettingsCrosshair.cs:41"
   ],
   "VALORANT sens": [
-    "src/Modes/SensFinderMode.cs:835"
+    "src/Modes/SensFinderMode.cs:837"
   ],
   "VALORANT SENSITIVITY": [
-    "src/Modes/SensFinderDraw.cs:190"
+    "src/Modes/SensFinderDraw.cs:130"
   ],
   "VALORANT {0}/{1}": [
     "src/Valorant/CrosshairList.cs:33"
@@ -9146,10 +9207,10 @@
     "src/Analysis/Assess.cs:467"
   ],
   "was {0:0} · {1:0.0} cm  ({2} DPI)": [
-    "src/Modes/SensFinderDraw.cs:191"
+    "src/Modes/SensFinderDraw.cs:131"
   ],
   "was {0}": [
-    "src/Modes/SensFinderDraw.cs:190"
+    "src/Modes/SensFinderDraw.cs:130"
   ],
   "Watch the body for the moment it plants, then reverse immediately.": [
     "src/Analysis/Assess.cs:551"
@@ -9226,7 +9287,7 @@
     "src/UI/BugReport.cs:901"
   ],
   "WHAT WON EACH STEP (HIGHER SENS →)": [
-    "src/Modes/SensFinderDraw.cs:227"
+    "src/Modes/SensFinderDraw.cs:167"
   ],
   "WHAT WORKS FOR YOU": [
     "src/Warmup/LockInMatchLog.cs:141",
@@ -9357,7 +9418,7 @@
     "src/UI/AgentsScreen.cs:526"
   ],
   "within 2%: keep your sens": [
-    "src/Modes/SensFinderDraw.cs:192"
+    "src/Modes/SensFinderDraw.cs:132"
   ],
   "Without": [
     "src/Warmup/LockInMatchLog.cs:123"
@@ -9379,6 +9440,9 @@
   ],
   "won {0}/{1}, lost {2}, unfinished {3}": [
     "src/Modes/PeekMixMode.cs:441"
+  ],
+  "WRIST": [
+    "src/Modes/SensFinderSetup.cs:182"
   ],
   "Wrist": [
     "src/Modes/SensFinderCore.cs:395"
@@ -9543,12 +9607,6 @@
   ],
   "You were on target {0:0}% of the time you were firing ({1} level on {2})": [
     "src/Analysis/RunSummary.cs:101"
-  ],
-  "You'll play short rounds with two hidden settings, A and B. Each round: {0} head flicks": [
-    "src/Modes/SensFinderDraw.cs:55"
-  ],
-  "You'll play short rounds with two hidden settings, A and B. Each round: {0} head flicks, then": [
-    "src/Modes/SensFinderDraw.cs:54"
   ],
   "You're anticipating the strafe instead of reacting to it.": [
     "src/Analysis/Assess.cs:518"
@@ -9741,6 +9799,9 @@
   "Your median reaction was {0:0} ms over {1:0} trials ({2} level)": [
     "src/Analysis/RunSummary.cs:118"
   ],
+  "YOUR MOUSEPAD (THE WIDTH YOUR MOUSE CAN REALLY USE)": [
+    "src/Modes/SensFinderSetup.cs:141"
+  ],
   "Your normal crosshair: hip fire with every gun.": [
     "src/Modes/CrosshairFinderDraw.cs:145"
   ],
@@ -9876,7 +9937,7 @@
     "src/Progress/ProgressApi.cs:301"
   ],
   "yours is {0} (pros: 150–400 eDPI)": [
-    "src/Modes/SensFinderDraw.cs:198"
+    "src/Modes/SensFinderDraw.cs:138"
   ],
   "YOURS NOW": [
     "src/Modes/CrosshairFinderDraw.cs:152"
@@ -9889,7 +9950,7 @@
     "src/Core/I18nCheck.cs:73"
   ],
   "{0:+0.0;-0.0}% · keep yours": [
-    "src/Modes/SensFinderMode.cs:838"
+    "src/Modes/SensFinderMode.cs:840"
   ],
   "{0:+0;-0} pts": [
     "src/Warmup/WarmupSummary.cs:115"
@@ -9898,7 +9959,7 @@
     "src/Modes/RecoilModes.cs:365"
   ],
   "{0:0.0}  (was {1:0.0})": [
-    "src/Modes/SensFinderMode.cs:837"
+    "src/Modes/SensFinderMode.cs:839"
   ],
   "{0:0.0} corrections": [
     "src/Analysis/Assess.cs:182"
@@ -9982,10 +10043,10 @@
     "src/UI/RewindDraw.cs:387"
   ],
   "{0:0}  (was {1:0})": [
-    "src/Modes/SensFinderMode.cs:836"
+    "src/Modes/SensFinderMode.cs:838"
   ],
   "{0:0} cm": [
-    "src/Modes/SensFinderDraw.cs:299"
+    "src/Modes/SensFinderDraw.cs:239"
   ],
   "{0:0} eDPI · {1:0.0} cm/360": [
     "src/UI/ProfileScreen.cs:726"
@@ -10076,7 +10137,7 @@
     "src/UI/DrillPreview.cs:152"
   ],
   "{0:0} · {1:0.0} cm": [
-    "src/Modes/SensFinderDraw.cs:191"
+    "src/Modes/SensFinderDraw.cs:131"
   ],
   "{0:0} · {1:0.0} cm @ {2} DPI": [
     "src/UI/MenuScreen.cs:670"
@@ -10220,7 +10281,7 @@
     "src/Modes/Agents/HushKit.cs:413"
   ],
   "{0}  (was {1})": [
-    "src/Modes/SensFinderMode.cs:835"
+    "src/Modes/SensFinderMode.cs:837"
   ],
   "{0}  (yours)": [
     "src/Modes/CrosshairFinderDraw.cs:310"
@@ -10458,7 +10519,7 @@
     "src/Modes/Agents/InitiatorDrill.cs:370"
   ],
   "{0} flicks, then {1:0} s tracking": [
-    "src/Modes/SensFinderDraw.cs:110"
+    "src/Modes/SensFinderDraw.cs:50"
   ],
   "{0} flicks, {1} far heads, then kill the agent. Look around to get a feel for it.": [
     "src/Modes/CrosshairFinderDraw.cs:424"
@@ -10470,10 +10531,10 @@
     "src/Modes/CrosshairFinderDraw.cs:423"
   ],
   "{0} flicks, {1} micro-adjustments, then {2:0} s tracking": [
-    "src/Modes/SensFinderDraw.cs:109"
+    "src/Modes/SensFinderDraw.cs:49"
   ],
   "{0} flip|{0} flips": [
-    "src/Modes/SensFinderMode.cs:769"
+    "src/Modes/SensFinderMode.cs:771"
   ],
   "{0} found · most important first · click to expand": [
     "src/UI/ProfileScreen.cs:450"
@@ -10543,9 +10604,6 @@
   ],
   "{0} LV": [
     "src/UI/SkinPicker.cs:997"
-  ],
-  "{0} micro-adjustments (tiny heads next to your crosshair), then {1:0} s of strafe tracking.": [
-    "src/Modes/SensFinderDraw.cs:57"
   ],
   "{0} MIN": [
     "src/Warmup/WarmupPlan.cs:313"
@@ -10756,9 +10814,6 @@
   "{0} star|{0} stars": [
     "src/Modes/Agents/ControllerTools.cs:186"
   ],
-  "{0} steps of {1} rounds narrow it down, then a final check against your current sens.": [
-    "src/Modes/SensFinderDraw.cs:60"
-  ],
   "{0} tab only": [
     "src/Modes/CrosshairFinderMode.cs:1032"
   ],
@@ -10856,13 +10911,13 @@
     "src/UI/CoachUi.cs:647"
   ],
   "{0} · {1} cm pad: searched {2:0}–{3:0} cm/360": [
-    "src/Modes/SensFinderDraw.cs:173"
+    "src/Modes/SensFinderDraw.cs:113"
   ],
   "{0} · {1} drill|{0} · {1} drills": [
     "src/Warmup/WarmupCharts.cs:101"
   ],
   "{0} · {1} flip|{0} · {1} flips": [
-    "src/Modes/SensFinderMode.cs:839"
+    "src/Modes/SensFinderMode.cs:841"
   ],
   "{0} · {1} TIER · {2} IN TOTAL · {3} DRILLS": [
     "src/Warmup/LockInHandoff.cs:72"
@@ -10920,7 +10975,7 @@
     "src/UI/GunPicker.cs:336"
   ],
   "{0}. Move your mouse to get a feel for it.": [
-    "src/Modes/SensFinderDraw.cs:111"
+    "src/Modes/SensFinderDraw.cs:51"
   ],
   "{0}/s · {1} rds · {2}": [
     "src/UI/GunPicker.cs:505"
@@ -10929,7 +10984,7 @@
     "src/Modes/SheriffMode.cs:340"
   ],
   "{0}/{1} decisive": [
-    "src/Modes/SensFinderMode.cs:767"
+    "src/Modes/SensFinderMode.cs:769"
   ],
   "{0}/{1} on target": [
     "src/Modes/RecoilModes.cs:245"
@@ -10983,7 +11038,7 @@
     "src/Agents/AgentDrills.cs:287"
   ],
   "{0}: searched {1:0}–{2:0} cm/360": [
-    "src/Modes/SensFinderDraw.cs:174"
+    "src/Modes/SensFinderDraw.cs:114"
   ],
   "{0}: send it toward your crosshair": [
     "src/Modes/Agents/HushKit.cs:397"

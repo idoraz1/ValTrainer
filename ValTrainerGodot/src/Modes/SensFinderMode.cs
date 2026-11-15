@@ -221,7 +221,9 @@ public sealed partial class SensFinderMode : TrainingMode
                 if (lbKey && !prevLbKey) ChangeRange(range.Style, SfRange.NudgePad(range.PadCm, -1));
                 if (rbKey && !prevRbKey) ChangeRange(range.Style, SfRange.NudgePad(range.PadCm, +1));
                 prevTKey = tKey; prevPKey = pKey; prevLbKey = lbKey; prevRbKey = rbKey;
-                if ((phaseT > 2f && pressed) || (Main.I.Dev && phaseT > 3f)) BeginStage(0);
+                // shoot a card on the start screen to pick it, START to begin (SensFinderSetup.cs)
+                SetupShot(pressed);
+                if (phase == Ph.Intro && Main.I.Dev && phaseT > 3f && !Args.Contains("--sfhold")) BeginStage(0); // dev: --sfhold keeps the start screen up (screenshots)
                 break;
             }
             case Ph.Rest:

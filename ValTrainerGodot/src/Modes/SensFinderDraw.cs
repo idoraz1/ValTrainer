@@ -16,7 +16,7 @@ public sealed partial class SensFinderMode
         float k = UiTheme.S(size);
         switch (phase)
         {
-            case Ph.Intro: DrawIntro(c, size, k); break;
+            case Ph.Intro: DrawSetup(c, size, k); break;
             case Ph.Rest: DrawRest(c, size, k); break;
             case Ph.Summary: DrawSummary(c, size, k); break;
         }
@@ -32,66 +32,6 @@ public sealed partial class SensFinderMode
         float h = 5 * k;
         c.DrawRect(new Rect2(0, size.Y - h, size.X, h), new Color(0, 0, 0, 0.45f));
         c.DrawRect(new Rect2(0, size.Y - h, size.X * f, h), UiTheme.Accent);
-    }
-
-    void DrawIntro(CanvasItem c, Vector2 size, float k)
-    {
-        Dim(c, size, 0.72f);
-        float pw = Mathf.Min(size.X - 40 * k, 1040 * k), ph = 650 * k;
-        var r = new Rect2(size.X / 2 - pw / 2, size.Y / 2 - ph / 2 - 30 * k, pw, ph);
-        Gfx.Plate(c, r, 22 * k, new Color(0.06f, 0.1f, 0.14f, 0.96f), new Color(UiTheme.Text, 0.14f));
-        c.DrawRect(new Rect2(r.Position, new Vector2(60 * k, 3 * k)), UiTheme.Accent);
-        float x = r.Position.X + 48 * k, y = r.Position.Y + 92 * k, w = pw - 96 * k;
-        Gfx.Text(c, UiTheme.Display, "SENS FINDER", x, y, UiTheme.Fs(64, k), UiTheme.Text);
-        y += 36 * k;
-        Gfx.Text(c, UiTheme.HudWide, L.F($"BLIND A/B TEST · ABOUT {Mathf.Max(1, Mathf.RoundToInt(cfg.EstimatedMinutes))} MINUTES"), x, y, UiTheme.Fs(14, k), UiTheme.Dim);
-        y += 50 * k;
-        int fs = UiTheme.Fs(21, k);
-        string[] lines =
-        {
-            L.N("Finds the sensitivity you actually aim best with, not the one that feels best."),
-            cfg.Micro
-                ? L.F($"You'll play short rounds with two hidden settings, A and B. Each round: {cfg.FlicksPerBlock} head flicks, then")
-                : L.F($"You'll play short rounds with two hidden settings, A and B. Each round: {cfg.FlicksPerBlock} head flicks"),
-            cfg.Micro
-                ? L.F($"{cfg.MicroPerBlock} micro-adjustments (tiny heads next to your crosshair), then {cfg.TrackSec:0} s of strafe tracking.")
-                : L.F($"(click the head), then {cfg.TrackSec:0} s of tracking (keep your crosshair on the strafing target)."),
-            L.N("Don't try to work out which setting is which. Just aim as well as you can."),
-            L.F($"{cfg.Steps} steps of {cfg.BlocksPerStage} rounds narrow it down, then a final check against your current sens."),
-            L.N("The numbers are revealed at the end. Esc pauses; the current round is then replayed."),
-        };
-        foreach (var l in lines)
-        {
-            Gfx.TextFit(c, UiTheme.Body, l, x, y, fs, UiTheme.Text, w);
-            y += 36 * k;
-        }
-        y += 14 * k;
-        Gfx.Text(c, UiTheme.Body, L.F($"Starting from your current sens {current:0.000} ({Cm(current):0.0} cm/360 at {dpi} DPI)."), x, y, UiTheme.Fs(17, k), UiTheme.Dim);
-        y += 34 * k;
-        Gfx.TextFit(c, UiTheme.Body, cfg.Micro ? "Micro-adjustment test: ON  ·  press M to skip it" : "Micro-adjustment test: OFF  ·  press M to include it",
-            x, y, UiTheme.Fs(17, k), cfg.Micro ? UiTheme.Good : UiTheme.Warn, w);
-        y += 30 * k;
-        Gfx.TextFit(c, UiTheme.Body, cfg.IsShort ? L.N("Short test: ON (fewer, shorter rounds)  ·  press Q for the full test")
-            : L.N("Full test  ·  press Q for the short test (about half the time)"),
-            x, y, UiTheme.Fs(17, k), cfg.IsShort ? UiTheme.Warn : UiTheme.Dim, w);
-        y += 30 * k;
-        Gfx.TextFit(c, UiTheme.Body, L.F($"Aiming style: {L.T(SfRange.StyleName(range.Style))}  ·  press T for wrist / hybrid / arm"),
-            x, y, UiTheme.Fs(17, k), range.Style == SfStyle.Hybrid ? UiTheme.Dim : UiTheme.Good, w);
-        y += 30 * k;
-        Gfx.TextFit(c, UiTheme.Body, range.PadCm > 0
-                ? L.F($"Mousepad: {range.PadCm} cm of usable width  ·  P for presets, [ and ] to fine-tune")
-                : L.N("Mousepad: not set  ·  press P to set the width you can actually use"),
-            x, y, UiTheme.Fs(17, k), range.PadCm > 0 ? UiTheme.Good : UiTheme.Dim, w);
-        y += 30 * k;
-        Gfx.TextFit(c, UiTheme.Body, range.Strict
-                ? L.F($"Searching {range.Lo:0}–{range.Hi:0} cm/360 (a 180° turn fits your pad; wrist aimers stay higher, arm aimers lower)")
-                : L.N("Searching your current sens ±50%. Set your aiming style and mousepad to narrow it."),
-            x, y, UiTheme.Fs(17, k), UiTheme.Dim, w);
-        if (phaseT > 2f)
-        {
-            float a = 0.55f + 0.45f * Mathf.Sin(RealNow * 4f);
-            Gfx.TextC(c, UiTheme.HudWide, "CLICK TO START", r.GetCenter().X, r.End.Y - 34 * k, UiTheme.Fs(20, k), new Color(UiTheme.Accent, a));
-        }
     }
 
     void DrawRest(CanvasItem c, Vector2 size, float k)
