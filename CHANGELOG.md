@@ -8,6 +8,8 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.20.0] - 2026-11-16
+
 ### Added
 - Microshot Dense (suggested on Discord): a new Aim drill with two small heads on screen at once, close together. Hit one and it reappears right next to the other, so every shot is a tiny, precise correction at speed. Higher tiers bring smaller gaps and farther heads. Accidental double-clicks are forgiven, like in Microshot and Gridshot.
 - Unlimited ammo (suggested on Discord): drills with real magazines (the bot drills, Sheriff One-Taps, the peek drills, Operator and more) get an AMMO row in their preview. Press U or click it to play without reloads; ValTrainer remembers it per drill. These runs still get a score and a coach review but don't count for your personal bests, because skipping reloads makes scores incomparable. The spray drills keep their real magazine: the magazine is the spray.
@@ -392,7 +394,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.19.0...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.20.0...HEAD
+[1.20.0]: https://github.com/idoraz1/ValTrainer/compare/v1.19.0...v1.20.0
 [1.19.0]: https://github.com/idoraz1/ValTrainer/compare/v1.18.0...v1.19.0
 [1.18.0]: https://github.com/idoraz1/ValTrainer/compare/v1.17.0...v1.18.0
 [1.17.0]: https://github.com/idoraz1/ValTrainer/compare/v1.16.0...v1.17.0
