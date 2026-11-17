@@ -20,7 +20,7 @@ public static partial class MapSpots
     static MapSpot[]? all;
     public static MapSpot[] All => all ??= new[]
     {
-        Ascent, Bind, Breeze, Haven, Icebox, Split, Summit,
+        Ascent, Bind, Breeze, Corrode, Haven, Icebox, Lotus, Split, Summit,
     };
 
     public static MapSpot ByKey(string? key) => All.FirstOrDefault(m => m.Key == key) ?? Ascent;
