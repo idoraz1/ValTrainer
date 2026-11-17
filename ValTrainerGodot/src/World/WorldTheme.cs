@@ -48,6 +48,10 @@ public sealed class Theme
     public float MaxH { get; init; } = 13f;
     public bool Mountains { get; init; }
     public Color MountainColor { get; init; } = new(0.42f, 0.5f, 0.6f);
+    /// <summary>Haven-style decor: the painted band under wall caps, window headers, doors and building friezes (Haven red;
+    /// Summit jade), and the pitched backdrop roofs.</summary>
+    public Color Accent { get; init; } = new(0.55f, 0.13f, 0.1f);
+    public Color RoofTint { get; init; } = new(0.36f, 0.16f, 0.12f);
 }
 
 public static class Hdris

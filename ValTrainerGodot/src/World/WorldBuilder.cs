@@ -117,7 +117,7 @@ sealed class WorldBuilder
         {
             case DecorStyle.Haven when h >= 3.6f:
                 float top = mx.Y - capH;
-                Band(th.Cap with { Tint = new Color(0.55f, 0.13f, 0.1f) }, b, top - 0.38f, top, 0.03f, Faces.Sides | Faces.NegY);
+                Band(th.Cap with { Tint = th.Accent }, b, top - 0.38f, top, 0.03f, Faces.Sides | Faces.NegY);
                 Band(Gold, b, top - 0.46f, top - 0.38f, 0.036f, Faces.Sides | Faces.NegY | Faces.PosY);
                 break;
             case DecorStyle.Range:
@@ -290,7 +290,7 @@ sealed class WorldBuilder
                     Add(bar, f.Piece(u - w / 2, u + w / 2, yy - 0.025f, yy + 0.025f, 0, 0.035f));
                 }
                 if (th.Style == DecorStyle.Haven)
-                    Add(SurfaceLib.Flat(new Color(0.55f, 0.13f, 0.1f), 0.7f), f.Piece(u - w / 2 - 0.2f, u + w / 2 + 0.2f, y + hgt + t, y + hgt + t + 0.16f, 0, 0.07f));
+                    Add(SurfaceLib.Flat(th.Accent, 0.7f), f.Piece(u - w / 2 - 0.2f, u + w / 2 + 0.2f, y + hgt + t, y + hgt + t + 0.16f, 0, 0.07f));
                 break;
         }
     }
@@ -307,7 +307,7 @@ sealed class WorldBuilder
         var paint = th.Style switch
         {
             DecorStyle.Bind => new Color(0.16f, 0.42f, 0.48f),
-            DecorStyle.Haven => new Color(0.5f, 0.14f, 0.1f),
+            DecorStyle.Haven => (th.Accent * 0.92f) with { A = 1 },
             _ => new Color(0.36f, 0.24f, 0.16f),
         };
         var door = M(new Surface("wood_planks", paint, 0.85f, 1.0f, 0.8f, Grime: 0.15f));
@@ -501,10 +501,10 @@ sealed class WorldBuilder
                 float span = axis == 2 ? b.Size.X : b.Size.Z, len = axis == 2 ? b.Size.Z : b.Size.X;
                 float rh = th.Style == DecorStyle.Haven ? span * 0.38f : span * 0.24f;
                 var basis = new Basis(Vector3.Up, axis == 2 ? 0 : Mathf.Pi / 2) * Basis.FromScale(new Vector3(span + 0.7f, rh, len + 0.7f));
-                var roofColor = th.Style == DecorStyle.Haven ? new Color(0.36f, 0.16f, 0.12f) : new Color(0.64f, 0.3f, 0.2f);
+                var roofColor = th.Style == DecorStyle.Haven ? th.RoofTint : new Color(0.64f, 0.3f, 0.2f);
                 prisms.Add((new Transform3D(basis, new Vector3((mn.X + mx.X) / 2, mx.Y + 0.25f + rh / 2, (mn.Z + mx.Z) / 2)), (roofColor * R(0.9f, 1.08f)) with { A = 1 }));
                 if (th.Style == DecorStyle.Haven)
-                    batch.Box(SurfaceLib.Flat(new Color(0.5f, 0.13f, 0.1f), 0.7f), new Vector3(mn.X - 0.04f, mx.Y - 0.9f, mn.Z - 0.04f), new Vector3(mx.X + 0.04f, mx.Y - 0.3f, mx.Z + 0.04f), Faces.Sides);
+                    batch.Box(SurfaceLib.Flat((th.Accent * 0.92f) with { A = 1 }, 0.7f), new Vector3(mn.X - 0.04f, mx.Y - 0.9f, mn.Z - 0.04f), new Vector3(mx.X + 0.04f, mx.Y - 0.3f, mx.Z + 0.04f), Faces.Sides);
                 break;
             case DecorStyle.Bind:
                 batch.Box(roof, new Vector3(mn.X - 0.05f, mx.Y, mn.Z - 0.05f), new Vector3(mx.X + 0.05f, mx.Y + 0.35f, mx.Z + 0.05f), Faces.All);

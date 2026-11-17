@@ -8,6 +8,9 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Added
+- Summit, VALORANT's newest map (suggested on Discord): B Lobby → B Main → B Site at true scale, traced from the official minimap, in Site Clear, Deathmatch, Post-Plant, Retake, Site Anchor and the agent drills. Defenders hold Close box, Close left, Boxes, Corner, the pillar cubby, B Drop, Gym door, B Link and the B Tower high ground. Heights are estimates, the B Wall stays open (dropping the walls isn't in ValTrainer) and the rope up to B Tower isn't modelled.
+
 ## [1.20.0] - 2026-11-16
 
 ### Added
