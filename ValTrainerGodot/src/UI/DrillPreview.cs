@@ -176,6 +176,25 @@ public partial class DrillPreview : Control
             Refresh();
             right.AddChild(ammo);
         }
+        if (info.Minimap)
+        {
+            var mm = new VButton
+            {
+                Kind = VButton.Look.Select, K = k, FontPx = 14, CustomMinimumSize = new Vector2(0, 36 * k),
+                TooltipText = L.T("The minimap in the top-left corner, like in VALORANT: walls, you and your view, and enemies while you spot them. Rotating or fixed: Settings → Gameplay."),
+            };
+            void RefreshMap()
+            {
+                bool on = MinimapView.On(info);
+                mm.Label = on ? L.Upper(L.T("Minimap: on · M")) : L.Upper(L.T("Minimap: off · M to show"));
+                mm.Selected = on;
+                mm.QueueRedraw();
+            }
+            mm.Pressed += () => { ToggleMinimap(); RefreshMap(); };
+            refreshMinimap = RefreshMap;
+            RefreshMap();
+            right.AddChild(mm);
+        }
         // the map the demo is playing (a random map pick changes per run); RANDOM tag when the map picker is on random
         whereRow = new InfoRow
         {
@@ -231,6 +250,7 @@ public partial class DrillPreview : Control
         if (CanPick) keyParts.Add(buy == "B" ? L.T("B picks the gun, also mid-drill") : buy == "—" ? L.T("B picks the gun") : L.F($"B picks the gun ({buy} mid-drill)"));
         if (CanSkin) keyParts.Add(L.T("K skins"));
         if (info.AllowUnlimitedAmmo) keyParts.Add(L.T("U unlimited ammo"));
+        if (info.Minimap) keyParts.Add(L.T("M minimap"));
         keyParts.Add(L.T("Esc goes back"));
         string keys = string.Join(", ", keyParts) + ".";
         var hint = Text(CanDemo(info) ? L.F($"Preview: the built-in simulated player, muted. {keys}") : keys, 14, UiTheme.Faint);
@@ -558,6 +578,15 @@ public partial class DrillPreview : Control
         else if (key.Keycode is Key.Space or Key.Enter or Key.KpEnter) { GetViewport().SetInputAsHandled(); UiTheme.ClickSound(); Start(); }
         else if (key.Keycode == Key.F && onFreePlay != null) { GetViewport().SetInputAsHandled(); UiTheme.ClickSound(); Start(true); }
         else if (key.Keycode == Key.U && info.AllowUnlimitedAmmo) { GetViewport().SetInputAsHandled(); UiTheme.ClickSound(); ToggleAmmo(); refreshAmmo?.Invoke(); }
+        else if (key.Keycode == Key.M && info.Minimap) { GetViewport().SetInputAsHandled(); UiTheme.ClickSound(); ToggleMinimap(); refreshMinimap?.Invoke(); }
+    }
+
+    Action? refreshMinimap;
+    void ToggleMinimap()
+    {
+        var set = Main.I.Settings.MinimapOffDrills ??= new HashSet<string>();
+        if (!set.Remove(info.Key)) set.Add(info.Key);
+        Main.I.Settings.Save();
     }
 
     Action? refreshAmmo;

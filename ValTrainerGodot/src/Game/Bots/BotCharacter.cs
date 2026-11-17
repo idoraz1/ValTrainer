@@ -30,6 +30,8 @@ public partial class BotCharacter : Node3D
     public int Hp = MaxHp;
     public bool Dead => Hp <= 0;
     public float SpawnTime;
+    /// <summary>Shots this bot fired and hits it took (the minimap reveals a bot that fires or is hit).</summary>
+    public int ShotsFired, HitsTaken;
     /// <summary>World velocity (m/s) — set by the mode each frame; drives run/strafe animation and footsteps.</summary>
     public Vector3 Velocity;
     /// <summary>Mute the built-in running footsteps (a mode plays its own, e.g. the defense drills' <c>FootstepFx</c>).</summary>
@@ -312,6 +314,7 @@ public partial class BotCharacter : Node3D
 
     public void OnHit(HitZone z)
     {
+        HitsTaken++;
         Fx?.Invoke(this, BotFx.Hit, Vector3.Zero, (int)z);
         flash = 1f;
         if (z != HitZone.Legs) flinchT = 0.4f;
@@ -337,6 +340,7 @@ public partial class BotCharacter : Node3D
     /// <summary>Muzzle flash + tracer toward <paramref name="target"/> when the bot fires.</summary>
     public void ShootFx(Vector3 target)
     {
+        ShotsFired++;
         if (!IsInsideTree()) return;
         Fx?.Invoke(this, BotFx.Shoot, target, 0);
         if (!Puppet) Effects.Tracer(MuzzlePosition, target); // the Rewind draws puppet tracers itself (ReplayFx)

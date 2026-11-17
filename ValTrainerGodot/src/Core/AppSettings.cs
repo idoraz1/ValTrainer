@@ -52,6 +52,11 @@ public sealed class AppSettings
     /// drills with real magazines that allow it (<see cref="Modes.TrainingMode.AllowUnlimitedAmmo"/>). Such runs keep a score
     /// and the coach review but stay out of personal bests (no reloads isn't comparable).</summary>
     public HashSet<string>? UnlimitedAmmoDrills;
+    /// <summary>Drills (mode keys) where the player turned the minimap off in the drill preview (M). Only drills that offer
+    /// one (<see cref="Modes.TrainingMode.Minimap"/>, on by default there). Null = on everywhere it is offered.</summary>
+    public HashSet<string>? MinimapOffDrills;
+    /// <summary>Minimap orientation (Settings → Gameplay): false = rotating with your view (VALORANT's default), true = fixed, north up.</summary>
+    public bool MinimapFixed;
     /// <summary>Renderer (Settings → Graphics): auto / vulkan / d3d12 / opengl. Set by the player or stepped down by
     /// <see cref="Core.RendererGuard"/> after a graphics crash. Null = auto (Vulkan, Godot's fallbacks).</summary>
     public string? Renderer;
