@@ -8,6 +8,12 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Added
+- A minimap in Jump Peek and Jiggle Peek (suggested on Discord), in the top-left corner like in VALORANT, so you get used to glancing at it while you peek. It shows the walls and boxes, you as an arrow with your field of view, and the Operator as a red dot only while you can see him or right after he fires or you hit him, then the dot fades where you last saw him. It turns with your view by default; pick FIXED (north up, whole area) in Settings → Gameplay → Minimap. Turn it off per drill in the drill preview (M). It's drawn from ValTrainer's own level shapes, not Riot's map art.
+
+### Changed
+- Jump Peek now teaches the jump peek itself (suggested on Discord). Every jump from the corner is judged when you land: a clean jump peek means you saw the Operator (or already knew where he was), landed back behind the corner, and didn't shoot in the air. You get a banner telling you what went right or wrong (landed in the open, shot in the air, or saw nothing), a "Clean jump peeks" count on screen and on the results screen. The drill preview's demo now shows a proper jump peek: a running start, the jump right at the corner's edge, and the opposite key in the air. Jumping, landing inaccuracy and stopping already matched VALORANT's numbers and are unchanged; the details are in docs/research/minimap-jumppeek-1.21.md.
+
 ## [1.20.0] - 2026-11-16
 
 ### Added

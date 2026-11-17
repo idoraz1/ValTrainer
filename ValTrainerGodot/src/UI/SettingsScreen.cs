@@ -499,6 +499,8 @@ public partial class SettingsScreen : ScreenBase
             d => St.Tier = Wrap(St.Tier + d, 0, 4),
             emblem: () => St.Tier,
             note: () => L.F($"Bots react in ~{Difficulty.Get(St.Tier).Bot.ReactMs:0} ms")));
+        v.AddChild(Segmented("Minimap", new[] { L.N("ROTATING"), L.N("FIXED") }, () => St.MinimapFixed ? 1 : 0, i => St.MinimapFixed = i == 1,
+            note: () => L.N("Jump Peek and Jiggle Peek · turn it off per drill in its preview (M)")));
         v.AddChild(Segmented("Viewmodel (first-person gun)", new[] { L.N("OFF"), L.N("ON") }, () => St.ViewModel ? 1 : 0, i => St.ViewModel = i == 1,
             note: () => L.N("Applies on next drill")));
         v.AddChild(Segmented("Weapon hand", new[] { L.N("RIGHT"), L.N("LEFT") }, () => St.LeftHandedWeapon ? 1 : 0, i => St.LeftHandedWeapon = i == 1,

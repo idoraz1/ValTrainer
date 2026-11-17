@@ -85,6 +85,8 @@ public partial class Hud : Control
     {
         SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
         MouseFilter = MouseFilterEnum.Ignore;
+        minimap = new MinimapView(s) { Name = "Minimap" };
+        AddChild(minimap); // first child: the pause / results overlay draws over it
         if (!s.Demo) ProgressToasts.Ensure(); // unlocks from this run toast on the results screen
     }
 
@@ -287,9 +289,12 @@ public partial class Hud : Control
         TC(UiTheme.HudWide, rl, rr.GetCenter().X - 8 * k, top + bh + 18 * k, ls, UiTheme.Accent, raw: true);
     }
 
+    MinimapView? minimap;
+
     void DrawModeInfo(Vector2 size, float k, TrainingMode m)
     {
         float x = 30 * k, y = 22 * k;
+        if (minimap is { Shown: true }) y = MinimapView.Area(k).End.Y + 22 * k; // the minimap has VALORANT's corner; the drill info goes under it
         DrawRect(new Rect2(x, y, 4 * k, 36 * k), UiTheme.Accent);
         int ns = UiTheme.Fs(34, k);
         TL(UiTheme.Display, nameUpper, x + 14 * k, Gfx.Mid(y + 18 * k, ns), ns, UiTheme.Text, raw: true);

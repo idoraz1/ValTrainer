@@ -91,6 +91,12 @@ public abstract class TrainingMode
     /// (the gun's look itself always shows). False for 2D drills and the measuring tools, whose trials must look and sound
     /// identical.</summary>
     public virtual bool SkinFxAllowed => !Is2D && KillDrill != Game.Skins.KillDrill.Measuring;
+    /// <summary>The drill shows the VALORANT-style minimap (top-left, <see cref="UI.MinimapView"/>) by default; the player can
+    /// turn it off per drill in the drill preview (M). It is drawn from the level's boxes, so any drill or map can use it.</summary>
+    public virtual bool Minimap => false;
+    /// <summary>Rotating minimap: its zoom, in metres from the centre to an edge (ahead of you it shows 30% more, behind 30%
+    /// less: the player sits below the centre).</summary>
+    public virtual float MinimapRange => 30f;
     /// <summary>Extra solid boxes the mode adds to the range (cover, lanes, walls).</summary>
     public virtual IEnumerable<Box> ExtraSolids => Array.Empty<Box>();
 

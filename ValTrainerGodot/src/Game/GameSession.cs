@@ -279,6 +279,7 @@ public partial class GameSession : Node3D, IGame
         Player.Reset();
         Now = 0;
         smokes.Clear();
+        spawnedBots.Clear();
         Record = null;
         Review = null;
         frameDx = frameDy = 0;
@@ -942,12 +943,18 @@ public partial class GameSession : Node3D, IGame
         return t;
     }
 
+    readonly List<BotCharacter> spawnedBots = new();
+    /// <summary>The bots this run spawned (may include freed ones: check IsInstanceValid). The minimap reads it.</summary>
+    public IReadOnlyList<BotCharacter> SpawnedBots => spawnedBots;
+
     public BotCharacter SpawnBot(Vector3 feet, bool crouched = false)
     {
         var b = BotCharacter.Create(Enemy, Main.I.Settings.Outlines);
         b.Crouched = crouched;
         b.SpawnTime = Now;
         World.AddChild(b);
+        spawnedBots.RemoveAll(x => !IsInstanceValid(x));
+        spawnedBots.Add(b);
         b.Feet = feet;
         replay?.TrackBot(b, Now);
         SkinSpawned(b, feet); // spawn-clear: skin effects near a new bot fade at once
