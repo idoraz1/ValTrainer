@@ -5,7 +5,7 @@ namespace ValTrainer.Game.Bots;
 
 /// <summary>
 /// Resources shared by every <see cref="BotCharacter"/> (loaded once): character scenes, the UAL animation library,
-/// the locomotion/aim/hit/death blend tree, enemy highlight materials, the rifle, footstep sounds and the
+/// the locomotion/aim/hit/death blend tree, enemy highlight materials, the rifle and the
 /// per-body calibration (model scale so the head hitbox sits exactly at eye height, crouch depth).
 /// </summary>
 internal static class BotAssets
@@ -24,7 +24,6 @@ internal static class BotAssets
     static readonly PackedScene?[] scenes = new PackedScene?[Variants.Length];
     static AnimationLibrary? lib;
     static PackedScene? rifle;
-    static AudioStream[]? steps;
     static Shader? outlineShader, overlayShader, flashShader;
     static ShaderMaterial? flashMat;
     static QuadMesh? flashMesh;
@@ -39,21 +38,6 @@ internal static class BotAssets
     public static PackedScene RifleFor(WeaponKind kind) => kind == WeaponKind.Phantom
         ? rifleM4 ??= GD.Load<PackedScene>("res://assets/weapons/AssaultRifle_M4.tscn")
         : Rifle;
-
-    public static AudioStream[] Steps
-    {
-        get
-        {
-            if (steps != null) return steps;
-            var list = new List<AudioStream>();
-            for (int i = 0; i < 5; i++)
-            {
-                var path = $"res://assets/audio/footsteps/footstep_concrete_{i:000}.ogg";
-                if (ResourceLoader.Exists(path) && GD.Load<AudioStream>(path) is { } s) list.Add(s);
-            }
-            return steps = list.ToArray();
-        }
-    }
 
     // ---------------------------------------------------------------- skeleton bone indices (same rig for all agents)
 

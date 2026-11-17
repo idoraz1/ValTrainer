@@ -947,6 +947,8 @@ public partial class GameSession : Node3D, IGame
         var b = BotCharacter.Create(Enemy, Main.I.Settings.Outlines);
         b.Crouched = crouched;
         b.SpawnTime = Now;
+        b.StepGame = this; // its running footsteps (FootstepFx)
+        b.StepMap = Mode.Map;
         World.AddChild(b);
         b.Feet = feet;
         replay?.TrackBot(b, Now);
