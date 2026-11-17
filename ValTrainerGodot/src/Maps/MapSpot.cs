@@ -53,6 +53,9 @@ public sealed class MapSpot
     /// <summary>The map's look (surfaces, sky, sun). Null = the built-in theme for this key (Ascent / Bind / Haven / Split).
     /// New maps define their theme here, next to their geometry, so every map lives in its own file.</summary>
     public Func<MapPalette, World.Theme>? Look { get; init; }
+    /// <summary>Maps with open edges over a void (Abyss): the walkable floor is raised far above the ground plane, and
+    /// landing below this feet height means you fell off the map, which kills (see GameSession.FellIntoVoid). Null = no void.</summary>
+    public float? VoidBelow { get; init; }
 
     Box[]? solid;
     public IReadOnlyList<Box> Solid => solid ??= Boxes.Select(b => b.Bounds).ToArray();
@@ -72,6 +75,7 @@ public sealed class MapSpot
             RetakeEntries = RetakeEntries.Select(F).ToArray(),
             Smokes = Smokes.Select(s => s with { Center = F(s.Center) }).ToArray(),
             Look = Look,
+            VoidBelow = VoidBelow,
         };
     }
 

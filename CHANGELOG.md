@@ -8,6 +8,13 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Added
+- Two new maps from VALORANT's current map pool (suggested on Discord), for every map drill (Site Clear, Retake, Post-plant, Anchor, Deathmatch and the agent drills):
+  - **Abyss, B Main → B Site:** push from B Lobby through B Main onto B Site, with B Tower above you, B Nest, and B Danger, the ledge across the gap. Abyss has no outer walls: if you fall off the edge, you die.
+  - **Sunset, A Main → A Site:** walk up A Main from A Lobby and swing onto A Site past the Site box, Default, A Alley, A Link and Back site.
+
+  Both are true to scale, traced from the official minimaps. The heights are estimates.
+
 ## [1.20.0] - 2026-11-16
 
 ### Added

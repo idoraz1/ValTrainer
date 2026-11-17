@@ -47,6 +47,8 @@ public sealed class Theme
     public float MinH { get; init; } = 7f;
     public float MaxH { get; init; } = 13f;
     public bool Mountains { get; init; }
+    /// <summary>The ring of backdrop buildings around the map (off for maps that end in a void, like Abyss).</summary>
+    public bool Buildings { get; init; } = true;
     public Color MountainColor { get; init; } = new(0.42f, 0.5f, 0.6f);
 }
 

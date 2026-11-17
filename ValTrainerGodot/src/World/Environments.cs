@@ -80,7 +80,7 @@ public static class Environments
         if (!EnvDev.Has("nodecor")) wb.DecorateWalls(walls);
         // Compile the flash effect shaders under the floor, in front of the spawn, before the first throw.
         ValTrainer.Game.Fx.FlashOrb.Prewarm(root, map.StartFeet + new Vector3(0, -1.2f, -4f));
-        wb.Backdrop(buildings: !EnvDev.Has("nodecor"));
+        wb.Backdrop(buildings: th.Buildings && !EnvDev.Has("nodecor"));
         wb.Commit();
         Finish(root, th, quality, wb.Bounds);
         return new Built(root, solid);

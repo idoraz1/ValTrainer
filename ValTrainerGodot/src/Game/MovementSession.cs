@@ -91,7 +91,20 @@ public partial class GameSession
                 $"(flat-ground jump: apex {MovementTuning.JumpApex:0.000} m, air {MovementTuning.JumpAirTime:0.000} s)"));
         float dmg = MovementTuning.FallDamage(a.Drop);
         if (dmg > 0) FallDamage(dmg);
+        if (Mode.Map?.VoidBelow is float v && feetY < v) FellIntoVoid();
         PlayerLanded?.Invoke();
+    }
+
+    /// <summary>Fell off the map into the void (Abyss): always a death, spawn protection or not, like VALORANT. The drill
+    /// respawns you as after any other death.</summary>
+    void FellIntoVoid()
+    {
+        if (Player.Dead) return;
+        Player.Hp = 0;
+        Event("fell_off_map");
+        Event("died");
+        Play2D("death");
+        Mode.OnPlayerDied();
     }
 
     /// <summary>Fall damage hits health only (shields don't absorb it), like VALORANT.</summary>
