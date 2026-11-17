@@ -413,17 +413,17 @@ public static class MovementCheck
     static void Audit(string? which)
     {
         which = string.IsNullOrWhiteSpace(which) || which.StartsWith("--", StringComparison.Ordinal) ? "all" : which.ToLowerInvariant();
-        var layouts = new List<(string Name, List<Box> World, BoxDef[]? Defs, Vector3 Start)>();
-        if (which == "all") foreach (var m in MapSpots.All) layouts.Add((m.Key, m.Solid.ToList(), m.Boxes, m.StartFeet));
-        else if (MapSpots.All.FirstOrDefault(m => m.Key == which) is { } map) layouts.Add((map.Key, map.Solid.ToList(), map.Boxes, map.StartFeet));
+        var layouts = new List<(string Name, List<Box> World, BoxDef[]? Defs, Vector3 Start, float? Void)>();
+        if (which == "all") foreach (var m in MapSpots.All) layouts.Add((m.Key, m.Solid.ToList(), m.Boxes, m.StartFeet, m.VoidBelow));
+        else if (MapSpots.All.FirstOrDefault(m => m.Key == which) is { } map) layouts.Add((map.Key, map.Solid.ToList(), map.Boxes, map.StartFeet, map.VoidBelow));
         else if (ModeRegistry.Find(which) is { } make)
         {
             var mode = make();
-            if (mode.Map is { } mm) layouts.Add((mm.Key, mm.Solid.ToList(), mm.Boxes, mode.StartFeet));
-            else layouts.Add(($"range:{mode.Key}", RangeWorld(mode.ExtraSolids), null, mode.StartFeet));
+            if (mode.Map is { } mm) layouts.Add((mm.Key, mm.Solid.ToList(), mm.Boxes, mode.StartFeet, mm.VoidBelow));
+            else layouts.Add(($"range:{mode.Key}", RangeWorld(mode.ExtraSolids), null, mode.StartFeet, null));
         }
         else { Fail("jumpaudit", $"unknown map or mode '{which}'"); return; }
-        foreach (var l in layouts) AuditLayout(l.Name, l.World, l.Defs, l.Start);
+        foreach (var l in layouts) AuditLayout(l.Name, l.World, l.Defs, l.Start, l.Void);
     }
 
     /// <summary>The shooting range's solids (as built by Environments.BuildRange) plus a drill's extra boxes.</summary>
@@ -442,7 +442,8 @@ public static class MovementCheck
         return w;
     }
 
-    static void AuditLayout(string name, List<Box> world, BoxDef[]? defs, Vector3 start)
+    /// <param name="voidBelow">Maps over a void (Abyss): spots below this height are a deadly fall, not a way out.</param>
+    static void AuditLayout(string name, List<Box> world, BoxDef[]? defs, Vector3 start, float? voidBelow = null)
     {
         const float cell = 0.25f;
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -454,7 +455,9 @@ public static class MovementCheck
         // Map footprint: every floor / elevated-floor box (outside all of them = out of the map).
         var floors = defs?.Where(d => d.Surf is Surf.Floor or Surf.Elevated).Select(d => d.Bounds).ToList()
                      ?? new List<Box> { world[0] };
-        bool Inside(Vector3 p) => floors.Any(f => p.X >= f.Min.X && p.X <= f.Max.X && p.Z >= f.Min.Z && p.Z <= f.Max.Z);
+        // Over a void the floor's open edge is the map's edge: a body standing on it may hang over by up to its radius.
+        float m = voidBelow != null ? Collision.PlayerRadius : 0f;
+        bool Inside(Vector3 p) => floors.Any(f => p.X >= f.Min.X - m && p.X <= f.Max.X + m && p.Z >= f.Min.Z - m && p.Z <= f.Max.Z + m);
 
         // Walkable levels per cell: box tops (and the ground plane) under the footprint where a crouched body fits.
         var levels = new List<Level>[nx * nz];
@@ -540,17 +543,19 @@ public static class MovementCheck
         // Findings: wall tops and off-floor spots reachable (only by jumping, or at all).
         var wallTops = new Dictionary<int, (int, int, int)>();
         var outside = new List<(int, int, int)>();
+        int fallen = 0;
         foreach (var n in seen)
         {
             var (i, j, k) = n;
             var lv = levels[i * nz + j][k];
             var c = Center(i, j, lv.Y);
+            if (voidBelow is float v && lv.Y < v) { fallen++; continue; }
             if (!Inside(c)) outside.Add(n);
             if (lv.Box >= 0 && defs != null && lv.Box < defs.Length && defs[lv.Box].Surf == Surf.Wall && lv.Y > 0.05f && !wallTops.ContainsKey(lv.Box)) wallTops[lv.Box] = n;
             if (lv.Box >= 0 && defs == null && lv.Box >= 5 && lv.Y >= 2f && !wallTops.ContainsKey(lv.Box)) wallTops[lv.Box] = n; // range: tall extra boxes
         }
         GD.Print($"[jumpaudit] {name}: {walkOnly.Count} spots by walking, +{seen.Count - walkOnly.Count} by jumping; " +
-                 $"{wallTops.Count} wall top(s), {outside.Count} spot(s) outside the floor reachable ({sw.ElapsedMilliseconds} ms)");
+                 $"{wallTops.Count} wall top(s), {outside.Count} spot(s) outside the floor reachable{(fallen > 0 ? $", {fallen} in the void (a deadly fall)" : "")} ({sw.ElapsedMilliseconds} ms)");
         // What jumping adds, by surface (box, top height, cells of 0.25 m).
         var extra = seen.Where(n => !walkOnly.Contains(n)).Select(n => levels[n.Item1 * nz + n.Item2][n.Item3])
             .GroupBy(l => (l.Box, Y: MathF.Round(l.Y, 2))).OrderByDescending(g => g.Count()).Take(8)
