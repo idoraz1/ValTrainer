@@ -968,7 +968,7 @@
     "src/Modes/TacticalModes.cs:33",
     "src/Modes/TacticalModes.cs:519"
   ],
-  "Attack through a real choke on any of the six maps. Defenders hold real angles and duel you.": [
+  "Attack through a real choke on any map. Defenders hold real angles and duel you.": [
     "src/Modes/MapModes.cs:54"
   ],
   "Attacker crossed": [

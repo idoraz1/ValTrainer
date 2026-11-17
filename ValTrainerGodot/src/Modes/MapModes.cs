@@ -51,7 +51,7 @@ public sealed class SiteClearMode : MapMode
     public override string Key => "siteclear";
     public override IReadOnlyCollection<WeaponKind>? WeaponChoice => WeaponSets.Any;
     public override string Name => L.N("Site Clear");
-    public override string Description => L.N("Attack through a real choke on any of the six maps. Defenders hold real angles and duel you.");
+    public override string Description => L.N("Attack through a real choke on any map. Defenders hold real angles and duel you.");
 
     readonly List<(BotCharacter Body, BotBrain Brain)> defenders = new();
     float roundStart, between;

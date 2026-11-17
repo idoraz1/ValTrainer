@@ -297,7 +297,7 @@
   "Ask GitHub once now whether a newer release is out": "Perguntar agora ao GitHub se há uma versão mais nova",
   "At startup and every 6 hours, asks GitHub whether a newer release is out (nothing about you is sent)": "Ao iniciar e a cada 6 horas, pergunta ao GitHub se há uma versão mais nova (nada sobre você é enviado)",
   "At {0}, you see what goes with your better matches.": "Com {0}, você vê o que acompanha suas melhores partidas.",
-  "Attack through a real choke on any of the six maps. Defenders hold real angles and duel you.": "Ataque por um choke real em qualquer um dos seis mapas. Os defensores seguram ângulos reais e duelam com você.",
+  "Attack through a real choke on any map. Defenders hold real angles and duel you.": "Ataque por um choke real em qualquer mapa. Os defensores seguram ângulos reais e duelam com você.",
   "Attacker crossed": "O atacante passou",
   "Attacker got in": "O atacante entrou",
   "Attackers left: {0}": "Atacantes restantes: {0}",
