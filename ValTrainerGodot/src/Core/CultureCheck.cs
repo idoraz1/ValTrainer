@@ -40,6 +40,7 @@ public static class CultureCheck
             DataChecks(root);
             DisplayChecks(fixActive);
             SkinAudioChecks();
+            FootstepChecks();
             SensFinderRangeChecks();
         }
         catch (Exception e) { Fail("unexpected exception", e.ToString()); }
@@ -1128,6 +1129,54 @@ public static class CultureCheck
         }
         Check($"skin sound sets: all {files} files of the lines with sounds exist", files > 0 && missing.Count == 0, string.Join(",", missing.Take(8)));
         Check("every gun has a skin fire-layer class", Enum.GetValues<WeaponKind>().All(g => SkinAudio.Classes.Contains(SkinAudio.ClassOf(g))));
+    }
+
+    /// <summary>Footsteps (1.21): every surface renders a clean step, gain and brightness fall with distance, a step on your left
+    /// is louder in the left ear (also after turning), one behind you is duller than one in front, a wall muffles it.</summary>
+    static void FootstepChecks()
+    {
+        bool clean = true;
+        foreach (var surf in Enum.GetValues<Audio.StepSurface>())
+            for (int v = 0; v < 2; v++)
+            {
+                var x = Audio.FootstepSynth.Render(surf, v, v == 1);
+                float peak = x.Max(MathF.Abs);
+                if (x.Any(float.IsNaN) || peak < 0.1f || peak > 1f) { clean = false; Fail($"footstep {surf}/{v} renders cleanly", $"peak {F(peak)}"); }
+            }
+        Check("footsteps: every surface renders a clean, audible step", clean);
+
+        float[] ds = { 1, 2, 5, 10, 20, 30, 38 };
+        bool falls = true;
+        for (int i = 1; i < ds.Length; i++) falls &= Audio.FootstepSynth.Gain(ds[i]) < Audio.FootstepSynth.Gain(ds[i - 1]) || ds[i] <= 2;
+        Check("footsteps: gain falls with distance, silent past the range", falls && Near(Audio.FootstepSynth.Gain(2), 1f)
+            && Audio.FootstepSynth.Gain(Audio.FootstepSynth.Range + 1) == 0f && Audio.FootstepSynth.Gain(30) > 0.2f,
+            string.Join(" ", ds.Select(d => F(Audio.FootstepSynth.Gain(d)))));
+        Check("footsteps: far steps are duller, a wall muffles", Audio.FootstepSynth.Cutoff(30, false) < Audio.FootstepSynth.Cutoff(3, false)
+            && Audio.FootstepSynth.Cutoff(10, true) < Audio.FootstepSynth.Cutoff(10, false) * 0.5f);
+
+        var dry = Audio.FootstepSynth.Render(Audio.StepSurface.Concrete, 0, false);
+        var eye = new Godot.Vector3(0, 1.6f, 0);
+        float[] At(Godot.Vector3 src, float yaw = 0, bool occ = false) =>
+            Audio.FootstepSynth.Spatialize(dry, Audio.FootstepSynth.CueFor(eye, yaw, src, occ), 1f);
+        var left = At(new Godot.Vector3(-6, 0, 0));
+        var right = At(new Godot.Vector3(6, 0, 0));
+        float l0 = Audio.FootstepSynth.Energy(left, 0), l1 = Audio.FootstepSynth.Energy(left, 1);
+        float r0 = Audio.FootstepSynth.Energy(right, 0), r1 = Audio.FootstepSynth.Energy(right, 1);
+        Check("footsteps: a step on the left pans left, on the right pans right", l0 > 3 * l1 && r1 > 3 * r0,
+            $"left L/R {F(l0)}/{F(l1)}, right L/R {F(r0)}/{F(r1)}");
+        // Looking along +X (yaw 90), −Z is on your left.
+        var turned = At(new Godot.Vector3(0, 0, -6), 90);
+        Check("footsteps: panning follows where you look", Audio.FootstepSynth.Energy(turned, 0) > 3 * Audio.FootstepSynth.Energy(turned, 1));
+        var front = At(new Godot.Vector3(0, 0, -6));
+        var back = At(new Godot.Vector3(0, 0, 6));
+        float Hf(float[] st) => (Audio.FootstepSynth.Energy(st, 0, true) + Audio.FootstepSynth.Energy(st, 1, true))
+                                / (Audio.FootstepSynth.Energy(st, 0) + Audio.FootstepSynth.Energy(st, 1));
+        Check("footsteps: a step behind you is duller than one in front", Hf(back) < 0.8f * Hf(front), $"{F(Hf(back))} vs {F(Hf(front))}");
+        var near = At(new Godot.Vector3(0, 0, -3));
+        var far = At(new Godot.Vector3(0, 0, -30));
+        var wall = At(new Godot.Vector3(0, 0, -3), 0, true);
+        Check("footsteps: far and walled-off steps lose their highs", Hf(far) < 0.5f * Hf(near) && Hf(wall) < 0.5f * Hf(near),
+            $"near {F(Hf(near))}, far {F(Hf(far))}, wall {F(Hf(wall))}");
     }
 
     /// <summary>Skin Bullet FX, kill effects, finishers and banners (skins 3): every Signature / Apex line has a bullet / kill

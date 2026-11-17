@@ -4,9 +4,10 @@ namespace ValTrainer.Audio;
 
 /// <summary>
 /// All audio is synthesized at startup (Riot's audio isn't legally usable). Recipes approximate VALORANT's
-/// sound design (punchy Vandal crack, "metal bat" headshot, rising multi-kill sounds, footsteps, a distinct
-/// cue per agent flash). 2D sounds use a pool of AudioStreamPlayers; world sounds use AudioStreamPlayer3D
-/// (engine panning from the camera) with a VALORANT-like flat distance curve.
+/// sound design (punchy Vandal crack, "metal bat" headshot, rising multi-kill sounds, a distinct
+/// cue per agent flash). Footsteps have their own synth and spatializer (<see cref="FootstepSynth"/>, Game.Fx.FootstepFx).
+/// 2D sounds use a pool of AudioStreamPlayers; world sounds use AudioStreamPlayer3D (engine panning from the camera) with a
+/// VALORANT-like flat distance curve.
 /// </summary>
 public partial class Sfx : Node
 {
@@ -23,7 +24,7 @@ public partial class Sfx : Node
     public const float SkinDuckDb = 8f, SkinDuckSecs = 0.35f;
 
     readonly Dictionary<string, AudioStream> streams = new();
-    /// <summary>Recorded CC0 variants (gunshots, reloads, footsteps) — preferred over the synthesized sound of the same name.</summary>
+    /// <summary>Recorded CC0 variants (gunshots, reloads) — preferred over the synthesized sound of the same name.</summary>
     readonly Dictionary<string, AudioStream[]> recorded = new();
     readonly List<AudioStreamPlayer> players2D = new();
     readonly List<AudioStreamPlayer3D> players3D = new();
@@ -50,6 +51,7 @@ public partial class Sfx : Node
         // Dev: "--dump-kills DIR" writes the synthesized kill1..5 + bolt for tools/sfx/skin_sfx.py --factory DIR, then quits;
         // "--skinaudio-test" plays every skin sound set and checks the skin pool, gating and ducking (Game.Skins.SkinAudio).
         if (Core.CmdLine.DevAfter("--dump-kills") is { } dumpDir) Callable.From(() => DumpKills(dumpDir)).CallDeferred();
+        else if (Core.CmdLine.DevAfter("--dump-footsteps") is { } stepDir) Callable.From(() => GetTree().Quit(FootstepSynth.Dump(stepDir))).CallDeferred();
         else if (Core.CmdLine.Dev && Core.CmdLine.Has("--skinaudio-test")) Callable.From(() => Game.Skins.SkinAudio.RunTest(this)).CallDeferred();
     }
 
@@ -183,8 +185,6 @@ public partial class Sfx : Node
         Rec("pump", W + "shotgun_pump.wav");
         Rec("spinup", W + "heavy_spinup.wav");
         Rec("spindown", W + "heavy_spindown.wav");
-        const string F = "res://assets/audio/footsteps/";
-        Rec("footstep", Enumerable.Range(0, 5).Select(i => $"{F}footstep_concrete_00{i}.ogg").ToArray());
 
         // Agent flash cues, rendered offline by our own tools/sfx/flash_sfx.py (pure synthesis, no samples).
         // <agent>_windup lasts exactly the windup and peaks at its end, so start it at (pop - windup).

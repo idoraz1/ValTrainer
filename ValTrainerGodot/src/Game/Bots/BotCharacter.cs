@@ -1,5 +1,4 @@
 using Godot;
-using ValTrainer.Audio;
 using ValTrainer.Game.Fx;
 
 namespace ValTrainer.Game.Bots;
@@ -19,7 +18,7 @@ namespace ValTrainer.Game.Bots;
 /// <item>Procedural bone overrides run in <see cref="BotPoseModifier"/> (the skeleton's last modifier).</item>
 /// <item>Hitboxes are rebuilt from bones every frame (head sphere, torso / arm / leg capsules) and ray-tested analytically.</item>
 /// <item>VALORANT enemy look: screen-space outline + fresnel rim in the enemy colour (depth-tested — never through walls),
-/// hit flash, muzzle flash + tracer, positional running footsteps.</item>
+/// hit flash, muzzle flash + tracer, positional running footsteps (<see cref="FootstepFx"/>).</item>
 /// </list>
 /// The public API is the contract the modes rely on; keep it stable.
 /// </summary>
@@ -35,6 +34,10 @@ public partial class BotCharacter : Node3D
     public Vector3 Velocity;
     /// <summary>Mute the built-in running footsteps (a mode plays its own, e.g. the defense drills' <c>FootstepFx</c>).</summary>
     public bool QuietSteps;
+    /// <summary>The game whose player hears this bot's footsteps (set by <see cref="GameSession.SpawnBot"/>); null = silent.</summary>
+    internal IGame? StepGame;
+    /// <summary>The map under this bot (its footsteps' surface sounds); null = the range (concrete).</summary>
+    internal Maps.MapSpot? StepMap;
     /// <summary>Facing in the game's yaw convention (degrees; 0 = -Z, + = right).</summary>
     public float FacingYaw { get => facing; set { facing = value; Rotation = new Vector3(0, Mathf.DegToRad(-value) + Mathf.Pi, 0); } }
     public bool Crouched;
@@ -58,8 +61,6 @@ public partial class BotCharacter : Node3D
     // Hitbox radii (m).
     const float TorsoR = 0.17f, UpperArmR = 0.065f, LowerArmR = 0.055f, ThighR = 0.095f, ShinR = 0.075f, FootR = 0.06f;
     const float MaxLegYaw = 1.31f;    // 75°
-    const float RunStepSpeed = 3.2f;  // faster than this = running = audible footsteps (walking / crouching is silent)
-    const float StepInterval = 0.33f;
 
     // Hitbox points in this node's local space (= world metres, rotated by FacingYaw).
     const int PHead = 0, PHips = 1, PNeck = 2, PLUA = 3, PLLA = 4, PLH = 5, PRUA = 6, PRLA = 7, PRH = 8,
@@ -86,7 +87,6 @@ public partial class BotCharacter : Node3D
     Node3D? muzzle;
     OmniLight3D? flashLight;
     MeshInstance3D? flashQuad;
-    AudioStreamPlayer3D? stepPlayer;
     readonly List<GeometryInstance3D> highlighted = new();
 
     // animation state
@@ -96,6 +96,7 @@ public partial class BotCharacter : Node3D
     float deathT = -1f, deathYaw;
     float aimPitch, aimW, aimHold;
     float flashT, stepT, flinchT;
+    bool stepRight;
     bool posed;
 
     static readonly StringName FlashParam = "hl_flash", FadeParam = "hl_fade", SeedParam = "seed";
@@ -169,16 +170,6 @@ public partial class BotCharacter : Node3D
 
         // Procedural overrides + final-pose capture run as the skeleton's last modifier.
         skel.AddChild(new BotPoseModifier { Name = "BotPose", Owner_ = this });
-
-        stepPlayer = new AudioStreamPlayer3D
-        {
-            Name = "Steps",
-            AttenuationModel = AudioStreamPlayer3D.AttenuationModelEnum.Disabled,
-            MaxDistance = 0,
-            PanningStrength = 0.85f,
-            Position = new Vector3(0, 0.1f, 0),
-        };
-        AddChild(stepPlayer);
     }
 
     void SetupGunMeshes(Node n, ShaderMaterial overlay)
@@ -341,7 +332,6 @@ public partial class BotCharacter : Node3D
         var local = GlobalBasis.Inverse() * (-away.Normalized());
         deathYaw = Mathf.Atan2(local.X, local.Z);
         if (IsInsideTree()) tree.Set(BotAssets.P.DeathSeek, 0.0);
-        stepPlayer?.Stop();
     }
 
     /// <summary>Muzzle flash + tracer toward <paramref name="target"/> when the bot fires.</summary>
@@ -605,26 +595,17 @@ public partial class BotCharacter : Node3D
         }
     }
 
+    /// <summary>Running footsteps (<see cref="FootstepFx"/>: positional, per surface, alternating feet). Walking, crouching,
+    /// the air and death are silent.</summary>
     void Footsteps(float dt, float speed)
     {
-        if (deathT >= 0 || Crouched || QuietSteps || !Grounded || speed <= RunStepSpeed || stepPlayer == null) { stepT = 0.06f; return; }
+        if (deathT >= 0 || Crouched || QuietSteps || !Grounded || speed <= FootstepFx.AudibleSpeed || StepGame == null) { stepT = 0.06f; return; }
         stepT -= dt;
         if (stepT > 0) return;
-        stepT += StepInterval;
-        var steps = BotAssets.Steps;
-        var cam = GetViewport()?.GetCamera3D();
-        if (steps.Length == 0 || cam == null) return;
-        // VALORANT-like flat distance curve (same shape as Sfx.PlayAt): floor until ~35 m, then fade out.
-        const float maxRange = 38f, floor = 0.3f;
-        float d = GlobalPosition.DistanceTo(cam.GlobalPosition);
-        if (d > maxRange) return;
-        float kd = Mathf.Clamp((d - 2f) / (maxRange - 2f), 0f, 1f);
-        float g = (floor + (1 - floor) * (1 - kd) * (1 - kd)) * (kd < 0.9f ? 1f : (1 - kd) / 0.1f);
-        stepPlayer.Stream = steps[Random.Shared.Next(steps.Length)];
-        stepPlayer.VolumeDb = Mathf.LinearToDb(Mathf.Max(1e-4f, Sfx.Volume * 1.1f * g));
-        stepPlayer.PitchScale = 0.92f + 0.16f * Random.Shared.NextSingle();
-        Sfx.DuckSkin(); // gameplay cue: skin sounds duck under it
-        stepPlayer.Play();
+        stepT += FootstepFx.StepInterval(speed) + 0.012f * (Random.Shared.NextSingle() * 2f - 1f);
+        stepRight = !stepRight;
+        var feet = GlobalPosition;
+        FootstepFx.Step(StepGame, feet, FootstepFx.SurfaceAt(StepMap, feet), stepRight);
     }
 
     static float Smooth(float a, float b, float x)

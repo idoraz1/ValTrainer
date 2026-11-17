@@ -11,6 +11,9 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 ### Added
 - Summit, VALORANT's newest map (suggested on Discord): B Lobby → B Main → B Site at true scale, traced from the official minimap, in Site Clear, Deathmatch, Post-Plant, Retake, Site Anchor and the agent drills. Defenders hold Close box, Close left, Boxes, Corner, the pillar cubby, B Drop, Gym door, B Link and the B Tower high ground. Heights are estimates, the B Wall stays open (dropping the walls isn't in ValTrainer) and the rope up to B Tower isn't modelled.
 
+### Changed
+- Footsteps you can locate by ear (suggested on Discord). Enemy footsteps are new: a sharp, hard running step with a low thump, like on VALORANT's concrete and tile, alternating left and right foot, never twice exactly the same. They change with what the enemy runs on: concrete, tile, metal walkways and containers, wooden crates, snow and sand. Each step now comes from the enemy's feet with much clearer direction: a step on your left is clearly in your left ear, and a step behind you sounds duller than one in front. Distance is easier to read: near steps are crisp, far ones duller, a little roomier and quieter, and they fade out at about 40 m, like in VALORANT. Steps behind a wall sound muffled. Walking and crouching are still silent. This works everywhere enemies run: Deathmatch, Sound Lock, Site Anchor, Peek Mix and the other bot drills. Your own steps use the new sounds too. Headphones give the best direction.
+
 ## [1.20.0] - 2026-11-16
 
 ### Added

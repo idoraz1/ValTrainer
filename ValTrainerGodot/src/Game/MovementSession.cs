@@ -52,11 +52,20 @@ public partial class GameSession
 
     /// <summary>Seconds to the player's next own running footstep.</summary>
     float ownStepT;
+    bool ownRightFoot;
+
+    /// <summary>One of your own footfalls (<see cref="FootstepFx.Own"/>, on the surface under you); silent in previews.</summary>
+    void OwnStep(float vol, float pitch)
+    {
+        if (Demo) return;
+        ownRightFoot = !ownRightFoot;
+        FootstepFx.Own(FootstepFx.SurfaceAt(Mode.Map, PlayerFeet), ownRightFoot, vol, pitch);
+    }
 
     /// <summary>
     /// Your own footsteps, as in VALORANT: running on the ground is audible (quieter than an enemy's steps, 2D), walking
     /// (shift), crouching and the air are silent. Same cadence as the enemies' (<see cref="FootstepFx.StepInterval"/>);
-    /// a landing counts as a footfall, so the next step comes a full step after it. Muted in previews (Play2D).
+    /// a landing counts as a footfall, so the next step comes a full step after it. Muted in previews.
     /// </summary>
     void OwnFootsteps(float dt)
     {
@@ -66,7 +75,7 @@ public partial class GameSession
         ownStepT -= dt;
         if (ownStepT > 0) return;
         ownStepT += FootstepFx.StepInterval(m.Speed);
-        Play2D("footstep", 0.35f, 0.92f + 0.16f * Random.Shared.NextSingle());
+        OwnStep(0.35f, 1f);
     }
 
     void OnMoverJumped()
@@ -83,7 +92,7 @@ public partial class GameSession
         // Landing audio is a binary cue: high drops and regular jumps are audible, but low walk-offs and
         // the released crouch-jump technique are silent.
         if (Mover.AudibleLanding)
-            Play2D("footstep", 0.8f, 0.92f);
+            OwnStep(0.8f, 0.9f);
         if (MovementScript.Log)
             GD.Print(string.Create(CultureInfo.InvariantCulture,
                 $"[move] land t={Now:0.000} {(a.FromJump ? "jump" : "fall/launch")}: air {a.AirTime:0.000} s, feet rise {a.FeetRise:0.000} m, " +
