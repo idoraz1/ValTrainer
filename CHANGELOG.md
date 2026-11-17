@@ -8,6 +8,8 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+## [1.21.0] - 2026-11-17
+
 ### Added
 - Summit, VALORANT's newest map (suggested on Discord): B Lobby → B Main → B Site at true scale, traced from the official minimap, in Site Clear, Deathmatch, Post-Plant, Retake, Site Anchor and the agent drills. Defenders hold Close box, Close left, Boxes, Corner, the pillar cubby, B Drop, Gym door, B Link and the B Tower high ground. Heights are estimates, the B Wall stays open (dropping the walls isn't in ValTrainer) and the rope up to B Tower isn't modelled.
 - A minimap in Jump Peek and Jiggle Peek (suggested on Discord), in the top-left corner like in VALORANT, so you get used to glancing at it while you peek. It shows the walls and boxes, you as an arrow with your field of view, and the Operator as a red dot only while you can see him or right after he fires or you hit him, then the dot fades where you last saw him. It turns with your view by default; pick FIXED (north up, whole area) in Settings → Gameplay → Minimap. Turn it off per drill in the drill preview (M). It's drawn from ValTrainer's own level shapes, not Riot's map art.
@@ -414,7 +416,8 @@ The first public release of ValTrainer, a free aim, movement and utility trainer
   - Numbers always use "." as the decimal point, whatever your Windows region settings, and user names with non-English characters work.
   - A damaged settings or stats file is kept as `*.corrupt` and ValTrainer starts fresh instead of crashing.
 
-[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.20.0...HEAD
+[Unreleased]: https://github.com/idoraz1/ValTrainer/compare/v1.21.0...HEAD
+[1.21.0]: https://github.com/idoraz1/ValTrainer/compare/v1.20.0...v1.21.0
 [1.20.0]: https://github.com/idoraz1/ValTrainer/compare/v1.19.0...v1.20.0
 [1.19.0]: https://github.com/idoraz1/ValTrainer/compare/v1.18.0...v1.19.0
 [1.18.0]: https://github.com/idoraz1/ValTrainer/compare/v1.17.0...v1.18.0
