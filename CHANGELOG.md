@@ -8,6 +8,13 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Added
+- Two maps from the current competitive pool (suggested on Discord), in the map picker and every map drill (Site Clear, Deathmatch, Post-Plant, Retake, Site Anchor and the agent drills):
+  - **Lotus, A Main → A Site:** up the roots out of A Lobby, past the Rubble in A Main, then onto A Site through Main or through the rotating A Door and the Tree room. Defenders hold the Stairs, Top, the Drop ledge, the Hut, Default, Back site and Tree. The rotating door stands still in its open position, and the breakable wall to A Link stays shut.
+  - **Corrode, B Main → B Site:** down B Lobby, along B Main and out of the Main pocket onto B Site, with the salt machine, the raised platform, B Link, B Elbow and B Tower looking down on the site.
+
+  Both are traced at true scale from the official minimaps, like the other maps. Heights and props are close approximations, not exact copies.
+
 ## [1.20.0] - 2026-11-16
 
 ### Added
