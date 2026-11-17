@@ -64,11 +64,21 @@ public static class Collision
     /// (step-up / landing on them is the vertical step's job); boxes starting at or above <paramref name="height"/> are overhead.</summary>
     public static void MoveAndSlide(ref Vector3 feet, ref Vector3 vel, Vector3 delta, IReadOnlyList<Box> world, float step, float height)
     {
-        feet.X += delta.X;
-        if (Resolve(ref feet, world, axisX: true, delta.X, step, height)) vel.X = 0;
-        feet.Z += delta.Z;
-        if (Resolve(ref feet, world, axisX: false, delta.Z, step, height)) vel.Z = 0;
+        // Sub-steps of at most MaxSubStep, so a fast move (a dash, a long frame) can't skip over a thin wall or railing.
+        int n = Math.Max(1, (int)MathF.Ceiling(Mathf.Max(Mathf.Abs(delta.X), Mathf.Abs(delta.Z)) / MaxSubStep));
+        float dx = delta.X / n, dz = delta.Z / n;
+        bool hitX = false, hitZ = false;
+        for (int i = 0; i < n; i++)
+        {
+            if (!hitX) { feet.X += dx; if (Resolve(ref feet, world, axisX: true, dx, step, height)) hitX = true; }
+            if (!hitZ) { feet.Z += dz; if (Resolve(ref feet, world, axisX: false, dz, step, height)) hitZ = true; }
+        }
+        if (hitX) vel.X = 0;
+        if (hitZ) vel.Z = 0;
     }
+
+    /// <summary>Longest horizontal move resolved at once (m): well under the thinnest wall plus the body's diameter.</summary>
+    public const float MaxSubStep = 0.2f;
 
     static bool Resolve(ref Vector3 feet, IReadOnlyList<Box> world, bool axisX, float moved, float step, float height)
     {
@@ -80,16 +90,20 @@ public static class Collision
             float minZ = b.Min.Z - PlayerRadius, maxZ = b.Max.Z + PlayerRadius;
             if (feet.X <= minX || feet.X >= maxX || feet.Z <= minZ || feet.Z >= maxZ) continue;
             hit = true;
-            if (axisX)
+            float prev = (axisX ? feet.X : feet.Z) - moved;
+            float lo = axisX ? minX : minZ, hi = axisX ? maxX : maxZ;
+            if (prev <= lo || prev >= hi)
             {
-                float prev = feet.X - moved;
-                feet.X = prev <= minX ? minX : prev >= maxX ? maxX : (feet.X - minX < maxX - feet.X ? minX : maxX);
+                // Entered the box on this axis this move: stop at the face it came through.
+                if (axisX) feet.X = prev <= lo ? lo : hi; else feet.Z = prev <= lo ? lo : hi;
+                continue;
             }
-            else
-            {
-                float prev = feet.Z - moved;
-                feet.Z = prev <= minZ ? minZ : prev >= maxZ ? maxZ : (feet.Z - minZ < maxZ - feet.Z ? minZ : maxZ);
-            }
+            // Already overlapping before the move (it rose into it, crouch-tucked, or a step-up stopped counting): push out the
+            // shortest way on either axis. Pushing along the move axis only could carry the body metres along a long wall,
+            // through it into the building behind.
+            float px = Mathf.Min(feet.X - minX, maxX - feet.X), pz = Mathf.Min(feet.Z - minZ, maxZ - feet.Z);
+            if (px <= pz) feet.X = feet.X - minX < maxX - feet.X ? minX : maxX;
+            else feet.Z = feet.Z - minZ < maxZ - feet.Z ? minZ : maxZ;
         }
         return hit;
     }

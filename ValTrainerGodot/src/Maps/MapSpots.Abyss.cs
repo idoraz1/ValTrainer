@@ -82,14 +82,14 @@ public static partial class MapSpots
             B(-24.35f, 20, -10.85f, -20.5f, 22.8f, -2.89f, Surf.Elevated), // raised +2.8 m
             B(-20.5f, 20, -9.89f, -16.16f, 22.8f, -4.82f, Surf.Elevated), // raised +2.8 m
             B(-18.57f, 20, -4.82f, -16.16f, 22.8f, 12.54f, Surf.Elevated), // raised +2.8 m
-            B(-20.25f, 20, -4.58f, -20.01f, 22.8f, -2.65f, Surf.Elevated), // raised +2.8 m
-            B(-19.05f, 20, -4.58f, -18.81f, 22.8f, 12.54f, Surf.Elevated), // raised +2.8 m
-            B(-24.84f, 20, -2.65f, -20.25f, 22.8f, -2.41f, Surf.Elevated), // raised +2.8 m
+            B(-20.56f, 20, -4.88f, -20.01f, 22.8f, -2.65f, Surf.Elevated), // raised +2.8 m
+            B(-19.05f, 20, -4.88f, -18.51f, 22.8f, 12.54f, Surf.Elevated), // raised +2.8 m
+            B(-24.84f, 20, -2.95f, -20.25f, 22.8f, -2.41f, Surf.Elevated), // raised +2.8 m
             B(-18.08f, 20, 12.54f, -16.16f, 22.8f, 12.78f, Surf.Elevated), // raised +2.8 m
             B(-17.6f, 20, 12.78f, -16.16f, 22.8f, 13.02f, Surf.Elevated), // raised +2.8 m
             B(-17.12f, 20, 13.02f, -16.16f, 22.8f, 13.26f, Surf.Elevated), // raised +2.8 m
             B(-16.88f, 20, 13.74f, -16.16f, 22.8f, 15.19f, Surf.Elevated), // raised +2.8 m
-            B(-24.11f, 20, -21.94f, 21.7f, 26.5f, -21.7f), // wall
+            B(-24.11f, 20, -21.94f, 22, 26.5f, -21.7f), // wall
             B(21.94f, 20, -21.94f, 50.64f, 26.5f, -21.46f), // wall
             B(0.24f, 20, -21.7f, 15.43f, 26.5f, -3.13f), // wall
             B(22.18f, 20, -21.46f, 50.64f, 26.5f, -21.22f), // wall
@@ -128,7 +128,7 @@ public static partial class MapSpots
             B(7.23f, 20, 5.3f, 15.19f, 26.5f, 12.54f), // wall
             B(7.23f, 20, 12.54f, 8.2f, 26.5f, 13.02f), // wall
             B(14.95f, 20, 12.54f, 15.19f, 26.5f, 13.02f), // wall
-            B(-16.4f, 20, 13.5f, -14.71f, 26.5f, 13.74f), // wall
+            B(-16.4f, 20, 13.2f, -14.71f, 26.5f, 13.74f), // wall
             B(-14.95f, 20, 13.74f, -14.71f, 26.5f, 14.71f), // wall
             B(-24.84f, 20, -21.94f, -24.11f, 20.45f, -21.7f, Surf.Trim), // lip on the void edge
             B(-24.84f, 20, -21.7f, -24.35f, 20.45f, -2.65f, Surf.Trim), // lip on the void edge
@@ -162,13 +162,13 @@ public static partial class MapSpots
             B(7.47f, 20, 13.02f, 7.96f, 20.45f, 13.26f, Surf.Trim), // lip on the void edge
             B(-17.36f, 20, 13.26f, -16.64f, 20.45f, 13.5f, Surf.Trim), // lip on the void edge
             B(-16.88f, 20, 13.5f, -16.4f, 20.45f, 13.74f, Surf.Trim), // lip on the void edge
-            B(-14.95f, 20, 14.71f, -14.71f, 20.45f, 15.19f, Surf.Trim), // lip on the void edge
+            B(-14.95f, 20, 14.71f, -14.41f, 20.45f, 15.19f, Surf.Trim), // lip on the void edge
             B(-14.47f, 20, 14.95f, 5.3f, 20.45f, 15.19f, Surf.Trim), // lip on the void edge
             B(17.36f, 20, 14.95f, 23.15f, 20.45f, 15.19f, Surf.Trim), // lip on the void edge
             // --- props (outlines from the minimap, heights estimated)
             B(-10.61f, 20, 6.99f, 1.21f, 21, 10.85f, Surf.Elevated), // B site platform (climb with a crouch-jump)
             B(-8.56f, 20, 10.79f, -1.69f, 20.5f, 12.06f, Surf.Elevated), // platform: lower step
-            B(-16.1f, 20, 8.2f, -10.55f, 21, 10.01f, Surf.Elevated), // platform: walkway to the foot of B Tower
+            B(-16.22f, 20, 8.2f, -10.55f, 21, 10.01f, Surf.Elevated), // platform: walkway to the foot of B Tower
             B(-6.75f, 20, 3.01f, -4.7f, 22.2f, 7.05f, Surf.Cover), // tall cover on the platform's north side
             B(-8.62f, 20, 5.18f, -6.69f, 21.2f, 7.05f, Surf.Cover), // crate beside it
             B(-9.52f, 20, -8.44f, -7.35f, 21.6f, -6.27f, Surf.Cover), // Boxes: high crate
@@ -176,7 +176,7 @@ public static partial class MapSpots
             B(-1.69f, 20, -5.18f, 0.42f, 21.4f, -3.01f, Surf.Cover), // crate on the corner at the B Main exit
             B(21.22f, 20, 4.34f, 23.21f, 21, 6.15f, Surf.Cover), // crate under B Nest
             B(24.35f, 20, -19.77f, 28.21f, 22, -15.79f, Surf.Cover), // big crate in the lobby corner
-            B(40.87f, 20, -16.16f, 44.13f, 21.4f, -12.78f, Surf.Cover), // lobby crate
+            B(40.21f, 20, -16.16f, 44.13f, 21.4f, -12.78f, Surf.Cover), // lobby crate
         },
         Enemies = new[]
         {

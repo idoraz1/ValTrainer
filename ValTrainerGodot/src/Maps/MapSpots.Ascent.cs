@@ -45,7 +45,7 @@ public static partial class MapSpots
             B(-17.86f, 2.2f, -2.79f, -15.9f, 3.4f, -1.12f, Surf.Cover), // Tetris, green box, top crate
             B(-12.83f, 1, -9.77f, -10.74f, 3.7f, -7.81f, Surf.Cover), // Pillar (tall crate)
             B(-22.74f, 1, -9.77f, -21.07f, 2.6f, -7.81f, Surf.Cover), // back-site crates
-            B(-22.74f, 1, -7.81f, -22.04f, 2, -6.84f, Surf.Cover),
+            B(-23.08f, 1, -7.81f, -22.04f, 2, -6.84f, Surf.Cover),
             B(-3.77f, 0, -9.77f, 0, 2.3f, -7.81f, Surf.Cover), // boxes by the arch (tall)
             B(-3.77f, 0, -7.81f, 0, 1.2f, -5.86f, Surf.Cover), // boxes by the arch (low)
             B(5.16f, 0, -14.23f, 6.14f, 1, -13.25f, Surf.Cover), // Wine barrels
@@ -55,7 +55,7 @@ public static partial class MapSpots
             B(-10.04f, 3.2f, 18, -8.79f, 7, 20.93f), // over the Tree-Garden door
             B(-8.79f, 0, 28.04f, -6.98f, 0.7f, 29.85f, Surf.Trim), // Tree planter
             B(-8.16f, 0.7f, 28.67f, -7.6f, 3.6f, 29.23f, Surf.Trim), // Tree trunk
-            B(-20.79f, 0, 17.16f, -19.81f, 1.1f, 18.28f, Surf.Trim), // stone planter under Window
+            B(-20.79f, 0, 16.96f, -19.81f, 1.1f, 18.28f, Surf.Trim), // stone planter under Window
             B(-24.83f, 0, 25.95f, -22.88f, 1.3f, 27.9f, Surf.Cover), // crate
             B(-28.6f, 3.75f, -9.77f, -23.02f, 4.05f, 2.93f, Surf.Elevated), // Heaven floor
             B(-28.6f, 3.75f, 2.93f, -23.58f, 4.05f, 23.02f, Surf.Elevated), // Heaven floor, south walkway
@@ -75,7 +75,7 @@ public static partial class MapSpots
             B(-23.58f, 0, 18.55f, -22.74f, 3.75f, 20.37f),
             B(-23.23f, 4.05f, -9.77f, -23.02f, 4.9f, 2.93f, Surf.Trim), // Heaven railing
             B(-25.32f, 4.05f, -9.77f, -23.23f, 6, -7.81f, Surf.Cover), // Heaven Pillar crate (against the back wall and the railing)
-            B(-25.25f, 6, -9.7f, -23.3f, 7.2f, -7.88f, Surf.Cover), // Heaven Pillar crate (stacked)
+            B(-25.25f, 6, -9.83f, -23.3f, 7.2f, -7.88f, Surf.Cover), // Heaven Pillar crate (stacked)
             B(-21.07f, 4.05f, 17.16f, -20.79f, 7, 18.55f), // Window wall
             B(-21.07f, 4.05f, 19.95f, -20.79f, 7, 21.62f),
             B(-21.07f, 4.05f, 18.55f, -20.79f, 5, 19.95f), // window sill

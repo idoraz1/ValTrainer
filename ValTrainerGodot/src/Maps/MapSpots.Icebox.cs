@@ -65,7 +65,7 @@ public static partial class MapSpots
             B(53.07f, 0, 4.52f, 59.27f, 9, 5.15f),
             B(52.63f, 0, 5.15f, 59.27f, 9, 6.24f),
             B(52.83f, 0, 6.24f, 59.27f, 9, 6.78f),
-            B(53.24f, 0, 6.78f, 59.27f, 9, 7.32f),
+            B(53.24f, 0, 6.78f, 59.27f, 9, 7.93f),
             B(53.29f, 0, 7.32f, 59.27f, 9, 7.87f),
             B(53, 0, 7.87f, 59.27f, 9, 8.41f),
             B(52.7f, 0, 8.41f, 59.27f, 9, 8.95f),
@@ -169,8 +169,8 @@ public static partial class MapSpots
             B(32.15f, 3.4f, 5.2f, 34.65f, 3.8f, 12.9f, Surf.Elevated), // B Hall floor over the fence passage (through to back site)
             B(32.15f, 0, 12.9f, 34.65f, 3.8f, 22.38f, Surf.Elevated), // B Hall floor (solid fill)
             B(32.15f, 6.8f, 1.15f, 34.65f, 10.5f, 22.38f), // B Hall ceiling / upper floor
-            B(33.77f, 3.8f, 15.19f, 34.45f, 4.6f, 16.28f, Surf.Cover), // B Hall crate
-            B(33.81f, 4.6f, 15.23f, 34.41f, 5.4f, 16.24f, Surf.Cover), // B Hall crate (stacked)
+            B(33.77f, 3.8f, 15.19f, 34.71f, 4.6f, 16.28f, Surf.Cover), // B Hall crate
+            B(33.81f, 4.6f, 15.23f, 34.71f, 5.4f, 16.24f, Surf.Cover), // B Hall crate (stacked)
             B(32.15f, 0, 22.38f, 40.62f, 3.8f, 41.5f, Surf.Elevated), // B Kitchen floor
             B(40.62f, 0, 22.38f, 42.32f, 3.8f, 26.04f, Surf.Elevated), // B Kitchen floor (door to Hut)
             B(32.15f, 7, 22.38f, 40.62f, 8.95f, 41.5f), // B Kitchen ceiling
@@ -190,7 +190,7 @@ public static partial class MapSpots
             B(22.65f, 6.6f, 34.86f, 31.6f, 8.5f, 38.52f), // B Tube ceiling
             B(22.65f, 0, 38.52f, 32.01f, 8.5f, 38.79f), // B Tube south wall
             B(24.82f, 3.6f, 37.43f, 26.45f, 4.6f, 38.52f, Surf.Cover), // Tube boxes
-            B(24.89f, 4.6f, 37.5f, 26.38f, 5.6f, 38.45f, Surf.Cover), // Tube boxes (stacked)
+            B(24.89f, 4.6f, 37.5f, 26.38f, 5.6f, 38.58f, Surf.Cover), // Tube boxes (stacked)
             B(42.32f, 3.2f, 22.24f, 52.29f, 3.5f, 29.98f, Surf.Elevated), // Hut walkway
             B(42.18f, 0, 22.24f, 45.98f, 3.2f, 29.98f), // under the Hut walkway (meets the Research block: no crack)
             B(48.69f, 0, 22.24f, 52.29f, 3.2f, 29.98f),
@@ -216,7 +216,7 @@ public static partial class MapSpots
             B(21.97f, 3.8f, 1.36f, 22.12f, 6.5f, 7.66f, Surf.Cover), // Top Site container, west side (doorway)
             B(25.96f, 3.8f, -4.41f, 26.11f, 6.5f, 2.31f, Surf.Cover), // Top Site container, east side (bridge door)
             B(25.96f, 6.1f, 2.31f, 26.11f, 6.5f, 4.75f, Surf.Cover), // Top Site container, east side (bridge door) (above opening)
-            B(25.96f, 3.8f, 4.75f, 26.11f, 6.5f, 7.66f, Surf.Cover), // Top Site container, east side (bridge door)
+            B(25.85f, 3.8f, 4.75f, 26.11f, 6.5f, 7.66f, Surf.Cover), // Top Site container, east side (bridge door)
             B(22.12f, 3.8f, 7.51f, 25.96f, 6.5f, 7.66f, Surf.Cover), // Top Site container, south end
             B(21.97f, 6.5f, -4.41f, 26.11f, 6.8f, 7.66f, Surf.Cover), // Top Site container roof
             B(24.82f, 3.8f, 5.7f, 25.91f, 4.9f, 6.78f, Surf.Cover), // crate in Top Site
@@ -226,13 +226,13 @@ public static partial class MapSpots
             B(8.95f, 0, -8.2f, 10.92f, 1.15f, -5.7f, Surf.Cover), // crates beside Yellow (against the container: no see-through slit)
             B(9.09f, 1.15f, -8.2f, 10.78f, 2.3f, -5.83f, Surf.Cover), // crates beside Yellow (stacked, against the container)
             B(-4.75f, 0, -18.17f, -3.12f, 1.2f, -15.94f, Surf.Cover), // crates in the Yellow corner
-            B(-3.12f, 0, -18.17f, -1.76f, 1, -16.95f, Surf.Cover), // crate in the Yellow corner
+            B(-3.12f, 0, -18.3f, -1.76f, 1, -16.95f, Surf.Cover), // crate in the Yellow corner
             // (The container that hung from the crane over Green is gone: Riot moved it out of B Green in Episode 8.)
             B(-0.95f, 0, 7.05f, 1.22f, 2.2f, 9.22f, Surf.Cover), // KNG crate in Green
             B(-2.98f, 0, 7.19f, -0.95f, 2.2f, 9.22f, Surf.Cover), // crate in Green (double height, level with the KNG crate)
             B(-2.03f, 0, 9.22f, -0.95f, 1, 11.42f, Surf.Cover), // long low crate in Green
-            B(3.93f, 0, 14.24f, 5.97f, 1.15f, 16.28f, Surf.Cover), // crates in Green
-            B(4.07f, 1.15f, 14.38f, 5.83f, 2.3f, 16.14f, Surf.Cover), // crates in Green (stacked)
+            B(3.93f, 0, 14.24f, 6.16f, 1.15f, 16.28f, Surf.Cover), // crates in Green
+            B(4.07f, 1.15f, 14.38f, 6.16f, 2.3f, 16.14f, Surf.Cover), // crates in Green (stacked)
             B(16.35f, 0, 16.95f, 18.24f, 1.15f, 20.14f, Surf.Cover), // Orange crates (against the Green/Orange container stack; 6 cm into it so the crate bodies meet: no see-through slit)
             B(16.35f, 1.15f, 17.09f, 18.11f, 2.3f, 20.01f, Surf.Cover), // Orange crates (stacked; against the containers too)
             B(46.93f, 0, 5.7f, 53.3f, 3.2f, 14.38f), // Back B hut (closed; reaches into the cliff: no cracks behind it)
@@ -247,9 +247,9 @@ public static partial class MapSpots
             B(30.46f, 0, 28.62f, 30.84f, 3.11f, 30.79f, Surf.Floor),
             B(30.84f, 0, 28.62f, 31.22f, 3.46f, 30.79f, Surf.Floor),
             B(31.22f, 0, 28.62f, 31.6f, 3.8f, 30.79f, Surf.Floor),
-            B(29.7f, 0, 26.86f, 31.06f, 1.15f, 28.48f, Surf.Cover), // crates by the snow pile
-            B(29.77f, 1.15f, 26.92f, 30.99f, 2.3f, 28.42f, Surf.Cover), // crates by the snow pile (stacked)
-            B(30.24f, 0, 30.92f, 31.6f, 1.15f, 32.28f, Surf.Cover), // crate by the snow pile (flush against the Kitchen wall)
+            B(29.7f, 0, 26.86f, 31.06f, 1.15f, 28.68f, Surf.Cover), // crates by the snow pile
+            B(29.77f, 1.15f, 26.92f, 30.99f, 2.3f, 28.68f, Surf.Cover), // crates by the snow pile (stacked)
+            B(30.24f, 0, 30.73f, 31.6f, 1.15f, 32.28f, Surf.Cover), // crate by the snow pile (flush against the Kitchen wall)
         },
         Enemies = new[]
         {

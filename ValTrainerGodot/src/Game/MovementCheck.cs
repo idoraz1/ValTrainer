@@ -22,7 +22,7 @@ namespace ValTrainer.Game;
 /// </summary>
 public static class MovementCheck
 {
-    public static bool Requested => CmdLine.Dev && (CmdLine.Has("--movecheck") || CmdLine.Has("--jumpaudit"));
+    public static bool Requested => CmdLine.Dev && (CmdLine.Has("--movecheck") || CmdLine.Has("--jumpaudit") || CmdLine.Has("--escapecheck"));
 
     const float Dt = 1f / 120f;
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -36,6 +36,7 @@ public static class MovementCheck
         {
             if (CmdLine.Has("--movecheck")) Physics();
             if (CmdLine.Has("--jumpaudit")) Audit(CmdLine.After("--jumpaudit"));
+            if (CmdLine.Has("--escapecheck")) EscapeCheck(CmdLine.After("--escapecheck"));
         }
         catch (Exception e) { Fail("exception", e.ToString()); }
         finally { Mover.KeyOverride = saved; }
@@ -623,5 +624,88 @@ public static class MovementCheck
             }
         Mover.KeyOverride = null;
         return false;
+    }
+    // ------------------------------------------------------------------ escape stress test
+
+    /// <summary><c>--escapecheck [all|&lt;map key&gt;]</c>: drives bodies around a map with the real physics: random keys, jumps,
+    /// crouch-jumps, uneven frame times (up to the game's 50 ms cap) and ability impulses up to 20 m/s, and fails on any frame
+    /// that ends with the body inside a box (walked through a wall, sank into a floor) or under the map's floor.</summary>
+    static void EscapeCheck(string? which)
+    {
+        which = string.IsNullOrWhiteSpace(which) || which.StartsWith("--", StringComparison.Ordinal) ? "all" : which.ToLowerInvariant();
+        var maps = which == "all" ? MapSpots.All.ToList() : MapSpots.All.Where(m => m.Key == which).ToList();
+        if (maps.Count == 0) { Fail("escapecheck", $"unknown map '{which}'"); return; }
+        foreach (var map in maps) EscapeMap(map);
+    }
+
+    /// <summary>The wall (a box higher than a step) a body at these feet overlaps by more than 6 cm, or -1.</summary>
+    static int Inside(IReadOnlyList<Box> world, Vector3 feet, float h)
+    {
+        // Step-ups (tops within a step of the feet) may overlap the body's edge by design (the ground probe is 5 cm narrower).
+        const float r = Collision.PlayerRadius - 0.06f;
+        for (int i = 0; i < world.Count; i++)
+        {
+            var b = world[i];
+            if (b.Max.Y <= feet.Y + Collision.StepHeight || b.Min.Y >= feet.Y + h - 0.01f) continue;
+            if (feet.X + r <= b.Min.X || feet.X - r >= b.Max.X || feet.Z + r <= b.Min.Z || feet.Z - r >= b.Max.Z) continue;
+            return i;
+        }
+        return -1;
+    }
+
+    static void EscapeMap(MapSpot map)
+    {
+        var world = map.Solid;
+        var rng = new Random(1234);
+        var keys = new[] { Key.W, Key.A, Key.S, Key.D };
+        var bad = new List<string>();
+        int frames = 0;
+        float minFloor = map.Boxes.Where(b => b.Surf is Surf.Floor).Select(b => b.Max.Y).DefaultIfEmpty(0).Min();
+        var starts = new List<Vector3> { map.StartFeet };
+        starts.AddRange(map.Enemies.Select(e => e.Feet));
+        starts.AddRange(map.RetakeEntries);
+        for (int bot = 0; bot < starts.Count * 6; bot++)
+        {
+            var r = new Rig(world.ToList(), starts[bot % starts.Count], (float)rng.NextDouble() * 360f);
+            float t = 0, nextChange = 0;
+            for (int f = 0; f < 3600; f++)
+            {
+                if (t >= nextChange)
+                {
+                    r.Held.Clear();
+                    foreach (var k in keys) if (rng.NextDouble() < 0.35) r.Hold(k);
+                    if (rng.NextDouble() < 0.25) r.Hold(Key.Ctrl);
+                    if (rng.NextDouble() < 0.3) r.Hold(Key.Space);
+                    r.Yaw += (float)(rng.NextDouble() * 180 - 90);
+                    if (rng.NextDouble() < 0.08)
+                    {
+                        float a = Mathf.DegToRad(r.Yaw), sp = 6f + (float)rng.NextDouble() * 14f;
+                        float up = rng.NextDouble() < 0.5 ? (float)rng.NextDouble() * 8f : 0f;
+                        r.M.Impulse(new Vector3(Mathf.Sin(a) * sp, up, -Mathf.Cos(a) * sp), 0.2f, r.Feet);
+                    }
+                    nextChange = t + 0.1f + (float)rng.NextDouble() * 0.6f;
+                }
+                float dt = rng.NextDouble() < 0.03 ? 0.05f : 1f / (30 + rng.Next(220));
+                var before = r.Feet;
+                r.M.Step(dt, r.Yaw, r.Keys, ref r.Feet, r.World);
+                t += dt; frames++;
+                int hit = Inside(world, r.Feet, r.M.BodyHeight);
+                bool under = r.Feet.Y < minFloor - 0.2f && map.VoidBelow == null && map.Boxes.Any(b => b.Surf == Surf.Floor && b.Max.Y > r.Feet.Y + 0.2f &&
+                    r.Feet.X > b.Min.X && r.Feet.X < b.Max.X && r.Feet.Z > b.Min.Z && r.Feet.Z < b.Max.Z);
+                if (hit >= 0 || under)
+                {
+                    if (bad.Count < 12)
+                        bad.Add($"({F(before.X, "0.00")},{F(before.Y, "0.00")},{F(before.Z, "0.00")})→({F(r.Feet.X, "0.00")},{F(r.Feet.Y, "0.00")},{F(r.Feet.Z, "0.00")}) " +
+                                (hit >= 0 ? $"inside box #{hit} {map.Boxes[hit].Surf} [{F(world[hit].Min.X, "0.00")},{F(world[hit].Min.Y, "0.00")},{F(world[hit].Min.Z, "0.00")}]-[{F(world[hit].Max.X, "0.00")},{F(world[hit].Max.Y, "0.00")},{F(world[hit].Max.Z, "0.00")}]" : "under the floor") +
+                                $" dt {F(dt * 1000, "0")} ms v {F(new Vector2(r.M.Vel.X, r.M.Vel.Z).Length(), "0.0")}");
+                    else if (bad.Count == 12) bad.Add("...");
+                    // put it back where it was so one escape isn't counted every frame after
+                    r.Feet = starts[bot % starts.Count];
+                    r.M.Place(ref r.Feet, r.World);
+                }
+            }
+        }
+        foreach (var b in bad) GD.Print($"[escapecheck]   {map.Key}: {b}");
+        Check($"escapecheck {map.Key}: bodies stay out of the walls and above the floor", bad.Count == 0, $"{frames} frames, {bad.Count} escape(s)");
     }
 }

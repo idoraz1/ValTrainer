@@ -152,10 +152,10 @@ public static partial class MapSpots
             B(10.02f, 0f, -12.95f, 12.02f, 2.4f, -10.64f),  // white ivy pillar by the K-building door (overlaps the building wall: no crack)
             B(-5.13f, 1.35f, -5.63f, -3.13f, 3f, -3.63f),  // flowerpot under Rafters (raised in 6.0)
             B(-5.26f, 1.35f, 7.26f, -3.13f, 2.55f, 11.27f, Surf.Cover),  // A Main boost box (halved in 6.0)
-            B(-21.28f, 3.3f, 6.39f, -18.78f, 5f, 8.39f, Surf.Cover),  // Ramps crate (tall)
-            B(-21.28f, 3.6f, 5.38f, -19.78f, 4.6f, 6.39f, Surf.Cover),  // Ramps crate (small)
-            B(-20.16f, 4.75f, -11.14f, -18.28f, 6.3f, -9.64f, Surf.Cover),  // Heaven crate
-            B(-20.16f, 4.75f, -9.64f, -18.53f, 5.8f, -8.14f, Surf.Cover),  // Heaven crate (low)
+            B(-21.47f, 3.3f, 6.39f, -18.78f, 5, 8.39f, Surf.Cover),  // Ramps crate (tall)
+            B(-21.47f, 3.6f, 5.38f, -19.78f, 4.6f, 6.39f, Surf.Cover),  // Ramps crate (small)
+            B(-20.47f, 4.75f, -11.14f, -18.28f, 6.3f, -9.64f, Surf.Cover),  // Heaven crate
+            B(-20.47f, 4.75f, -9.64f, -18.53f, 5.8f, -8.14f, Surf.Cover),  // Heaven crate (low)
             B(-9.27f, 0f, -13.65f, -8.76f, 8.5f, -12.27f),  // wall stub west of the Heaven window
             B(-9.27f, 0f, -13.9f, -8.64f, 8.5f, -13.65f),  // closes the slot between the stub and the back wall
             B(-9.27f, 6.1f, -12.27f, -8.76f, 8.5f, -9.27f, Surf.Trim),  // lintel over the Heaven window

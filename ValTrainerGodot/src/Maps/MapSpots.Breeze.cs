@@ -102,7 +102,7 @@ public static partial class MapSpots
             B(-15.45f, 1.5f, 15.2f, -14.6f, 9, 17.6f), B(-10.6f, 1.5f, 15.2f, -9.9f, 9, 15.5f),
             B(-16.35f, 1.5f, 15.65f, -15.45f, 9, 26.35f), B(-17.25f, 0, 16.1f, -16.45f, 9, 26.35f),
             B(-16.45f, 1.5f, 16.1f, -16.35f, 9, 26.35f), B(-18.1f, 0, 16.55f, -17.25f, 9, 18),
-            B(-13.7f, 1.5f, 16.8f, -13.55f, 9, 17), B(-18.7f, 0, 17, -18.1f, 9, 17.6f),
+            B(-13.7f, 1.5f, 16.8f, -13.55f, 9, 17), B(-18.7f, 0, 16.89f, -18.1f, 9, 17.6f),
             B(-18.85f, 0, 17.15f, -18.7f, 9, 17.6f), B(-18.55f, 0, 17.6f, -18.1f, 9, 18),
             B(-15.45f, 1.5f, 17.6f, -15.05f, 9, 18), B(-17.45f, 0, 18, -17.25f, 9, 26.35f),
             B(-33.35f, 0, 24.4f, -17.45f, 9, 26.35f),
@@ -142,13 +142,13 @@ public static partial class MapSpots
             B(-16.25f, 1.5f, -31.35f, -12.85f, 4.1f, -30.9f, Surf.Trim), B(-15.8f, 1.5f, -30.9f, -13.35f, 4.1f, -30.4f, Surf.Trim),
             B(-15.3f, 1.5f, -30.4f, -13.85f, 4.1f, -29.9f, Surf.Trim), B(-14.8f, 1.5f, -29.9f, -14.3f, 4.1f, -29.4f, Surf.Trim),
             B(3.05f, 1.5f, -31.55f, 4.65f, 3.7f, -29.95f, Surf.Cover), // double box in the Back Site cutout, against the end of the diagonal wall
-            B(-12, 1.5f, -11.3f, -10.05f, 3.1f, -9.2f, Surf.Cover), // crate stack by the A Main exit
-            B(-10.05f, 1.5f, -10.2f, -9.05f, 2.3f, -9.2f, Surf.Cover), B(-9.9f, 1.5f, -9.05f, -8.1f, 4.7f, -7.4f, Surf.Cover), // back crate: tall stack (2x the big crate)
+            B(-12, 1.5f, -11.3f, -10.05f, 3.1f, -8.99f, Surf.Cover), // crate stack by the A Main exit
+            B(-10.05f, 1.5f, -10.2f, -9.05f, 2.3f, -8.99f, Surf.Cover), B(-9.9f, 1.5f, -9.05f, -8.1f, 4.7f, -7.4f, Surf.Cover), // back crate: tall stack (2x the big crate)
             B(-10.6f, 1.5f, 6.3f, -8.65f, 2.7f, 10.2f, Surf.Cover), // the A Main box
             B(-26.95f, 0, 5.7f, -24.55f, 1.3f, 8.1f, Surf.Cover), // A Lobby crate
             B(-16.45f, 5.7f, 1.25f, 6.4f, 6, 10.2f, Surf.Elevated), // A Main (shop) ceiling
             B(-21.05f, 5.7f, 9.5f, -10.6f, 6, 13.8f, Surf.Elevated), // shop passage ceiling
-            B(-20.95f, 3.2f, 13.8f, -20.55f, 9, 14.3f), // over the Chop Shop door
+            B(-20.95f, 3.2f, 13.49f, -20.55f, 9, 14.3f), // over the Chop Shop door
             B(-20.55f, 5.7f, 13.8f, -10.6f, 6, 14.3f, Surf.Elevated), B(-20.65f, 3.2f, 14.3f, -20.25f, 9, 14.75f),
             B(-20.25f, 5.7f, 14.3f, -10.6f, 6, 14.75f, Surf.Elevated), B(-20.3f, 3.2f, 14.75f, -19.9f, 9, 15.25f),
             B(-19.9f, 5.7f, 14.75f, -10.6f, 6, 15.25f, Surf.Elevated), B(-20, 3.2f, 15.25f, -19.6f, 9, 15.7f),

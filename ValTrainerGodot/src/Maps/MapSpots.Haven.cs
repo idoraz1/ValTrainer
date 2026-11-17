@@ -44,7 +44,7 @@ public static partial class MapSpots
             B(25.59f, 3.6f, 5.08f, 30.79f, 7, 5.99f), // Garage door lintel
             B(22.53f, 0, 5.08f, 25.59f, 7, 5.99f), // Garage east wall S
             B(26.11f, 0, -9.64f, 30.14f, 0.9f, -8.2f, Surf.Trim), // counter under C Window (plain jump up)
-            B(31.64f, 0, -1.43f, 33.79f, 2.2f, 0.2f, Surf.Cover), // Garage crate stack
+            B(31.64f, 0, -1.43f, 33.91f, 2.2f, 0.2f, Surf.Cover), // Garage crate stack
             B(22.53f, 4.3f, -9.64f, 33.85f, 4.6f, 5.08f, Surf.Trim), // Garage ceiling
             B(12.76f, 0, -11.98f, 20.51f, 7, -7.1f), // block between Logs corner and Connector
             B(20.51f, 0, -9.64f, 22.53f, 7, -7.1f), // Garage SW wall
@@ -68,11 +68,11 @@ public static partial class MapSpots
             B(9.7f, 3.1f, 24.02f, 10.61f, 3.5f, 27.93f, Surf.Trim), // gate beam
             B(9.7f, 3.5f, 24.02f, 10.61f, 7, 27.93f), // wall over the gate
             B(10.61f, 0, 20.96f, 12.43f, 1.25f, 22.92f, Surf.Cover), // Lobby crate
-            B(10.87f, 1.25f, 21.22f, 12.17f, 2.2f, 22.66f, Surf.Cover), // Lobby crate (stacked)
-            B(12.43f, 0, 20.96f, 13.61f, 0.75f, 21.87f, Surf.Cover), // Lobby small crate
-            B(19.92f, 0, 32.03f, 21.68f, 1.25f, 33.72f, Surf.Cover), // Lobby corner crate
+            B(10.55f, 1.25f, 20.71f, 12.17f, 2.2f, 22.66f, Surf.Cover), // Lobby crate (stacked)
+            B(12.43f, 0, 20.71f, 13.61f, 0.75f, 21.87f, Surf.Cover), // Lobby small crate
+            B(19.92f, 0, 31.78f, 21.68f, 1.25f, 33.72f, Surf.Cover), // Lobby corner crate
             B(6.58f, 0, 20.83f, 7.88f, 1.3f, 22.66f, Surf.Cover), // crates at the corner by the gate
-            B(5.79f, 0, 20.83f, 6.58f, 0.8f, 21.87f, Surf.Trim), // stone pallet
+            B(5.79f, 0, 20.71f, 6.58f, 0.8f, 21.87f, Surf.Trim), // stone pallet
             B(-6.58f, 0, 20.05f, -4.88f, 0.6f, 32.1f, Surf.Trim), // flower bed (left side of Long)
             B(-11.13f, 0, 0.13f, -2.73f, 7, 9.9f), // Long south wall (site end)
             B(-11.13f, 0, 9.9f, -2.02f, 7, 17.77f), // Long south wall (blue house)
@@ -84,11 +84,11 @@ public static partial class MapSpots
             B(-10.55f, 0, -19.99f, -9.37f, 0.5f, -18.16f, Surf.Cover), // step crate to Plat
             B(1.63f, 0, -16.08f, 9.51f, 2.5f, -14.13f, Surf.Cover), // big box (C Box)
             B(7.75f, 0, -14.13f, 9.51f, 1.25f, -12.04f, Surf.Cover), // single radianite crate
-            B(13.74f, 0, -18.1f, 15.69f, 1.1f, -16.02f, Surf.Trim), // Logs (pile 1): the low step (crouch-jump 1.1 m, then 1.1 m more onto pile 2)
+            B(13.74f, 0, -18.1f, 15.82f, 1.1f, -16.02f, Surf.Trim), // Logs (pile 1): the low step (crouch-jump 1.1 m, then 1.1 m more onto pile 2)
             B(13.74f, 0, -16.02f, 15.69f, 2.2f, -12.04f, Surf.Trim), // Logs (pile 2): the high pile
             B(-1.5f, 0, -26.3f, 0.52f, 2.5f, -24.22f, Surf.Cover), // back-site double crate
             B(4.69f, 0, -1.95f, 6.58f, 2.5f, 0.13f, Surf.Cover), // double crate right of the Long exit
-            B(9.57f, 0, -31.12f, 11.52f, 2.5f, -29.17f, Surf.Cover), // double crate at Link exit
+            B(9.38f, 0, -31.12f, 11.52f, 2.5f, -29.17f, Surf.Cover), // double crate at Link exit
         },
         Enemies = new[]
         {

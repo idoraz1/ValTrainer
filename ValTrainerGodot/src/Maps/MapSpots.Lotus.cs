@@ -87,7 +87,7 @@ public static partial class MapSpots
             B(14.92f, 0, 14.38f, 15.46f, 7, 50.73f), // px 913,516-917,784
             B(14.38f, 0, 14.92f, 14.92f, 7, 50.73f), // px 909,520-913,784
             B(9.9f, 0, 15.33f, 13.7f, 7, 50.73f), // px 876,523-904,784
-            B(14.11f, 0, 15.19f, 14.38f, 7, 50.73f), // px 907,522-909,784
+            B(13.64f, 0, 15.19f, 14.38f, 7, 50.73f), // px 907,522-909,784
             B(9.77f, 0, 15.46f, 9.9f, 7, 50.73f), // px 875,524-876,784
             B(13.7f, 0, 15.46f, 14.11f, 7, 50.73f), // px 904,524-907,784
             B(2.85f, 0, 16.14f, 3.12f, 7, 16.28f), // px 824,529-826,530
@@ -141,8 +141,8 @@ public static partial class MapSpots
             B(6.24f, 3.4f, -10.44f, 13.83f, 3.75f, -4.75f, Surf.Trim), // Hut roof
             B(8.95f, 0f, -4.8f, 10.99f, 1.25f, -2.58f, Surf.Cover), // default box against the Hut
             B(15.33f, 0f, -19.18f, 17.09f, 1.25f, -16.95f, Surf.Cover), // double box under Drop
-            B(15.46f, 1.25f, -18.99f, 16.95f, 2.2f, -17.9f, Surf.Cover), // double box (stacked)
-            B(-3.66f, 2.4f, -22.92f, -1.63f, 3.5f, -20.89f, Surf.Cover), // box on A Top
+            B(15.46f, 1.25f, -19.18f, 16.95f, 2.2f, -17.9f, Surf.Cover), // double box (stacked)
+            B(-3.66f, 2.4f, -22.92f, -1.63f, 3.5f, -20.56f, Surf.Cover), // box on A Top
             B(-10.36f, 0f, 4.2f, -8.27f, 1.1f, 6.1f, Surf.Cover), // box at the Stairs room exit
             B(-10.58f, 0f, 16.68f, -9.22f, 1.25f, 18.91f, Surf.Cover), // crate in A Main (north-west corner)
             B(-9.28f, 0f, 16.68f, -7.73f, 2.2f, 18.91f, Surf.Cover), // crate stack in A Main
