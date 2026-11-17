@@ -153,7 +153,7 @@ public sealed partial class CrosshairFinderMode
         var zr = new Rect2(x, y + 14 * k, s, s);
         TabChip(c, zr, t, cur, Mathf.Max(2f, Mathf.Round(s / 26f)));
         var rr = new Rect2(zr.End.X + 6 * k, zr.Position.Y, w - s - 6 * k, s);
-        c.DrawRect(rr, Maps.MapSpots.All[2].Palette.Wall);
+        c.DrawRect(rr, Maps.MapSpots.Breeze.Palette.Wall);
         TabReal(c, rr, t, cur);
         Gfx.TextFit(c, UiTheme.Body, CurrentLookText(t), x, zr.End.Y + 18 * k, UiTheme.Fs(13, k), UiTheme.Dim, w);
 
@@ -378,7 +378,7 @@ public sealed partial class CrosshairFinderMode
         TabChip(c, zr, tab, e.Xhair, zoom);
         Gfx.Text(c, UiTheme.HudWide, $"×{zoom}", zr.Position.X + 4 * k, zr.End.Y - 5 * k, UiTheme.Fs(10, k), new Color(UiTheme.Text, 0.6f));
         var rr = new Rect2(zr.End.X + 6 * k, y, w - s - 6 * k, s);
-        c.DrawRect(rr, Maps.MapSpots.All[2].Palette.Wall);
+        c.DrawRect(rr, Maps.MapSpots.Breeze.Palette.Wall);
         TabReal(c, rr, tab, e.Xhair);
         Gfx.Text(c, UiTheme.HudWide, "1×", rr.Position.X + 4 * k, rr.End.Y - 5 * k, UiTheme.Fs(10, k), new Color(0, 0, 0, 0.6f));
 
