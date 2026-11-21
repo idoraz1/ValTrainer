@@ -281,6 +281,27 @@ H = 0.30H₁ + 0.20H₂ + 0.20H₃ + 0.20H₄ + 0.10H₅
 
 **Output:** Valorant sens (3 decimals), eDPI, cm/360, pro percentile, the top two contributing signals in plain words, and the confidence label.
 
+### D2. Sens history ("which sens do I score best with?", 1.22)
+
+Coach → Sensitivity → YOUR SENS HISTORY compares the sensitivities in the player's own run history
+(`src/Analysis/SensHistory.cs`, UI in `src/UI/ProfileSensHistory.cs`). It never changes the recommendation above.
+
+- **Runs.** stats.json runs are already real runs (no unlimited ammo, shortened or adaptive runs). Also left out: Sens
+  Finder and Crosshair Finder runs, warm-up steps, runs without a sens and zero scores.
+- **Same sens.** Runs are compared in cm/360, using the run's own DPI (`RunRecord.Dpi`, saved from 1.22) or the current
+  DPI for older runs. Values within 2% of a bucket's lowest value are one sens. The bucket is labelled with its most
+  common sens.
+- **Fair groups.** A run is only compared with the player's own runs of the same drill, tier and gun. A group counts
+  when it has at least 3 runs, a spread of scores and runs at 2 or more sens. Each score becomes a z-score in its group
+  (clamped to ±3), so every drill uses its own scale; a bucket's mean z weights drills by run count.
+- **Enough data.** A bucket is judged with at least 10 comparable runs over at least 3 drills. Otherwise the panel says
+  how many more drills to play at that sens.
+- **Verdict.** The top bucket by mean z must beat every other judged bucket with a 95% Welch interval of the difference
+  above 0 and a difference of at least 0.25 SD. Otherwise: "No clear difference yet". With 20 seeded histories of equal
+  skill, 1 names a best (`--senshistory-selftest`).
+- **Shown per sens:** comparable runs and drills, score vs the group average (%), accuracy (points) and kill time (%).
+  If the best sens is also the one played most recently, the text says part of the gain may be practice.
+
 ## E. Sens Finder mode
 
 This is a blind, performance-scored version of the PSA method that bisects in log space.

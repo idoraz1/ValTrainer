@@ -860,6 +860,7 @@ public partial class GameSession : Node3D, IGame
         PrevBest = app.Stats.Best(Mode, Tier, Mode.ActiveWeapon);
         Record = Mode.MakeRecord(SessionSens ?? app.Sens);
         Record.Warmup = OnFinished != null;
+        Record.Dpi = app.Settings.Dpi; // the sens history compares runs in cm/360 when the DPI changed
         // Aim coach: metrics for this run + a review of what went wrong and how to fix it.
         Telemetry.Duration = Now;
         Telemetry.Replay = replay?.Finish(Now); // the 3D Rewind's data: in memory now, saved next to the .vtt below

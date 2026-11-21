@@ -43,6 +43,8 @@ public sealed class SkillProfile
     public List<Diagnosis> Problems = new();
     public List<string> Strengths = new();
     public SensAdvice? Sens;
+    /// <summary>Which sens of the player's history they score best with (<see cref="Analysis.SensHistory"/>; null = not built, e.g. fake data).</summary>
+    public SensHistory? SensHistory;
     public int RunsAnalyzed;
     public DateTime Updated = DateTime.Now;
     /// <summary>The calibration the estimate was made with (<see cref="Bench.Calibration"/>; 0 = a hand-made profile).</summary>
@@ -139,6 +141,7 @@ public static class Coach
         p.XhairSources = Agg.Sources(withMode, "xhair", "xhair.nh");
         p.MoveSources = Agg.Sources(withMode, "move", "move.stops");
         p.Sens = SensAdvisor.Advise(runs, currentSens, dpi, a.RefTier, finder);
+        p.SensHistory = SensHistory.Analyze(all, currentSens, dpi);
         return p;
     }
 

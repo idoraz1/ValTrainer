@@ -41,6 +41,9 @@
   "+{0} MORE IN YOUR COLLECTION": [
     "src/UI/ProgressOverlays.cs:520"
   ],
+  "+{0} more sens with only a few runs|+{0} more sens with only a few runs": [
+    "src/UI/ProfileSensHistory.cs:58"
+  ],
   "+{0} XP": [
     "src/UI/ProgressWidgets.cs:316",
     "src/UI/ProgressWidgets.cs:575",
@@ -522,6 +525,7 @@
   ],
   "ACCURACY": [
     "src/UI/Hud.cs:288",
+    "src/UI/ProfileSensHistory.cs:181",
     "src/UI/StatsScreen.cs:57"
   ],
   "Accuracy": [
@@ -537,6 +541,9 @@
   ],
   "Accuracy fell to {0:0}% (below {1:0}%). You're probably tired. Take a break and run it again later.": [
     "src/Modes/SensFinderMode.cs:423"
+  ],
+  "accuracy {0:+0.0;-0.0} points": [
+    "src/UI/ProfileSensHistory.cs:156"
   ],
   "Accurate first motions: your flicks land within {0:0}% of the distance.": [
     "src/Analysis/Assess.cs:732"
@@ -557,7 +564,7 @@
     "src/Warmup/WarmupPlan.cs:20"
   ],
   "ACTIVE IN VALTRAINER": [
-    "src/UI/ProfileScreen.cs:684"
+    "src/UI/ProfileScreen.cs:686"
   ],
   "ADAD": [
     "src/Game/Bots/StrafePlanner.cs:34"
@@ -594,7 +601,7 @@
     "src/UI/MenuScreen.cs:739"
   ],
   "ADD CODES IN SETTINGS (CROSSHAIR)": [
-    "src/Game/GameSession.cs:1053"
+    "src/Game/GameSession.cs:1056"
   ],
   "ADS": [
     "src/Modes/CrosshairFinderDraw.cs:139",
@@ -715,7 +722,7 @@
     "src/Modes/StrafeDuelMode.cs:234"
   ],
   "aim even": [
-    "src/Modes/CrosshairFinderDraw.cs:568"
+    "src/Modes/CrosshairFinderDraw.cs:567"
   ],
   "AIM moves the marker   ·   HOLD CLICK out / RIGHT-CLICK in   ·   {0} throw   ·   R normal view": [
     "src/Modes/Agents/ControllerDraw.cs:392"
@@ -739,7 +746,7 @@
     "src/Analysis/CoachCalibration.cs:168"
   ],
   "aim {0} +{1:0.0}σ": [
-    "src/Modes/CrosshairFinderDraw.cs:568"
+    "src/Modes/CrosshairFinderDraw.cs:567"
   ],
   "AIM · MOVEMENT · UTILITY DRILLS — PLAYED WITH YOUR OWN VALORANT SETTINGS": [
     "src/UI/MenuScreen.cs:286"
@@ -955,11 +962,17 @@
   "At startup and every 6 hours, asks GitHub whether a newer release is out (nothing about you is sent)": [
     "src/UI/SettingsScreen.cs:718"
   ],
+  "At that sens: {0}.": [
+    "src/UI/ProfileSensHistory.cs:143"
+  ],
   "at the end · B": [
     "src/Warmup/LockInCheckIn.cs:224"
   ],
   "AT THIS TIER": [
     "src/UI/StatsScreen.cs:186"
+  ],
+  "At {0} you score {1:+0;-0;0}% vs your average over {2} runs in {3} drills: clearly better than {4}, not just luck (95% confidence).": [
+    "src/UI/ProfileSensHistory.cs:141"
   ],
   "At {0}, you see what goes with your better matches.": [
     "src/Warmup/LockInMatchLog.cs:155"
@@ -1206,7 +1219,8 @@
     "src/Modes/SensFinderMode.cs:35"
   ],
   "Blind A/B test of sensitivities with flicks + tracking (about 15 minutes)": [
-    "src/UI/ProfileScreen.cs:661"
+    "src/UI/ProfileScreen.cs:663",
+    "src/UI/ProfileSensHistory.cs:66"
   ],
   "Blind A/B test of sensitivities with flicks, micro-adjustments and tracking. Finds the sens you actually perform best with.": [
     "src/Modes/SensFinderMode.cs:29"
@@ -1601,7 +1615,7 @@
     "src/Modes/CrosshairFinderMode.cs:1013"
   ],
   "CLICK TO CONTINUE": [
-    "src/Modes/CrosshairFinderDraw.cs:514",
+    "src/Modes/CrosshairFinderDraw.cs:513",
     "src/Modes/SensFinderDraw.cs:107"
   ],
   "Click to pick from the buy menu · B in a drill's preview": [
@@ -1614,7 +1628,7 @@
     "src/UI/SettingsCrosshair.cs:142"
   ],
   "click to switch back": [
-    "src/UI/ProfileScreen.cs:685"
+    "src/UI/ProfileScreen.cs:687"
   ],
   "CLICK!": [
     "src/Modes/AimModes.cs:388"
@@ -1655,7 +1669,7 @@
     "src/UI/RewindData.cs:107"
   ],
   "CM / 360 VS PROS": [
-    "src/UI/ProfileScreen.cs:779"
+    "src/UI/ProfileScreen.cs:781"
   ],
   "CM / 360°": [
     "src/UI/SettingsScreen.cs:438"
@@ -1803,7 +1817,7 @@
     "src/Warmup/LockInCheckIn.cs:265"
   ],
   "contrast": [
-    "src/Modes/CrosshairFinderDraw.cs:322"
+    "src/Modes/CrosshairFinderDraw.cs:321"
   ],
   "Controller": [
     "src/UI/AgentsWidgets.cs:112"
@@ -1986,13 +2000,13 @@
     "src/Modes/CrosshairFinderMode.cs:42"
   ],
   "CROSSHAIR FINDER PICKS THE CROSSHAIR HERE": [
-    "src/Game/GameSession.cs:1050"
+    "src/Game/GameSession.cs:1053"
   ],
   "Crosshair Finder result": [
     "src/UI/SettingsCrosshair.cs:20"
   ],
   "CROSSHAIR FINDER RESULT · {0}": [
-    "src/Modes/CrosshairFinderDraw.cs:477"
+    "src/Modes/CrosshairFinderDraw.cs:476"
   ],
   "Crosshair off the angle": [
     "src/UI/RewindData.cs:103"
@@ -2007,7 +2021,7 @@
     "src/UI/CoachUi.cs:117"
   ],
   "Crosshair placement": [
-    "src/Analysis/Coach.cs:160"
+    "src/Analysis/Coach.cs:163"
   ],
   "crosshair placement": [
     "src/UI/CoachUi.cs:304"
@@ -2030,7 +2044,7 @@
     "src/Analysis/InsightsBuilder.cs:323"
   ],
   "CROSSHAIR {0}": [
-    "src/Modes/CrosshairFinderDraw.cs:417"
+    "src/Modes/CrosshairFinderDraw.cs:416"
   ],
   "Crosshair {0} · target {1} / {2}": [
     "src/Modes/CrosshairFinderMode.cs:995"
@@ -2047,16 +2061,16 @@
   ],
   "CURRENT": [
     "src/Modes/SensFinderDraw.cs:241",
-    "src/UI/ProfileScreen.cs:729"
+    "src/UI/ProfileScreen.cs:731"
   ],
   "current": [
     "src/Modes/SensFinderDraw.cs:216"
   ],
   "CURRENT · FROM VALORANT": [
-    "src/UI/ProfileScreen.cs:729"
+    "src/UI/ProfileScreen.cs:731"
   ],
   "CURRENT · VALTRAINER": [
-    "src/UI/ProfileScreen.cs:729"
+    "src/UI/ProfileScreen.cs:731"
   ],
   "Curved flick: {0:0}% of the path wasted": [
     "src/Analysis/InsightsBuilder.cs:140"
@@ -2437,7 +2451,7 @@
   ],
   "DOT SIZE": [
     "src/Modes/CrosshairFinderDraw.cs:209",
-    "src/Modes/CrosshairFinderDraw.cs:337"
+    "src/Modes/CrosshairFinderDraw.cs:336"
   ],
   "Double": [
     "src/Modes/PeekMixMode.cs:35"
@@ -2510,6 +2524,7 @@
   ],
   "DRILLS": [
     "src/UI/AgentsScreen.cs:479",
+    "src/UI/ProfileSensHistory.cs:179",
     "src/Warmup/WarmupSummary.cs:86"
   ],
   "drills for the gunfights the role takes most, from opening duels to post-plant holds.": [
@@ -2568,6 +2583,9 @@
   ],
   "E {0}: aim the marker (HOLD CLICK out / RIGHT-CLICK in), E throws · Q {1}: CLICK sends the wave, HOLD CLICK steers it, RIGHT-CLICK stops it": [
     "src/Modes/Agents/ControllerKit.cs:113"
+  ],
+  "Each drill is compared only with your own runs of the same drill, difficulty and gun. A sens needs {0} runs over {1} drills before it's judged.": [
+    "src/UI/ProfileSensHistory.cs:70"
   ],
   "EACH DRILL'S DEFAULT": [
     "src/UI/GunPicker.cs:247"
@@ -2682,7 +2700,7 @@
     "src/Modes/Agents/InitiatorDrills.cs:89"
   ],
   "ENEMY": [
-    "src/Modes/CrosshairFinderDraw.cs:533"
+    "src/Modes/CrosshairFinderDraw.cs:532"
   ],
   "ENEMY DEFUSING  {0:0.0} / 7.0s": [
     "src/Modes/TacticalCore.cs:420"
@@ -2819,6 +2837,9 @@
   ],
   "Every gun back to factory": [
     "src/UI/SkinPicker.cs:359"
+  ],
+  "Every run remembers the sens you played it at. Play some drills and this compares your sensitivities.": [
+    "src/UI/ProfileSensHistory.cs:101"
   ],
   "Every skill, then a long deathmatch": [
     "src/Warmup/WarmupPlan.cs:100"
@@ -3116,7 +3137,7 @@
     "src/UI/CoachUi.cs:113"
   ],
   "Flicking": [
-    "src/Analysis/Coach.cs:156"
+    "src/Analysis/Coach.cs:159"
   ],
   "flicking · precision": [
     "src/UI/CoachUi.cs:302"
@@ -3552,11 +3573,11 @@
     "src/UI/CoachUi.cs:102"
   ],
   "HIGHER": [
-    "src/UI/ProfileScreen.cs:758"
+    "src/UI/ProfileScreen.cs:760"
   ],
   "higher": [
     "src/Modes/SensFinderDraw.cs:101",
-    "src/UI/ProfileScreen.cs:758"
+    "src/UI/ProfileScreen.cs:760"
   ],
   "higher sens (less arm)": [
     "src/Modes/SensFinderDraw.cs:132"
@@ -3939,10 +3960,10 @@
     "src/UI/DrillPreview.cs:251"
   ],
   "KEEP": [
-    "src/UI/ProfileScreen.cs:756"
+    "src/UI/ProfileScreen.cs:758"
   ],
   "keep": [
-    "src/UI/ProfileScreen.cs:759"
+    "src/UI/ProfileScreen.cs:761"
   ],
   "Keep at least 2 dots": [
     "src/Modes/CrosshairFinderMode.cs:560"
@@ -3951,7 +3972,7 @@
     "src/Modes/CrosshairFinderMode.cs:560"
   ],
   "KEEP FOR NOW": [
-    "src/UI/ProfileScreen.cs:759"
+    "src/UI/ProfileScreen.cs:761"
   ],
   "Keep my crosshair": [
     "src/Modes/CrosshairFinderMode.cs:1062"
@@ -3984,19 +4005,19 @@
     "src/Agents/AgentDrills.cs:260"
   ],
   "KEEP YOUR ADS CROSSHAIR: IT HELD UP": [
-    "src/Modes/CrosshairFinderDraw.cs:484"
+    "src/Modes/CrosshairFinderDraw.cs:483"
   ],
   "Keep your crosshair on the target": [
     "src/Modes/SensFinderMode.cs:827"
   ],
   "KEEP YOUR CROSSHAIR: IT HELD UP": [
-    "src/Modes/CrosshairFinderDraw.cs:486"
+    "src/Modes/CrosshairFinderDraw.cs:485"
   ],
   "Keep your eyes at the centre of the screen and use peripheral vision to spot targets.": [
     "src/Analysis/Assess.cs:465"
   ],
   "KEEP YOUR SENS": [
-    "src/UI/ProfileScreen.cs:759"
+    "src/UI/ProfileScreen.cs:761"
   ],
   "Keep your sens — your aim data doesn't point either way.{0} {1} Confidence: {2}.": [
     "src/Analysis/SensAdvisor.cs:140"
@@ -4008,7 +4029,7 @@
     "src/Modes/SensFinderDraw.cs:82"
   ],
   "KEEP YOUR SNIPER DOT: IT HELD UP": [
-    "src/Modes/CrosshairFinderDraw.cs:485"
+    "src/Modes/CrosshairFinderDraw.cs:484"
   ],
   "keep yours": [
     "src/Modes/CrosshairFinderMode.cs:1025"
@@ -4081,6 +4102,9 @@
   "Kill the agent": [
     "src/Modes/CrosshairFinderMode.cs:1014"
   ],
+  "KILL TIME": [
+    "src/UI/ProfileSensHistory.cs:182"
+  ],
   "Kill to next first hit": [
     "src/Modes/PeekMixMode.cs:444"
   ],
@@ -4140,6 +4164,12 @@
   ],
   "Kills without a bait (risky)": [
     "src/Modes/MovementPlusModes.cs:406"
+  ],
+  "kills {0:0}% faster": [
+    "src/UI/ProfileSensHistory.cs:158"
+  ],
+  "kills {0:0}% slower": [
+    "src/UI/ProfileSensHistory.cs:158"
   ],
   "Kills {0} / {1}   Deaths {2}   K/D {3:0.00}": [
     "src/Modes/DeathmatchMode.cs:421"
@@ -4577,11 +4607,11 @@
     "src/UI/CoachUi.cs:102"
   ],
   "LOWER": [
-    "src/UI/ProfileScreen.cs:758"
+    "src/UI/ProfileScreen.cs:760"
   ],
   "lower": [
     "src/Modes/SensFinderDraw.cs:101",
-    "src/UI/ProfileScreen.cs:758"
+    "src/UI/ProfileScreen.cs:760"
   ],
   "lower sens (more arm)": [
     "src/Modes/SensFinderDraw.cs:132"
@@ -4630,6 +4660,9 @@
   ],
   "MAJOR": [
     "src/UI/CoachUi.cs:168"
+  ],
+  "Make it at least {0} more different drill.|Make it at least {0} more different drills.": [
+    "src/UI/ProfileSensHistory.cs:121"
   ],
   "Make one deliberate correction with your fingers and wrist, then click.": [
     "src/Analysis/Assess.cs:384"
@@ -4891,7 +4924,7 @@
     "src/UI/SettingsKeybinds.cs:19"
   ],
   "Movement": [
-    "src/Analysis/Coach.cs:162",
+    "src/Analysis/Coach.cs:165",
     "src/Modes/MovementModes.cs:12",
     "src/Modes/MovementPlusOp.cs:303",
     "src/Modes/PeekMixMode.cs:14"
@@ -4929,6 +4962,9 @@
   "NEEDS A SOUL ORB": [
     "src/Modes/Agents/DuelistKits.cs:694",
     "src/Modes/Agents/DuelistKits.cs:695"
+  ],
+  "needs more drills in common": [
+    "src/UI/ProfileSensHistory.cs:223"
   ],
   "Nerves are your body getting ready. Use them.": [
     "src/Warmup/LockInWidgets.cs:21"
@@ -5027,6 +5063,9 @@
   ],
   "No charges left this round": [
     "src/Modes/Agents/InitiatorKit.cs:123"
+  ],
+  "NO CLEAR DIFFERENCE YET": [
+    "src/UI/ProfileSensHistory.cs:89"
   ],
   "NO CLEAR PROBLEMS THIS RUN": [
     "src/UI/Hud.cs:1181"
@@ -5154,6 +5193,15 @@
   ],
   "No room for the wall": [
     "src/Modes/DefenseSetup.cs:203"
+  ],
+  "no runs in drills you also played at another sens": [
+    "src/UI/ProfileSensHistory.cs:209"
+  ],
+  "NO RUNS YET": [
+    "src/UI/ProfileSensHistory.cs:92"
+  ],
+  "no runs yet": [
+    "src/UI/ProfileSensHistory.cs:81"
   ],
   "NO SCORE · ESC TO STOP": [
     "src/UI/Hud.cs:248"
@@ -5297,19 +5345,25 @@
     "src/UI/CoachUi.cs:706"
   ],
   "not enough data yet": [
-    "src/UI/ProfileScreen.cs:640"
+    "src/UI/ProfileScreen.cs:641"
   ],
   "Not enough data yet — the coach needs about {0} more run.|Not enough data yet — the coach needs about {0} more runs.": [
     "src/UI/ProfileScreen.cs:194"
   ],
   "Not enough flick and tracking data for a recommendation yet. Play Head Flicks and Strafe Tracking a few times — or run the Sens Finder for a direct blind A/B test.": [
-    "src/UI/ProfileScreen.cs:648"
+    "src/UI/ProfileScreen.cs:650"
   ],
   "Not enough history to compare with your previous Lock-Ins yet.": [
     "src/Warmup/WarmupSummary.cs:162"
   ],
   "Not enough room": [
     "src/Modes/DefenseSetup.cs:168"
+  ],
+  "Not enough runs at {0} yet: play {1} more drill at that sens.|Not enough runs at {0} yet: play {1} more drills at that sens.": [
+    "src/UI/ProfileSensHistory.cs:118"
+  ],
+  "NOT ENOUGH RUNS TO COMPARE YET": [
+    "src/UI/ProfileSensHistory.cs:90"
   ],
   "Not found — set your sens in Settings": [
     "src/UI/MenuScreen.cs:660"
@@ -5369,7 +5423,7 @@
     "src/UI/SettingsScreen.cs:269"
   ],
   "NOT YET": [
-    "src/UI/ProfileScreen.cs:766"
+    "src/UI/ProfileScreen.cs:768"
   ],
   "Nothing on the other side": [
     "src/Game/Fx/PlayerFlash.cs:257",
@@ -5382,7 +5436,7 @@
     "src/UI/ProgressScreen.cs:312"
   ],
   "NOW": [
-    "src/UI/ProfileScreen.cs:796"
+    "src/UI/ProfileScreen.cs:798"
   ],
   "Now and then the menu shows the Buy Me a Coffee / Ko-fi panel (at most every 14 days)": [
     "src/UI/SettingsScreen.cs:767"
@@ -5531,6 +5585,12 @@
   "One real-size head (r 0.14 m). Flick, click, repeat. Higher tiers: farther, wider, timed.": [
     "src/Modes/AimModes.cs:109"
   ],
+  "ONE SENS SO FAR": [
+    "src/UI/ProfileSensHistory.cs:91"
+  ],
+  "one sens so far": [
+    "src/UI/ProfileSensHistory.cs:82"
+  ],
   "one solid point that's easy to see": [
     "src/Modes/CrosshairFinderCore.cs:379"
   ],
@@ -5555,11 +5615,14 @@
   "One-taps {0} · spammed {1}": [
     "src/Modes/SheriffMode.cs:334"
   ],
+  "Only drills you've also played at another sens count, at the same difficulty and with the same gun.": [
+    "src/UI/ProfileSensHistory.cs:124"
+  ],
   "Only for showing eDPI and cm/360": [
     "src/UI/SettingsScreen.cs:208"
   ],
   "ONLY ONE CROSSHAIR": [
-    "src/Game/GameSession.cs:1053"
+    "src/Game/GameSession.cs:1056"
   ],
   "Only real improvement earns stars:": [
     "src/UI/ProgressScreen.cs:117"
@@ -5814,19 +5877,19 @@
     "src/Modes/CrosshairFinderDraw.cs:269"
   ],
   "PART 1 · HOW FAST YOU SPOTTED EACH COLOUR": [
-    "src/Modes/CrosshairFinderDraw.cs:499"
+    "src/Modes/CrosshairFinderDraw.cs:498"
   ],
   "Part 1 · Visibility: click the moment the crosshair appears over map and enemy backgrounds.": [
     "src/Modes/CrosshairFinderDraw.cs:113"
   ],
   "PART 2 · HEAD-TO-HEAD (AIM SCORE, THEN YOUR PICK)": [
-    "src/Modes/CrosshairFinderDraw.cs:556"
+    "src/Modes/CrosshairFinderDraw.cs:555"
   ],
   "Part 2 · Shape: pick up to 4 shapes (or dot sizes), then play short rounds with crosshair A and B: flick to heads, fine-tune on far heads, kill an agent. After each matchup, shoot the one that felt better (or SAME). Your aim decides; your taste breaks ties. The winner then faces your own crosshair.": [
     "src/Modes/CrosshairFinderDraw.cs:114"
   ],
   "PART 2 · {0} · YOUR COLOUR: {1}": [
-    "src/Modes/CrosshairFinderDraw.cs:338"
+    "src/Modes/CrosshairFinderDraw.cs:337"
   ],
   "Partial {0:0.0}s · {1}": [
     "src/Modes/MapModes.cs:317"
@@ -5909,10 +5972,10 @@
     "src/Modes/RecoilModes.cs:44"
   ],
   "PICK": [
-    "src/Modes/CrosshairFinderDraw.cs:311"
+    "src/Modes/CrosshairFinderDraw.cs:310"
   ],
   "pick same": [
-    "src/Modes/CrosshairFinderDraw.cs:569"
+    "src/Modes/CrosshairFinderDraw.cs:568"
   ],
   "Pick spots on a map and drop long-lasting smokes there.": [
     "src/Agents/AgentRoster.cs:166"
@@ -5924,10 +5987,10 @@
     "src/UI/DrillPreview.cs:155"
   ],
   "PICK UP TO 4 DOTS": [
-    "src/Modes/CrosshairFinderDraw.cs:339"
+    "src/Modes/CrosshairFinderDraw.cs:338"
   ],
   "PICK UP TO 4 SHAPES": [
-    "src/Modes/CrosshairFinderDraw.cs:339"
+    "src/Modes/CrosshairFinderDraw.cs:338"
   ],
   "Pick up to two spots on a map and send missiles there.": [
     "src/Agents/AgentRoster.cs:149"
@@ -5936,10 +5999,10 @@
     "src/UI/ProfileScreen.cs:346"
   ],
   "pick {0}": [
-    "src/Modes/CrosshairFinderDraw.cs:569"
+    "src/Modes/CrosshairFinderDraw.cs:568"
   ],
   "PICKED": [
-    "src/Modes/CrosshairFinderDraw.cs:387"
+    "src/Modes/CrosshairFinderDraw.cs:386"
   ],
   "Pilot a creature into the enemy, then pounce to detain everyone close by.": [
     "src/Agents/AgentRoster.cs:121"
@@ -6050,6 +6113,9 @@
   "Play my role": [
     "src/Warmup/LockInWidgets.cs:15"
   ],
+  "Play some runs at another sens and this shows which one you score best with, drill by drill. Not sure what to try? The Sens Finder tests sensitivities blind.": [
+    "src/UI/ProfileSensHistory.cs:107"
+  ],
   "PLAY starts {0}": [
     "src/UI/ProgressScreen.cs:266"
   ],
@@ -6058,6 +6124,9 @@
   ],
   "Play Strafe Tracking one tier lower until you stay on target 50%+.": [
     "src/Analysis/Assess.cs:504"
+  ],
+  "Play the one that feels better, or keep mixing them to sharpen the picture.": [
+    "src/UI/ProfileSensHistory.cs:134"
   ],
   "Play these drills normally a few times and the next Lock-In compares you with your usual level.": [
     "src/Warmup/WarmupData.cs:276"
@@ -6166,7 +6235,7 @@
     "src/UI/CoachUi.cs:127"
   ],
   "Precision (micro-adjustment)": [
-    "src/Analysis/Coach.cs:157"
+    "src/Analysis/Coach.cs:160"
   ],
   "PREFERRED": [
     "src/UI/DrillPreview.cs:308"
@@ -6265,10 +6334,10 @@
     "src/UI/ProgressOverlays.cs:414"
   ],
   "pros 33–87 cm · median 54": [
-    "src/UI/ProfileScreen.cs:786"
+    "src/UI/ProfileScreen.cs:788"
   ],
   "PROVISIONAL": [
-    "src/Modes/CrosshairFinderDraw.cs:477"
+    "src/Modes/CrosshairFinderDraw.cs:476"
   ],
   "Provisional": [
     "src/Modes/SensFinderMode.cs:837"
@@ -6429,7 +6498,7 @@
     "src/UI/CoachUi.cs:116"
   ],
   "Reaction": [
-    "src/Analysis/Coach.cs:159"
+    "src/Analysis/Coach.cs:162"
   ],
   "reaction": [
     "src/Warmup/WarmupData.cs:177"
@@ -6494,14 +6563,17 @@
   "Recoil control with the Vandal (9.75 rps, 25 rounds). Pull down, counter the drift; chart + tips after each spray.": [
     "src/Modes/RecoilModes.cs:47"
   ],
+  "RECOMMENDATION": [
+    "src/UI/ProfileSensHistory.cs:34"
+  ],
   "recommendation · {0}": [
-    "src/UI/ProfileScreen.cs:640"
+    "src/UI/ProfileScreen.cs:641"
   ],
   "RECOMMENDED": [
-    "src/Modes/CrosshairFinderDraw.cs:388",
+    "src/Modes/CrosshairFinderDraw.cs:387",
     "src/Modes/SensFinderDraw.cs:242",
-    "src/UI/ProfileScreen.cs:759",
-    "src/UI/ProfileScreen.cs:765"
+    "src/UI/ProfileScreen.cs:761",
+    "src/UI/ProfileScreen.cs:767"
   ],
   "RECON": [
     "src/Agents/AgentDrills.cs:298"
@@ -6841,7 +6913,8 @@
     "src/Modes/SensFinderMode.cs:845"
   ],
   "RUN SENS FINDER": [
-    "src/UI/ProfileScreen.cs:660"
+    "src/UI/ProfileScreen.cs:662",
+    "src/UI/ProfileSensHistory.cs:65"
   ],
   "Run the Sens Finder again on another day. If both runs agree within 10%, use the average of the two.": [
     "src/Modes/SensFinderDraw.cs:102"
@@ -6854,6 +6927,7 @@
   ],
   "RUNS": [
     "src/UI/CoachUi.cs:753",
+    "src/UI/ProfileSensHistory.cs:178",
     "src/UI/ProgressOverlays.cs:428",
     "src/UI/StatsScreen.cs:57"
   ],
@@ -6862,7 +6936,7 @@
     "src/Analysis/Assess.cs:542"
   ],
   "SAME": [
-    "src/Modes/CrosshairFinderDraw.cs:447"
+    "src/Modes/CrosshairFinderDraw.cs:446"
   ],
   "same as VALORANT": [
     "src/Warmup/LockInSetupCheck.cs:131",
@@ -7022,6 +7096,7 @@
     "src/UI/BugReport.cs:977"
   ],
   "SENS": [
+    "src/UI/ProfileSensHistory.cs:177",
     "src/Warmup/WarmupCharts.cs:350",
     "src/Warmup/WarmupSummary.cs:187"
   ],
@@ -7056,7 +7131,8 @@
   ],
   "SENSITIVITY": [
     "src/UI/Hud.cs:812",
-    "src/UI/ProfileScreen.cs:639",
+    "src/UI/ProfileScreen.cs:640",
+    "src/UI/ProfileSensHistory.cs:44",
     "src/UI/SettingsScreen.cs:198",
     "src/UI/SettingsScreen.cs:436"
   ],
@@ -7077,8 +7153,14 @@
   "Sensitivity: {0}": [
     "src/Analysis/Assess.cs:294"
   ],
+  "sens|BEST": [
+    "src/UI/ProfileSensHistory.cs:200"
+  ],
   "sens|NEW": [
-    "src/UI/ProfileScreen.cs:797"
+    "src/UI/ProfileScreen.cs:799"
+  ],
+  "sens|NOW": [
+    "src/UI/ProfileSensHistory.cs:199"
   ],
   "SENT": [
     "src/UI/BugReport.cs:1091"
@@ -7195,7 +7277,7 @@
   ],
   "SHAPE": [
     "src/Modes/CrosshairFinderDraw.cs:209",
-    "src/Modes/CrosshairFinderDraw.cs:337"
+    "src/Modes/CrosshairFinderDraw.cs:336"
   ],
   "SHARED BINDS": [
     "src/UI/SettingsKeybinds.cs:350"
@@ -7231,13 +7313,13 @@
     "src/Modes/SensFinderSetup.cs:123"
   ],
   "Shoot a card to pick or drop it, then shoot START. The 4 recommended dots are already picked.": [
-    "src/Modes/CrosshairFinderDraw.cs:340"
+    "src/Modes/CrosshairFinderDraw.cs:339"
   ],
   "Shoot a card to pick or drop it, then shoot START. The 4 recommended shapes are already picked.": [
-    "src/Modes/CrosshairFinderDraw.cs:341"
+    "src/Modes/CrosshairFinderDraw.cs:340"
   ],
   "Shoot A, SAME or B. Your aim decides; this breaks ties.": [
-    "src/Modes/CrosshairFinderDraw.cs:441"
+    "src/Modes/CrosshairFinderDraw.cs:440"
   ],
   "Shoot bots in the Range while you wait.": [
     "src/Warmup/LockInHandoff.cs:157"
@@ -7247,7 +7329,7 @@
   ],
   "SHOOT TO PICK": [
     "src/Modes/CrosshairFinderDraw.cs:161",
-    "src/Modes/CrosshairFinderDraw.cs:387"
+    "src/Modes/CrosshairFinderDraw.cs:386"
   ],
   "SHOOT TO START": [
     "src/Modes/CrosshairFinderDraw.cs:161"
@@ -7822,7 +7904,7 @@
     "src/UI/CoachUi.cs:118"
   ],
   "Spray control": [
-    "src/Analysis/Coach.cs:161"
+    "src/Analysis/Coach.cs:164"
   ],
   "spray control": [
     "src/UI/CoachUi.cs:306"
@@ -7895,7 +7977,7 @@
     "src/Warmup/WarmupScreen.cs:146"
   ],
   "START BRACKET": [
-    "src/Modes/CrosshairFinderDraw.cs:397"
+    "src/Modes/CrosshairFinderDraw.cs:396"
   ],
   "start from the new sens": [
     "src/Modes/SensFinderMode.cs:846"
@@ -8096,7 +8178,7 @@
     "src/Agents/AgentDrills.cs:304"
   ],
   "SWITCH AFTER THE TEST": [
-    "src/Game/GameSession.cs:1050",
+    "src/Game/GameSession.cs:1053",
     "src/UI/Hud.cs:838"
   ],
   "Switch crosshair (ValTrainer only: VALORANT isn't changed)": [
@@ -8204,6 +8286,9 @@
   ],
   "That doesn't look like an email address": [
     "src/UI/SettingsScreen.cs:1056"
+  ],
+  "That's your current sens: keep it.": [
+    "src/UI/ProfileSensHistory.cs:145"
   ],
   "THE ATTACKERS EXECUTE THROUGH THE CHOKE": [
     "src/Modes/DefenseModes.cs:627"
@@ -8340,13 +8425,13 @@
     "src/Analysis/Assess.cs:440"
   ],
   "the {0}": [
-    "src/Core/Stats.cs:135"
+    "src/Core/Stats.cs:139"
   ],
   "The {0} drills below train the fights that {1}'s utility sets up.": [
     "src/UI/AgentsScreen.cs:497"
   ],
   "the {0} or {1}": [
-    "src/Core/Stats.cs:135"
+    "src/Core/Stats.cs:139"
   ],
   "Then": [
     "src/Modes/SensFinderMode.cs:846"
@@ -8494,7 +8579,7 @@
     "src/Warmup/WarmupData.cs:177"
   ],
   "TIME TO SPOT (SHORTER = BETTER) · CONTRAST (LONGER = BETTER)": [
-    "src/Modes/CrosshairFinderDraw.cs:287"
+    "src/Modes/CrosshairFinderDraw.cs:286"
   ],
   "TIME — he repositions": [
     "src/Modes/MovementPlusModes.cs:344"
@@ -8638,7 +8723,7 @@
     "src/UI/CoachUi.cs:115"
   ],
   "Tracking": [
-    "src/Analysis/Coach.cs:158"
+    "src/Analysis/Coach.cs:161"
   ],
   "tracking": [
     "src/UI/CoachUi.cs:303"
@@ -8728,7 +8813,7 @@
     "src/Modes/CrosshairFinderMode.cs:43"
   ],
   "TRY IT IN VALTRAINER": [
-    "src/UI/ProfileScreen.cs:684"
+    "src/UI/ProfileScreen.cs:686"
   ],
   "Try the Crosshair Finder →": [
     "src/Warmup/LockInSetupCheck.cs:68"
@@ -8944,7 +9029,7 @@
     "src/Modes/Agents/ControllerDraw.cs:317"
   ],
   "Use {0:0.000} in ValTrainer's drills (your Valorant settings stay unchanged)": [
-    "src/UI/ProfileScreen.cs:688"
+    "src/UI/ProfileScreen.cs:690"
   ],
   "Use {0} in ValTrainer": [
     "src/Modes/SensFinderMode.cs:856"
@@ -8991,7 +9076,7 @@
     "src/Modes/MapModes.cs:173"
   ],
   "Utility (flashes)": [
-    "src/Analysis/Coach.cs:163"
+    "src/Analysis/Coach.cs:166"
   ],
   "UTILITY NOT SHOWN IN 3D YET": [
     "src/UI/RewindView3D.cs:369"
@@ -9021,7 +9106,7 @@
     "src/UI/SettingsScreen.cs:173"
   ],
   "VALORANT CROSSHAIR CODE (YOUR WHOLE PROFILE)": [
-    "src/Modes/CrosshairFinderDraw.cs:506"
+    "src/Modes/CrosshairFinderDraw.cs:505"
   ],
   "VALORANT default": [
     "src/UI/SettingsKeybinds.cs:199",
@@ -9061,7 +9146,7 @@
     "src/Valorant/CrosshairList.cs:162"
   ],
   "VALORANT › Settings › Crosshair › Import Profile Code. Copy it with the button on the next screen; ValTrainer never changes VALORANT.": [
-    "src/Modes/CrosshairFinderDraw.cs:512"
+    "src/Modes/CrosshairFinderDraw.cs:511"
   ],
   "VALORANT's default size and opacity": [
     "src/Modes/CrosshairFinderTabs.cs:274"
@@ -9088,7 +9173,7 @@
     "src/UI/UpdatesPrompt.cs:101"
   ],
   "ValTrainer can't change Valorant's settings — set it in Valorant: Settings → General → Mouse → Sensitivity.": [
-    "src/UI/ProfileScreen.cs:664"
+    "src/UI/ProfileScreen.cs:666"
   ],
   "ValTrainer closed unexpectedly last time, so it now uses {0}": [
     "src/UI/MenuScreen.cs:1502"
@@ -9112,7 +9197,7 @@
     "src/UI/MenuScreen.cs:1439"
   ],
   "ValTrainer is using the recommended sens. Click to go back to your previous sens.": [
-    "src/UI/ProfileScreen.cs:687"
+    "src/UI/ProfileScreen.cs:689"
   ],
   "ValTrainer only": [
     "src/UI/SettingsCrosshair.cs:20",
@@ -9207,6 +9292,9 @@
   ],
   "VS USUAL": [
     "src/Warmup/WarmupSummary.cs:187"
+  ],
+  "VS YOUR AVERAGE": [
+    "src/UI/ProfileSensHistory.cs:180"
   ],
   "vs your usual and your previous Lock-Ins": [
     "src/Warmup/WarmupSummary.cs:82"
@@ -9385,7 +9473,10 @@
     "src/Modes/CrosshairFinderDraw.cs:105"
   ],
   "WHICH FELT BETTER?": [
-    "src/Modes/CrosshairFinderDraw.cs:440"
+    "src/Modes/CrosshairFinderDraw.cs:439"
+  ],
+  "Which of the sensitivities you've played you score best with, drill by drill": [
+    "src/UI/ProfileSensHistory.cs:36"
   ],
   "WHILE MOVING": [
     "src/UI/RewindDraw.cs:538"
@@ -9424,7 +9515,7 @@
     "src/Modes/Agents/DuelistKits.cs:577"
   ],
   "WIN · {0}": [
-    "src/Modes/CrosshairFinderDraw.cs:583"
+    "src/Modes/CrosshairFinderDraw.cs:582"
   ],
   "Window {0:0} ms + travel": [
     "src/Modes/AimPlusPopup.cs:148"
@@ -9593,6 +9684,9 @@
   "you needed {0:0} ms to get back on after each direction change": [
     "src/Analysis/Assess.cs:555"
   ],
+  "You played {0} most recently, so part of the gain may simply be practice.": [
+    "src/UI/ProfileSensHistory.cs:144"
+  ],
   "You pull down harder than the gun climbs, dragging the spray under the target.": [
     "src/Analysis/Assess.cs:651"
   ],
@@ -9610,6 +9704,9 @@
   ],
   "You sat on the target for a median {0:0} ms before firing": [
     "src/Analysis/Assess.cs:416"
+  ],
+  "YOU SCORE BEST AT {0}": [
+    "src/UI/ProfileSensHistory.cs:88"
   ],
   "You start moving {0:0} ms later than your raw reaction time (flick onset {1:0} ms vs {2:0} ms in the Reaction Test)": [
     "src/Analysis/Assess.cs:460"
@@ -9677,6 +9774,9 @@
   "You're not countering the sideways drift that starts around bullet 8.": [
     "src/Analysis/Assess.cs:663"
   ],
+  "You're not on it now. To switch, set {0} in VALORANT (Settings → General → Mouse).": [
+    "src/UI/ProfileSensHistory.cs:146"
+  ],
   "You're on your Sens Finder result ({0:MMM d}).": [
     "src/Analysis/SensAdvisor.cs:86"
   ],
@@ -9699,7 +9799,7 @@
     "src/UI/CrosshairView.cs:419"
   ],
   "YOUR ADS CROSSHAIR: {0}": [
-    "src/Modes/CrosshairFinderDraw.cs:487"
+    "src/Modes/CrosshairFinderDraw.cs:486"
   ],
   "your aim followed the target {0:0} ms late": [
     "src/Analysis/Assess.cs:507"
@@ -9735,7 +9835,7 @@
     "src/Modes/CrosshairFinderCore.cs:502"
   ],
   "YOUR CROSSHAIR AS A VALORANT CODE": [
-    "src/Modes/CrosshairFinderDraw.cs:506"
+    "src/Modes/CrosshairFinderDraw.cs:505"
   ],
   "your crosshair was below head height in {0:0}% of sightings": [
     "src/Analysis/Assess.cs:574"
@@ -9744,7 +9844,7 @@
     "src/Analysis/Assess.cs:565"
   ],
   "YOUR CROSSHAIR: {0}": [
-    "src/Modes/CrosshairFinderDraw.cs:489"
+    "src/Modes/CrosshairFinderDraw.cs:488"
   ],
   "YOUR CUE": [
     "src/Warmup/LockInHandoff.cs:136"
@@ -9899,6 +9999,9 @@
   "Your Sens Finder run on {0:MMM d} suggested {1:0.000} ({2:0.0} cm/360, {3} confidence).": [
     "src/Analysis/SensAdvisor.cs:87"
   ],
+  "YOUR SENS HISTORY": [
+    "src/UI/ProfileSensHistory.cs:35"
+  ],
   "Your sens is outside the 20–80 cm/360 band where aiming is most consistent, so this also nudges you toward it.": [
     "src/Analysis/SensAdvisor.cs:165"
   ],
@@ -9918,7 +10021,7 @@
     "src/UI/CrosshairView.cs:419"
   ],
   "YOUR SNIPER DOT: {0}": [
-    "src/Modes/CrosshairFinderDraw.cs:488"
+    "src/Modes/CrosshairFinderDraw.cs:487"
   ],
   "Your speed was {0} — {1:0} points/min ({2} level on {3})": [
     "src/Analysis/RunSummary.cs:95"
@@ -9987,6 +10090,9 @@
   "Your weakest skill": [
     "src/Progress/ProgressApi.cs:301"
   ],
+  "Your {0} run is at {1}, so there's nothing to compare yet.|All your {0} runs are at {1}, so there's nothing to compare yet.": [
+    "src/UI/ProfileSensHistory.cs:105"
+  ],
   "yours is {0} (pros: 150–400 eDPI)": [
     "src/Modes/SensFinderDraw.cs:138"
   ],
@@ -10000,6 +10106,9 @@
   "zz no such key zz": [
     "src/Core/I18nCheck.cs:73"
   ],
+  "{0:+0.0;-0.0;0.0} pts": [
+    "src/UI/ProfileSensHistory.cs:227"
+  ],
   "{0:+0.0;-0.0}% · keep yours": [
     "src/Modes/SensFinderMode.cs:840"
   ],
@@ -10011,6 +10120,9 @@
   ],
   "{0:0.0}  (was {1:0.0})": [
     "src/Modes/SensFinderMode.cs:839"
+  ],
+  "{0:0.0} cm/360": [
+    "src/UI/ProfileSensHistory.cs:196"
   ],
   "{0:0.0} corrections": [
     "src/Analysis/Assess.cs:182"
@@ -10100,7 +10212,7 @@
     "src/Modes/SensFinderDraw.cs:239"
   ],
   "{0:0} eDPI · {1:0.0} cm/360": [
-    "src/UI/ProfileScreen.cs:726"
+    "src/UI/ProfileScreen.cs:728"
   ],
   "{0:0} M · HIGH": [
     "src/Modes/Agents/ControllerDraw.cs:411"
@@ -10335,7 +10447,7 @@
     "src/Modes/SensFinderMode.cs:837"
   ],
   "{0}  (yours)": [
-    "src/Modes/CrosshairFinderDraw.cs:310"
+    "src/Modes/CrosshairFinderDraw.cs:309"
   ],
   "{0}  ({1:0.0} per minute)": [
     "src/Modes/AimPlusSwitch.cs:206"
@@ -10455,6 +10567,9 @@
   "{0} and {1}": [
     "src/Agents/AgentDrills.cs:277"
   ],
+  "{0} and {1} score about the same.": [
+    "src/UI/ProfileSensHistory.cs:133"
+  ],
   "{0} as {1} — {2}\n{3}": [
     "src/UI/AgentsScreen.cs:530"
   ],
@@ -10532,10 +10647,13 @@
     "src/Modes/Agents/DuelistKits.cs:717"
   ],
   "{0} DOT PICKED · STARTS BY ITSELF IN {1} S|{0} DOTS PICKED · STARTS BY ITSELF IN {1} S": [
-    "src/Modes/CrosshairFinderDraw.cs:400"
+    "src/Modes/CrosshairFinderDraw.cs:399"
   ],
   "{0} dot, size {1}, opacity {2}": [
     "src/Modes/CrosshairFinderTabs.cs:38"
+  ],
+  "{0} DPI": [
+    "src/UI/ProfileSensHistory.cs:196"
   ],
   "{0} drills · {1} play · ≈{2} min in total": [
     "src/Warmup/WarmupScreen.cs:120"
@@ -10573,13 +10691,13 @@
     "src/Modes/SensFinderDraw.cs:50"
   ],
   "{0} flicks, {1} far heads, then kill the agent. Look around to get a feel for it.": [
-    "src/Modes/CrosshairFinderDraw.cs:424"
+    "src/Modes/CrosshairFinderDraw.cs:423"
   ],
   "{0} flicks, {1} far heads, then kill the agent. You stay aimed down sights. Look around to get a feel for it.": [
-    "src/Modes/CrosshairFinderDraw.cs:422"
+    "src/Modes/CrosshairFinderDraw.cs:421"
   ],
   "{0} flicks, {1} far heads, then kill the agent. You stay scoped in. Look around to get a feel for it.": [
-    "src/Modes/CrosshairFinderDraw.cs:423"
+    "src/Modes/CrosshairFinderDraw.cs:422"
   ],
   "{0} flicks, {1} micro-adjustments, then {2:0} s tracking": [
     "src/Modes/SensFinderDraw.cs:49"
@@ -10616,7 +10734,7 @@
     "src/UI/ProgressText.cs:200"
   ],
   "{0} had a bye to the final (3 shapes picked)": [
-    "src/Modes/CrosshairFinderDraw.cs:588"
+    "src/Modes/CrosshairFinderDraw.cs:587"
   ],
   "{0} has no outline and its colour fades on {1}. An outline or another colour helps.": [
     "src/Modes/CrosshairHint.cs:81"
@@ -10666,10 +10784,13 @@
     "src/UI/SettingsScreen.cs:884"
   ],
   "{0} missed|{0} missed": [
-    "src/Modes/CrosshairFinderDraw.cs:322"
+    "src/Modes/CrosshairFinderDraw.cs:321"
   ],
   "{0} moment · ← → to jump|{0} moments · ← → to jump": [
     "src/UI/RewindScreen.cs:379"
+  ],
+  "{0} more run needed|{0} more runs needed": [
+    "src/UI/ProfileSensHistory.cs:223"
   ],
   "{0} new unlock|{0} new unlocks": [
     "src/Warmup/LockInHandoff.cs:220"
@@ -10829,14 +10950,20 @@
   "{0} saved code|{0} saved codes": [
     "src/UI/SettingsCrosshair.cs:48"
   ],
+  "{0} scores {1:0}% higher than {2} on average, but that's within your normal run-to-run variation, so it could be luck.": [
+    "src/UI/ProfileSensHistory.cs:132"
+  ],
   "{0} seen in {1} rep|{0} seen in {1} reps": [
     "src/Modes/DefenseSound.cs:567"
+  ],
+  "{0} sens · {1} run compared|{0} sens · {1} runs compared": [
+    "src/UI/ProfileSensHistory.cs:83"
   ],
   "{0} sentinel drill|{0} sentinel drills": [
     "src/Agents/AgentDrills.cs:213"
   ],
   "{0} SHAPE PICKED · STARTS BY ITSELF IN {1} S|{0} SHAPES PICKED · STARTS BY ITSELF IN {1} S": [
-    "src/Modes/CrosshairFinderDraw.cs:401"
+    "src/Modes/CrosshairFinderDraw.cs:400"
   ],
   "{0} shots fired while moving at {1:0.0} m/s": [
     "src/Analysis/InsightsBuilder.cs:239"
@@ -10944,7 +11071,7 @@
     "src/Modes/CrosshairFinderDraw.cs:208"
   ],
   "{0} · ROUND {1} / {2}": [
-    "src/Modes/CrosshairFinderDraw.cs:416"
+    "src/Modes/CrosshairFinderDraw.cs:415"
   ],
   "{0} · round {1} / {2}": [
     "src/Modes/CrosshairFinderMode.cs:994"
@@ -11155,10 +11282,10 @@
     "src/UI/ProfileScreen.cs:186"
   ],
   "×3 · REAL SIZE ON HAVEN, SPLIT, AN AGENT": [
-    "src/Modes/CrosshairFinderDraw.cs:288"
+    "src/Modes/CrosshairFinderDraw.cs:287"
   ],
   "×8 ZOOM · THEN REAL SIZE ON EACH MAP": [
-    "src/Modes/CrosshairFinderDraw.cs:520"
+    "src/Modes/CrosshairFinderDraw.cs:519"
   ],
   "← → or 1–3": [
     "src/Warmup/WarmupScreen.cs:84"
