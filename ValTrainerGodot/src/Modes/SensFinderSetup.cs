@@ -13,7 +13,7 @@ namespace ValTrainer.Modes;
 /// how far the mouse travels) and the cm/360 range it searches.</item>
 /// <item>Mousepad: NOT SURE / SMALL / MEDIUM / LARGE / EXTENDED, each pad drawn to scale next to the same keyboard and
 /// mouse, so the player can compare with their desk.</item>
-/// <item>MICRO TEST on/off, START, SHORT TEST on/off.</item>
+/// <item>MICRO TEST on/off, SHORT TEST on/off, START, and COMPARE 2 SENS (the two-sens comparison, SensFinderCompare.cs).</item>
 /// </list>
 /// Shooting a card picks it (remembered in the settings); M, Q, T, P, [ and ] still work as shortcuts.
 /// </summary>
@@ -23,21 +23,24 @@ public sealed partial class SensFinderMode
     Vector3? cardEye;
     /// <summary>The pad cards (cm of usable width; 0 = not sure).</summary>
     static readonly int[] PadCards = { 0, 25, 32, 45, 90 };
-    const int CPad0 = 3, CMicro = 8, CStart = 9, CShort = 10, CardCount = 11;
+    const int CPad0 = 3, CMicro = 8, CStart = 9, CShort = 10, CCompare = 11, CardCount = 12;
 
     /// <summary>Card i as (x, y, w, h) in units of the distance (tan of the angle) from the starting view.</summary>
     static (float X, float Y, float W, float H) SetupLayout(int i) => i switch
     {
         < 3 => ((i - 1) * 0.50f, 0.09f, 0.46f, 0.40f),
         < CMicro => ((i - CPad0 - 2) * 0.30f, -0.30f, 0.28f, 0.30f),
-        CMicro => (-0.45f, -0.55f, 0.36f, 0.11f),
-        CStart => (0f, -0.55f, 0.44f, 0.11f),
-        _ => (0.45f, -0.55f, 0.36f, 0.11f),
+        CMicro => (-0.555f, -0.55f, 0.34f, 0.11f),
+        CShort => (-0.185f, -0.55f, 0.34f, 0.11f),
+        CStart => (0.185f, -0.55f, 0.34f, 0.11f),
+        _ => (0.555f, -0.55f, 0.34f, 0.11f),
     };
 
-    (Vector3 C, Vector3 R, Vector3 U) SetupQuad(int i)
+    (Vector3 C, Vector3 R, Vector3 U) SetupQuad(int i) => CardQuad(SetupLayout(i));
+
+    /// <summary>A card (x, y, w, h in units of the distance from the starting view) as a quad in front of the player.</summary>
+    (Vector3 C, Vector3 R, Vector3 U) CardQuad((float X, float Y, float W, float H) l)
     {
-        var l = SetupLayout(i);
         var eye = cardEye ?? G.View.Eye;
         var fwd = PlayerView.Dir(0, 0);
         var right = fwd.Cross(Vector3.Up).Normalized();
@@ -46,14 +49,17 @@ public sealed partial class SensFinderMode
     }
 
     /// <summary>The card the ray points at, or -1.</summary>
-    int SetupHit(Vector3 o, Vector3 d)
+    int SetupHit(Vector3 o, Vector3 d) => CardHit(o, d, CardCount, SetupQuad);
+
+    /// <summary>Which of <paramref name="count"/> cards the ray points at, or -1.</summary>
+    static int CardHit(Vector3 o, Vector3 d, int count, Func<int, (Vector3 C, Vector3 R, Vector3 U)> quad)
     {
         var n = PlayerView.Dir(0, 0);
         float den = d.Dot(n);
         if (den <= 1e-4f) return -1;
-        for (int i = 0; i < CardCount; i++)
+        for (int i = 0; i < count; i++)
         {
-            var (c, r, u) = SetupQuad(i);
+            var (c, r, u) = quad(i);
             var p = o + d * ((c - o).Dot(n) / den) - c;
             if (Mathf.Abs(p.Dot(r.Normalized())) <= r.Length() && Mathf.Abs(p.Dot(u.Normalized())) <= u.Length()) return i;
         }
@@ -71,6 +77,7 @@ public sealed partial class SensFinderMode
         else if (i < CMicro) ChangeRange(range.Style, PadCards[i - CPad0]);
         else if (i == CMicro) ToggleMicro();
         else if (i == CShort) ToggleShort();
+        else if (i == CCompare) { G.Sound("head", 0.6f, 1.1f); OpenCompare(); return; }
         else { G.Sound("head", 0.8f); BeginStage(0); return; }
         G.Sound("head", 0.5f, 1.2f);
     }
@@ -125,17 +132,7 @@ public sealed partial class SensFinderMode
         var cam = c.GetViewport().GetCamera3D();
         if (cam == null) return;
         int hover = SetupHit(G.View.Eye, G.View.Forward);
-        var rects = new Rect2?[CardCount];
-        for (int i = 0; i < CardCount; i++)
-        {
-            var (qc, qr, qu) = SetupQuad(i);
-            var corners = new[] { qc - qr - qu, qc + qr - qu, qc + qr + qu, qc - qr + qu };
-            if (corners.Any(cam.IsPositionBehind)) continue;
-            var pts = corners.Select(p => cam.UnprojectPosition(p)).ToArray();
-            var min = pts.Aggregate((a, b) => a.Min(b));
-            var max = pts.Aggregate((a, b) => a.Max(b));
-            rects[i] = new Rect2(min.Round(), (max - min).Round());
-        }
+        var rects = CardRects(cam, CardCount, SetupQuad);
         // row labels above the first card of each row
         if (rects[0] is { } r0) Gfx.Text(c, UiTheme.HudWide, "HOW DO YOU AIM?", r0.Position.X, r0.Position.Y - 10 * k, UiTheme.Fs(14, k), UiTheme.Text);
         if (rects[CPad0] is { } rp) Gfx.Text(c, UiTheme.HudWide, "YOUR MOUSEPAD (THE WIDTH YOUR MOUSE CAN REALLY USE)", rp.Position.X, rp.Position.Y - 10 * k, UiTheme.Fs(14, k), UiTheme.Text);
@@ -146,12 +143,30 @@ public sealed partial class SensFinderMode
             if (i < 3) DrawStyleCard(c, r, k, (SfStyle)i, range.Style == (SfStyle)i, hov);
             else if (i < CMicro) DrawPadCard(c, r, k, PadCards[i - CPad0], range.PadCm == PadCards[i - CPad0], hov);
             else if (i == CStart) DrawButtonCard(c, r, k, "START", null, true, hov, UiTheme.Accent);
+            else if (i == CCompare) DrawButtonCard(c, r, k, L.T("COMPARE 2 SENS"), L.F($"which of two sens suits you · about {Mathf.Max(1, Mathf.RoundToInt(cfg.CompareMinutes))} min"), true, hov, UiTheme.Teal);
             else if (i == CMicro) DrawButtonCard(c, r, k, cfg.Micro ? L.T("MICRO TEST: ON") : L.T("MICRO TEST: OFF"), L.T("tiny heads next to your crosshair"), cfg.Micro, hov, UiTheme.Good);
             else DrawButtonCard(c, r, k, cfg.IsShort ? L.T("SHORT TEST: ON") : L.T("SHORT TEST: OFF"), L.T("about half the time"), cfg.IsShort, hov, UiTheme.Good);
         }
         // a custom pad width ([ and ]) that isn't one of the cards
         if (range.PadCm > 0 && Array.IndexOf(PadCards, range.PadCm) < 0 && rects[CPad0 + 4] is { } rl)
             Gfx.TextR(c, UiTheme.Body, L.F($"Custom: {range.PadCm} cm ([ and ] to adjust)"), rl.End.X, rl.Position.Y - 10 * k, UiTheme.Fs(14, k), UiTheme.Good);
+    }
+
+    /// <summary>The cards' screen rectangles (null = behind the camera).</summary>
+    static Rect2?[] CardRects(Camera3D cam, int count, Func<int, (Vector3 C, Vector3 R, Vector3 U)> quad)
+    {
+        var rects = new Rect2?[count];
+        for (int i = 0; i < count; i++)
+        {
+            var (qc, qr, qu) = quad(i);
+            var corners = new[] { qc - qr - qu, qc + qr - qu, qc + qr + qu, qc - qr + qu };
+            if (corners.Any(cam.IsPositionBehind)) continue;
+            var pts = corners.Select(p => cam.UnprojectPosition(p)).ToArray();
+            var min = pts.Aggregate((a, b) => a.Min(b));
+            var max = pts.Aggregate((a, b) => a.Max(b));
+            rects[i] = new Rect2(min.Round(), (max - min).Round());
+        }
+        return rects;
     }
 
     static void CardFrame(CanvasItem c, Rect2 r, float k, bool selected, bool hover)

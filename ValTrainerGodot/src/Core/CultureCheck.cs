@@ -1109,6 +1109,16 @@ public static class CultureCheck
         var arm25 = Modes.SfRange.For(Modes.SfStyle.Arm, 25);
         Check("sens finder: arm + 25 cm pad = 20-40 cm/360; wrist + 40 cm = 15-40",
             MathF.Abs(arm25.Lo - 20f) < 1e-3f && MathF.Abs(arm25.Hi - 40f) < 1e-3f && wrist40.Lo == 15f && wrist40.Hi == 40f, $"{arm25} / {wrist40}");
+        // "Compare 2 sens": the verdict thresholds (|t| >= 2 clear, 1-2 slight edge, < 1 none; t > 0 = sens 1) and the midpoint
+        var verdicts = new[] { 3.4, 2.0, 1.99, 1.0, 0.99, 0.0, -0.5, -1.2, -2.6, double.NaN }.Select(t => Modes.SfStats.CompareVerdict(t)).ToArray();
+        Check("sens finder compare: verdicts from t (clear / slight edge / none, sign = which sens)",
+            verdicts.SequenceEqual(new[] { (0, 2), (0, 2), (0, 1), (0, 1), (-1, 0), (-1, 0), (-1, 0), (1, 1), (1, 2), (-1, 0) })
+            && Modes.SfStats.CompareConfidence(3.1) == "High" && Modes.SfStats.CompareConfidence(-2.2) == "Medium"
+            && Modes.SfStats.CompareConfidence(1.5) == "Low" && Modes.SfStats.CompareConfidence(0.4) == "",
+            string.Join(" ", verdicts.Select(v => $"{v.Item1}/{v.Item2}")));
+        Check("sens finder compare: midpoint of 0.28 and 0.40 is 0.335 (same % from both), symmetric",
+            Modes.SfStats.Midpoint(0.28f, 0.40f) == 0.335f && Modes.SfStats.Midpoint(0.40f, 0.28f) == 0.335f && Modes.SfStats.Midpoint(0.5f, 0.5f) == 0.5f,
+            Modes.SfStats.Midpoint(0.28f, 0.40f).ToString(System.Globalization.CultureInfo.InvariantCulture));
         Godot.GD.Print("[culture-test] sens finder ranges (cm/360): " + string.Join(" | ", Enum.GetValues<Modes.SfStyle>().SelectMany(st =>
             Modes.SfRange.PadPresets.Select(pd => { var q = Modes.SfRange.For(st, pd); return FormattableString.Invariant($"{st}/{pd}: {q.Lo:0.#}-{q.Hi:0.#} start {q.StartLo:0.#}-{q.StartHi:0.#}"); }))));
     }

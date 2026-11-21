@@ -17,7 +17,11 @@ namespace ValTrainer.Modes;
 /// No gun: clicks are read from the trigger's rising edge, so there is no spread, recoil or fire-rate limit.
 /// Dev flags (with --dev): --sfquick (short protocol), --sfnomicro (skip the micro test), --sfsens X / --sfcm X (pretend current sens),
 /// --sfstyle wrist|hybrid|arm / --sfpad CM (aiming style and pad width, not saved), --sfseed N (reproducible), --sfexit (quit when the result is computed), --sftimescale N (fast-forward screenshots),
-/// --sfshot DIR (save PNGs of the game's own viewport at key moments, then of the results screen; quits after).
+/// --sfshot DIR (save PNGs of the game's own viewport at key moments, then of the results screen; quits after),
+/// --sfcompare A,B ("Compare 2 sens" with these two values: starts it after 3 s, or with --sfhold shows its entry screen),
+/// --sfcompare-type TEXT (with --sfhold: sens 2 is being typed, for screenshots).
+/// "Compare 2 sens" (SensFinderCompare.cs, suggested on Discord) plays the same blind rounds between two sens the player
+/// enters and says which one won, how clearly, per task, and the midpoint.
 /// </summary>
 public sealed partial class SensFinderMode : TrainingMode
 {
@@ -34,7 +38,7 @@ public sealed partial class SensFinderMode : TrainingMode
     public override bool Done => done;
     public override string? Subtitle => L.N("Blind A/B test");
 
-    enum Ph { Intro, Rest, Flick, Micro, TrackReady, Track, Summary }
+    enum Ph { Intro, CompareSetup, Rest, Flick, Micro, TrackReady, Track, Summary }
     Ph phase;
     float phaseT;
     bool done, prevHeld, prevMKey, prevQKey, prevTKey, prevPKey, prevLbKey, prevRbKey;
@@ -129,6 +133,7 @@ public sealed partial class SensFinderMode : TrainingMode
         if (dev && ArgAfter("--sfstyle") is { } sty && Enum.TryParse<SfStyle>(sty, true, out var sv)) style = sv;
         if (dev && int.TryParse(ArgAfter("--sfpad"), NumberStyles.Integer, Inv, out var pv)) pad = Math.Clamp(pv, 0, SfRange.PadMax);
         SetRange(style, pad);
+        SetupCompare(dev);
         G.TrialSens = current;
         Event("sens_set", current, -1);
 
@@ -223,9 +228,17 @@ public sealed partial class SensFinderMode : TrainingMode
                 prevTKey = tKey; prevPKey = pKey; prevLbKey = lbKey; prevRbKey = rbKey;
                 // shoot a card on the start screen to pick it, START to begin (SensFinderSetup.cs)
                 SetupShot(pressed);
-                if (phase == Ph.Intro && Main.I.Dev && phaseT > 3f && !Args.Contains("--sfhold")) BeginStage(0); // dev: --sfhold keeps the start screen up (screenshots)
+                if (phase == Ph.Intro && Main.I.Dev && cmpDev && Args.Contains("--sfhold")) OpenCompare(); // dev: the compare entry screen (screenshots)
+                else if (phase == Ph.Intro && Main.I.Dev && phaseT > 3f && !Args.Contains("--sfhold")) // dev: --sfhold keeps the start screen up (screenshots)
+                {
+                    if (cmpDev) BeginCompare();
+                    else BeginStage(0);
+                }
                 break;
             }
+            case Ph.CompareSetup:
+                UpdateCompareSetup(pressed);
+                break;
             case Ph.Rest:
                 if (phaseT >= cfg.RestSec) StartBlock();
                 break;
@@ -258,6 +271,7 @@ public sealed partial class SensFinderMode : TrainingMode
         string? name = phase switch
         {
             Ph.Intro when phaseT > 1.5f => "1_intro",
+            Ph.CompareSetup when phaseT > 1.5f => "1c_compare_setup",
             Ph.Rest when phaseT > 0.6f => "2_rest",
             Ph.Flick when trialLive && flickIdx >= 3 => "3_flick",
             Ph.Micro when microLive && microIdx >= 2 && Now - mSpawnAt > 0.12f => "3m_micro",
@@ -267,6 +281,8 @@ public sealed partial class SensFinderMode : TrainingMode
         };
         if (name == null || !shotsTaken.Add(name)) return;
         SaveShot(name);
+        // --sfhold --sfexit: a held start / compare entry screen quits after its screenshot
+        if (name is "1_intro" or "1c_compare_setup" && devExit && Args.Contains("--sfhold")) { G.World.GetTree().Quit(); return; }
         if (name == "5_summary")
         {
             done = true; // → results screen
@@ -323,13 +339,22 @@ public sealed partial class SensFinderMode : TrainingMode
         int condA = aIs0 ? 0 : 1, condB = 1 - condA;
         bool abba = rng.Next(2) == 0;
         st.Order = abba ? new[] { condA, condB, condB, condA } : new[] { condB, condA, condA, condB };
+        // Compare 2 sens: twice the rounds, the second half mirrored (ABBA BAAB / BAAB ABBA), so both sens sit at the same
+        // average position in the run (warm-up and fatigue cancel out)
+        if (st.Compare)
+        {
+            int[] half = st.Order, mirror = half.Select(c => 1 - c).ToArray();
+            st.Order = Enumerable.Range(0, Math.Max(1, cfg.CompareBlocks / 4)).SelectMany(i => i % 2 == 0 ? half : mirror).ToArray();
+        }
         st.Flicks = SfFlick.MakeSet(cfg, rng);
         st.Script = new SfStrafeScript(SensFinderConfig.TrackTier, cfg.TrackSec + 0.5f, rng.Next());
         st.Micros = cfg.Micro ? SfMicro.MakeSet(cfg, rng) : new List<SfMicro>();
         stages.Add(st);
         stage = st;
         string order = string.Concat(st.Order.Select(c => st.Label[c]));
-        GD.Print(st.Confirm
+        GD.Print(st.Compare
+            ? $"[sf] compare: sens1={st.Sens[0]:0.000} ({Cm(st.Sens[0]):0.0}cm, {st.Label[0]}) vs sens2={st.Sens[1]:0.000} ({Cm(st.Sens[1]):0.0}cm, {st.Label[1]}) order {order}"
+            : st.Confirm
             ? $"[sf] confirm: new C={st.Sens[0]:0.000} ({Cm(st.Sens[0]):0.0}cm, {st.Label[0]}) vs current S={st.Sens[1]:0.000} ({Cm(st.Sens[1]):0.0}cm, {st.Label[1]}) order {order}"
             : $"[sf] step {st.Step + 1}/{cfg.Steps}: C={st.Centre:0.000} ({Cm(st.Centre):0.0}cm) +/-{(st.HalfWidth - 1) * 100:0}%  L={st.Sens[0]:0.000} ({Cm(st.Sens[0]):0.0}cm, {st.Label[0]})  H={st.Sens[1]:0.000} ({Cm(st.Sens[1]):0.0}cm, {st.Label[1]})  order {order}");
         StartRest(0);
@@ -391,6 +416,18 @@ public sealed partial class SensFinderMode : TrainingMode
         foreach (var b in st.Blocks) Event("sens_trial", b.Sens, (float)b.Score);
         float acc = st.Accuracy;
         string stats = $"d={cmp.D:+0.000;-0.000} SE={cmp.Se:0.000} t={cmp.T:+0.00;-0.00} (flick d={cmp.DFlick:+0.00;-0.00}+/-{cmp.SeFlick:0.00} n={cmp.NFlick0}/{cmp.NFlick1}, micro d={cmp.DMicro:+0.00;-0.00}+/-{cmp.SeMicro:0.00} n={cmp.NMicro0}/{cmp.NMicro1}, track d={cmp.DTrack:+0.00;-0.00}+/-{cmp.SeTrack:0.00} n={cmp.NTrack0}/{cmp.NTrack1}) acc={acc * 100:0}%";
+        if (st.Compare)
+        {
+            GD.Print($"[sf] compare result: {stats}");
+            if (acc < cfg.MinAccuracy)
+            {
+                aborted = true;
+                abortWhy = L.F($"Accuracy fell to {acc * 100:0}% (below {cfg.MinAccuracy * 100:0}%). You're probably tired. Take a break and run it again later.");
+                GD.Print($"[sf] ABORT (fatigue): accuracy fell to {acc * 100:0}% (below {cfg.MinAccuracy * 100:0}%)");
+            }
+            FinishCompare(st);
+            return;
+        }
         if (!st.Confirm)
         {
             int win = cmp.T > 1 ? 0 : cmp.T < -1 ? 1 : -1;
@@ -808,9 +845,10 @@ public sealed partial class SensFinderMode : TrainingMode
 
     public override IEnumerable<string> HudLines()
     {
-        if (phase is Ph.Intro or Ph.Summary || stage == null) yield break;
+        if (phase is Ph.Intro or Ph.CompareSetup or Ph.Summary || stage == null) yield break;
         var st = stage;
-        yield return st.Confirm ? L.F($"Confirmation · round {blockIdx + 1} / {st.Order.Length}")
+        yield return st.Compare ? L.F($"Comparison · round {blockIdx + 1} / {st.Order.Length}")
+            : st.Confirm ? L.F($"Confirmation · round {blockIdx + 1} / {st.Order.Length}")
             : L.F($"Step {st.Step + 1} / {cfg.Steps} · round {blockIdx + 1} / {st.Order.Length}");
         yield return L.F($"Setting {block?.Label}");
         if (phase == Ph.Flick) yield return L.F($"Flick {Math.Min(flickIdx + 1, seq.Count)} / {seq.Count}");
@@ -833,6 +871,11 @@ public sealed partial class SensFinderMode : TrainingMode
     public override IEnumerable<(string Label, string Value)> ResultLines()
     {
         if (phase != Ph.Summary) yield break;
+        if (compareMode)
+        {
+            foreach (var l in CompareResultLines()) yield return l;
+            yield break;
+        }
         if (aborted) yield return (L.N("Result"), L.N("aborted (fatigue)"));
         yield return (aborted ? L.N("Provisional") : L.N("VALORANT sens"), L.F($"{rec.ToString("0.000", Inv)}  (was {current.ToString("0.000", Inv)})"));
         yield return ("eDPI", L.F($"{rec * dpi:0}  (was {current * dpi:0})"));
@@ -850,7 +893,11 @@ public sealed partial class SensFinderMode : TrainingMode
     public override IEnumerable<(string Label, Action Act)> ResultButtons()
     {
         if (phase != Ph.Summary) yield break;
-        if (!aborted && !KeepSens)
+        if (compareMode)
+        {
+            foreach (var (label, act) in CompareUseButtons()) yield return (label, act);
+        }
+        else if (!aborted && !KeepSens)
         {
             float r = rec;
             yield return (L.F($"Use {r.ToString("0.000", Inv)} in ValTrainer"), () =>

@@ -17,8 +17,9 @@ public sealed partial class SensFinderMode
         switch (phase)
         {
             case Ph.Intro: DrawSetup(c, size, k); break;
+            case Ph.CompareSetup: DrawCompareSetup(c, size, k); break;
             case Ph.Rest: DrawRest(c, size, k); break;
-            case Ph.Summary: DrawSummary(c, size, k); break;
+            case Ph.Summary: if (compareMode) DrawCompareSummary(c, size, k); else DrawSummary(c, size, k); break;
         }
         if (phase is Ph.Rest or Ph.Flick or Ph.TrackReady or Ph.Track) DrawProgress(c, size, k);
     }
@@ -27,7 +28,7 @@ public sealed partial class SensFinderMode
 
     void DrawProgress(CanvasItem c, Vector2 size, float k)
     {
-        int total = (cfg.Steps + 1) * cfg.BlocksPerStage;
+        int total = compareMode && stage != null ? stage.Order.Length : (cfg.Steps + 1) * cfg.BlocksPerStage;
         float f = Mathf.Clamp(doneBlocks / (float)total, 0, 1);
         float h = 5 * k;
         c.DrawRect(new Rect2(0, size.Y - h, size.X, h), new Color(0, 0, 0, 0.45f));
@@ -43,7 +44,8 @@ public sealed partial class SensFinderMode
         float cx = size.X / 2, cy = size.Y * 0.42f;
         Gfx.TextC(c, UiTheme.HudWide, "NEXT ROUND", cx, cy - 150 * k, UiTheme.Fs(18, k), UiTheme.Dim);
         Gfx.TextC(c, UiTheme.Display, L.F($"SETTING {label}"), cx, cy + 40 * k, UiTheme.Fs(150, k), col);
-        string sub = st.Confirm ? L.F($"FINAL CHECK · ROUND {blockIdx + 1} / {st.Order.Length}")
+        string sub = st.Compare ? L.F($"COMPARISON · ROUND {blockIdx + 1} / {st.Order.Length}")
+            : st.Confirm ? L.F($"FINAL CHECK · ROUND {blockIdx + 1} / {st.Order.Length}")
             : L.F($"STEP {st.Step + 1} / {cfg.Steps} · ROUND {blockIdx + 1} / {st.Order.Length}");
         Gfx.TextC(c, UiTheme.HudWide, sub, cx, cy + 100 * k, UiTheme.Fs(18, k), UiTheme.Text);
         string what = cfg.Micro ? L.F($"{cfg.FlicksPerBlock} flicks, {cfg.MicroPerBlock} micro-adjustments, then {cfg.TrackSec:0} s tracking")

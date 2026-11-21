@@ -8,6 +8,9 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Added
+- Sens Finder: Compare 2 sens. Got two sensitivities you like and can't decide? Shoot COMPARE 2 SENS on the Sens Finder's start screen, enter both (shoot a value and type it, or use the − / + cards) and play 8 short blind rounds of flicks, micro-adjustments and tracking. You only see Setting A and Setting B, in a random order. The result tells you which sens you aimed better with, by how much and how sure that is, or that there was no clear difference. It splits it up into flicks, micro-adjustments and tracking, shows the eDPI and cm/360 of both, and gives you the midpoint between them: if both feel fine and neither wins clearly, that's a reasonable middle to settle on. ValTrainer remembers the two values for next time. The normal Sens Finder works exactly as before (suggested on Discord).
+
 ## [1.21.0] - 2026-11-17
 
 ### Added

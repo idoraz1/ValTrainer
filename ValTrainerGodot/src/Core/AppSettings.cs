@@ -14,6 +14,8 @@ public sealed class AppSettings
     public bool SensFinderMicro = true; // Sens Finder: include the micro-adjustment test in every round (toggled with M on its intro screen)
     public int SensFinderStyle = 1;     // Sens Finder: aiming style 0 wrist, 1 hybrid, 2 arm (Modes.SfStyle; T on its intro screen)
     public int SensFinderPadCm = 0;     // Sens Finder: usable mousepad width in cm, 0 = not set (P / [ ] on its intro screen)
+    public float SensCompare1 = 0f;     // Sens Finder "Compare 2 sens": the last two values entered (0 = not set yet: your sens and +20%)
+    public float SensCompare2 = 0f;
     public int EnemyColorOverride = -1;
     public int WindowModeOverride = -1;
     public int MonitorOverride = -1;   // -1 = same monitor as Valorant
