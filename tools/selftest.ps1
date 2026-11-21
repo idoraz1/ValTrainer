@@ -198,6 +198,30 @@ $why = if ($r.Code -ne 0) { "exit code $($r.Code) ($res) " + ($fail -join "; ") 
 $detail = if ($res -match '\((.+)\)') { " ($($Matches[1]))" } else { "" }
 Report "skin audio test$detail" ($why -eq "") $why $r
 
+# ---- 3f. Sens Finder "Compare 2 sens": the blind comparison played by the simulated player (--sfquick, fixed seeds). A sim
+#          used to 54 cm/360 must pick 0.300 (54.4 cm) over 0.550 (29.7 cm) clearly, whichever order they're entered in;
+#          a sim that is at home at any sens must not get a clear winner. ----
+$cmpRuns = @(
+  @{ Name = "sim prefers sens 1"; Pair = "0.30,0.55"; Sim = "good:pref=54"; Seed = "1"; Want = "clear"; Winner = "0.300" },
+  @{ Name = "sim prefers sens 2"; Pair = "0.55,0.30"; Sim = "good:pref=54"; Seed = "2"; Want = "clear"; Winner = "0.300" },
+  @{ Name = "no preference"; Pair = "0.30,0.36"; Sim = "good"; Seed = "1"; Want = "notclear" },
+  @{ Name = "no preference, seed 3"; Pair = "0.30,0.36"; Sim = "good"; Seed = "3"; Want = "notclear" }
+)
+foreach ($x in $cmpRuns) {
+  $r = Invoke-Godot ("sfcompare-" + ($x.Name -replace '[ ,]', '-')) (@("--headless", "--fixed-fps", "120", "--path", $Project, "--") + $sandbox +
+                     @("--mode", "sensfinder", "--sfquick", "--sfcompare", $x.Pair, "--simaim", $x.Sim, "--sfseed", $x.Seed, "--sfexit"))
+  $line = ($r.Text -split "`r?`n" | Where-Object { $_ -match '\[sf\] COMPARE RESULT' } | Select-Object -Last 1)
+  $ex = Get-Exceptions $r.Text
+  $verdict = if ($line -match 'verdict=(\w+)') { $Matches[1] } else { "" }
+  $winner = if ($line -match 'winner=(\S+)') { $Matches[1] } else { "" }
+  $t = if ($line -match ' t=([+-][\d.]+)') { $Matches[1] } else { "?" }
+  $why = if ($r.TimedOut) { "timed out after $TimeoutSec s" } elseif ($ex.Count -gt 0) { "exception: $($ex[0].Trim())" } `
+         elseif (-not $line) { "no COMPARE RESULT line" } `
+         elseif ($x.Want -eq "clear" -and ($verdict -ne "clear" -or $winner -ne $x.Winner)) { "expected a clear win for $($x.Winner), got verdict=$verdict winner=$winner t=$t" } `
+         elseif ($x.Want -eq "notclear" -and $verdict -eq "clear") { "expected no clear winner, got $winner t=$t" } else { "" }
+  Report "sens finder compare: $($x.Name) ($($x.Pair): $verdict $winner, t=$t)" ($why -eq "") $why $r
+}
+
 # ---- 4. Smoke test: each drill runs 5 s with the simulated player, then its telemetry must load in the coach ----
 if (-not $SkipSmoke) {
   foreach ($m in $Modes) {

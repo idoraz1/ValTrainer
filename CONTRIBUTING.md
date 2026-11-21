@@ -119,6 +119,7 @@ players can never trigger them by accident.
 | `--fakecoach [full\|partial\|empty]` | Coach screen with sample data. |
 | `--fakebuttons` | Shows every extra results-screen button (layout tests). |
 | `--sfquick`, `--sfnomicro`, `--sfseed N`, `--sfsens S`, `--sfcm C`, `--sftimescale X`, `--sfexit`, `--sfshot <dir>` | Sens Finder testing: short run, no micro-adjustment test, fixed seed, start sens or cm/360, game speed, quit at the end, screenshots. |
+| `--sfcompare A,B`, `--sfcompare-type <text>`, `--sfhold` | Sens Finder "Compare 2 sens" with these two values: starts it after 3 s (with `--simaim` it plays itself), or with `--sfhold` shows its entry screen (`--sfcompare-type`: sens 2 half typed). `--sfhold --sfexit --sfshot <dir>` quits after the start or entry screen's screenshot. |
 | `--update-test <version>` | Pretends that version is the latest GitHub release (no network, nothing to download). |
 | `--update-source <url>` | Asks this URL instead of GitHub's API for the latest release (a local fake release, see [Automatic updates](#automatic-updates)). |
 | `--update-allow-dev` | Lets the updater download and install in a dev run. Needs `--data-dir` (downloads go to `<data-dir>\updates`). |

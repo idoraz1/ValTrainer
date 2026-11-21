@@ -38,9 +38,16 @@ public sealed class SensFinderConfig
     public int FlicksPerBlock => WarmupFlicks + ScoredFlicks;
     public int MicroPerBlock => Micro ? MicroAdjWarmup + MicroAdjTargets : 0;
 
+    /// <summary>"Compare 2 sens" (suggested on Discord): one blind comparison of two sens the player enters, 8 rounds
+    /// ABBA BAAB (or BAAB ABBA), so each sens gets twice the rounds of a search step.</summary>
+    public int CompareBlocks = 8;
+
+    /// <summary>Rough wall-clock length of one round (rest + flicks + micro + tracking), seconds.</summary>
+    public float BlockSeconds => RestSec + FlicksPerBlock * (Foreperiod + 0.95f) + MicroPerBlock * (MicroAdjForeperiod + 0.6f) + TrackReady + TrackSec;
     /// <summary>Rough wall-clock estimate of a full run (all steps + confirmation), minutes.</summary>
-    public float EstimatedMinutes => (Steps + 1) * BlocksPerStage
-        * (RestSec + FlicksPerBlock * (Foreperiod + 0.95f) + MicroPerBlock * (MicroAdjForeperiod + 0.6f) + TrackReady + TrackSec) / 60f;
+    public float EstimatedMinutes => (Steps + 1) * BlocksPerStage * BlockSeconds / 60f;
+    /// <summary>Rough wall-clock estimate of a "Compare 2 sens" run, minutes.</summary>
+    public float CompareMinutes => CompareBlocks * BlockSeconds / 60f;
 
     public static SensFinderConfig Full() => new();
 
@@ -175,10 +182,12 @@ public sealed class SfBlock
     public double Score;        // standardized composite (filled when the stage is scored)
 }
 
-/// <summary>A step of the search (L vs H) or the final confirmation (new C vs current S): 4 blocks ABBA / BAAB.</summary>
+/// <summary>A step of the search (L vs H) or the final confirmation (new C vs current S): 4 blocks ABBA / BAAB.
+/// Or the whole "Compare 2 sens" test (sens 1 vs sens 2): 8 blocks ABBA BAAB / BAAB ABBA.</summary>
 public sealed class SfStage
 {
     public bool Confirm;
+    public bool Compare;        // "Compare 2 sens": Sens[0] / Sens[1] are the two values the player entered (CompareBlocks rounds)
     public int Step;            // 0-based step index (confirmation: -1)
     public float Centre, HalfWidth; // C and the multiplicative half-width (1.40, 1.25, …)
     public readonly float[] Sens = new float[2];
@@ -207,6 +216,7 @@ public sealed record SfComparison(double D, double Se, double T, double DFlick, 
     double DMicro = 0, double SeMicro = 0, int NMicro0 = 0, int NMicro1 = 0)
 {
     public double TFlick => SeFlick > 1e-9 ? DFlick / SeFlick : 0;
+    public double TTrack => SeTrack > 1e-9 ? DTrack / SeTrack : 0;
     public double TMicro => SeMicro > 1e-9 ? DMicro / SeMicro : 0;
     public bool HasMicro => NMicro0 >= 2 && NMicro1 >= 2;
 }
@@ -299,6 +309,31 @@ public static class SfStats
         }
         return best;
     }
+
+    /// <summary>"Compare 2 sens": |t| ≥ <see cref="ClearT"/> is a clear win (noise alone does that about 1 time in 20),
+    /// <see cref="StrongT"/> a strong one; 1 ≤ |t| &lt; 2 is only a slight edge (the search's step threshold, but one in
+    /// three ties looks like that); below 1, no clear difference.</summary>
+    public const double ClearT = 2.0, StrongT = 3.0, EdgeT = 1.0;
+
+    /// <summary>The verdict of a "Compare 2 sens" run from t = d / SE (condition 0 minus condition 1): the better
+    /// condition (−1 = none) and the strength (2 clear, 1 slight edge, 0 no clear difference).</summary>
+    public static (int Winner, int Strength) CompareVerdict(double t)
+    {
+        double a = Math.Abs(t);
+        if (!double.IsFinite(t) || a < EdgeT) return (-1, 0);
+        return (t > 0 ? 0 : 1, a >= ClearT ? 2 : 1);
+    }
+
+    /// <summary>"Compare 2 sens" confidence (English logic key, shown as L.C("confidence", …)): High |t| ≥ 3, Medium ≥ 2,
+    /// Low for a slight edge; "" for no clear difference.</summary>
+    public static string CompareConfidence(double t)
+    {
+        double a = Math.Abs(t);
+        return a >= StrongT ? "High" : a >= ClearT ? "Medium" : a >= EdgeT ? "Low" : "";
+    }
+
+    /// <summary>The middle of two sens: the geometric mean (the same % step from each, how the finder moves), rounded to 0.001.</summary>
+    public static float Midpoint(float a, float b) => MathF.Round(MathF.Sqrt(a * b) * 1000f) / 1000f;
 
     /// <summary>Micro-adjustment summary of one condition of a stage (scored targets of its blocks).</summary>
     public static (float SettleMs, float OverPct, float ErrR, float HitPct, int N) MicroStats(SfStage s, int cond)

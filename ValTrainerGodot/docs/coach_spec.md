@@ -385,6 +385,30 @@ asks wrist / arm / mix and the mousepad space first to set the range of candidat
   numbers (settle, overshoot, click error, hits) of the two sens it compared.
 - A "Use in ValTrainer" button sets AppSettings.UseSensOverride = true and SensOverride = S′.
 
+### Compare 2 sens
+
+Asked for on Discord: players torn between two sens they like (e.g. 0.28 and 0.40). COMPARE 2 SENS on the start screen
+(`SensFinderCompare.cs`) runs one comparison between the two values the player enters, with the same blinding and scoring.
+
+- **Entry:** two value cards (shoot to type; − / + 0.05 and 0.01 cards). Defaults: the last two values
+  (AppSettings.SensCompare1 / SensCompare2), else the current sens and +20%. Each must be 8–200 cm/360 at the player's
+  DPI and the two must differ; under 5% apart or 75%+ apart starts with a warning (too close to tell / the best sens may
+  be in between).
+- **Rounds:** 8 blocks, ABBA BAAB or BAAB ABBA (both sens at the same mean position, so warm-up and fatigue cancel),
+  labels A / B at random, the same flick, micro and strafe sets for both. Block content follows the micro and short
+  toggles. Abort below 50% accuracy, as in a search step.
+- **Scoring:** `SfStats.Compare` over all 8 blocks, exactly as a step (standardised within the run, 0.45 / 0.30 / 0.25).
+- **Verdict** (`SfStats.CompareVerdict`, t = d / SE, positive = sens 1): |t| ≥ 2 a clear win (noise alone does that about
+  1 time in 20), 1 ≤ |t| < 2 only a slight edge (a search step would call it, but one tie in three looks like that), below 1
+  no clear difference. Confidence: High |t| ≥ 3, Medium ≥ 2, Low for a slight edge. Per task (flicks, micro, tracking) a
+  side is shown when that part alone has |t| ≥ 1, with the raw numbers (median flick time and hits, micro settle and hits,
+  time on target).
+- **Midpoint:** the geometric mean √(s₁·s₂), the same % step from both (how the finder moves); the plain average is shown
+  next to it. Offered as "a reasonable middle" when neither wins clearly. The result is not a `sens_result` (the coach's sens
+  advice ignores it); it logs `sens_compare`.
+- **Self-test:** `tools/selftest.ps1` plays it with the simulated player: a sim used to 54 cm/360 must clearly pick 0.300
+  over 0.550 whichever order they're entered in, and a sim at home at any sens must not get a clear winner.
+
 ## Sources
 
 - Boudaoud, Spjut, Kim 2022: https://arxiv.org/abs/2203.12050
