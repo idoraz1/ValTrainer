@@ -634,6 +634,7 @@ public partial class ProfileScreen : ScreenBase
         float k = K;
         var a = p.Sens;
         bool has = a != null && a.RecommendedSens > 0;
+        if (showSensHistory && p.SensHistory != null) return SensHistoryPanel(p.SensHistory);
         var panel = new VPanel
         {
             Title = "SENSITIVITY",
@@ -642,6 +643,7 @@ public partial class ProfileScreen : ScreenBase
         };
         var v = VBox(10 * k);
         panel.AddChild(v);
+        if (p.SensHistory != null) v.AddChild(SensTabs(false));
         v.AddChild(new DrawBox { CustomMinimumSize = new Vector2(0, 112 * k), OnDraw = d => DrawSens(d, p) });
         string reason = has
             ? a!.Reason

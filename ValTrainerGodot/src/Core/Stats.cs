@@ -12,6 +12,10 @@ public sealed class RunRecord
     public float AvgKillMs;     // avg time per kill / reaction time, 0 when not applicable
     public float HeadshotPct;   // 0..1, -1 when not applicable
     public float Sens;
+    /// <summary>Mouse DPI set in ValTrainer when the run was played (1.22; 0 = an older run, read as the current DPI). Lets
+    /// the coach's sens history compare runs in cm/360 when the DPI changed. Older versions ignore the field.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    public int Dpi;
     public int Tier = -1;       // difficulty tier played (-1 = old Easy/Normal/Hard build)
     public int Badge = -1;      // rank badge earned (-1 = below Rookie / not rated)
     public string Map = "";

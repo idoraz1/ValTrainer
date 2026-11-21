@@ -75,6 +75,7 @@ public static class CoachCli
         if (args.Contains("--coach-selftest") || args.Contains("--recordings-selftest")) RecordingsSelfTest();
         if (args.Contains("--coach-selftest")) FeedSelfTest();
         if (args.Contains("--coach-selftest")) GunSelfTest();
+        if (args.Contains("--coach-selftest") || args.Contains("--senshistory-selftest")) SensHistoryCheck.Run(s => P(s));
 
         // --coach-stats <stats.json>: build the profile from a (copied) stats file instead, exactly as the game does
         // (stored per-run metrics; telemetry paths are looked up next to it in "telemetry\"). Read-only.

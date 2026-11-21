@@ -114,6 +114,8 @@ players can never trigger them by accident.
 | `--culture-test` | Locale self-test: settings, stats, telemetry and VALORANT ini parsing and number formatting. Prints `[culture-test] RESULT: PASS/FAIL`; the exit code is the number of failures. |
 | `--coach-analyze [dir]` | Prints the coach's analysis (metrics, problems, run review, skill profile, sens advice) of the `.vtt` files in `dir`, then quits. Add `--brief`, `--out <file>`, `--fake-sessions N`. Works with `--headless`. Without `dir` it reads your real telemetry (read-only). |
 | `--coach-selftest` | With `--coach-analyze`: synthetic cases for the rules and sens guardrails the simulated player can't reach. Prints `PASS`/`FAIL` lines. |
+| `--senshistory-selftest` | With `--coach-analyze`: only the sens history checks (also part of `--coach-selftest`): seeded histories with a clear winner, no difference, too few runs, one sens, DPI changes and unfair groups. |
+| `--sens-history` | With `--screen profile`: opens the coach's sensitivity panel on the YOUR SENS HISTORY tab (screenshots). |
 | `--fakecoach [full\|partial\|empty]` | Coach screen with sample data. |
 | `--fakebuttons` | Shows every extra results-screen button (layout tests). |
 | `--sfquick`, `--sfnomicro`, `--sfseed N`, `--sfsens S`, `--sfcm C`, `--sftimescale X`, `--sfexit`, `--sfshot <dir>` | Sens Finder testing: short run, no micro-adjustment test, fixed seed, start sens or cm/360, game speed, quit at the end, screenshots. |

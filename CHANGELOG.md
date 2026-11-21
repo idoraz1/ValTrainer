@@ -8,6 +8,9 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Added
+- Your sens history, in the coach's Sensitivity panel: if you change your sensitivity between sessions, the new YOUR SENS HISTORY tab shows which sens you actually score best with. Each sens gets its runs, drills, score vs your average, accuracy and kill time. The comparison is fair: a drill is only compared with your own runs of the same drill, difficulty and gun, and sens within 2% of each other (or the same cm/360 after a DPI change) count as one. It names a best sens only once each sens has at least 10 runs over 3 drills and the difference is too big to be luck. Otherwise it says there's no clear difference yet, or how many more drills to play at a sens. If you've only played one sens so far, it points you to the Sens Finder (suggested on Discord).
+
 ## [1.21.0] - 2026-11-17
 
 ### Added
