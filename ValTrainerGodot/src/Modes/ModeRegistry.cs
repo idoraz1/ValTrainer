@@ -32,6 +32,7 @@ public static class ModeRegistry
         () => new LongTapsMode(),
         () => new JumpPeekMode(),
         () => new JigglePeekMode(),
+        () => new StrafeJumpMode(), // v1.23 (suggested on Discord)
         () => new PeekMixMode(),
         () => new PostPlantMode(),
         () => new RetakeMode(),

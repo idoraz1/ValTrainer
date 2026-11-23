@@ -44,7 +44,7 @@ internal sealed partial class ProgressEngine
         "Reaction" => new[] { "reaction", "popup" },
         "CrosshairPlacement" => new[] { "peek", "peekduel", "jigglepeek" },
         "SprayControl" => new[] { "spray_vandal", "spray_phantom", "spray_transfer" },
-        "Movement" => new[] { "counterstrafe", "strafeduel", "jumppeek" },
+        "Movement" => new[] { "counterstrafe", "strafeduel", "jumppeek", "strafejump" },
         "Utility" => new[] { "flashmap", "sound" },
         _ => Array.Empty<string>(),
     };

@@ -781,6 +781,9 @@
   "AIRBORNE — inaccurate": [
     "src/Modes/MovementPlusModes.cs:212"
   ],
+  "AIRBORNE — no speed gained, none lost": [
+    "src/Modes/StrafeJumpMode.cs:514"
+  ],
   "Alarmbot went off": [
     "src/Modes/DefenseModes.cs:486"
   ],
@@ -865,7 +868,7 @@
     "src/UI/RewindDraw.cs:355"
   ],
   "ANCHOR": [
-    "src/Agents/AgentDrills.cs:302"
+    "src/Agents/AgentDrills.cs:303"
   ],
   "ANCHORED…": [
     "src/Modes/Agents/HushKit.cs:383"
@@ -1062,11 +1065,17 @@
   "Avg retake time": [
     "src/Modes/TacticalModes.cs:744"
   ],
+  "Avg speed in the open": [
+    "src/Modes/StrafeJumpMode.cs:534"
+  ],
   "Avg stop by releasing keys": [
     "src/Modes/MovementModes.cs:26"
   ],
   "Avg time alive": [
     "src/Modes/DefenseModes.cs:711"
+  ],
+  "Avg time seen per crossing": [
+    "src/Modes/StrafeJumpMode.cs:533"
   ],
   "Avg time seen per peek": [
     "src/Modes/MovementPlusModes.cs:239",
@@ -1117,6 +1126,12 @@
   ],
   "BACK TO YOUR REAL SENS FROM HERE ON": [
     "src/Warmup/WarmupCard.cs:191"
+  ],
+  "Backed out after showing": [
+    "src/Modes/StrafeJumpMode.cs:542"
+  ],
+  "BACKED OUT — once you show, commit: keep going": [
+    "src/Modes/StrafeJumpMode.cs:399"
   ],
   "Badge rank-up in a drill": [
     "src/UI/ProgressScreen.cs:121"
@@ -1571,6 +1586,15 @@
   "Classic hit sounds": [
     "src/UI/SettingsScreen.cs:542"
   ],
+  "CLEAN CROSS · seen {0:0} ms · he couldn't get a shot off": [
+    "src/Modes/StrafeJumpMode.cs:444"
+  ],
+  "CLEAN CROSS · seen {0:0} ms · {1:0}% speed": [
+    "src/Modes/StrafeJumpMode.cs:445"
+  ],
+  "Clean crossings (full speed, kept it through the landing, alive)": [
+    "src/Modes/StrafeJumpMode.cs:531"
+  ],
   "CLEAN JUMP PEEK · OP {0} · landed in cover": [
     "src/Modes/MovementPlusModes.cs:95"
   ],
@@ -1596,7 +1620,7 @@
     "src/Modes/SensFinderMode.cs:885"
   ],
   "CLEAR": [
-    "src/Agents/AgentDrills.cs:312"
+    "src/Agents/AgentDrills.cs:314"
   ],
   "Clear one angle at a time": [
     "src/Warmup/LockInWidgets.cs:14"
@@ -1605,10 +1629,10 @@
     "src/Analysis/Assess.cs:585"
   ],
   "Clear one angle at a time; never show yourself to two at once.": [
-    "src/Agents/AgentDrills.cs:253"
+    "src/Agents/AgentDrills.cs:254"
   ],
   "Clear the site piece by piece, then go for the defuse.": [
-    "src/Agents/AgentDrills.cs:262"
+    "src/Agents/AgentDrills.cs:263"
   ],
   "Clear-coated twill carbon fibre": [
     "src/Game/Skins/SkinCatalog.cs:62"
@@ -2030,6 +2054,18 @@
   "Crisp flicks at your real speed. Land on the head first.": [
     "src/Warmup/WarmupPlan.cs:64"
   ],
+  "CROSS": [
+    "src/Agents/AgentDrills.cs:309"
+  ],
+  "Cross an open gap a rifler is holding: full speed from cover, jump at the edge if you like, keep holding the key through the landing. Slow or stopped in the open, you die.": [
+    "src/Modes/StrafeJumpMode.cs:207"
+  ],
+  "cross the gap a few times and stop in cover": [
+    "src/Analysis/RunSummary.cs:36"
+  ],
+  "Cross to the other side: {0} from deep in cover, full speed through the gap ({1} at the edge if you like)": [
+    "src/Modes/StrafeJumpMode.cs:524"
+  ],
   "Crossfire": [
     "src/Modes/TacticalSite.cs:51"
   ],
@@ -2075,7 +2111,7 @@
     "src/Warmup/WarmupPlan.cs:67"
   ],
   "Crosshair on the edge at head height before they swing.": [
-    "src/Agents/AgentDrills.cs:251"
+    "src/Agents/AgentDrills.cs:252"
   ],
   "CROSSHAIR PLACEMENT": [
     "src/UI/CoachUi.cs:117"
@@ -2109,12 +2145,39 @@
   "Crosshair {0} · target {1} / {2}": [
     "src/Modes/CrosshairFinderMode.cs:995"
   ],
+  "Crossings he couldn't shoot": [
+    "src/Modes/StrafeJumpMode.cs:537"
+  ],
+  "Crossings survived / deaths": [
+    "src/Modes/StrafeJumpMode.cs:532"
+  ],
+  "Crossings {0} · clean {1} · deaths {2}": [
+    "src/Modes/StrafeJumpMode.cs:511"
+  ],
+  "crossing|clean": [
+    "src/Modes/StrafeJumpMode.cs:435"
+  ],
+  "crossing|died": [
+    "src/Modes/StrafeJumpMode.cs:435"
+  ],
+  "crossing|jump": [
+    "src/Modes/StrafeJumpMode.cs:434"
+  ],
+  "crossing|made it": [
+    "src/Modes/StrafeJumpMode.cs:435"
+  ],
+  "crossing|run": [
+    "src/Modes/StrafeJumpMode.cs:434"
+  ],
   "Crouch": [
     "src/Modes/PeekMixMode.cs:35",
     "src/Valorant/Keybinds.cs:349"
   ],
   "crouch": [
     "src/Game/Bots/StrafePlanner.cs:34"
+  ],
+  "CROUCHING — it slows you down in the open: stand and run across": [
+    "src/Modes/StrafeJumpMode.cs:468"
   ],
   "cue \"{0}\"": [
     "src/Warmup/WarmupScreen.cs:225"
@@ -2286,6 +2349,9 @@
   ],
   "defender sightline onto your entry": [
     "src/Modes/Agents/ControllerDraw.cs:328"
+  ],
+  "Defender {0:0} m away, holding the gap": [
+    "src/Modes/StrafeJumpMode.cs:512"
   ],
   "Defenders flashed": [
     "src/Modes/Agents/InitiatorDrills.cs:44"
@@ -2459,7 +2525,7 @@
     "src/Warmup/WarmupPlan.cs:169"
   ],
   "DODGE": [
-    "src/Agents/AgentDrills.cs:313"
+    "src/Agents/AgentDrills.cs:315"
   ],
   "Dodged / partial / flashed": [
     "src/Modes/MapModes.cs:611"
@@ -2764,7 +2830,7 @@
     "src/Analysis/Assess.cs:563"
   ],
   "enemies appeared {0:0.0}° from your crosshair": [
-    "src/Analysis/RunSummary.cs:132"
+    "src/Analysis/RunSummary.cs:133"
   ],
   "enemies appeared {0:0.0}° to the side of your crosshair": [
     "src/Analysis/Assess.cs:589"
@@ -2822,7 +2888,7 @@
     "src/Modes/MapModes.cs:615"
   ],
   "ENTRY": [
-    "src/Agents/AgentDrills.cs:300",
+    "src/Agents/AgentDrills.cs:301",
     "src/Modes/Agents/ControllerDraw.cs:177"
   ],
   "Entry denied": [
@@ -2971,7 +3037,7 @@
     "src/UI/DrillPreview.cs:249"
   ],
   "face a few flashes": [
-    "src/Analysis/RunSummary.cs:37"
+    "src/Analysis/RunSummary.cs:38"
   ],
   "Factory": [
     "src/Game/Weapon/GunSkins.cs:286",
@@ -3080,7 +3146,7 @@
     "src/Modes/DeathmatchMode.cs:425"
   ],
   "finish the trials": [
-    "src/Analysis/RunSummary.cs:38"
+    "src/Analysis/RunSummary.cs:39"
   ],
   "FINISHER": [
     "src/UI/SkinLevelTrack.cs:71"
@@ -3107,7 +3173,7 @@
     "src/Analysis/Assess.cs:420"
   ],
   "fire at least 10 bullets per spray a few times": [
-    "src/Analysis/RunSummary.cs:39"
+    "src/Analysis/RunSummary.cs:40"
   ],
   "Fired straight off the flick, {0:0.0}° off": [
     "src/Analysis/InsightsBuilder.cs:167"
@@ -3160,7 +3226,7 @@
     "src/UI/SettingsScreen.cs:504"
   ],
   "FLASH": [
-    "src/Agents/AgentDrills.cs:297"
+    "src/Agents/AgentDrills.cs:298"
   ],
   "Flash & Peek": [
     "src/Modes/Agents/InitiatorDrills.cs:26"
@@ -3382,6 +3448,9 @@
   "FULL SETUP": [
     "src/UI/ProfileSensHistory.cs:76"
   ],
+  "Full speed from cover across the gap; keep the key down through the landing.": [
+    "src/Agents/AgentDrills.cs:249"
+  ],
   "Full-auto guns only: this drill is about spraying": [
     "src/UI/GunPicker.cs:100"
   ],
@@ -3415,7 +3484,7 @@
     "src/Progress/Requirements.cs:132"
   ],
   "get a few duels in": [
-    "src/Analysis/RunSummary.cs:36"
+    "src/Analysis/RunSummary.cs:37"
   ],
   "Get my code": [
     "src/UI/SettingsScreen.cs:1027"
@@ -3631,7 +3700,7 @@
     "src/Modes/DeathmatchMode.cs:467"
   ],
   "Hear the flash, turn away, swing back as soon as it's over.": [
-    "src/Agents/AgentDrills.cs:255"
+    "src/Agents/AgentDrills.cs:256"
   ],
   "Heard your ability": [
     "src/Modes/Agents/DuelistDrills.cs:398"
@@ -3777,7 +3846,7 @@
     "src/Modes/RecoilModes.cs:157"
   ],
   "Hold the angle scoped and shoot as they cross. One shot, then move.": [
-    "src/Agents/AgentDrills.cs:264"
+    "src/Agents/AgentDrills.cs:265"
   ],
   "Hold the angle — listen for the flash": [
     "src/Modes/MapModes.cs:602"
@@ -3792,13 +3861,13 @@
     "src/Modes/TacticalModes.cs:427"
   ],
   "Hold your angle and stall the push. Don't chase.": [
-    "src/Agents/AgentDrills.cs:263"
+    "src/Agents/AgentDrills.cs:264"
   ],
   "Hold your angle — listen for the push": [
     "src/Modes/DefenseModes.cs:593"
   ],
   "Hold your post-plant angle and let them come to the spike.": [
-    "src/Agents/AgentDrills.cs:257"
+    "src/Agents/AgentDrills.cs:258"
   ],
   "Hold {0} to defuse": [
     "src/Modes/TacticalModes.cs:724"
@@ -4005,7 +4074,7 @@
     "src/Modes/Agents/InitiatorAbilities.cs:50"
   ],
   "it looks like {0} (not confirmed yet — keep an eye on it)": [
-    "src/Analysis/RunSummary.cs:52"
+    "src/Analysis/RunSummary.cs:53"
   ],
   "It runs on your own picks and reactions. Press START to try it.": [
     "src/UI/DrillPreview.cs:368"
@@ -4020,7 +4089,7 @@
     "src/UI/MenuScreen.cs:1503"
   ],
   "JIGGLE": [
-    "src/Agents/AgentDrills.cs:308"
+    "src/Agents/AgentDrills.cs:310"
   ],
   "Jiggle": [
     "src/Modes/PeekMixMode.cs:35"
@@ -4038,10 +4107,13 @@
     "src/UI/MenuScreen.cs:343"
   ],
   "JUMP": [
-    "src/Agents/AgentDrills.cs:307"
+    "src/Agents/AgentDrills.cs:308"
   ],
   "Jump": [
     "src/Valorant/Keybinds.cs:349"
+  ],
+  "Jump crossings survived": [
+    "src/Modes/StrafeJumpMode.cs:535"
   ],
   "Jump out to see the angle and land back safe. Don't take the fight in the air.": [
     "src/Agents/AgentDrills.cs:248"
@@ -4086,6 +4158,9 @@
   "KEEP FOR NOW": [
     "src/UI/ProfileScreen.cs:761"
   ],
+  "KEEP HOLDING {0} THROUGH THE LANDING — no key when you land = the ground brakes you": [
+    "src/Modes/StrafeJumpMode.cs:469"
+  ],
   "Keep my crosshair": [
     "src/Modes/CrosshairFinderMode.cs:1062"
   ],
@@ -4114,7 +4189,7 @@
     "src/Analysis/Assess.cs:385"
   ],
   "Keep the spray going: pull down while you drag onto the next agent.": [
-    "src/Agents/AgentDrills.cs:260"
+    "src/Agents/AgentDrills.cs:261"
   ],
   "KEEP YOUR ADS CROSSHAIR: IT HELD UP": [
     "src/Modes/CrosshairFinderDraw.cs:483"
@@ -4226,8 +4301,11 @@
   "KILL — but he wasn't baited (risky)": [
     "src/Modes/MovementPlusModes.cs:334"
   ],
+  "KILL — fine, but the drill is the crossing: you had to stop to win that": [
+    "src/Modes/StrafeJumpMode.cs:500"
+  ],
   "Kill, then snap straight to the next target. Don't watch the body drop.": [
-    "src/Agents/AgentDrills.cs:249"
+    "src/Agents/AgentDrills.cs:250"
   ],
   "KILLED BY {0}": [
     "src/Modes/DeathmatchMode.cs:300"
@@ -4235,6 +4313,7 @@
   "Kills": [
     "src/Modes/AimPlusLongTaps.cs:258",
     "src/Modes/AimPlusSwitch.cs:206",
+    "src/Modes/StrafeJumpMode.cs:543",
     "src/Modes/TrainingMode.cs:197",
     "src/Modes/Agents/ControllerDraw.cs:643",
     "src/UI/RewindData.cs:89"
@@ -4304,6 +4383,9 @@
   "Landings in the open / shots fired in the air": [
     "src/Modes/MovementPlusModes.cs:231"
   ],
+  "Landings that braked you": [
+    "src/Modes/StrafeJumpMode.cs:540"
+  ],
   "lands within {0:0}%": [
     "src/Analysis/Assess.cs:168"
   ],
@@ -4367,6 +4449,9 @@
   ],
   "LAST {0} SECONDS": [
     "src/Modes/DeathmatchMode.cs:192"
+  ],
+  "Last: {0} · seen {1:0} ms · {2:0}% speed · {3}": [
+    "src/Modes/StrafeJumpMode.cs:436"
   ],
   "Late bullets drifted {0:0.0}° sideways": [
     "src/Analysis/InsightsBuilder.cs:219"
@@ -4437,7 +4522,7 @@
     "src/Analysis/RunSummary.cs:28"
   ],
   "Let the crosshair follow them and shoot when it lines up with the head.": [
-    "src/Agents/AgentDrills.cs:254"
+    "src/Agents/AgentDrills.cs:255"
   ],
   "LEVEL": [
     "src/Warmup/WarmupCharts.cs:302"
@@ -4504,7 +4589,7 @@
     "src/Valorant/CrosshairList.cs:256"
   ],
   "Listen first, then pre-aim where the steps will come out.": [
-    "src/Agents/AgentDrills.cs:258"
+    "src/Agents/AgentDrills.cs:259"
   ],
   "Listen for footsteps and pre-aim where the enemy will appear.": [
     "src/Modes/DefenseSound.cs:25"
@@ -4899,7 +4984,7 @@
     "src/UI/Hud.cs:1002"
   ],
   "MICRO": [
-    "src/Agents/AgentDrills.cs:303"
+    "src/Agents/AgentDrills.cs:304"
   ],
   "MICRO TEST: OFF": [
     "src/Modes/SensFinderSetup.cs:147"
@@ -5135,7 +5220,7 @@
     "src/UI/MenuScreen.cs:1037"
   ],
   "Next on the list: {0}.": [
-    "src/Analysis/RunSummary.cs:56"
+    "src/Analysis/RunSummary.cs:57"
   ],
   "Next rank-up: 5 confident days at {0} or higher": [
     "src/UI/ProgressScreen.cs:177"
@@ -5208,7 +5293,7 @@
     "src/UI/Hud.cs:1248"
   ],
   "No clear problems this run — raise the tier or play longer runs for a sharper read.": [
-    "src/Analysis/RunSummary.cs:63"
+    "src/Analysis/RunSummary.cs:64"
   ],
   "NO CLEAR SPLIT": [
     "src/Modes/SensFinderDraw.cs:149"
@@ -5495,7 +5580,7 @@
     "src/UI/ProfileSensHistory.cs:353"
   ],
   "Not enough data this run for a review — {0}.": [
-    "src/Analysis/RunSummary.cs:41"
+    "src/Analysis/RunSummary.cs:42"
   ],
   "Not enough data yet": [
     "src/Analysis/Assess.cs:266",
@@ -5703,7 +5788,7 @@
     "src/UI/SettingsScreen.cs:547"
   ],
   "On the plus side: {0}": [
-    "src/Analysis/RunSummary.cs:65"
+    "src/Analysis/RunSummary.cs:66"
   ],
   "On the target": [
     "src/UI/RewindDraw.cs:164",
@@ -5983,13 +6068,13 @@
     "src/Modes/CrosshairFinderCore.cs:366"
   ],
   "Over {0:0} sprays your recoil control was {1} level": [
-    "src/Analysis/RunSummary.cs:109"
-  ],
-  "Over {0:0} sprays, bullets 4–15 landed {1:0.0}° high with {2:0.0}° of sideways scatter ({3} level)": [
     "src/Analysis/RunSummary.cs:110"
   ],
-  "Over {0:0} sprays, bullets 4–15 landed {1:0.0}° low with {2:0.0}° of sideways scatter ({3} level)": [
+  "Over {0:0} sprays, bullets 4–15 landed {1:0.0}° high with {2:0.0}° of sideways scatter ({3} level)": [
     "src/Analysis/RunSummary.cs:111"
+  ],
+  "Over {0:0} sprays, bullets 4–15 landed {1:0.0}° low with {2:0.0}° of sideways scatter ({3} level)": [
+    "src/Analysis/RunSummary.cs:112"
   ],
   "over {0} hit|over {0} hits": [
     "src/UI/RewindDraw.cs:573"
@@ -6361,10 +6446,10 @@
     "src/UI/ProfileSensHistory.cs:322"
   ],
   "Pop {0} for yourself, swing as it blinds them, kill before they recover.": [
-    "src/Agents/AgentDrills.cs:281"
+    "src/Agents/AgentDrills.cs:282"
   ],
   "POP-UP": [
-    "src/Agents/AgentDrills.cs:305"
+    "src/Agents/AgentDrills.cs:306"
   ],
   "Pop-up Reflex": [
     "src/Modes/AimPlusPopup.cs:17"
@@ -6380,7 +6465,7 @@
     "src/UI/CoachUi.cs:600"
   ],
   "POST": [
-    "src/Agents/AgentDrills.cs:309"
+    "src/Agents/AgentDrills.cs:311"
   ],
   "Post-Plant": [
     "src/Modes/TacticalModes.cs:29"
@@ -6544,7 +6629,7 @@
     "src/Analysis/Assess.cs:643"
   ],
   "Pull down and against the pattern; the first bullets matter most.": [
-    "src/Agents/AgentDrills.cs:259"
+    "src/Agents/AgentDrills.cs:260"
   ],
   "pull down LESS (you dragged below the body)": [
     "src/Modes/RecoilModes.cs:151"
@@ -6771,7 +6856,7 @@
     "src/UI/ProfileScreen.cs:767"
   ],
   "RECON": [
-    "src/Agents/AgentDrills.cs:298"
+    "src/Agents/AgentDrills.cs:299"
   ],
   "Recon & Clear": [
     "src/Modes/Agents/InitiatorDrills.cs:78"
@@ -6930,7 +7015,7 @@
     "src/UI/Hud.cs:710"
   ],
   "RETAKE": [
-    "src/Agents/AgentDrills.cs:310"
+    "src/Agents/AgentDrills.cs:312"
   ],
   "Retake": [
     "src/Modes/TacticalModes.cs:512"
@@ -7123,6 +7208,9 @@
   "Run the Sens Finder again on another day. If both runs agree within 10%, use the average of the two.": [
     "src/Modes/SensFinderDraw.cs:104"
   ],
+  "Running crossings survived": [
+    "src/Modes/StrafeJumpMode.cs:536"
+  ],
   "running from the Godot editor": [
     "src/Core/UpdaterInstall.cs:42"
   ],
@@ -7252,7 +7340,7 @@
     "src/UI/BugReport.cs:993"
   ],
   "See it, flick, click. Let targets go once they're gone.": [
-    "src/Agents/AgentDrills.cs:252"
+    "src/Agents/AgentDrills.cs:253"
   ],
   "SELECTED": [
     "src/Modes/SensFinderSetup.cs:207"
@@ -7295,7 +7383,7 @@
     "src/UI/UpdatesPrompt.cs:104"
   ],
   "Send {0} first, read where they are, then clear them one angle at a time.": [
-    "src/Agents/AgentDrills.cs:282"
+    "src/Agents/AgentDrills.cs:283"
   ],
   "SENDING…": [
     "src/UI/BugReport.cs:1090"
@@ -7444,7 +7532,7 @@
     "src/Agents/AgentRoster.cs:173"
   ],
   "Set up {0}, hold your angle and stall the push until it breaks.": [
-    "src/Agents/AgentDrills.cs:285"
+    "src/Agents/AgentDrills.cs:286"
   ],
   "SET VALORANT SENSITIVITY TO {0:0.000}  (WAS {1:0.000})": [
     "src/Modes/SensFinderDraw.cs:85"
@@ -7926,7 +8014,7 @@
     "src/Modes/Agents/ControllerDrills.cs:43"
   ],
   "Smoke off their sightlines with {0}, then take the site through the gaps.": [
-    "src/Agents/AgentDrills.cs:283"
+    "src/Agents/AgentDrills.cs:284"
   ],
   "SMOKE REPLAY": [
     "src/Modes/Agents/ControllerReplay.cs:113",
@@ -7936,7 +8024,7 @@
     "src/Modes/Agents/ControllerDrills.cs:642"
   ],
   "SMOKES": [
-    "src/Agents/AgentDrills.cs:299"
+    "src/Agents/AgentDrills.cs:300"
   ],
   "Smokes up when you entered": [
     "src/Modes/Agents/ControllerDraw.cs:641",
@@ -7985,7 +8073,7 @@
     "src/Modes/CrosshairFinderTabs.cs:273"
   ],
   "Solid run.": [
-    "src/Analysis/RunSummary.cs:62"
+    "src/Analysis/RunSummary.cs:63"
   ],
   "Solid spheres in the highlight colour": [
     "src/UI/SettingsScreen.cs:223"
@@ -8015,7 +8103,7 @@
     "src/Modes/Agents/DuelistKits.cs:715"
   ],
   "SOUND": [
-    "src/Agents/AgentDrills.cs:311"
+    "src/Agents/AgentDrills.cs:313"
   ],
   "Sound layers": [
     "src/UI/SkinPreview.cs:516"
@@ -8144,7 +8232,7 @@
     "src/Modes/MovementPlusModes.cs:298"
   ],
   "SPRAY": [
-    "src/Agents/AgentDrills.cs:315",
+    "src/Agents/AgentDrills.cs:317",
     "src/UI/CoachUi.cs:129",
     "src/Warmup/WarmupPlan.cs:168"
   ],
@@ -8365,6 +8453,9 @@
   "Strafe Duels": [
     "src/Modes/StrafeDuelMode.cs:32"
   ],
+  "Strafe Jump": [
+    "src/Modes/StrafeJumpMode.cs:206"
+  ],
   "Strafe left": [
     "src/Valorant/Keybinds.cs:348"
   ],
@@ -8438,7 +8529,7 @@
     "src/Warmup/WarmupPlan.cs:68"
   ],
   "SWITCH": [
-    "src/Agents/AgentDrills.cs:304"
+    "src/Agents/AgentDrills.cs:305"
   ],
   "SWITCH AFTER THE TEST": [
     "src/Game/GameSession.cs:1054",
@@ -8481,16 +8572,16 @@
     "src/Analysis/Assess.cs:625"
   ],
   "Tap the opposite key to stop dead, then fire. Moving shots miss.": [
-    "src/Agents/AgentDrills.cs:250"
+    "src/Agents/AgentDrills.cs:251"
   ],
   "Tap {0} to show a shoulder, {1} back — bait the shot without showing your head": [
     "src/Modes/MovementPlusModes.cs:398"
   ],
   "Tap, let the recoil reset, tap again. Only the first bullet counts.": [
-    "src/Agents/AgentDrills.cs:256"
+    "src/Agents/AgentDrills.cs:257"
   ],
   "TAPS": [
-    "src/Agents/AgentDrills.cs:306"
+    "src/Agents/AgentDrills.cs:307"
   ],
   "target": [
     "src/UI/RewindDraw.cs:499"
@@ -8866,7 +8957,7 @@
     "src/UI/SkinLevelTrack.cs:58"
   ],
   "Tiny corrections: stop on the head before you click.": [
-    "src/Agents/AgentDrills.cs:261"
+    "src/Agents/AgentDrills.cs:262"
   ],
   "Tiny heads at 30–50 m with the Vandal: make the first bullet count, then let the recoil reset before the next tap. Higher tiers add strafers and peekers.": [
     "src/Modes/AimPlusLongTaps.cs:21"
@@ -8951,6 +9042,12 @@
   ],
   "Too narrow": [
     "src/Modes/DefenseSetup.cs:190"
+  ],
+  "Too slow out of cover / slowed in the open": [
+    "src/Modes/StrafeJumpMode.cs:539"
+  ],
+  "TOO SLOW OUT OF COVER — {0:0.0} of {1:0.0} m/s: start running earlier, full speed takes 0.3 s": [
+    "src/Modes/StrafeJumpMode.cs:470"
   ],
   "Too slow — the entry survived": [
     "src/Modes/MapModes.cs:543"
@@ -9051,7 +9148,7 @@
     "src/UI/DrillPreview.cs:207"
   ],
   "TRANSFER": [
-    "src/Agents/AgentDrills.cs:316"
+    "src/Agents/AgentDrills.cs:318"
   ],
   "Translated by the community · fixes welcome on ValTrainer's GitHub": [
     "src/UI/SettingsScreen.cs:272"
@@ -9322,10 +9419,10 @@
     "src/Modes/SensFinderMode.cs:903"
   ],
   "Use {0} to get in fast, stop, and win the first duel.": [
-    "src/Agents/AgentDrills.cs:284"
+    "src/Agents/AgentDrills.cs:285"
   ],
   "Use {0}, then take the fight.": [
-    "src/Agents/AgentDrills.cs:289"
+    "src/Agents/AgentDrills.cs:290"
   ],
   "USED": [
     "src/Modes/DefenseModes.cs:657",
@@ -9620,6 +9717,12 @@
   ],
   "Walk / crouch / jump": [
     "src/UI/SettingsScreen.cs:618"
+  ],
+  "Walked / crouched across": [
+    "src/Modes/StrafeJumpMode.cs:541"
+  ],
+  "WALKING — {0} cuts you to {1:0.0} m/s: run across": [
+    "src/Modes/StrafeJumpMode.cs:467"
   ],
   "Wall sensor (up to 14 m away) listening to a 9 × 8 m area in front of it. Running or shooting inside it sets off a concussion (2.5 s). Walking past is silent.": [
     "src/Modes/DefenseKit.cs:43"
@@ -9926,10 +10029,10 @@
     "src/Analysis/Assess.cs:327"
   ],
   "You beat {0:0}% of the flashes": [
-    "src/Analysis/RunSummary.cs:124"
+    "src/Analysis/RunSummary.cs:125"
   ],
   "You beat {0:0}% of the flashes and turned away in {1:0} ms on average": [
-    "src/Analysis/RunSummary.cs:124"
+    "src/Analysis/RunSummary.cs:125"
   ],
   "YOU DIED": [
     "src/Modes/DefenseModes.cs:438",
@@ -9941,6 +10044,9 @@
   ],
   "You died": [
     "src/Analysis/InsightsBuilder.cs:352"
+  ],
+  "YOU DIED — he hit you anyway: cross further from his crosshair (jump at the edge)": [
+    "src/Modes/StrafeJumpMode.cs:457"
   ],
   "YOU DIED — the Op saw too much of you": [
     "src/Modes/MovementPlusOp.cs:486"
@@ -10008,6 +10114,9 @@
   "YOU SCORE BEST AT {0}": [
     "src/UI/ProfileSensHistory.cs:181"
   ],
+  "YOU SLOWED DOWN IN THE OPEN — {0:0.0} m/s: keep the key down until you're in cover": [
+    "src/Modes/StrafeJumpMode.cs:471"
+  ],
   "You start moving {0:0} ms later than your raw reaction time (flick onset {1:0} ms vs {2:0} ms in the Reaction Test)": [
     "src/Analysis/Assess.cs:460"
   ],
@@ -10054,7 +10163,7 @@
     "src/Analysis/Assess.cs:425"
   ],
   "You were on target {0:0}% of the time you were firing ({1} level on {2})": [
-    "src/Analysis/RunSummary.cs:101"
+    "src/Analysis/RunSummary.cs:102"
   ],
   "You're anticipating the strafe instead of reacting to it.": [
     "src/Analysis/Assess.cs:518"
@@ -10205,22 +10314,22 @@
     "src/Analysis/Assess.cs:436"
   ],
   "Your flicks were {0} — {1:0} ms median to hit": [
-    "src/Analysis/RunSummary.cs:87"
-  ],
-  "Your flicks were {0} — {1:0} ms median to hit ({2} pace on {3})": [
     "src/Analysis/RunSummary.cs:88"
   ],
+  "Your flicks were {0} — {1:0} ms median to hit ({2} pace on {3})": [
+    "src/Analysis/RunSummary.cs:89"
+  ],
   "your flicks were|fast": [
-    "src/Analysis/RunSummary.cs:75"
+    "src/Analysis/RunSummary.cs:76"
   ],
   "your flicks were|measured": [
-    "src/Analysis/RunSummary.cs:87"
+    "src/Analysis/RunSummary.cs:88"
   ],
   "your flicks were|slow": [
-    "src/Analysis/RunSummary.cs:75"
+    "src/Analysis/RunSummary.cs:76"
   ],
   "your flicks were|solid": [
-    "src/Analysis/RunSummary.cs:75"
+    "src/Analysis/RunSummary.cs:76"
   ],
   "Your gas eats away at enemies' health while they stay in it.": [
     "src/Agents/AgentRoster.cs:203"
@@ -10260,7 +10369,7 @@
     "src/Analysis/Assess.cs:486"
   ],
   "Your median reaction was {0:0} ms over {1:0} trials ({2} level)": [
-    "src/Analysis/RunSummary.cs:118"
+    "src/Analysis/RunSummary.cs:119"
   ],
   "YOUR MOUSEPAD (THE WIDTH YOUR MOUSE CAN REALLY USE)": [
     "src/Modes/SensFinderSetup.cs:138"
@@ -10343,16 +10452,16 @@
     "src/Modes/CrosshairFinderDraw.cs:487"
   ],
   "Your speed was {0} — {1:0} points/min ({2} level on {3})": [
-    "src/Analysis/RunSummary.cs:95"
+    "src/Analysis/RunSummary.cs:96"
   ],
   "your speed was|fast": [
-    "src/Analysis/RunSummary.cs:76"
+    "src/Analysis/RunSummary.cs:77"
   ],
   "your speed was|slow": [
-    "src/Analysis/RunSummary.cs:76"
+    "src/Analysis/RunSummary.cs:77"
   ],
   "your speed was|solid": [
-    "src/Analysis/RunSummary.cs:76"
+    "src/Analysis/RunSummary.cs:77"
   ],
   "Your spot: {0}": [
     "src/Modes/TacticalModes.cs:436"
@@ -10391,7 +10500,7 @@
     "src/Progress/ProgressApi.cs:303"
   ],
   "your utility": [
-    "src/Agents/AgentDrills.cs:275"
+    "src/Agents/AgentDrills.cs:276"
   ],
   "Your VALORANT ADS crosshair": [
     "src/Modes/CrosshairHint.cs:66"
@@ -10561,7 +10670,8 @@
     "src/Modes/CrosshairFinderMode.cs:1028"
   ],
   "{0:0} ms (shorter = safer)": [
-    "src/Modes/MovementPlusModes.cs:239"
+    "src/Modes/MovementPlusModes.cs:239",
+    "src/Modes/StrafeJumpMode.cs:533"
   ],
   "{0:0} ms after the throw": [
     "src/Modes/MapModes.cs:612"
@@ -10695,11 +10805,14 @@
   "{0:0}% of rounds": [
     "src/Modes/DefenseModes.cs:710"
   ],
+  "{0:0}% of run speed": [
+    "src/Modes/StrafeJumpMode.cs:534"
+  ],
   "{0:0}% of shots were fired while moving": [
-    "src/Analysis/RunSummary.cs:134"
+    "src/Analysis/RunSummary.cs:135"
   ],
   "{0:0}% of stops were counter-strafed": [
-    "src/Analysis/RunSummary.cs:136"
+    "src/Analysis/RunSummary.cs:137"
   ],
   "{0:0}% of switches, {1:0.0}° past": [
     "src/Modes/AimPlusSwitch.cs:214"
@@ -10708,7 +10821,7 @@
     "src/Warmup/WarmupScreen.cs:225"
   ],
   "{0:0}% of your first shots hit the head": [
-    "src/Analysis/RunSummary.cs:130"
+    "src/Analysis/RunSummary.cs:131"
   ],
   "{0:0}% of your first shots hit the head.": [
     "src/Analysis/Assess.cs:734"
@@ -10901,7 +11014,7 @@
     "src/UI/MenuScreen.cs:559"
   ],
   "{0} and {1}": [
-    "src/Agents/AgentDrills.cs:277"
+    "src/Agents/AgentDrills.cs:278"
   ],
   "{0} and {1} score about the same.": [
     "src/UI/ProfileSensHistory.cs:260"
@@ -11504,7 +11617,7 @@
     "src/Modes/CrosshairHint.cs:79"
   ],
   "{0}, but {1}.": [
-    "src/Analysis/RunSummary.cs:53"
+    "src/Analysis/RunSummary.cs:54"
   ],
   "{0}, ONE TIER DOWN": [
     "src/Warmup/WarmupCard.cs:127"
@@ -11564,7 +11677,7 @@
     "src/Modes/Agents/InitiatorDrill.cs:609"
   ],
   "{0}: one precise tap at a time, reset between shots.": [
-    "src/Agents/AgentDrills.cs:288"
+    "src/Agents/AgentDrills.cs:289"
   ],
   "{0}: pop the flash": [
     "src/Modes/Agents/InitiatorDrill.cs:611"
@@ -11576,7 +11689,7 @@
     "src/Modes/Agents/InitiatorDrill.cs:610"
   ],
   "{0}: scope early, crosshair where they'll appear, one clean shot.": [
-    "src/Agents/AgentDrills.cs:287"
+    "src/Agents/AgentDrills.cs:288"
   ],
   "{0}: searched {1:0}–{2:0} cm/360": [
     "src/Modes/SensFinderDraw.cs:116"
@@ -11618,7 +11731,7 @@
     "src/Modes/Agents/DuelistKits.cs:223"
   ],
   "{0}; also, {1}.": [
-    "src/Analysis/RunSummary.cs:53"
+    "src/Analysis/RunSummary.cs:54"
   ],
   "{0}colour is close to the {1} enemy highlight": [
     "src/Modes/CrosshairHint.cs:70"
