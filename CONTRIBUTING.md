@@ -102,6 +102,7 @@ players can never trigger them by accident.
 | `--duration N` | Shortens timed drills to N seconds. |
 | `--autofire` | Holds the trigger 2.6 s, releases 1.2 s, repeats (spray tests). |
 | `--pause-at N` | Opens the pause menu N seconds into the run. |
+| `--pause-type <sens>`, `--pause-type-dpi <dpi>` | With `--pause-at`: clicks the pause menu's sensitivity (1 s) / DPI (2.2 s) box, types the value and presses Enter through real input events, then logs the resulting sens, DPI and polling rate. |
 | `--telemetry-out <dir>` | Saves the run's telemetry (`.vtt`) to that folder. |
 | `--data-dir <dir>` | Uses this folder instead of `%APPDATA%\ValTrainer`. Add `--write-data` to let the dev run save there. |
 | `--valorant-dir <dir>` | Reads VALORANT's settings from this `Saved\Config` folder instead of the real one. |
@@ -114,8 +115,8 @@ players can never trigger them by accident.
 | `--culture-test` | Locale self-test: settings, stats, telemetry and VALORANT ini parsing and number formatting. Prints `[culture-test] RESULT: PASS/FAIL`; the exit code is the number of failures. |
 | `--coach-analyze [dir]` | Prints the coach's analysis (metrics, problems, run review, skill profile, sens advice) of the `.vtt` files in `dir`, then quits. Add `--brief`, `--out <file>`, `--fake-sessions N`. Works with `--headless`. Without `dir` it reads your real telemetry (read-only). |
 | `--coach-selftest` | With `--coach-analyze`: synthetic cases for the rules and sens guardrails the simulated player can't reach. Prints `PASS`/`FAIL` lines. |
-| `--senshistory-selftest` | With `--coach-analyze`: only the sens history checks (also part of `--coach-selftest`): seeded histories with a clear winner, no difference, too few runs, one sens, DPI changes and unfair groups. |
-| `--sens-history` | With `--screen profile`: opens the coach's sensitivity panel on the YOUR SENS HISTORY tab (screenshots). |
+| `--senshistory-selftest` | With `--coach-analyze`: only the sens history checks (also part of `--coach-selftest`): seeded histories with a clear winner, no difference, too few runs, one sens, DPI changes and unfair groups, and the compare-by-DPI / polling rate / full setup cases (unknown values never best), run record round trip and the DPI / polling inputs. |
+| `--sens-history` | With `--screen profile`: opens the coach's sensitivity panel on the YOUR SENS HISTORY tab (screenshots). Add `--sens-history-by dpi\|polling\|setup` to open it compared by that. |
 | `--fakecoach [full\|partial\|empty]` | Coach screen with sample data. |
 | `--fakebuttons` | Shows every extra results-screen button (layout tests). |
 | `--sfquick`, `--sfnomicro`, `--sfseed N`, `--sfsens S`, `--sfcm C`, `--sftimescale X`, `--sfexit`, `--sfshot <dir>` | Sens Finder testing: short run, no micro-adjustment test, fixed seed, start sens or cm/360, game speed, quit at the end, screenshots. |

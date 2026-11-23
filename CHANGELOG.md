@@ -8,6 +8,9 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Added
+- Mouse DPI and polling rate in the ESC menu, and setups in your sens history. The ESC menu now has your mouse DPI (type it or use the arrows) next to the sensitivity, plus your polling rate (125 to 8000 Hz, or not set), so you can change them mid-training without going to Settings. The polling rate is also in Settings, next to the DPI. ValTrainer can't read either from your mouse, so set them to what your mouse software uses. Every run now remembers both, and the coach's YOUR SENS HISTORY tab gets COMPARE BY: SENS, DPI, POLLING RATE or FULL SETUP (sens + DPI + polling rate together), with the same fair comparison as before. Runs played without a polling rate set are shown as unknown and never named best (suggested on Discord).
+
 ## [1.22.0] - 2026-11-22
 
 ### Added

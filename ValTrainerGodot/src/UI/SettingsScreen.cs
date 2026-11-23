@@ -35,7 +35,6 @@ public partial class SettingsScreen : ScreenBase
     // English data (also logic keys / the bug-report payload): translated where shown
     static readonly string[] WindowModes = { L.N("Fullscreen"), L.N("Windowed Fullscreen"), L.N("Windowed") };
     static readonly int[] FpsCaps = { 0, 60, 144, 165, 240, 360 };
-    static readonly int[] Dpis = { 400, 800, 1000, 1200, 1600, 2000, 3200 };
     /// <summary>A renderer choice / Godot driver name for the Settings row (API names stay English).</summary>
     static string RendererName(string r) => r switch
     {
@@ -203,9 +202,12 @@ public partial class SettingsScreen : ScreenBase
             St.UseSensOverride = custom;
         }));
         v.AddChild(SensRow());
-        v.AddChild(Selector("Mouse DPI", () => St.Dpi.ToString(),
-            d => St.Dpi = Dpis[Wrap(Array.IndexOf(Dpis, St.Dpi) + d, 0, Dpis.Length - 1)],
-            note: () => L.N("Only for showing eDPI and cm/360")));
+        v.AddChild(Selector("Mouse DPI", () => St.Dpi.ToString(Inv),
+            d => St.Dpi = MouseSetup.StepDpi(St.Dpi, d),
+            note: () => L.N("For eDPI, cm/360 and your sens history")));
+        v.AddChild(Selector("Mouse polling rate", () => MouseSetup.PollingText(St.PollingHz),
+            d => St.PollingHz = MouseSetup.StepPolling(St.PollingHz, d),
+            note: () => L.N("As in your mouse software, for your sens history")));
         v.AddChild(SensSummary());
 
         v.AddChild(Spacer(0, 6 * k));

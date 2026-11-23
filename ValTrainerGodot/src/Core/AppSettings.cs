@@ -10,6 +10,9 @@ public sealed class AppSettings
     public bool UseSensOverride;
     public float SensOverride = 0.4f;
     public int Dpi = 800;              // only used to show eDPI and cm/360
+    /// <summary>Mouse polling rate in Hz as the player entered it (ValTrainer can't read it from the mouse); 0 = not set.
+    /// Saved with every run so the coach's sens history can compare setups (ESC menu or Settings → General).</summary>
+    public int PollingHz = 0;
     public bool SensFinderShort = false; // Sens Finder: the short test (3 steps, lighter rounds; toggled with Q on its intro screen)
     public bool SensFinderMicro = true; // Sens Finder: include the micro-adjustment test in every round (toggled with M on its intro screen)
     public int SensFinderStyle = 1;     // Sens Finder: aiming style 0 wrist, 1 hybrid, 2 arm (Modes.SfStyle; T on its intro screen)

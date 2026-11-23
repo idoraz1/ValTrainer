@@ -634,7 +634,7 @@ public partial class ProfileScreen : ScreenBase
         float k = K;
         var a = p.Sens;
         bool has = a != null && a.RecommendedSens > 0;
-        if (showSensHistory && p.SensHistory != null) return SensHistoryPanel(p.SensHistory);
+        if (showSensHistory && p.SensHistory != null) return SensHistoryPanel(p.SensHistoryBy?.GetValueOrDefault(historyBy) ?? p.SensHistory);
         var panel = new VPanel
         {
             Title = "SENSITIVITY",

@@ -301,6 +301,15 @@ Coach → Sensitivity → YOUR SENS HISTORY compares the sensitivities in the pl
   skill, 1 names a best (`--senshistory-selftest`).
 - **Shown per sens:** comparable runs and drills, score vs the group average (%), accuracy (points) and kill time (%).
   If the best sens is also the one played most recently, the text says part of the gain may be practice.
+- **Compare by setup (1.23).** COMPARE BY: SENS | DPI | POLLING RATE | FULL SETUP (`SensHistory.By`). Runs save the
+  DPI and the polling rate set in ValTrainer (`RunRecord.Dpi`, `RunRecord.PollingHz`; the player enters both in the ESC
+  menu or Settings, since neither can be read from the mouse; 0 = not set). DPI: one bucket per DPI. Polling: one per
+  rate. Full setup: one per DPI + polling rate, with the 2% cm/360 sens buckets inside. Everything else (fair groups,
+  z-scores, 10 runs over 3 drills, Welch 95% CI > 0 and ≥ 0.25 SD) is unchanged. Runs without the value (no polling
+  rate set, no DPI before 1.22; full setup: either) form one **unknown** bucket: shown with its run count, left out
+  of the fair groups (so it can't skew the z-scores) and never named best. No known value at all = "nothing saved
+  yet"; one known value = "one … so far". A DPI or polling bucket mixes every sens played at it, and the text says
+  so (FULL SETUP keeps them apart).
 
 ## E. Sens Finder mode
 
