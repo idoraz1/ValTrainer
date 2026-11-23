@@ -42,6 +42,7 @@ public static class CultureCheck
             SkinAudioChecks();
             FootstepChecks();
             SensFinderRangeChecks();
+            RoomThemeChecks();
         }
         catch (Exception e) { Fail("unexpected exception", e.ToString()); }
         finally
@@ -1322,6 +1323,107 @@ public static class CultureCheck
 
     static bool Near(float a, float b) => MathF.Abs(a - b) < 1e-4f;
     static string F(float f) => f.ToString("R", CultureInfo.InvariantCulture);
+
+    // ---------------- training room themes (suggested on Discord: dark mode) ----------------
+
+    /// <summary>OKLab colour of an sRGB colour (perceptual distance between the classic solid targets and a backdrop).</summary>
+    static (float L, float A, float B) OkLab(Godot.Color c)
+    {
+        static float Lin(float v) => v <= 0.04045f ? v / 12.92f : MathF.Pow((v + 0.055f) / 1.055f, 2.4f);
+        float r = Lin(c.R), g = Lin(c.G), b = Lin(c.B);
+        float l = MathF.Cbrt(0.4122214708f * r + 0.5363325363f * g + 0.0514459929f * b);
+        float m = MathF.Cbrt(0.2119034982f * r + 0.6806995451f * g + 0.1073969566f * b);
+        float s = MathF.Cbrt(0.0883024619f * r + 0.2817188376f * g + 0.6299787005f * b);
+        return (0.2104542553f * l + 0.7936177850f * m - 0.0040720468f * s, 1.9779984951f * l - 2.4285922050f * m + 0.4505937099f * s,
+                0.0259040371f * l + 0.7827717662f * m - 0.8086757660f * s);
+    }
+
+    static float OkDist(Godot.Color a, Godot.Color b)
+    {
+        var (l1, a1, b1) = OkLab(a);
+        var (l2, a2, b2) = OkLab(b);
+        return MathF.Sqrt((l1 - l2) * (l1 - l2) + (a1 - a2) * (a1 - a2) + (b1 - b2) * (b1 - b2));
+    }
+
+    static void RoomThemeChecks()
+    {
+        var all = ValTrainer.World.RoomThemes.All;
+        var enemies = ValTrainer.UI.UiTheme.EnemyColors;
+        Check("room themes: 8 themes, unique lowercase keys, the first is the default",
+            all.Count == 8 && all.Select(t => t.Key).Distinct().Count() == all.Count && all.All(t => ItemIds.IsToken(t.Key))
+            && all[0].Key == ValTrainer.World.RoomThemes.DefaultKey && all[0].Look == ValTrainer.World.Themes.Range,
+            string.Join(",", all.Select(t => t.Key)));
+        var paid = all.Where(t => !t.Free).ToList();
+        Check("room themes: DEFAULT and DARK free from the start; the others unlock at rising levels between 2 and 30",
+            ValTrainer.World.RoomThemes.Get("default")?.Free == true && ValTrainer.World.RoomThemes.Get("dark")?.Free == true
+            && all.Count(t => t.Free) == 2 && paid.All(t => t.Level is >= 2 and <= 30)
+            && paid.Zip(paid.Skip(1)).All(p => p.Second.Level > p.First.Level) && all.Take(2).All(t => t.Free),
+            string.Join(",", all.Select(t => $"{t.Key}={t.Level}")));
+
+        // every theme builds a full training room (quality 0 and 2) with the same solids as the default
+        var fails = new List<string>();
+        var saveLite = ValTrainer.World.SurfaceLib.Lite;
+        try
+        {
+            foreach (var t in all)
+                foreach (int q in new[] { 0, 2 })
+                {
+                    var built = ValTrainer.World.Environments.BuildRange(Array.Empty<Box>(), q, t.Look);
+                    bool ok = built.Solid.Count == 5 && built.Root.GetChildCount() >= 3
+                        && built.Root.GetChildren().Any(c => c is Godot.WorldEnvironment) && built.Root.GetChildren().Any(c => c is Godot.DirectionalLight3D)
+                        && Target.RoomBody == t.Look.TargetBody;
+                    if (!ok) fails.Add($"{t.Key}@{q}: {built.Solid.Count} solids, {built.Root.GetChildCount()} nodes");
+                    built.Root.Free();
+                }
+        }
+        catch (Exception e) { fails.Add(e.GetType().Name + ": " + e.Message); }
+        finally { Target.RoomBody = null; ValTrainer.World.SurfaceLib.Lite = saveLite; }
+        Check("room themes: every theme builds the training room (Low and High), sky, sun and 5 solids", fails.Count == 0, string.Join("; ", fails));
+
+        // contrast: the target body stands out against the main wall, and every backdrop gives a luminance edge (body or
+        // outline) for every enemy highlight colour; the classic solid targets stay perceptually apart from every backdrop
+        var bad = new List<string>();
+        var report = new List<string>();
+        foreach (var t in all)
+        {
+            var body = ValTrainer.World.RoomThemes.BodyOf(t.Look);
+            float bw = ValTrainer.World.RoomThemes.Contrast(body, t.Look.Wall.Tint);
+            var (edge, where) = ValTrainer.World.RoomThemes.WeakestEdge(t.Look, enemies);
+            float classic = ValTrainer.World.RoomThemes.Backdrops(t.Look).SelectMany(b => enemies.Select(e => OkDist(e, b.Tint))).Min();
+            report.Add($"{t.Key} body/wall {bw:0.0} edge {edge:0.0} classic {classic:0.00}");
+            if (bw < ValTrainer.World.RoomThemes.MinBodyWall) bad.Add($"{t.Key}: body vs wall {bw:0.0}");
+            if (edge < ValTrainer.World.RoomThemes.MinEdge) bad.Add($"{t.Key}: {where} {edge:0.0}");
+            if (classic < 0.12f) bad.Add($"{t.Key}: classic target vs backdrop {classic:0.00}");
+            if (t.Look.Grid is { } grid && enemies.Any(e => ValTrainer.Game.Skins.KillFxWorld.NearEnemy(grid, e))) bad.Add($"{t.Key}: grid colour near an enemy hue");
+        }
+        Say("room theme contrast: " + string.Join(" | ", report));
+        Check($"room themes: target body vs wall >= {ValTrainer.World.RoomThemes.MinBodyWall:0.0}:1, a >= {ValTrainer.World.RoomThemes.MinEdge:0.0}:1 edge on every backdrop for every enemy colour, classic targets >= 0.12 OKLab apart, the neon grid away from enemy hues",
+            bad.Count == 0, string.Join("; ", bad));
+
+        // a locked choice shows the default; unknown keys too; supporters / dev unlock-all see everything
+        if (Main.I?.Settings is { } st)
+        {
+            string keep = st.RoomTheme;
+            bool keepAll = Progression.Progress.DevUnlockAll;
+            try
+            {
+                Progression.Progress.DevUnlockAll = false;
+                var neon = ValTrainer.World.RoomThemes.Get("neon")!;
+                bool lockedNow = Progression.Progress.Level < neon.Level && !Supporter.Active;
+                st.RoomTheme = "neon";
+                bool locked = !lockedNow || ValTrainer.World.RoomThemes.Current.Key == "default" && ValTrainer.World.RoomThemes.Chosen.Key == "neon";
+                st.RoomTheme = "dark";
+                bool free = ValTrainer.World.RoomThemes.Current.Key == "dark" || ValTrainer.World.EnvDev.RoomTheme != null;
+                st.RoomTheme = "no-such-theme";
+                bool unknown = ValTrainer.World.RoomThemes.Chosen.Key == "default";
+                Progression.Progress.DevUnlockAll = true;
+                bool dev = all.All(ValTrainer.World.RoomThemes.IsUnlocked);
+                Check("room themes: a locked choice is kept but builds DEFAULT, DARK is free, unknown keys fall back, unlock-all opens every theme",
+                    locked && free && unknown && dev, $"locked {locked} free {free} unknown {unknown} dev {dev}");
+            }
+            finally { st.RoomTheme = keep; Progression.Progress.DevUnlockAll = keepAll; }
+        }
+    }
 
     static string Snip(string s, string key)
     {

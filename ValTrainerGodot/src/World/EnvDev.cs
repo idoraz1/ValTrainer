@@ -7,6 +7,7 @@ namespace ValTrainer.World;
 /// Developer command-line switches for the environment (ignored in normal play):
 /// <c>--quality N</c> preset override, <c>--envperf</c> frame-time log, <c>--envcam x,y,z,yaw,pitch</c> fixed camera,
 /// <c>--skyyaw deg</c> sky rotation, <c>--envscale s</c> 3D render scale (1.2 at 1600×900 = 1080p cost),
+/// <c>--roomtheme key</c> builds the training rooms with that theme even if it is locked (<see cref="RoomThemes"/>),
 /// <c>--envtweak a,b</c> toggles for profiling / inspection: noshadow, hardshadow, noglow, nofog, noaerial, noadj, noaa,
 /// msaa2, smaa, noaniso, mipbias, nosky, noreflect, ambcolor, aces, filmic, flat (untextured), fulllite, nodecor,
 /// nobots, nossao, nosdfgi, sdfgilow, novfog, nossr, flashtest (needs --envcam).
@@ -18,6 +19,7 @@ public static class EnvDev
     static bool perf;
     static float[]? cam;
     static float? yaw, scale;
+    static string? roomTheme;
     static readonly HashSet<string> tweaks = new();
 
     static void Read()
@@ -32,6 +34,7 @@ public static class EnvDev
         cam = Arg("--envcam")?.Split(',').Select(v => F(v) ?? 0f).ToArray();
         yaw = F(Arg("--skyyaw"));
         scale = F(Arg("--envscale"));
+        roomTheme = Arg("--roomtheme")?.Trim().ToLowerInvariant();
         foreach (var t in (Arg("--envtweak") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)) tweaks.Add(t.Trim());
     }
 
@@ -40,5 +43,6 @@ public static class EnvDev
     public static float[]? Cam { get { Read(); return cam; } }
     public static float? SkyYaw { get { Read(); return yaw; } }
     public static float? Scale { get { Read(); return scale; } }
+    public static string? RoomTheme { get { Read(); return roomTheme; } }
     public static bool Has(string tweak) { Read(); return tweaks.Contains(tweak); }
 }

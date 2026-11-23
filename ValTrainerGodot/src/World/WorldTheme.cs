@@ -5,8 +5,9 @@ namespace ValTrainer.World;
 
 public enum DecorStyle { Range, Ascent, Bind, Haven, Split }
 
-/// <summary>Everything that gives a map its look: surfaces (palette-tinted PBR sets), sky, sun and grade.</summary>
-public sealed class Theme
+/// <summary>Everything that gives a map its look: surfaces (palette-tinted PBR sets), sky, sun and grade.
+/// A record so the training-room themes (<see cref="RoomThemes"/>) can derive from <see cref="Themes.Range"/> with <c>with</c>.</summary>
+public sealed record Theme
 {
     public required string Key { get; init; }
     public DecorStyle Style { get; init; }
@@ -26,6 +27,13 @@ public sealed class Theme
     public float Saturation { get; init; } = 1.12f;
     public float Contrast { get; init; } = 1.04f;
     public float FogDensity { get; init; } = 0.0012f;
+    /// <summary>Fog / aerial-perspective colour; null = the default horizon blue (sand for Bind).</summary>
+    public Color? FogColor { get; init; }
+    /// <summary>Flat ambient light colour instead of the sky's (night rooms: a dark sky alone leaves shadowed walls black);
+    /// its energy is <see cref="Ambient"/>. Null = ambient from the sky.</summary>
+    public Color? AmbientColor { get; init; }
+    /// <summary>Strength of the sun disc and its glow drawn in the sky (0 = none, e.g. a night sky).</summary>
+    public float SunDisc { get; init; } = 1f;
 
     // ---- surfaces ----
     public required Surface Floor { get; init; }
@@ -54,6 +62,27 @@ public sealed class Theme
     /// Summit jade), and the pitched backdrop roofs.</summary>
     public Color Accent { get; init; } = new(0.55f, 0.13f, 0.1f);
     public Color RoofTint { get; init; } = new(0.36f, 0.16f, 0.12f);
+
+    // ---- training room (Range) dressing; maps never use these ----
+    /// <summary>Distance lines, spawn-pad border, the back-wall stripe and the "10M" labels.</summary>
+    public Color Marking { get; init; } = new(0.95f, 0.42f, 0.1f);
+    /// <summary>The 5 m ticks in the middle lane.</summary>
+    public Color Tick { get; init; } = new(0.98f, 0.78f, 0.16f);
+    /// <summary>The two long lane-edge lines.</summary>
+    public Color Lane { get; init; } = new(0.85f, 0.86f, 0.88f);
+    /// <summary>The spawn pad.</summary>
+    public Color Pad { get; init; } = new(0.16f, 0.17f, 0.2f);
+    /// <summary>Markings glow (emissive energy; 0 = plain paint), e.g. NEON GRID.</summary>
+    public float MarkingGlow { get; init; }
+    /// <summary>Colour and energy of the flood-light panels high on the back wall.</summary>
+    public Color Flood { get; init; } = new(0.9f, 0.95f, 1f);
+    public float FloodGlow { get; init; } = 1.4f;
+    /// <summary>Glowing grid lines on the floor and walls (NEON GRID); null = none.</summary>
+    public Color? Grid { get; init; }
+    public float GridGlow { get; init; } = 2.2f;
+    /// <summary>Body colour of the VALORANT-look aim targets in this room; null = the standard dark body. Dark rooms use a
+    /// light body so the whole target reads against the wall, not only its outline.</summary>
+    public Color? TargetBody { get; init; }
 }
 
 public static class Hdris

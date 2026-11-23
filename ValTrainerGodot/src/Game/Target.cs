@@ -30,7 +30,11 @@ public partial class Target : Node3D
     static readonly StringName FlashParam = "flash", HotParam = "hot";
 
     /// <summary>Dark neutral body (sRGB ≈ 44,46,52 albedo → about L* 30 lit in the Range).</summary>
-    static readonly Color Body = Color.Color8(44, 46, 52);
+    public static readonly Color DefaultBody = Color.Color8(44, 46, 52);
+
+    /// <summary>The training room theme's body colour (<see cref="World.Theme.TargetBody"/>), set when a room is built;
+    /// null on maps and in rooms that keep the dark default.</summary>
+    public static Color? RoomBody;
 
     public static Target Create(float radius, Color color) =>
         Create(radius, color, Main.I?.Settings.TargetStyle != StyleClassic);
@@ -44,7 +48,7 @@ public partial class Target : Node3D
             valorantShader ??= GD.Load<Shader>("res://assets/shaders/characters/target_valorant.gdshader");
             t.vmat = new ShaderMaterial { Shader = valorantShader };
             t.vmat.SetShaderParameter("enemy_color", color);
-            t.vmat.SetShaderParameter("body_color", Body);
+            t.vmat.SetShaderParameter("body_color", RoomBody ?? DefaultBody);
             t.vmat.SetShaderParameter("rim_strength", BotAssets.RimStrength);
             m = t.vmat;
         }

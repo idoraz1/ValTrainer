@@ -39,10 +39,10 @@
     "src/UI/ProgressWidgets.cs:463"
   ],
   "+250 XP to start. Your first skin is ready. Every run earns XP; real improvement earns stars": [
-    "src/UI/ProgressOverlays.cs:418"
+    "src/UI/ProgressOverlays.cs:420"
   ],
   "+{0} MORE IN YOUR COLLECTION": [
-    "src/UI/ProgressOverlays.cs:520"
+    "src/UI/ProgressOverlays.cs:522"
   ],
   "+{0} more sens with only a few runs|+{0} more sens with only a few runs": [
     "src/UI/ProfileSensHistory.cs:100"
@@ -299,7 +299,7 @@
     "src/Agents/AgentRoster.cs:200"
   ],
   "A glow on your gun only": [
-    "src/UI/SettingsScreen.cs:545"
+    "src/UI/SettingsScreen.cs:562"
   ],
   "A grenade that forces everyone inside to crouch and move slowly.": [
     "src/Agents/AgentRoster.cs:223"
@@ -474,7 +474,7 @@
     "src/UI/SettingsKeybinds.cs:48"
   ],
   "Abilities C Q E X": [
-    "src/UI/SettingsScreen.cs:621"
+    "src/UI/SettingsScreen.cs:638"
   ],
   "Ability C (grenade)": [
     "src/Valorant/Keybinds.cs:351"
@@ -511,7 +511,7 @@
     "src/Modes/SensFinderMode.cs:879"
   ],
   "ABOUT": [
-    "src/UI/SettingsScreen.cs:91"
+    "src/UI/SettingsScreen.cs:92"
   ],
   "about half the time": [
     "src/Modes/SensFinderSetup.cs:148"
@@ -529,10 +529,10 @@
     "src/UI/ProgressScreen.cs:82"
   ],
   "Account": [
-    "src/UI/SettingsScreen.cs:173"
+    "src/UI/SettingsScreen.cs:174"
   ],
   "ACCOUNT LEVEL": [
-    "src/UI/ProgressOverlays.cs:455"
+    "src/UI/ProgressOverlays.cs:457"
   ],
   "account {0}…": [
     "src/UI/SettingsKeybinds.cs:335"
@@ -607,7 +607,7 @@
     "src/Warmup/WarmupPlan.cs:32"
   ],
   "Add a crosshair code to your list": [
-    "src/UI/SettingsScreen.cs:315"
+    "src/UI/SettingsScreen.cs:316"
   ],
   "Add a title ({0}+ characters) and describe your idea ({1}+ characters)": [
     "src/UI/BugReport.cs:367"
@@ -713,7 +713,7 @@
     "src/Modes/TrainingMode.cs:17"
   ],
   "AIM & ACCOUNT": [
-    "src/UI/SettingsScreen.cs:122"
+    "src/UI/SettingsScreen.cs:123"
   ],
   "Aim at a wall": [
     "src/Modes/DefenseSetup.cs:179"
@@ -734,7 +734,7 @@
     "src/UI/MenuScreen.cs:307"
   ],
   "Aim drill targets": [
-    "src/UI/SettingsScreen.cs:221"
+    "src/UI/SettingsScreen.cs:222"
   ],
   "Aim error at shot": [
     "src/Modes/StrafeDuelMode.cs:234"
@@ -768,6 +768,9 @@
   ],
   "AIM · MOVEMENT · UTILITY DRILLS — PLAYED WITH YOUR OWN VALORANT SETTINGS": [
     "src/UI/MenuScreen.cs:286"
+  ],
+  "Aim, Aim+ and movement rooms · {0} of {1} unlocked · click to see all": [
+    "src/UI/SettingsScreen.cs:507"
   ],
   "Aiming down sights (Vandal, Phantom, Headhunter): your own ADS crosshair, {0}.": [
     "src/UI/CrosshairView.cs:408"
@@ -895,7 +898,7 @@
   ],
   "Anti-aliasing": [
     "src/UI/MenuScreen.cs:676",
-    "src/UI/SettingsScreen.cs:628"
+    "src/UI/SettingsScreen.cs:645"
   ],
   "Anyone who looks at it can only see 6 m.": [
     "src/Modes/Agents/InitiatorAbilities.cs:50"
@@ -904,18 +907,18 @@
     "src/Game/Skins/SkinCatalog.cs:104"
   ],
   "Applies on next drill": [
-    "src/UI/SettingsScreen.cs:489",
-    "src/UI/SettingsScreen.cs:507",
-    "src/UI/SettingsScreen.cs:509"
+    "src/UI/SettingsScreen.cs:490",
+    "src/UI/SettingsScreen.cs:524",
+    "src/UI/SettingsScreen.cs:526"
   ],
   "Applies on next drill · VALORANT uses left": [
-    "src/UI/SettingsScreen.cs:510"
+    "src/UI/SettingsScreen.cs:527"
   ],
   "Applies on next drill · VALORANT uses right": [
-    "src/UI/SettingsScreen.cs:510"
+    "src/UI/SettingsScreen.cs:527"
   ],
   "APPLY": [
-    "src/UI/SettingsScreen.cs:1014"
+    "src/UI/SettingsScreen.cs:1031"
   ],
   "APPLY TO ALL GUNS": [
     "src/UI/SkinPicker.cs:362",
@@ -946,7 +949,7 @@
     "src/Agents/AgentRoster.cs:143"
   ],
   "Arrows: every other gun · click to pick per gun": [
-    "src/UI/SettingsScreen.cs:533"
+    "src/UI/SettingsScreen.cs:550"
   ],
   "As a drill shows it": [
     "src/UI/SkinPicker.cs:673"
@@ -955,7 +958,7 @@
     "src/UI/SupportPrompt.cs:109"
   ],
   "As in your mouse software, for your sens history": [
-    "src/UI/SettingsScreen.cs:210"
+    "src/UI/SettingsScreen.cs:211"
   ],
   "AS {0}": [
     "src/Warmup/LockInHandoff.cs:70"
@@ -973,19 +976,19 @@
     "src/Core/Difficulty.cs:38"
   ],
   "Ask GitHub once now whether a newer release is out": [
-    "src/UI/SettingsScreen.cs:751"
+    "src/UI/SettingsScreen.cs:768"
   ],
   "ask github.com for the latest ValTrainer release, at startup and every 6 hours": [
     "src/UI/UpdatesPrompt.cs:102"
   ],
   "ASSETS": [
-    "src/UI/SettingsScreen.cs:1196"
+    "src/UI/SettingsScreen.cs:1213"
   ],
   "at search limit": [
     "src/Modes/SensFinderMode.cs:810"
   ],
   "At startup and every 6 hours, asks GitHub whether a newer release is out (nothing about you is sent)": [
-    "src/UI/SettingsScreen.cs:720"
+    "src/UI/SettingsScreen.cs:737"
   ],
   "At that sens: {0}.": [
     "src/UI/ProfileSensHistory.cs:272"
@@ -1019,22 +1022,22 @@
     "src/Modes/DefenseModes.cs:605"
   ],
   "AUDIO": [
-    "src/UI/SettingsScreen.cs:563"
+    "src/UI/SettingsScreen.cs:580"
   ],
   "Aurora": [
     "src/Game/Skins/SkinCatalog.cs:79"
   ],
   "Auto (Vulkan)": [
-    "src/UI/SettingsScreen.cs:41"
+    "src/UI/SettingsScreen.cs:42"
   ],
   "Auto follows your VALORANT language (then Windows')": [
-    "src/UI/SettingsScreen.cs:266"
+    "src/UI/SettingsScreen.cs:267"
   ],
   "Auto · {0}": [
-    "src/UI/SettingsScreen.cs:253"
+    "src/UI/SettingsScreen.cs:254"
   ],
   "Auto · {0}: {1}": [
-    "src/UI/SettingsScreen.cs:253"
+    "src/UI/SettingsScreen.cs:254"
   ],
   "auto-imported": [
     "src/UI/MenuScreen.cs:648"
@@ -1116,7 +1119,7 @@
     "src/UI/DrillPreview.cs:259",
     "src/UI/ProfileScreen.cs:115",
     "src/UI/ProgressScreen.cs:39",
-    "src/UI/SettingsScreen.cs:99"
+    "src/UI/SettingsScreen.cs:100"
   ],
   "Back behind the corner (A) for the next duel": [
     "src/Modes/MovementModes.cs:225"
@@ -1140,7 +1143,7 @@
     "src/Progress/ProgressEngine.cs:203"
   ],
   "BADGE RANK-UPS": [
-    "src/UI/ProgressOverlays.cs:431"
+    "src/UI/ProgressOverlays.cs:433"
   ],
   "Badge up": [
     "src/Progress/ProgressEngine.cs:202"
@@ -1320,7 +1323,7 @@
   "Bots react in ~{0:0} ms": [
     "src/Core/I18nCheck.cs:89",
     "src/UI/MenuScreen.cs:614",
-    "src/UI/SettingsScreen.cs:503"
+    "src/UI/SettingsScreen.cs:520"
   ],
   "bots run-and-gun": [
     "src/UI/MenuScreen.cs:615"
@@ -1408,7 +1411,7 @@
     "src/Agents/AgentRoster.cs:238"
   ],
   "BUY ME A COFFEE": [
-    "src/UI/SettingsScreen.cs:774",
+    "src/UI/SettingsScreen.cs:791",
     "src/UI/SupportPrompt.cs:114"
   ],
   "Buy Me a Coffee or Ko-fi: ValTrainer stays free either way": [
@@ -1526,7 +1529,7 @@
     "src/UI/SettingsKeybinds.cs:337"
   ],
   "CHANGES APPLY IMMEDIATELY AND ARE SAVED · ANYTHING LEFT ON \"VALORANT\" FOLLOWS YOUR GAME": [
-    "src/UI/SettingsScreen.cs:81"
+    "src/UI/SettingsScreen.cs:82"
   ],
   "Charcoal hex columns over dim red magma seams": [
     "src/Game/Skins/SkinCatalog.cs:71"
@@ -1544,7 +1547,7 @@
     "src/Modes/SensFinderDraw.cs:193"
   ],
   "Check for updates": [
-    "src/UI/SettingsScreen.cs:711"
+    "src/UI/SettingsScreen.cs:728"
   ],
   "Check GitHub for new versions and download them in the background": [
     "src/UI/UpdatesPrompt.cs:117"
@@ -1553,7 +1556,7 @@
     "src/UI/UpdatesPrompt.cs:98"
   ],
   "CHECK NOW": [
-    "src/UI/SettingsScreen.cs:728"
+    "src/UI/SettingsScreen.cs:745"
   ],
   "CHECK-IN": [
     "src/Warmup/LockInCheckIn.cs:172",
@@ -1563,7 +1566,7 @@
     "src/UI/AgentsScreen.cs:566"
   ],
   "Checking GitHub…": [
-    "src/UI/SettingsScreen.cs:873"
+    "src/UI/SettingsScreen.cs:890"
   ],
   "CHOKEHOLD · {0} held": [
     "src/Modes/DefenseModes.cs:491"
@@ -1581,10 +1584,10 @@
     "src/Modes/CrosshairFinderCore.cs:406"
   ],
   "CLASSIC": [
-    "src/UI/SettingsScreen.cs:221"
+    "src/UI/SettingsScreen.cs:222"
   ],
   "Classic hit sounds": [
-    "src/UI/SettingsScreen.cs:542"
+    "src/UI/SettingsScreen.cs:559"
   ],
   "CLEAN CROSS · seen {0:0} ms · he couldn't get a shot off": [
     "src/Modes/StrafeJumpMode.cs:444"
@@ -1647,7 +1650,7 @@
     "src/UI/SettingsKeybinds.cs:311"
   ],
   "Click a bind, then press a key or mouse button   ·   Esc cancels   ·   Backspace / Delete — back to VALORANT's   ·   right-click — unbind": [
-    "src/UI/SettingsScreen.cs:117"
+    "src/UI/SettingsScreen.cs:118"
   ],
   "CLICK AGAIN TO RESET": [
     "src/UI/SettingsKeybinds.cs:390"
@@ -1688,10 +1691,10 @@
     "src/Modes/SensFinderDraw.cs:109"
   ],
   "Click to pick from the buy menu · B in a drill's preview": [
-    "src/UI/SettingsScreen.cs:522"
+    "src/UI/SettingsScreen.cs:539"
   ],
   "Click to pick per gun, with a 3D preview · cosmetic only": [
-    "src/UI/SettingsScreen.cs:533"
+    "src/UI/SettingsScreen.cs:550"
   ],
   "Click to rename · {0}": [
     "src/UI/SettingsCrosshair.cs:142"
@@ -1706,7 +1709,7 @@
     "src/UI/SettingsKeybinds.cs:213"
   ],
   "Click, type your sensitivity (e.g. 0.35), press Enter": [
-    "src/UI/SettingsScreen.cs:945"
+    "src/UI/SettingsScreen.cs:962"
   ],
   "click: how to unlock": [
     "src/UI/SkinPicker.cs:743"
@@ -1741,7 +1744,7 @@
     "src/UI/ProfileScreen.cs:781"
   ],
   "CM / 360°": [
-    "src/UI/SettingsScreen.cs:440"
+    "src/UI/SettingsScreen.cs:441"
   ],
   "COACH": [
     "src/UI/BugReport.cs:334",
@@ -1787,7 +1790,7 @@
     "src/Modes/CrosshairFinderMode.cs:1032"
   ],
   "Code of the crosshair ValTrainer uses now": [
-    "src/UI/SettingsScreen.cs:237"
+    "src/UI/SettingsScreen.cs:238"
   ],
   "COLLECTION · ORIGINAL FINISHES MADE FOR VALTRAINER · COSMETIC ONLY": [
     "src/UI/SkinPicker.cs:166"
@@ -1834,7 +1837,7 @@
     "src/Core/SysInfo.cs:72"
   ],
   "Competitive (Low)": [
-    "src/UI/SettingsScreen.cs:47"
+    "src/UI/SettingsScreen.cs:48"
   ],
   "Complete a Lock-In": [
     "src/Progress/ProgressApi.cs:280"
@@ -1845,6 +1848,9 @@
   "Complete {0} Lock-In|Complete {0} Lock-Ins": [
     "src/Progress/ProgressApi.cs:283",
     "src/Progress/Requirements.cs:135"
+  ],
+  "Concrete": [
+    "src/World/RoomThemes.cs:193"
   ],
   "CONCUSSED": [
     "src/Modes/DefenseModes.cs:683"
@@ -1880,7 +1886,7 @@
     "src/Modes/SensFinderMode.cs:809"
   ],
   "CONFIRM?": [
-    "src/UI/SettingsScreen.cs:1136"
+    "src/UI/SettingsScreen.cs:1153"
   ],
   "Confirmation · round {0} / {1}": [
     "src/Modes/SensFinderMode.cs:851"
@@ -1895,7 +1901,7 @@
     "src/UI/ProgressScreen.cs:175"
   ],
   "CONTINUE": [
-    "src/UI/ProgressOverlays.cs:363"
+    "src/UI/ProgressOverlays.cs:365"
   ],
   "CONTINUE  (SPACE)": [
     "src/Warmup/LockInCheckIn.cs:265"
@@ -1920,11 +1926,11 @@
     "src/UI/SettingsCrosshair.cs:186"
   ],
   "Copied": [
-    "src/UI/SettingsScreen.cs:826"
+    "src/UI/SettingsScreen.cs:843"
   ],
   "COPIED ✓": [
     "src/UI/MenuScreen.cs:706",
-    "src/UI/SettingsScreen.cs:415"
+    "src/UI/SettingsScreen.cs:416"
   ],
   "Copied. Paste it anywhere (Ctrl+V).": [
     "src/UI/BugReport.cs:1068"
@@ -1948,8 +1954,8 @@
   "COPY": [
     "src/UI/SettingsCrosshair.cs:183",
     "src/UI/SettingsCrosshair.cs:188",
-    "src/UI/SettingsScreen.cs:412",
-    "src/UI/SettingsScreen.cs:417"
+    "src/UI/SettingsScreen.cs:413",
+    "src/UI/SettingsScreen.cs:418"
   ],
   "COPY CALIBRATION LINE": [
     "src/UI/ProfileScreen.cs:314"
@@ -1966,7 +1972,7 @@
     "src/UI/BugReport.cs:781"
   ],
   "Copy it in VALORANT (Export Profile Code), then PASTE here": [
-    "src/UI/SettingsScreen.cs:316"
+    "src/UI/SettingsScreen.cs:317"
   ],
   "Copy it with the button": [
     "src/Modes/CrosshairFinderMode.cs:1034"
@@ -1979,7 +1985,7 @@
     "src/UI/BugReport.cs:778"
   ],
   "COPY SYSTEM INFO": [
-    "src/UI/SettingsScreen.cs:813"
+    "src/UI/SettingsScreen.cs:830"
   ],
   "Copy the code, then paste it in VALORANT: Settings → Crosshair → Import Profile Code": [
     "src/UI/SettingsCrosshair.cs:190"
@@ -1988,7 +1994,7 @@
     "src/Modes/CrosshairFinderMode.cs:1044"
   ],
   "Copy, then paste it in VALORANT: Settings → Crosshair → Import Profile Code": [
-    "src/UI/SettingsScreen.cs:420"
+    "src/UI/SettingsScreen.cs:421"
   ],
   "Core": [
     "src/Game/Skins/SkinCatalog.cs:104"
@@ -1997,19 +2003,19 @@
     "src/UI/SkinLevelTrack.cs:336"
   ],
   "Cosmetic only · never in Sens / Crosshair Finder": [
-    "src/UI/SettingsScreen.cs:538"
+    "src/UI/SettingsScreen.cs:555"
   ],
   "Cosmic controller who places stars across the map and turns them into smokes, pulls or stuns.": [
     "src/Agents/AgentRoster.cs:154"
   ],
   "Couldn't check for updates": [
-    "src/UI/SettingsScreen.cs:876"
+    "src/UI/SettingsScreen.cs:893"
   ],
   "Couldn't check for updates: {0}": [
-    "src/UI/SettingsScreen.cs:876"
+    "src/UI/SettingsScreen.cs:893"
   ],
   "Couldn't reach the supporter server: check your connection and try again": [
-    "src/UI/SettingsScreen.cs:1059"
+    "src/UI/SettingsScreen.cs:1076"
   ],
   "Couldn't read your VALORANT crosshair profiles, so this is VALORANT's default crosshair. Paste your crosshair code in Settings → Crosshair to use yours.": [
     "src/Valorant/ValorantImporter.cs:282"
@@ -2073,11 +2079,11 @@
     "src/UI/Hud.cs:896",
     "src/UI/MenuScreen.cs:681",
     "src/UI/SettingsKeybinds.cs:323",
-    "src/UI/SettingsScreen.cs:228"
+    "src/UI/SettingsScreen.cs:229"
   ],
   "Crosshair": [
     "src/Modes/CrosshairFinderMode.cs:1025",
-    "src/UI/SettingsScreen.cs:229",
+    "src/UI/SettingsScreen.cs:230",
     "src/Warmup/LockInSetupCheck.cs:60"
   ],
   "Crosshair at head height": [
@@ -2124,7 +2130,7 @@
   ],
   "Crosshair profile": [
     "src/UI/MenuScreen.cs:678",
-    "src/UI/SettingsScreen.cs:634"
+    "src/UI/SettingsScreen.cs:651"
   ],
   "crosshair result: colour, shape|{0} {1}": [
     "src/Modes/CrosshairFinderMode.cs:972"
@@ -2207,7 +2213,7 @@
   ],
   "CUSTOM": [
     "src/UI/MenuScreen.cs:669",
-    "src/UI/SettingsScreen.cs:198"
+    "src/UI/SettingsScreen.cs:199"
   ],
   "Custom (VALORANT: {0})": [
     "src/UI/SettingsKeybinds.cs:209"
@@ -2228,7 +2234,7 @@
     "src/UI/SettingsKeybinds.cs:198"
   ],
   "Custom · type a value or use the arrows (Shift ±0.001)": [
-    "src/UI/SettingsScreen.cs:933"
+    "src/UI/SettingsScreen.cs:950"
   ],
   "Custom · VALORANT: {0}": [
     "src/UI/SettingsKeybinds.cs:200"
@@ -2267,11 +2273,17 @@
   "Damascus Steel": [
     "src/Game/Skins/SkinCatalog.cs:65"
   ],
+  "Dark": [
+    "src/World/RoomThemes.cs:190"
+  ],
   "Dark body + highlight outline, like VALORANT enemies": [
-    "src/UI/SettingsScreen.cs:223"
+    "src/UI/SettingsScreen.cs:224"
   ],
   "Dark frosted ice with green and violet northern lights flowing through it": [
     "src/Game/Skins/SkinCatalog.cs:79"
+  ],
+  "Dark grey walls, a night sky, low glare": [
+    "src/World/RoomThemes.cs:190"
   ],
   "Dark polymer with light furniture": [
     "src/Game/Skins/SkinCatalog.cs:66"
@@ -2322,6 +2334,9 @@
   "Deep": [
     "src/Modes/MovementPlusModes.cs:299"
   ],
+  "Deep blue walls under a night sky": [
+    "src/World/RoomThemes.cs:192"
+  ],
   "DEF": [
     "src/Modes/TacticalModes.cs:34",
     "src/Modes/TacticalModes.cs:518"
@@ -2332,11 +2347,12 @@
     "src/Warmup/WarmupScreen.cs:92"
   ],
   "Default": [
-    "src/UI/SettingsScreen.cs:50",
     "src/UI/SettingsScreen.cs:51",
     "src/UI/SettingsScreen.cs:52",
-    "src/UI/SettingsScreen.cs:627",
-    "src/UI/SettingsScreen.cs:630"
+    "src/UI/SettingsScreen.cs:53",
+    "src/UI/SettingsScreen.cs:644",
+    "src/UI/SettingsScreen.cs:647",
+    "src/World/RoomThemes.cs:189"
   ],
   "default size, fully solid": [
     "src/Modes/CrosshairFinderTabs.cs:273"
@@ -2388,18 +2404,18 @@
     "src/UI/SettingsCrosshair.cs:208"
   ],
   "DELETE ALL": [
-    "src/UI/SettingsScreen.cs:1129",
-    "src/UI/SettingsScreen.cs:1141",
-    "src/UI/SettingsScreen.cs:1148"
+    "src/UI/SettingsScreen.cs:1146",
+    "src/UI/SettingsScreen.cs:1158",
+    "src/UI/SettingsScreen.cs:1165"
   ],
   "Delete from ValTrainer (click twice)": [
     "src/UI/SettingsCrosshair.cs:216"
   ],
   "Deleted automatically: problems you fixed, and runs older than {0} days.": [
-    "src/UI/SettingsScreen.cs:1119"
+    "src/UI/SettingsScreen.cs:1136"
   ],
   "Deletes every Rewind recording. Your stats, scores and coach results are kept.": [
-    "src/UI/SettingsScreen.cs:1153"
+    "src/UI/SettingsScreen.cs:1170"
   ],
   "DEMO DATA": [
     "src/UI/ProgressScreen.cs:36",
@@ -2407,10 +2423,13 @@
     "src/Warmup/WarmupSummary.cs:51"
   ],
   "Describe the problem and send it to #bug-reports on the ValTrainer Discord. You see everything before it's sent": [
-    "src/UI/SettingsScreen.cs:800"
+    "src/UI/SettingsScreen.cs:817"
   ],
   "Describe your idea in at least {0} characters": [
     "src/UI/BugReport.cs:370"
+  ],
+  "Desert": [
+    "src/World/RoomThemes.cs:195"
   ],
   "Desert Camo": [
     "src/Game/Skins/SkinCatalog.cs:63"
@@ -2422,7 +2441,7 @@
     "src/Warmup/LockInMatchLog.cs:416"
   ],
   "Dev pseudo-language: plain English = not translatable yet": [
-    "src/UI/SettingsScreen.cs:267"
+    "src/UI/SettingsScreen.cs:268"
   ],
   "DIA": [
     "src/UI/CoachUi.cs:21"
@@ -2443,10 +2462,10 @@
     "src/UI/MenuScreen.cs:463"
   ],
   "Difficulty tier": [
-    "src/UI/SettingsScreen.cs:500"
+    "src/UI/SettingsScreen.cs:517"
   ],
   "Digits on the gun of skins that have one": [
-    "src/UI/SettingsScreen.cs:549"
+    "src/UI/SettingsScreen.cs:566"
   ],
   "direction changes": [
     "src/Analysis/Assess.cs:528",
@@ -2484,7 +2503,7 @@
   ],
   "DISCORD": [
     "src/UI/MenuScreen.cs:342",
-    "src/UI/SettingsScreen.cs:795"
+    "src/UI/SettingsScreen.cs:812"
   ],
   "DISCORD USERNAME": [
     "src/UI/BugReport.cs:878",
@@ -2494,17 +2513,17 @@
     "src/Modes/Agents/HushKit.cs:358"
   ],
   "DISPLAY": [
-    "src/UI/SettingsScreen.cs:461"
+    "src/UI/SettingsScreen.cs:462"
   ],
   "Display": [
     "src/Warmup/LockInSetupCheck.cs:146",
     "src/Warmup/LockInSetupCheck.cs:147"
   ],
   "Display mode": [
-    "src/UI/SettingsScreen.cs:462"
+    "src/UI/SettingsScreen.cs:463"
   ],
   "Display mode / monitor": [
-    "src/UI/SettingsScreen.cs:624"
+    "src/UI/SettingsScreen.cs:641"
   ],
   "Distance {0:0} m": [
     "src/Modes/AimPlusLongTaps.cs:251"
@@ -2561,15 +2580,15 @@
     "src/UI/SupportPrompt.cs:131"
   ],
   "Donated on Ko-fi or Buy Me a Coffee? Enter the email you paid with": [
-    "src/UI/SettingsScreen.cs:1028"
+    "src/UI/SettingsScreen.cs:1045"
   ],
   "DONE": [
     "src/UI/CoachUi.cs:753",
     "src/UI/GunPicker.cs:286",
     "src/UI/ProgressWidgets.cs:333",
     "src/UI/SkinPicker.cs:372",
-    "src/Warmup/LockInBreath.cs:126",
-    "src/Warmup/LockInMatchLog.cs:362"
+    "src/UI/ThemePicker.cs:92",
+    "src/Warmup/LockInBreath.cs:126"
   ],
   "Dot": [
     "src/Modes/CrosshairFinderCore.cs:339",
@@ -2589,7 +2608,7 @@
   ],
   "DOWNLOAD": [
     "src/UI/MenuScreen.cs:231",
-    "src/UI/SettingsScreen.cs:732"
+    "src/UI/SettingsScreen.cs:749"
   ],
   "download a newer version in the background and install it when you restart ValTrainer": [
     "src/UI/UpdatesPrompt.cs:103"
@@ -2601,7 +2620,7 @@
     "src/Core/Updater.cs:283"
   ],
   "Download updates automatically": [
-    "src/UI/SettingsScreen.cs:722"
+    "src/UI/SettingsScreen.cs:739"
   ],
   "Downloading update {0:0}%": [
     "src/UI/MenuScreen.cs:1356"
@@ -2610,13 +2629,13 @@
     "src/Core/Updater.cs:424"
   ],
   "Downloads new versions in the background; RESTART TO UPDATE installs them (Windows asks for permission)": [
-    "src/UI/SettingsScreen.cs:853"
+    "src/UI/SettingsScreen.cs:870"
   ],
   "Downloads new versions in the background; they install when you restart ValTrainer": [
-    "src/UI/SettingsScreen.cs:854"
+    "src/UI/SettingsScreen.cs:871"
   ],
   "Downloads new versions in the background; ValTrainer.exe is replaced when you restart": [
-    "src/UI/SettingsScreen.cs:852"
+    "src/UI/SettingsScreen.cs:869"
   ],
   "DPI": [
     "src/UI/ProfileSensHistory.cs:74",
@@ -2727,7 +2746,7 @@
     "src/UI/GunPicker.cs:247"
   ],
   "Each drill's default": [
-    "src/UI/SettingsScreen.cs:516"
+    "src/UI/SettingsScreen.cs:533"
   ],
   "Each polling rate includes every sens and DPI you played at it; FULL SETUP keeps them apart.": [
     "src/UI/ProfileSensHistory.cs:203"
@@ -2818,7 +2837,7 @@
     "src/Warmup/LockInMatchLog.cs:124"
   ],
   "ENEMIES": [
-    "src/UI/SettingsScreen.cs:214"
+    "src/UI/SettingsScreen.cs:215"
   ],
   "enemies appeared {0:0.0}° above your crosshair": [
     "src/Analysis/Assess.cs:574"
@@ -2853,11 +2872,11 @@
   ],
   "Enemy highlight": [
     "src/UI/MenuScreen.cs:672",
-    "src/UI/SettingsScreen.cs:215",
-    "src/UI/SettingsScreen.cs:631"
+    "src/UI/SettingsScreen.cs:216",
+    "src/UI/SettingsScreen.cs:648"
   ],
   "Enemy outlines + fresnel": [
-    "src/UI/SettingsScreen.cs:219"
+    "src/UI/SettingsScreen.cs:220"
   ],
   "Enemy sight blocked by smoke": [
     "src/Modes/Agents/ControllerDraw.cs:644"
@@ -2867,7 +2886,7 @@
     "src/Warmup/LockInMatchLog.cs:117"
   ],
   "ENGINE PARTS": [
-    "src/UI/SettingsScreen.cs:1196"
+    "src/UI/SettingsScreen.cs:1213"
   ],
   "ENJOYING VALTRAINER?": [
     "src/UI/SupportPrompt.cs:104"
@@ -2905,7 +2924,7 @@
     "src/UI/SkinLevelTrack.cs:63"
   ],
   "Equip it from SKINS in the menu": [
-    "src/UI/ProgressOverlays.cs:273"
+    "src/UI/ProgressOverlays.cs:275"
   ],
   "Equip melee": [
     "src/Valorant/Keybinds.cs:353"
@@ -2928,7 +2947,8 @@
   "EQUIPPED": [
     "src/UI/GunPicker.cs:489",
     "src/UI/SkinPicker.cs:470",
-    "src/UI/SkinPicker.cs:742"
+    "src/UI/SkinPicker.cs:742",
+    "src/UI/ThemePicker.cs:192"
   ],
   "EQUIPPING…": [
     "src/Modes/DefenseModes.cs:654",
@@ -2947,10 +2967,10 @@
     "src/Warmup/WarmupCard.cs:239"
   ],
   "Esc — back to menu   ·   F11 — toggle windowed / borderless   ·   Shift-click the custom sensitivity arrows for ±0.001": [
-    "src/UI/SettingsScreen.cs:125"
+    "src/UI/SettingsScreen.cs:126"
   ],
   "Esc — back to menu   ·   ValTrainer is free software (GPL-3.0)   ·   fan-made, not affiliated with or endorsed by Riot Games": [
-    "src/UI/SettingsScreen.cs:111"
+    "src/UI/SettingsScreen.cs:112"
   ],
   "ESC — RESUME": [
     "src/UI/Hud.cs:852"
@@ -3012,7 +3032,7 @@
     "src/UI/AgentsScreen.cs:218"
   ],
   "Everything you played before 1.19 was credited with the same rules as from now on": [
-    "src/UI/ProgressOverlays.cs:419"
+    "src/UI/ProgressOverlays.cs:421"
   ],
   "EXECUTE": [
     "src/Modes/Agents/ControllerDraw.cs:456",
@@ -3048,13 +3068,13 @@
     "src/UI/SkinPicker.cs:949"
   ],
   "Factory body and headshot sounds on every skin": [
-    "src/UI/SettingsScreen.cs:543"
+    "src/UI/SettingsScreen.cs:560"
   ],
   "FACTORY SOUNDS": [
     "src/UI/SkinPreview.cs:522"
   ],
   "Factory sounds only": [
-    "src/UI/SettingsScreen.cs:541"
+    "src/UI/SettingsScreen.cs:558"
   ],
   "FACTORY · NO UPGRADES": [
     "src/UI/SkinLevelTrack.cs:319"
@@ -3161,13 +3181,13 @@
     "src/UI/SkinLevelTrack.cs:54"
   ],
   "Finishers": [
-    "src/UI/SettingsScreen.cs:546"
+    "src/UI/SettingsScreen.cs:563"
   ],
   "Fire": [
     "src/Valorant/Keybinds.cs:350"
   ],
   "Fire / alt fire": [
-    "src/UI/SettingsScreen.cs:619"
+    "src/UI/SettingsScreen.cs:636"
   ],
   "Fire as soon as the crosshair touches the head.": [
     "src/Analysis/Assess.cs:420"
@@ -3223,7 +3243,7 @@
     "src/UI/MenuScreen.cs:834"
   ],
   "FIXED": [
-    "src/UI/SettingsScreen.cs:504"
+    "src/UI/SettingsScreen.cs:521"
   ],
   "FLASH": [
     "src/Agents/AgentDrills.cs:298"
@@ -3264,6 +3284,9 @@
   ],
   "FLAT": [
     "src/Warmup/LockInCheckIn.cs:198"
+  ],
+  "Flat pale walls, black cover: targets pop": [
+    "src/World/RoomThemes.cs:191"
   ],
   "FLICK": [
     "src/UI/CoachUi.cs:126",
@@ -3356,22 +3379,22 @@
     "src/Game/Skins/SkinCatalog.cs:65"
   ],
   "FOLDERS": [
-    "src/UI/SettingsScreen.cs:702"
+    "src/UI/SettingsScreen.cs:719"
   ],
   "follows VALORANT": [
     "src/UI/SettingsCrosshair.cs:19"
   ],
   "For drills that offer it · your pick for a drill still wins": [
-    "src/UI/SettingsScreen.cs:522"
+    "src/UI/SettingsScreen.cs:539"
   ],
   "For eDPI, cm/360 and your sens history": [
-    "src/UI/SettingsScreen.cs:207"
+    "src/UI/SettingsScreen.cs:208"
   ],
   "for practice days, not right before ranked": [
     "src/Warmup/WarmupPlan.cs:115"
   ],
   "Found it! Your code is filled in above and applied": [
-    "src/UI/SettingsScreen.cs:1053"
+    "src/UI/SettingsScreen.cs:1070"
   ],
   "Foundry": [
     "src/Game/Skins/SkinCatalog.cs:78"
@@ -3383,13 +3406,16 @@
     "src/Warmup/LockInSetupCheck.cs:139"
   ],
   "FPS cap": [
-    "src/UI/SettingsScreen.cs:474"
+    "src/UI/SettingsScreen.cs:475"
   ],
   "FPS cap / VSync": [
     "src/UI/MenuScreen.cs:675"
   ],
   "Framed dot": [
     "src/Modes/CrosshairFinderCore.cs:356"
+  ],
+  "FREE": [
+    "src/UI/ThemePicker.cs:192"
   ],
   "Free": [
     "src/Progress/ProgressApi.cs:384",
@@ -3406,7 +3432,7 @@
     "src/Game/Skins/SkinCatalog.cs:110"
   ],
   "Free, fan-made aim trainer · open source (GPL-3.0) · not affiliated with Riot Games": [
-    "src/UI/SettingsScreen.cs:682"
+    "src/UI/SettingsScreen.cs:699"
   ],
   "Free-for-all against bots at your tier on a VALORANT map. They hunt you and shoot back; respawn and keep fighting.": [
     "src/Modes/DeathmatchMode.cs:56"
@@ -3422,7 +3448,7 @@
     "src/UI/SettingsKeybinds.cs:209"
   ],
   "From VALORANT · type a value or use the arrows to set your own": [
-    "src/UI/SettingsScreen.cs:933"
+    "src/UI/SettingsScreen.cs:950"
   ],
   "FROM VALORANT · {0:0.0} CM/360 · CLICK TO TYPE": [
     "src/UI/Hud.cs:880"
@@ -3434,7 +3460,7 @@
     "src/Modes/Agents/ControllerDraw.cs:491"
   ],
   "FULL": [
-    "src/UI/SettingsScreen.cs:544"
+    "src/UI/SettingsScreen.cs:561"
   ],
   "FULL COACH PROFILE  ›": [
     "src/UI/Hud.cs:1358"
@@ -3456,29 +3482,29 @@
   ],
   "Fullscreen": [
     "src/UI/MenuScreen.cs:663",
-    "src/UI/SettingsScreen.cs:36",
+    "src/UI/SettingsScreen.cs:37",
     "src/Warmup/LockInSetupCheck.cs:101"
   ],
   "Gadget sentinel whose turret, alarm bot and swarm grenades lock a site down.": [
     "src/Agents/AgentRoster.cs:228"
   ],
   "GAMEPLAY": [
-    "src/UI/SettingsScreen.cs:499"
+    "src/UI/SettingsScreen.cs:516"
   ],
   "Gameplay sounds always play at full volume": [
-    "src/UI/SettingsScreen.cs:556"
+    "src/UI/SettingsScreen.cs:573"
   ],
   "Gekko's Dizzy: shoot her or get out of her sight": [
     "src/Modes/MapModes.cs:603"
   ],
   "GENERAL": [
-    "src/UI/SettingsScreen.cs:91"
+    "src/UI/SettingsScreen.cs:92"
   ],
   "general drills for the role": [
     "src/UI/AgentsScreen.cs:501"
   ],
   "GET": [
-    "src/UI/SettingsScreen.cs:1064"
+    "src/UI/SettingsScreen.cs:1081"
   ],
   "Get a confirmed coach rank": [
     "src/Progress/Requirements.cs:132"
@@ -3487,7 +3513,7 @@
     "src/Analysis/RunSummary.cs:37"
   ],
   "Get my code": [
-    "src/UI/SettingsScreen.cs:1027"
+    "src/UI/SettingsScreen.cs:1044"
   ],
   "GET RATED": [
     "src/UI/ProfileScreen.cs:449"
@@ -3503,7 +3529,7 @@
     "src/UI/Hud.cs:584"
   ],
   "GET {0}": [
-    "src/UI/SettingsScreen.cs:755"
+    "src/UI/SettingsScreen.cs:772"
   ],
   "gets harder or easier to keep you near 80% hits": [
     "src/Warmup/WarmupCharts.cs:158"
@@ -3512,7 +3538,7 @@
     "src/Core/UpdateCheck.cs:246"
   ],
   "GITHUB PAGE": [
-    "src/UI/SettingsScreen.cs:809"
+    "src/UI/SettingsScreen.cs:826"
   ],
   "GitHub rate limit reached (HTTP {0}), try again later": [
     "src/Core/UpdateCheck.cs:245"
@@ -3553,14 +3579,14 @@
     "src/Agents/AgentRoster.cs:40"
   ],
   "GRAPHICS": [
-    "src/UI/SettingsScreen.cs:486"
+    "src/UI/SettingsScreen.cs:487"
   ],
   "Graphics card": [
-    "src/UI/SettingsScreen.cs:698"
+    "src/UI/SettingsScreen.cs:715"
   ],
   "Graphics quality": [
-    "src/UI/SettingsScreen.cs:487",
-    "src/UI/SettingsScreen.cs:699"
+    "src/UI/SettingsScreen.cs:488",
+    "src/UI/SettingsScreen.cs:716"
   ],
   "Great control — the spray stayed centred.": [
     "src/Modes/RecoilModes.cs:154"
@@ -3576,6 +3602,9 @@
   ],
   "Green Yellow": [
     "src/Valorant/CrosshairCode.cs:79"
+  ],
+  "Grey concrete under a soft overcast sky": [
+    "src/World/RoomThemes.cs:193"
   ],
   "GRID": [
     "src/Warmup/WarmupPlan.cs:161"
@@ -3611,13 +3640,13 @@
     "src/Modes/Agents/ChamberDrill.cs:323"
   ],
   "GUN ONLY": [
-    "src/UI/SettingsScreen.cs:544"
+    "src/UI/SettingsScreen.cs:561"
   ],
   "GUN SKINS": [
     "src/UI/SkinPicker.cs:166"
   ],
   "Gun skins": [
-    "src/UI/SettingsScreen.cs:527"
+    "src/UI/SettingsScreen.cs:544"
   ],
   "Gun skins for the highlighted gun: original finishes, cosmetic only": [
     "src/UI/GunPicker.cs:275"
@@ -3718,7 +3747,7 @@
     "src/Modes/CrosshairFinderMode.cs:904"
   ],
   "HELP & FEEDBACK": [
-    "src/UI/SettingsScreen.cs:789"
+    "src/UI/SettingsScreen.cs:806"
   ],
   "Hesitation, or your arm runs out of room on wide angles, so every flick ends with a slow drag onto the head.": [
     "src/Analysis/Assess.cs:340"
@@ -3740,14 +3769,17 @@
     "src/UI/CoachUi.cs:97"
   ],
   "High": [
-    "src/UI/SettingsScreen.cs:47",
-    "src/UI/SettingsScreen.cs:51"
+    "src/UI/SettingsScreen.cs:48",
+    "src/UI/SettingsScreen.cs:52"
   ],
   "High (7–9)": [
     "src/Warmup/LockInMatchLog.cs:121"
   ],
   "high confidence": [
     "src/UI/CoachUi.cs:102"
+  ],
+  "High Contrast": [
+    "src/World/RoomThemes.cs:191"
   ],
   "HIGHER": [
     "src/UI/ProfileScreen.cs:760"
@@ -3810,7 +3842,7 @@
     "src/Game/Skins/SkinCatalog.cs:75"
   ],
   "Hold": [
-    "src/UI/SettingsScreen.cs:616"
+    "src/UI/SettingsScreen.cs:633"
   ],
   "Hold a head-height line and move the crosshair along it.": [
     "src/Analysis/Assess.cs:569"
@@ -3946,13 +3978,13 @@
     "src/Modes/CrosshairFinderMode.cs:1031"
   ],
   "IMPORTED FROM VALORANT": [
-    "src/UI/SettingsScreen.cs:579"
+    "src/UI/SettingsScreen.cs:596"
   ],
   "IMPORTED FROM VALORANT · CHANGE ANY BIND FOR VALTRAINER · BINDS YOU DON'T CHANGE FOLLOW YOUR GAME": [
-    "src/UI/SettingsScreen.cs:82"
+    "src/UI/SettingsScreen.cs:83"
   ],
   "Improve clarity / Bloom": [
-    "src/UI/SettingsScreen.cs:629"
+    "src/UI/SettingsScreen.cs:646"
   ],
   "in a few days": [
     "src/Modes/SensFinderMode.cs:888"
@@ -4028,13 +4060,13 @@
     "src/UI/MenuScreen.cs:220"
   ],
   "Installs the update and restarts ValTrainer": [
-    "src/UI/SettingsScreen.cs:758"
+    "src/UI/SettingsScreen.cs:775"
   ],
   "Installs the update and restarts ValTrainer (takes a few seconds; settings and stats are kept)": [
     "src/UI/MenuScreen.cs:216"
   ],
   "Installs the update and restarts ValTrainer (Windows asks for permission)": [
-    "src/UI/SettingsScreen.cs:757"
+    "src/UI/SettingsScreen.cs:774"
   ],
   "Installs the update and restarts ValTrainer. ValTrainer is installed for all users, so Windows asks for permission": [
     "src/UI/MenuScreen.cs:215"
@@ -4122,7 +4154,7 @@
     "src/Modes/MovementPlusModes.cs:21"
   ],
   "Jump Peek and Jiggle Peek · turn it off per drill in its preview (M)": [
-    "src/UI/SettingsScreen.cs:505"
+    "src/UI/SettingsScreen.cs:522"
   ],
   "Jump-peek: {0} + {1} out, {2} back before you land": [
     "src/Modes/MovementPlusModes.cs:223"
@@ -4138,7 +4170,7 @@
   ],
   "just now": [
     "src/UI/DrillPreview.cs:506",
-    "src/UI/SettingsScreen.cs:885"
+    "src/UI/SettingsScreen.cs:902"
   ],
   "K skins": [
     "src/UI/DrillPreview.cs:251"
@@ -4231,10 +4263,10 @@
     "src/Game/BuySession.cs:106"
   ],
   "Kept: your last {0} runs + examples of problems the coach still sees.": [
-    "src/UI/SettingsScreen.cs:1118"
+    "src/UI/SettingsScreen.cs:1135"
   ],
   "KEYBINDS": [
-    "src/UI/SettingsScreen.cs:91"
+    "src/UI/SettingsScreen.cs:92"
   ],
   "keyboard": [
     "src/Modes/SensFinderSetup.cs:310"
@@ -4261,7 +4293,7 @@
     "src/UI/SkinLevelTrack.cs:72"
   ],
   "Kill counter": [
-    "src/UI/SettingsScreen.cs:548",
+    "src/UI/SettingsScreen.cs:565",
     "src/UI/SkinPreview.cs:521"
   ],
   "Kill counter on the gun": [
@@ -4275,7 +4307,7 @@
     "src/UI/SkinPreview.cs:519"
   ],
   "Kill effects": [
-    "src/UI/SettingsScreen.cs:544"
+    "src/UI/SettingsScreen.cs:561"
   ],
   "Kill in {0:0} ms": [
     "src/Analysis/InsightsBuilder.cs:346"
@@ -4390,10 +4422,10 @@
     "src/Analysis/Assess.cs:168"
   ],
   "LANGUAGE": [
-    "src/UI/SettingsScreen.cs:169"
+    "src/UI/SettingsScreen.cs:170"
   ],
   "Language": [
-    "src/UI/SettingsScreen.cs:170"
+    "src/UI/SettingsScreen.cs:171"
   ],
   "LARGE": [
     "src/Modes/SensFinderSetup.cs:275"
@@ -4405,7 +4437,7 @@
     "src/UI/StatsScreen.cs:57"
   ],
   "Last Crosshair Finder result": [
-    "src/UI/SettingsScreen.cs:239"
+    "src/UI/SettingsScreen.cs:240"
   ],
   "Last head {0:0} ms": [
     "src/Modes/AimPlusMicroDense.cs:123",
@@ -4489,7 +4521,7 @@
     "src/Analysis/SensAdvisor.cs:157"
   ],
   "LEFT": [
-    "src/UI/SettingsScreen.cs:508"
+    "src/UI/SettingsScreen.cs:525"
   ],
   "Left": [
     "src/Modes/MovementPlusModes.cs:302"
@@ -4539,13 +4571,16 @@
   "LEVEL UP": [
     "src/UI/ProgressOverlays.cs:247"
   ],
+  "Level up by training to unlock more themes · cosmetic only, applies on the next drill": [
+    "src/UI/ThemePicker.cs:87"
+  ],
   "LEVEL {0}": [
     "src/UI/ProgressOverlays.cs:248",
-    "src/UI/ProgressOverlays.cs:456",
+    "src/UI/ProgressOverlays.cs:458",
     "src/UI/ProgressScreen.cs:99",
     "src/UI/ProgressWidgets.cs:644",
     "src/UI/SkinPicker.cs:468",
-    "src/Warmup/WarmupSummary.cs:211"
+    "src/UI/ThemePicker.cs:192"
   ],
   "Level {0}": [
     "src/UI/ProgressOverlays.cs:171",
@@ -4568,13 +4603,13 @@
     "src/UI/ProgressWidgets.cs:584"
   ],
   "LEVEL {0} · {1} / {2} XP": [
-    "src/UI/ProgressOverlays.cs:456"
+    "src/UI/ProgressOverlays.cs:458"
   ],
   "Level-up XP keeps your bar moving toward the next skin": [
     "src/UI/ProgressWidgets.cs:466"
   ],
   "LICENSES": [
-    "src/UI/SettingsScreen.cs:1161"
+    "src/UI/SettingsScreen.cs:1178"
   ],
   "Light-speed duelist who dashes in, strikes and zips back to safety.": [
     "src/Agents/AgentRoster.cs:86"
@@ -4729,7 +4764,7 @@
     "src/UI/MenuScreen.cs:297"
   ],
   "LOCK-INS": [
-    "src/UI/ProgressOverlays.cs:432"
+    "src/UI/ProgressOverlays.cs:434"
   ],
   "LOCKED": [
     "src/UI/GunPicker.cs:213",
@@ -4744,7 +4779,7 @@
     "src/Agents/AgentRoster.cs:285"
   ],
   "Logs (attach godot.log to bug reports)": [
-    "src/UI/SettingsScreen.cs:706"
+    "src/UI/SettingsScreen.cs:723"
   ],
   "LONG": [
     "src/Modes/SheriffMode.cs:62"
@@ -4774,7 +4809,7 @@
     "src/Analysis/Assess.cs:345"
   ],
   "Looking up your donation…": [
-    "src/UI/SettingsScreen.cs:1044"
+    "src/UI/SettingsScreen.cs:1061"
   ],
   "Lost": [
     "src/Warmup/LockInMatchLog.cs:299"
@@ -4795,7 +4830,7 @@
     "src/UI/CoachUi.cs:97"
   ],
   "Low": [
-    "src/UI/SettingsScreen.cs:51"
+    "src/UI/SettingsScreen.cs:52"
   ],
   "Low (1–3)": [
     "src/Warmup/LockInMatchLog.cs:119"
@@ -4846,7 +4881,7 @@
     "src/UI/MenuScreen.cs:1445"
   ],
   "Machine translation · help improve it: translations folder on ValTrainer's GitHub": [
-    "src/UI/SettingsScreen.cs:270"
+    "src/UI/SettingsScreen.cs:271"
   ],
   "MADE BY THE COMMUNITY · @{0}": [
     "src/UI/Hud.cs:590"
@@ -4930,7 +4965,7 @@
     "src/Warmup/LockInMatchLog.cs:176"
   ],
   "Material / Texture / Detail": [
-    "src/UI/SettingsScreen.cs:626"
+    "src/UI/SettingsScreen.cs:643"
   ],
   "MAYBE LATER": [
     "src/UI/SupportPrompt.cs:137"
@@ -4966,8 +5001,8 @@
     "src/UI/CoachUi.cs:97"
   ],
   "Medium": [
-    "src/UI/SettingsScreen.cs:47",
-    "src/UI/SettingsScreen.cs:51"
+    "src/UI/SettingsScreen.cs:48",
+    "src/UI/SettingsScreen.cs:52"
   ],
   "medium confidence": [
     "src/UI/CoachUi.cs:102"
@@ -5033,6 +5068,9 @@
   "Mid (4–6)": [
     "src/Warmup/LockInMatchLog.cs:120"
   ],
+  "Midnight": [
+    "src/World/RoomThemes.cs:192"
+  ],
   "MIDPOINT": [
     "src/Modes/SensFinderCompare.cs:499"
   ],
@@ -5040,7 +5078,7 @@
     "src/Modes/SensFinderCompare.cs:272"
   ],
   "Minimap": [
-    "src/UI/SettingsScreen.cs:504"
+    "src/UI/SettingsScreen.cs:521"
   ],
   "Minimap: off · M to show": [
     "src/UI/DrillPreview.cs:189"
@@ -5106,7 +5144,7 @@
     "src/UI/RewindView3D.cs:359"
   ],
   "Monitor": [
-    "src/UI/SettingsScreen.cs:467"
+    "src/UI/SettingsScreen.cs:468"
   ],
   "mostly overshoot": [
     "src/UI/RewindDraw.cs:657"
@@ -5121,13 +5159,13 @@
     "src/UI/Hud.cs:885"
   ],
   "Mouse DPI": [
-    "src/UI/SettingsScreen.cs:205"
+    "src/UI/SettingsScreen.cs:206"
   ],
   "Mouse polling rate": [
-    "src/UI/SettingsScreen.cs:208"
+    "src/UI/SettingsScreen.cs:209"
   ],
   "Move (forward left back right)": [
-    "src/UI/SettingsScreen.cs:617"
+    "src/UI/SettingsScreen.cs:634"
   ],
   "Move back": [
     "src/Valorant/Keybinds.cs:348"
@@ -5166,6 +5204,9 @@
   "Nature initiator who scouts with a tiger and flashes with guiding birds.": [
     "src/Agents/AgentRoster.cs:130"
   ],
+  "Near-black room with a glowing grid": [
+    "src/World/RoomThemes.cs:196"
+  ],
   "NEARSIGHTED": [
     "src/Modes/Agents/InitiatorDrill.cs:712"
   ],
@@ -5181,6 +5222,9 @@
   ],
   "needs more drills in common": [
     "src/UI/ProfileSensHistory.cs:378"
+  ],
+  "Neon Grid": [
+    "src/World/RoomThemes.cs:196"
   ],
   "Nerves are your body getting ready. Use them.": [
     "src/Warmup/LockInWidgets.cs:21"
@@ -5203,8 +5247,11 @@
   "NEW PERSONAL BEST": [
     "src/UI/Hud.cs:941"
   ],
+  "New room theme: {0} (Settings)": [
+    "src/UI/ProgressOverlays.cs:251"
+  ],
   "NEW SKINS": [
-    "src/UI/ProgressOverlays.cs:259"
+    "src/UI/ProgressOverlays.cs:261"
   ],
   "NEXT": [
     "src/Warmup/LockInHandoff.cs:99",
@@ -5241,7 +5288,7 @@
     "src/UI/ProgressWidgets.cs:158"
   ],
   "Next: {0}": [
-    "src/UI/ProgressOverlays.cs:251"
+    "src/UI/ProgressOverlays.cs:253"
   ],
   "Nice — now try longer sprays.": [
     "src/Modes/RecoilModes.cs:147"
@@ -5319,7 +5366,7 @@
     "src/Warmup/WarmupCharts.cs:309"
   ],
   "No donation found for this email yet. Just donated? Try again in a minute, or ask on Discord": [
-    "src/UI/SettingsScreen.cs:1060"
+    "src/UI/SettingsScreen.cs:1077"
   ],
   "No dot": [
     "src/Modes/CrosshairFinderTabs.cs:278"
@@ -5382,7 +5429,7 @@
     "src/Core/Updater.cs:236"
   ],
   "No kill effects": [
-    "src/UI/SettingsScreen.cs:545"
+    "src/UI/SettingsScreen.cs:562"
   ],
   "no level (too few shots)": [
     "src/Warmup/WarmupCard.cs:166"
@@ -5488,7 +5535,7 @@
     "src/Modes/DefenseSound.cs:561"
   ],
   "No Valorant config folder found on this PC": [
-    "src/UI/SettingsScreen.cs:191"
+    "src/UI/SettingsScreen.cs:192"
   ],
   "No wall across within 15 m": [
     "src/Modes/DefenseSetup.cs:189"
@@ -5512,8 +5559,8 @@
     "src/Modes/Agents/InitiatorDrill.cs:368"
   ],
   "None": [
-    "src/UI/SettingsScreen.cs:50",
-    "src/UI/SettingsScreen.cs:622"
+    "src/UI/SettingsScreen.cs:51",
+    "src/UI/SettingsScreen.cs:639"
   ],
   "none": [
     "src/Modes/SensFinderCompare.cs:270",
@@ -5523,7 +5570,7 @@
     "src/UI/SettingsKeybinds.cs:337"
   ],
   "None found": [
-    "src/UI/SettingsScreen.cs:175"
+    "src/UI/SettingsScreen.cs:176"
   ],
   "NONE IN THIS RUN: {0}": [
     "src/UI/RewindScreen.cs:348"
@@ -5565,13 +5612,13 @@
     "src/Progress/Requirements.cs:145"
   ],
   "Not available: this build has no GitHub page set": [
-    "src/UI/SettingsScreen.cs:719"
+    "src/UI/SettingsScreen.cs:736"
   ],
   "Not available: this copy can't update itself": [
-    "src/UI/SettingsScreen.cs:849"
+    "src/UI/SettingsScreen.cs:866"
   ],
   "Not available: {0}": [
-    "src/UI/SettingsScreen.cs:849"
+    "src/UI/SettingsScreen.cs:866"
   ],
   "Not back on target within 1.5 s of a direction change": [
     "src/Analysis/InsightsBuilder.cs:203"
@@ -5617,7 +5664,7 @@
     "src/Valorant/ValorantImporter.cs:26"
   ],
   "Not found — Valorant defaults": [
-    "src/UI/SettingsScreen.cs:613"
+    "src/UI/SettingsScreen.cs:630"
   ],
   "not found: defaults": [
     "src/UI/SettingsKeybinds.cs:335"
@@ -5668,7 +5715,7 @@
     "src/Modes/SensFinderSetup.cs:275"
   ],
   "Not translated yet: shows English · help translate it on ValTrainer's GitHub": [
-    "src/UI/SettingsScreen.cs:271"
+    "src/UI/SettingsScreen.cs:272"
   ],
   "NOT YET": [
     "src/UI/ProfileScreen.cs:768"
@@ -5690,35 +5737,35 @@
     "src/UI/ProfileScreen.cs:798"
   ],
   "Now and then the menu shows the Buy Me a Coffee / Ko-fi panel (at most every 14 days)": [
-    "src/UI/SettingsScreen.cs:769"
+    "src/UI/SettingsScreen.cs:786"
   ],
   "Now: eDPI {0:0}, {1:0.0} cm/360 (pro median 240 eDPI ≈ 54 cm; your sens is higher than {2:0}% of pros').": [
     "src/Analysis/SensAdvisor.cs:174"
   ],
   "Now: {0} · applies when you restart ValTrainer": [
-    "src/UI/SettingsScreen.cs:496"
+    "src/UI/SettingsScreen.cs:497"
   ],
   "NVIDIA Reflex": [
-    "src/UI/SettingsScreen.cs:630"
+    "src/UI/SettingsScreen.cs:647"
   ],
   "NVIDIA Reflex is on in VALORANT; ValTrainer can't use Reflex.": [
     "src/Warmup/LockInSetupCheck.cs:155"
   ],
   "OFF": [
-    "src/UI/SettingsScreen.cs:219",
-    "src/UI/SettingsScreen.cs:506",
-    "src/UI/SettingsScreen.cs:539",
-    "src/UI/SettingsScreen.cs:544",
-    "src/UI/SettingsScreen.cs:711",
-    "src/UI/SettingsScreen.cs:722"
+    "src/UI/SettingsScreen.cs:220",
+    "src/UI/SettingsScreen.cs:523",
+    "src/UI/SettingsScreen.cs:556",
+    "src/UI/SettingsScreen.cs:561",
+    "src/UI/SettingsScreen.cs:728",
+    "src/UI/SettingsScreen.cs:739"
   ],
   "Off": [
     "src/UI/MenuScreen.cs:675",
-    "src/UI/SettingsScreen.cs:52",
-    "src/UI/SettingsScreen.cs:472",
-    "src/UI/SettingsScreen.cs:625",
-    "src/UI/SettingsScreen.cs:630",
-    "src/UI/SettingsScreen.cs:633"
+    "src/UI/SettingsScreen.cs:53",
+    "src/UI/SettingsScreen.cs:473",
+    "src/UI/SettingsScreen.cs:642",
+    "src/UI/SettingsScreen.cs:647",
+    "src/UI/SettingsScreen.cs:650"
   ],
   "Off in Settings: {0}": [
     "src/UI/SkinPreview.cs:526"
@@ -5736,32 +5783,32 @@
     "src/Analysis/Assess.cs:327"
   ],
   "Off: the panel only opens from the menu's SUPPORT VALTRAINER button": [
-    "src/UI/SettingsScreen.cs:770"
+    "src/UI/SettingsScreen.cs:787"
   ],
   "Off: ValTrainer makes no network requests. ON asks GitHub at startup and every 6 hours; CHECK NOW asks once": [
-    "src/UI/SettingsScreen.cs:721"
+    "src/UI/SettingsScreen.cs:738"
   ],
   "old Easy/Normal/Hard runs": [
     "src/UI/StatsScreen.cs:86"
   ],
   "ON": [
-    "src/UI/SettingsScreen.cs:219",
-    "src/UI/SettingsScreen.cs:506",
-    "src/UI/SettingsScreen.cs:539",
-    "src/UI/SettingsScreen.cs:711",
-    "src/UI/SettingsScreen.cs:722",
-    "src/UI/SettingsScreen.cs:767"
+    "src/UI/SettingsScreen.cs:220",
+    "src/UI/SettingsScreen.cs:523",
+    "src/UI/SettingsScreen.cs:556",
+    "src/UI/SettingsScreen.cs:728",
+    "src/UI/SettingsScreen.cs:739",
+    "src/UI/SettingsScreen.cs:784"
   ],
   "On": [
     "src/UI/MenuScreen.cs:675",
-    "src/UI/SettingsScreen.cs:52",
-    "src/UI/SettingsScreen.cs:472",
-    "src/UI/SettingsScreen.cs:625",
-    "src/UI/SettingsScreen.cs:630",
-    "src/UI/SettingsScreen.cs:633"
+    "src/UI/SettingsScreen.cs:53",
+    "src/UI/SettingsScreen.cs:473",
+    "src/UI/SettingsScreen.cs:642",
+    "src/UI/SettingsScreen.cs:647",
+    "src/UI/SettingsScreen.cs:650"
   ],
   "On + Boost": [
-    "src/UI/SettingsScreen.cs:630"
+    "src/UI/SettingsScreen.cs:647"
   ],
   "on after import": [
     "src/Modes/CrosshairFinderMode.cs:1033"
@@ -5785,7 +5832,7 @@
     "src/Analysis/Assess.cs:415"
   ],
   "On the kill that wins the round": [
-    "src/UI/SettingsScreen.cs:547"
+    "src/UI/SettingsScreen.cs:564"
   ],
   "On the plus side: {0}": [
     "src/Analysis/RunSummary.cs:66"
@@ -5801,7 +5848,7 @@
     "src/UI/SkinPicker.cs:467"
   ],
   "On your gun and where the bot falls": [
-    "src/UI/SettingsScreen.cs:545"
+    "src/UI/SettingsScreen.cs:562"
   ],
   "Once switched on, it destroys enemy utility thrown near it.": [
     "src/Agents/AgentRoster.cs:246"
@@ -5942,11 +5989,11 @@
     "src/Modes/MovementPlusOp.cs:530"
   ],
   "OPEN": [
-    "src/UI/SettingsScreen.cs:918",
-    "src/UI/SettingsScreen.cs:1123"
+    "src/UI/SettingsScreen.cs:935",
+    "src/UI/SettingsScreen.cs:1140"
   ],
   "OPEN COLLECTION": [
-    "src/UI/ProgressOverlays.cs:360",
+    "src/UI/ProgressOverlays.cs:362",
     "src/UI/ProgressScreen.cs:333"
   ],
   "OPEN DISCORD": [
@@ -5962,10 +6009,10 @@
     "src/UI/MenuScreen.cs:449"
   ],
   "open-source notices": [
-    "src/UI/SettingsScreen.cs:1161"
+    "src/UI/SettingsScreen.cs:1178"
   ],
   "OpenGL (safe graphics)": [
-    "src/UI/SettingsScreen.cs:44"
+    "src/UI/SettingsScreen.cs:45"
   ],
   "Opens GitHub's issue form in your browser instead (needs a GitHub account; attach godot.log there)": [
     "src/UI/BugReport.cs:813"
@@ -5978,7 +6025,7 @@
   ],
   "Opens the release page in your browser": [
     "src/UI/MenuScreen.cs:233",
-    "src/UI/SettingsScreen.cs:756"
+    "src/UI/SettingsScreen.cs:773"
   ],
   "Opens the releases page in your browser": [
     "src/UI/WhatsNewPanel.cs:148"
@@ -5987,7 +6034,7 @@
     "src/UI/BugReport.cs:792"
   ],
   "Opens the ValTrainer Discord invite: help, bug reports, suggestions and voice chats": [
-    "src/UI/SettingsScreen.cs:796"
+    "src/UI/SettingsScreen.cs:813"
   ],
   "Opens your idea on the ValTrainer Discord (join the server first to see it)": [
     "src/UI/BugReport.cs:802"
@@ -5996,7 +6043,7 @@
     "src/UI/BugReport.cs:803"
   ],
   "Opens {0} in your browser": [
-    "src/UI/SettingsScreen.cs:778",
+    "src/UI/SettingsScreen.cs:795",
     "src/UI/SupportPrompt.cs:115",
     "src/UI/SupportPrompt.cs:119"
   ],
@@ -6176,11 +6223,11 @@
     "src/UI/AgentsWidgets.cs:307"
   ],
   "PASTE": [
-    "src/UI/SettingsScreen.cs:325",
-    "src/UI/SettingsScreen.cs:327"
+    "src/UI/SettingsScreen.cs:326",
+    "src/UI/SettingsScreen.cs:328"
   ],
   "Paste your supporter code and press APPLY": [
-    "src/UI/SettingsScreen.cs:1001"
+    "src/UI/SettingsScreen.cs:1018"
   ],
   "Patient": [
     "src/Warmup/LockInWidgets.cs:19"
@@ -6235,7 +6282,7 @@
     "src/UI/Hud.cs:1134"
   ],
   "PERSONAL BESTS": [
-    "src/UI/ProgressOverlays.cs:430"
+    "src/UI/ProgressOverlays.cs:432"
   ],
   "Phantom Spray": [
     "src/Modes/RecoilModes.cs:44"
@@ -6521,7 +6568,7 @@
     "src/UI/GunPicker.cs:185"
   ],
   "Preferred gun": [
-    "src/UI/SettingsScreen.cs:515"
+    "src/UI/SettingsScreen.cs:532"
   ],
   "PREFERRED GUN · EVERY DRILL THAT OFFERS A CHOICE": [
     "src/UI/GunPicker.cs:143"
@@ -6608,7 +6655,7 @@
     "src/UI/ProgressWidgets.cs:154"
   ],
   "PROGRESSION IS HERE": [
-    "src/UI/ProgressOverlays.cs:414"
+    "src/UI/ProgressOverlays.cs:416"
   ],
   "pros 33–87 cm · median 54": [
     "src/UI/ProfileScreen.cs:788"
@@ -6746,13 +6793,16 @@
     "src/Analysis/Assess.cs:192"
   ],
   "RE-IMPORT FROM VALORANT": [
-    "src/UI/SettingsScreen.cs:637"
+    "src/UI/SettingsScreen.cs:654"
   ],
   "Re-imported · {0} account|Re-imported · {0} accounts": [
-    "src/UI/SettingsScreen.cs:654"
+    "src/UI/SettingsScreen.cs:671"
   ],
   "Reach level {0}": [
     "src/Progress/Requirements.cs:128"
+  ],
+  "Reach level {0} to unlock": [
+    "src/UI/ThemePicker.cs:197"
   ],
   "Reach {0} in {1} benchmark drill|Reach {0} in {1} benchmark drills": [
     "src/Progress/Requirements.cs:143"
@@ -6787,7 +6837,7 @@
     "src/Modes/AimModes.cs:331"
   ],
   "read-only": [
-    "src/UI/SettingsScreen.cs:579"
+    "src/UI/SettingsScreen.cs:596"
   ],
   "Reading the replay file…": [
     "src/UI/RewindView3D.cs:261"
@@ -6902,7 +6952,7 @@
     "src/Valorant/Keybinds.cs:350"
   ],
   "Reload / use / plant-defuse": [
-    "src/UI/SettingsScreen.cs:620"
+    "src/UI/SettingsScreen.cs:637"
   ],
   "Reload the gun in your hands, with the skin's special reload where it has one (same reload time) · R": [
     "src/UI/SkinPicker.cs:273"
@@ -6914,8 +6964,8 @@
     "src/UI/SettingsKeybinds.cs:409"
   ],
   "Renderer": [
-    "src/UI/SettingsScreen.cs:490",
-    "src/UI/SettingsScreen.cs:697"
+    "src/UI/SettingsScreen.cs:491",
+    "src/UI/SettingsScreen.cs:714"
   ],
   "Rep {0} · on the angle {1}/{2}": [
     "src/Modes/DefenseSound.cs:558"
@@ -6935,7 +6985,7 @@
   "REPORT A BUG": [
     "src/UI/BugReport.cs:746",
     "src/UI/MenuScreen.cs:336",
-    "src/UI/SettingsScreen.cs:799"
+    "src/UI/SettingsScreen.cs:816"
   ],
   "REROLL": [
     "src/UI/ProgressWidgets.cs:269"
@@ -6969,7 +7019,7 @@
   ],
   "Resolution": [
     "src/UI/MenuScreen.cs:674",
-    "src/UI/SettingsScreen.cs:623"
+    "src/UI/SettingsScreen.cs:640"
   ],
   "Respawning in {0:0.0}s": [
     "src/Modes/DeathmatchMode.cs:431"
@@ -6982,7 +7032,7 @@
   ],
   "RESTART TO UPDATE": [
     "src/UI/MenuScreen.cs:213",
-    "src/UI/SettingsScreen.cs:755"
+    "src/UI/SettingsScreen.cs:772"
   ],
   "restart to update · you have {0}": [
     "src/UI/MenuScreen.cs:1357"
@@ -7047,7 +7097,7 @@
     "src/UI/RewindScreen.cs:343"
   ],
   "Rewind recordings · {0} run · {1} MB|Rewind recordings · {0} runs · {1} MB": [
-    "src/UI/SettingsScreen.cs:1116"
+    "src/UI/SettingsScreen.cs:1133"
   ],
   "Rhythm-clicking: the click is timed to the motion instead of to the crosshair being on target.": [
     "src/Analysis/Assess.cs:401"
@@ -7063,7 +7113,7 @@
     "src/UI/SkinPicker.cs:39"
   ],
   "RIGHT": [
-    "src/UI/SettingsScreen.cs:508"
+    "src/UI/SettingsScreen.cs:525"
   ],
   "Right": [
     "src/Modes/MovementPlusModes.cs:300"
@@ -7128,6 +7178,12 @@
   "Rookie": [
     "src/Core/Difficulty.cs:35"
   ],
+  "ROOM THEME": [
+    "src/UI/ThemePicker.cs:51"
+  ],
+  "Room theme": [
+    "src/UI/SettingsScreen.cs:499"
+  ],
   "Rose Gold": [
     "src/Game/Skins/SkinLooks.cs:109"
   ],
@@ -7135,7 +7191,7 @@
     "src/Modes/DefenseModes.cs:655"
   ],
   "ROTATING": [
-    "src/UI/SettingsScreen.cs:504"
+    "src/UI/SettingsScreen.cs:521"
   ],
   "Round held": [
     "src/Modes/Agents/ChamberDrill.cs:257"
@@ -7220,7 +7276,7 @@
   "RUNS": [
     "src/UI/CoachUi.cs:753",
     "src/UI/ProfileSensHistory.cs:324",
-    "src/UI/ProgressOverlays.cs:428",
+    "src/UI/ProgressOverlays.cs:430",
     "src/UI/StatsScreen.cs:57"
   ],
   "s of tracking": [
@@ -7248,6 +7304,9 @@
   "Sand and tan blot camo": [
     "src/Game/Skins/SkinCatalog.cs:63"
   ],
+  "Sandstone blocks and a hot pale sky": [
+    "src/World/RoomThemes.cs:195"
+  ],
   "SAVE CURRENT": [
     "src/UI/SettingsCrosshair.cs:76",
     "src/UI/SettingsCrosshair.cs:81"
@@ -7265,7 +7324,7 @@
     "src/Warmup/LockInMatchLog.cs:388"
   ],
   "Saves the crosshair code on your clipboard to SAVED CROSSHAIRS and uses it in ValTrainer. VALORANT isn't changed.": [
-    "src/UI/SettingsScreen.cs:335"
+    "src/UI/SettingsScreen.cs:336"
   ],
   "Saves the crosshair ValTrainer draws now to SAVED CROSSHAIRS (named after it). VALORANT isn't changed.": [
     "src/UI/SettingsCrosshair.cs:85"
@@ -7299,7 +7358,7 @@
   ],
   "Scoped / ADS multiplier": [
     "src/UI/MenuScreen.cs:671",
-    "src/UI/SettingsScreen.cs:615"
+    "src/UI/SettingsScreen.cs:632"
   ],
   "SCORE": [
     "src/UI/Hud.cs:284",
@@ -7377,7 +7436,7 @@
     "src/Agents/AgentRoster.cs:97"
   ],
   "Send an idea for a drill, an agent, a map or a setting to #suggestions on the ValTrainer Discord": [
-    "src/UI/SettingsScreen.cs:804"
+    "src/UI/SettingsScreen.cs:821"
   ],
   "send nothing about you: no settings, stats, recordings or IDs (GitHub sees an ordinary web request)": [
     "src/UI/UpdatesPrompt.cs:104"
@@ -7459,19 +7518,19 @@
     "src/UI/Hud.cs:868",
     "src/UI/ProfileScreen.cs:640",
     "src/UI/ProfileSensHistory.cs:83",
-    "src/UI/SettingsScreen.cs:197",
-    "src/UI/SettingsScreen.cs:438"
+    "src/UI/SettingsScreen.cs:198",
+    "src/UI/SettingsScreen.cs:439"
   ],
   "Sensitivity": [
     "src/UI/MenuScreen.cs:669",
-    "src/UI/SettingsScreen.cs:614",
-    "src/UI/SettingsScreen.cs:932"
+    "src/UI/SettingsScreen.cs:631",
+    "src/UI/SettingsScreen.cs:949"
   ],
   "SENSITIVITY (RIGHT AXIS)": [
     "src/Warmup/WarmupCharts.cs:216"
   ],
   "Sensitivity source": [
-    "src/UI/SettingsScreen.cs:198"
+    "src/UI/SettingsScreen.cs:199"
   ],
   "Sensitivity {0:0.00}": [
     "src/Core/I18nCheck.cs:72"
@@ -7564,13 +7623,13 @@
   "SETTINGS": [
     "src/Core/I18nCheck.cs:76",
     "src/UI/MenuScreen.cs:309",
-    "src/UI/SettingsScreen.cs:78"
+    "src/UI/SettingsScreen.cs:79"
   ],
   "settings not imported, so there is nothing to compare": [
     "src/Warmup/LockInSetupCheck.cs:130"
   ],
   "Settings, stats & recordings": [
-    "src/UI/SettingsScreen.cs:703"
+    "src/UI/SettingsScreen.cs:720"
   ],
   "SETTLE": [
     "src/UI/RewindDraw.cs:366"
@@ -7767,7 +7826,7 @@
     "src/Modes/MovementPlusModes.cs:293"
   ],
   "Show FPS counter": [
-    "src/UI/SettingsScreen.cs:633"
+    "src/UI/SettingsScreen.cs:650"
   ],
   "SHOW ME": [
     "src/UI/ProfileScreen.cs:554",
@@ -7881,13 +7940,13 @@
     "src/Progress/CoachTrack.cs:144"
   ],
   "SKIN EFFECTS": [
-    "src/UI/SettingsScreen.cs:538"
+    "src/UI/SettingsScreen.cs:555"
   ],
   "Skin effects volume": [
-    "src/UI/SettingsScreen.cs:550"
+    "src/UI/SettingsScreen.cs:567"
   ],
   "Skin sounds": [
-    "src/UI/SettingsScreen.cs:540"
+    "src/UI/SettingsScreen.cs:557"
   ],
   "SKINS": [
     "src/UI/GunPicker.cs:274",
@@ -7900,7 +7959,7 @@
     "src/UI/ProgressScreen.cs:350"
   ],
   "Skins with their own hit sounds use them": [
-    "src/UI/SettingsScreen.cs:543"
+    "src/UI/SettingsScreen.cs:560"
   ],
   "SKIP": [
     "src/Warmup/LockInMatchLog.cs:318",
@@ -8054,7 +8113,7 @@
     "src/Modes/CrosshairFinderMode.cs:1024"
   ],
   "Sniper scope input": [
-    "src/UI/SettingsScreen.cs:616"
+    "src/UI/SettingsScreen.cs:633"
   ],
   "SNIPERS": [
     "src/UI/GunPicker.cs:34",
@@ -8076,7 +8135,7 @@
     "src/Analysis/RunSummary.cs:63"
   ],
   "Solid spheres in the highlight colour": [
-    "src/UI/SettingsScreen.cs:223"
+    "src/UI/SettingsScreen.cs:224"
   ],
   "some map surfaces": [
     "src/Modes/CrosshairHint.cs:76"
@@ -8128,7 +8187,7 @@
   ],
   "Source": [
     "src/UI/MenuScreen.cs:659",
-    "src/UI/SettingsScreen.cs:613"
+    "src/UI/SettingsScreen.cs:630"
   ],
   "Space / Enter starts": [
     "src/UI/DrillPreview.cs:248"
@@ -8313,7 +8372,7 @@
     "src/UI/ProgressScreen.cs:112"
   ],
   "Stars come only from real improvement: real personal bests, badge rank-ups and confirmed coach rank-ups": [
-    "src/UI/ProgressOverlays.cs:480"
+    "src/UI/ProgressOverlays.cs:482"
   ],
   "START": [
     "src/UI/DrillPreview.cs:269"
@@ -8486,13 +8545,16 @@
   "SUGGEST A FEATURE": [
     "src/UI/BugReport.cs:746",
     "src/UI/MenuScreen.cs:339",
-    "src/UI/SettingsScreen.cs:803"
+    "src/UI/SettingsScreen.cs:820"
+  ],
+  "Sunset": [
+    "src/World/RoomThemes.cs:194"
   ],
   "SUPPORT": [
-    "src/UI/SettingsScreen.cs:766"
+    "src/UI/SettingsScreen.cs:783"
   ],
   "Support reminders": [
-    "src/UI/SettingsScreen.cs:767"
+    "src/UI/SettingsScreen.cs:784"
   ],
   "Support sentinel who walls, slows and heals, and can bring a teammate back.": [
     "src/Agents/AgentRoster.cs:235"
@@ -8502,10 +8564,10 @@
     "src/UI/SupportPrompt.cs:89"
   ],
   "Supporter code": [
-    "src/UI/SettingsScreen.cs:989"
+    "src/UI/SettingsScreen.cs:1006"
   ],
   "Supporters get a code that unlocks every skin, new ones too: paste it here, or use Get my code below": [
-    "src/UI/SettingsScreen.cs:991"
+    "src/UI/SettingsScreen.cs:1008"
   ],
   "SURE": [
     "src/Warmup/LockInCheckIn.cs:205"
@@ -8636,10 +8698,10 @@
     "src/Modes/Agents/DuelistKits.cs:937"
   ],
   "Thank you, {0}! Every skin is unlocked, new ones too": [
-    "src/UI/SettingsScreen.cs:990"
+    "src/UI/SettingsScreen.cs:1007"
   ],
   "That doesn't look like an email address": [
-    "src/UI/SettingsScreen.cs:1058"
+    "src/UI/SettingsScreen.cs:1075"
   ],
   "That's your current sens: keep it.": [
     "src/UI/ProfileSensHistory.cs:274"
@@ -8658,6 +8720,9 @@
   ],
   "The charge faded before you launched it": [
     "src/Modes/Agents/HushKit.cs:267"
+  ],
+  "The classic bright range": [
+    "src/World/RoomThemes.cs:189"
   ],
   "The click is chained to the flick: you fire the moment your hand stops, not when the crosshair is actually on the head.": [
     "src/Analysis/Assess.cs:360"
@@ -8687,7 +8752,7 @@
     "src/Warmup/WarmupScreen.cs:209"
   ],
   "The email you donated with. ValTrainer asks the supporter server once, when you press GET": [
-    "src/UI/SettingsScreen.cs:1037"
+    "src/UI/SettingsScreen.cs:1054"
   ],
   "The eye drifts 10 m forward, straight through walls.": [
     "src/Modes/Agents/InitiatorAbilities.cs:50"
@@ -8750,7 +8815,7 @@
     "src/UI/SkinPicker.cs:363"
   ],
   "The skin's own shots, hits and kill sounds": [
-    "src/UI/SettingsScreen.cs:541"
+    "src/UI/SettingsScreen.cs:558"
   ],
   "The spike is down: hold your post-plant angle while defenders retake. Play the defuse, not the peek.": [
     "src/Modes/TacticalModes.cs:30"
@@ -8797,7 +8862,7 @@
     "src/Modes/SensFinderMode.cs:889"
   ],
   "These are ValTrainer recordings (.vtt run data + .vtr 3D replay), played back inside ValTrainer's Rewind — not video files.": [
-    "src/UI/SettingsScreen.cs:1125"
+    "src/UI/SettingsScreen.cs:1142"
   ],
   "THEY COMPLETE ON THEIR OWN · NOTHING TO CLAIM": [
     "src/UI/ProgressScreen.cs:206"
@@ -8833,7 +8898,7 @@
     "src/UI/BugReport.cs:786"
   ],
   "This code isn't valid: paste the whole code": [
-    "src/UI/SettingsScreen.cs:992"
+    "src/UI/SettingsScreen.cs:1009"
   ],
   "this copy isn't the installation Windows knows about; use the installer from the release page": [
     "src/Core/UpdaterInstall.cs:60"
@@ -8861,7 +8926,7 @@
     "src/UI/SkinPicker.cs:355"
   ],
   "THIS PC": [
-    "src/UI/SettingsScreen.cs:695"
+    "src/UI/SettingsScreen.cs:712"
   ],
   "THIS RUN": [
     "src/UI/RewindDraw.cs:411"
@@ -8993,7 +9058,7 @@
     "src/UI/ProgressScreen.cs:244"
   ],
   "Toggle": [
-    "src/UI/SettingsScreen.cs:616"
+    "src/UI/SettingsScreen.cs:633"
   ],
   "toggle|OFF": [
     "src/Modes/Agents/ControllerTools.cs:454"
@@ -9038,7 +9103,7 @@
     "src/UI/BugReport.cs:1006"
   ],
   "Too many tries: wait an hour and try again": [
-    "src/UI/SettingsScreen.cs:1057"
+    "src/UI/SettingsScreen.cs:1074"
   ],
   "Too narrow": [
     "src/Modes/DefenseSetup.cs:190"
@@ -9130,7 +9195,7 @@
     "src/Progress/Requirements.cs:136"
   ],
   "TRAINED": [
-    "src/UI/ProgressOverlays.cs:429"
+    "src/UI/ProgressOverlays.cs:431"
   ],
   "TRAINED BY": [
     "src/UI/AgentsWidgets.cs:351"
@@ -9144,6 +9209,9 @@
   "training only · first phase only · back to your sens before the calibration": [
     "src/Warmup/WarmupScreen.cs:132"
   ],
+  "TRAINING ROOMS · AIM, AIM+ AND MOVEMENT DRILLS · MAPS KEEP THEIR OWN LOOK": [
+    "src/UI/ThemePicker.cs:51"
+  ],
   "Trains": [
     "src/UI/DrillPreview.cs:207"
   ],
@@ -9151,7 +9219,7 @@
     "src/Agents/AgentDrills.cs:318"
   ],
   "Translated by the community · fixes welcome on ValTrainer's GitHub": [
-    "src/UI/SettingsScreen.cs:272"
+    "src/UI/SettingsScreen.cs:273"
   ],
   "Translucent amber honeycomb lit from within, in a bronze frame": [
     "src/Game/Skins/SkinCatalog.cs:75"
@@ -9244,14 +9312,14 @@
     "src/UI/BugReport.cs:335"
   ],
   "UI quality / Anisotropic": [
-    "src/UI/SettingsScreen.cs:627"
+    "src/UI/SettingsScreen.cs:644"
   ],
   "Ultimate (X)": [
     "src/Valorant/Keybinds.cs:352"
   ],
   "Ultra": [
-    "src/UI/SettingsScreen.cs:47",
-    "src/UI/SettingsScreen.cs:51"
+    "src/UI/SettingsScreen.cs:48",
+    "src/UI/SettingsScreen.cs:52"
   ],
   "unbound": [
     "src/Valorant/Keybinds.cs:312"
@@ -9264,16 +9332,16 @@
   ],
   "Unknown": [
     "src/Core/SysInfo.cs:36",
-    "src/UI/SettingsScreen.cs:698"
+    "src/UI/SettingsScreen.cs:715"
   ],
   "unknown error": [
     "src/Core/UpdateCheck.cs:193"
   ],
   "Unlimited": [
     "src/UI/MenuScreen.cs:675",
-    "src/UI/SettingsScreen.cs:475",
     "src/UI/SettingsScreen.cs:476",
-    "src/UI/SettingsScreen.cs:625"
+    "src/UI/SettingsScreen.cs:477",
+    "src/UI/SettingsScreen.cs:642"
   ],
   "unlimited": [
     "src/Warmup/LockInSetupCheck.cs:103"
@@ -9298,12 +9366,16 @@
     "src/UI/ProfileScreen.cs:613"
   ],
   "UNLOCKED": [
-    "src/UI/ProgressOverlays.cs:270"
+    "src/UI/ProgressOverlays.cs:272",
+    "src/UI/ThemePicker.cs:192"
   ],
   "Unlocked": [
     "src/UI/SkinLevelTrack.cs:295",
     "src/UI/SkinLevelTrack.cs:443",
     "src/UI/SkinPicker.cs:715"
+  ],
+  "Unlocks at level {0} · Default until then": [
+    "src/UI/SettingsScreen.cs:508"
   ],
   "UNRANKED": [
     "src/UI/ProfileScreen.cs:190"
@@ -9354,7 +9426,7 @@
     "src/Core/Updater.cs:313"
   ],
   "UPDATES": [
-    "src/UI/SettingsScreen.cs:709",
+    "src/UI/SettingsScreen.cs:726",
     "src/UI/UpdatesPrompt.cs:83"
   ],
   "UPDATING VALTRAINER": [
@@ -9436,7 +9508,7 @@
     "src/Modes/Agents/DuelistDrills.cs:392"
   ],
   "USED ✓": [
-    "src/UI/SettingsScreen.cs:331"
+    "src/UI/SettingsScreen.cs:332"
   ],
   "Uses a dead enemy to show where their whole team is.": [
     "src/Agents/AgentRoster.cs:219"
@@ -9473,21 +9545,21 @@
   ],
   "VALORANT": [
     "src/UI/SettingsKeybinds.cs:335",
-    "src/UI/SettingsScreen.cs:198",
-    "src/UI/SettingsScreen.cs:221"
+    "src/UI/SettingsScreen.cs:199",
+    "src/UI/SettingsScreen.cs:222"
   ],
   "Valorant": [
     "src/Modes/AimPlusLongTaps.cs:22"
   ],
   "Valorant ({0})": [
-    "src/UI/SettingsScreen.cs:216",
-    "src/UI/SettingsScreen.cs:463",
-    "src/UI/SettingsScreen.cs:468",
-    "src/UI/SettingsScreen.cs:472",
-    "src/UI/SettingsScreen.cs:475"
+    "src/UI/SettingsScreen.cs:217",
+    "src/UI/SettingsScreen.cs:464",
+    "src/UI/SettingsScreen.cs:469",
+    "src/UI/SettingsScreen.cs:473",
+    "src/UI/SettingsScreen.cs:476"
   ],
   "VALORANT ACCOUNT": [
-    "src/UI/SettingsScreen.cs:172"
+    "src/UI/SettingsScreen.cs:173"
   ],
   "VALORANT CROSSHAIR CODE (YOUR WHOLE PROFILE)": [
     "src/Modes/CrosshairFinderDraw.cs:505"
@@ -9510,7 +9582,7 @@
     "src/UI/SettingsCrosshair.cs:44"
   ],
   "VALORANT keybinds (primary · secondary)": [
-    "src/UI/SettingsScreen.cs:605"
+    "src/UI/SettingsScreen.cs:622"
   ],
   "VALORANT not found: its default crosshair": [
     "src/UI/SettingsCrosshair.cs:41"
@@ -9546,13 +9618,13 @@
     "src/UI/SettingsKeybinds.cs:347"
   ],
   "Valorant: \"Hide outlines and fresnel\" off = ON": [
-    "src/UI/SettingsScreen.cs:220"
+    "src/UI/SettingsScreen.cs:221"
   ],
   "ValTrainer": [
     "src/Main.cs:74"
   ],
   "VALTRAINER 1.19 · PROGRESSION": [
-    "src/UI/ProgressOverlays.cs:414"
+    "src/UI/ProgressOverlays.cs:416"
   ],
   "ValTrainer can keep itself up to date. If you turn this on, it will:": [
     "src/UI/UpdatesPrompt.cs:101"
@@ -9567,7 +9639,7 @@
     "src/Valorant/CrosshairList.cs:166"
   ],
   "ValTrainer custom keybinds": [
-    "src/UI/SettingsScreen.cs:622"
+    "src/UI/SettingsScreen.cs:639"
   ],
   "ValTrainer default (VALORANT has no crosshair bind)": [
     "src/UI/SettingsKeybinds.cs:208"
@@ -9595,13 +9667,13 @@
     "src/UI/MenuScreen.cs:1358"
   ],
   "ValTrainer uses your custom binds on top of these (KEYBINDS tab)": [
-    "src/UI/SettingsScreen.cs:607"
+    "src/UI/SettingsScreen.cs:624"
   ],
   "VALTRAINER {0} IS AVAILABLE": [
     "src/UI/MenuScreen.cs:1352"
   ],
   "ValTrainer {0} is available": [
-    "src/UI/SettingsScreen.cs:874"
+    "src/UI/SettingsScreen.cs:891"
   ],
   "VALTRAINER {0} IS READY": [
     "src/UI/MenuScreen.cs:1350"
@@ -9616,16 +9688,16 @@
     "src/Game/Skins/SkinLooks.cs:92"
   ],
   "Version": [
-    "src/UI/SettingsScreen.cs:696"
+    "src/UI/SettingsScreen.cs:713"
   ],
   "version {0}": [
-    "src/UI/SettingsScreen.cs:667"
+    "src/UI/SettingsScreen.cs:684"
   ],
   "VERSION · UPDATES · FOLDERS · OPEN-SOURCE LICENSES": [
-    "src/UI/SettingsScreen.cs:83"
+    "src/UI/SettingsScreen.cs:84"
   ],
   "Version, renderer, GPU and folders, for a bug report": [
-    "src/UI/SettingsScreen.cs:818"
+    "src/UI/SettingsScreen.cs:835"
   ],
   "Veteran": [
     "src/Core/Difficulty.cs:37",
@@ -9635,7 +9707,7 @@
     "src/Agents/AgentRoster.cs:162"
   ],
   "VIDEO & GAMEPLAY": [
-    "src/UI/SettingsScreen.cs:123"
+    "src/UI/SettingsScreen.cs:124"
   ],
   "VIEW": [
     "src/UI/ProgressOverlays.cs:163",
@@ -9649,7 +9721,7 @@
     "src/UI/BugReport.cs:796"
   ],
   "Viewmodel (first-person gun)": [
-    "src/UI/SettingsScreen.cs:506"
+    "src/UI/SettingsScreen.cs:523"
   ],
   "virtual GPU": [
     "src/Core/SysInfo.cs:76"
@@ -9673,7 +9745,7 @@
     "src/Modes/PeekMixMode.cs:443"
   ],
   "Volume": [
-    "src/UI/SettingsScreen.cs:564"
+    "src/UI/SettingsScreen.cs:581"
   ],
   "VS USUAL": [
     "src/Warmup/WarmupSummary.cs:187"
@@ -9688,10 +9760,10 @@
     "src/Warmup/WarmupScreen.cs:229"
   ],
   "VSync": [
-    "src/UI/SettingsScreen.cs:471"
+    "src/UI/SettingsScreen.cs:472"
   ],
   "VSync / FPS limit": [
-    "src/UI/SettingsScreen.cs:625"
+    "src/UI/SettingsScreen.cs:642"
   ],
   "VSync is on in VALORANT. It adds input delay; most players turn it off.": [
     "src/Warmup/LockInSetupCheck.cs:154"
@@ -9716,7 +9788,7 @@
     "src/Valorant/Keybinds.cs:349"
   ],
   "Walk / crouch / jump": [
-    "src/UI/SettingsScreen.cs:618"
+    "src/UI/SettingsScreen.cs:635"
   ],
   "Walked / crouched across": [
     "src/Modes/StrafeJumpMode.cs:541"
@@ -9735,6 +9807,9 @@
   ],
   "Warm up with the Reaction Test, then Gridshot.": [
     "src/Analysis/Assess.cs:467"
+  ],
+  "Warm walls and a low orange sun": [
+    "src/World/RoomThemes.cs:194"
   ],
   "was {0:0} · {1:0.0} cm  ({2} DPI)": [
     "src/Modes/SensFinderDraw.cs:133"
@@ -9759,7 +9834,7 @@
     "src/UI/GunPicker.cs:521"
   ],
   "Weapon hand": [
-    "src/UI/SettingsScreen.cs:508"
+    "src/UI/SettingsScreen.cs:525"
   ],
   "WEEKLY": [
     "src/UI/ProgressScreen.cs:213"
@@ -9777,7 +9852,7 @@
     "src/UI/ProgressScreen.cs:138"
   ],
   "WELCOME": [
-    "src/UI/ProgressOverlays.cs:415"
+    "src/UI/ProgressOverlays.cs:417"
   ],
   "Welcome": [
     "src/Progress/Retro.cs:49"
@@ -9916,12 +9991,12 @@
   ],
   "Windowed": [
     "src/UI/MenuScreen.cs:663",
-    "src/UI/SettingsScreen.cs:36",
+    "src/UI/SettingsScreen.cs:37",
     "src/Warmup/LockInSetupCheck.cs:101"
   ],
   "Windowed Fullscreen": [
     "src/UI/MenuScreen.cs:663",
-    "src/UI/SettingsScreen.cs:36"
+    "src/UI/SettingsScreen.cs:37"
   ],
   "Windowed fullscreen": [
     "src/Warmup/LockInSetupCheck.cs:101"
@@ -10058,10 +10133,10 @@
     "src/Modes/StrafeDuelMode.cs:161"
   ],
   "You have the latest version": [
-    "src/UI/SettingsScreen.cs:875"
+    "src/UI/SettingsScreen.cs:892"
   ],
   "You have the latest version · checked {0}": [
-    "src/UI/SettingsScreen.cs:875"
+    "src/UI/SettingsScreen.cs:892"
   ],
   "you have {0}": [
     "src/UI/MenuScreen.cs:1359"
@@ -10284,7 +10359,7 @@
     "src/Warmup/WarmupData.cs:245"
   ],
   "YOUR FIRST SKIN": [
-    "src/UI/ProgressOverlays.cs:488"
+    "src/UI/ProgressOverlays.cs:490"
   ],
   "Your flicks covered {0:0}% of the distance; {1:0}% of the off-target ones stopped short": [
     "src/Analysis/Assess.cs:338"
@@ -10494,7 +10569,7 @@
     "src/Analysis/Assess.cs:541"
   ],
   "YOUR TRAINING COUNTS": [
-    "src/UI/ProgressOverlays.cs:415"
+    "src/UI/ProgressOverlays.cs:417"
   ],
   "Your typical badge": [
     "src/Progress/ProgressApi.cs:303"
@@ -10509,7 +10584,7 @@
     "src/Modes/CrosshairHint.cs:66"
   ],
   "Your VALORANT crosshair stands out on common map colours.": [
-    "src/UI/SettingsScreen.cs:382"
+    "src/UI/SettingsScreen.cs:383"
   ],
   "YOUR VALORANT RANK": [
     "src/UI/ProfileScreen.cs:272",
@@ -10932,16 +11007,16 @@
     "src/Modes/Agents/ControllerDraw.cs:382"
   ],
   "{0} (default)": [
-    "src/UI/SettingsScreen.cs:614"
+    "src/UI/SettingsScreen.cs:631"
   ],
   "{0} (dev run)": [
-    "src/UI/SettingsScreen.cs:696"
+    "src/UI/SettingsScreen.cs:713"
   ],
   "{0} (died within 2 s)": [
     "src/Modes/Agents/DuelistKits.cs:940"
   ],
   "{0} (KEYBINDS tab)": [
-    "src/UI/SettingsScreen.cs:622"
+    "src/UI/SettingsScreen.cs:639"
   ],
   "{0} (VALORANT's default)": [
     "src/Modes/CrosshairFinderMode.cs:201"
@@ -11078,7 +11153,7 @@
     "src/UI/SettingsKeybinds.cs:405"
   ],
   "{0} d ago": [
-    "src/UI/SettingsScreen.cs:888"
+    "src/UI/SettingsScreen.cs:905"
   ],
   "{0} dashes": [
     "src/Modes/Agents/DuelistKits.cs:159"
@@ -11165,10 +11240,10 @@
     "src/UI/ProfileScreen.cs:450"
   ],
   "{0} found · this one was used last|{0} found · this one was used last": [
-    "src/UI/SettingsScreen.cs:192"
+    "src/UI/SettingsScreen.cs:193"
   ],
   "{0} found|{0} found": [
-    "src/UI/SettingsScreen.cs:193"
+    "src/UI/SettingsScreen.cs:194"
   ],
   "{0} FPS": [
     "src/UI/Hud.cs:194"
@@ -11184,7 +11259,7 @@
   ],
   "{0} h ago": [
     "src/UI/DrillPreview.cs:507",
-    "src/UI/SettingsScreen.cs:887"
+    "src/UI/SettingsScreen.cs:904"
   ],
   "{0} h {1} min": [
     "src/UI/ProgressText.cs:200"
@@ -11237,7 +11312,7 @@
     "src/UI/ProgressText.cs:200"
   ],
   "{0} min ago": [
-    "src/UI/SettingsScreen.cs:886"
+    "src/UI/SettingsScreen.cs:903"
   ],
   "{0} missed|{0} missed": [
     "src/Modes/CrosshairFinderDraw.cs:321"
@@ -11449,7 +11524,7 @@
     "src/UI/AgentsScreen.cs:480"
   ],
   "{0} SKIN UNLOCKED|{0} SKINS UNLOCKED": [
-    "src/UI/ProgressOverlays.cs:488"
+    "src/UI/ProgressOverlays.cs:490"
   ],
   "{0} sprint": [
     "src/Modes/Agents/DuelistKits.cs:342"
@@ -11473,7 +11548,7 @@
     "src/UI/AgentsScreen.cs:137"
   ],
   "{0} UNLOCK|{0} UNLOCKS": [
-    "src/UI/ProgressOverlays.cs:260"
+    "src/UI/ProgressOverlays.cs:262"
   ],
   "{0} variant": [
     "src/UI/SkinPicker.cs:148"
@@ -11488,7 +11563,7 @@
     "src/Modes/SensFinderCompare.cs:269"
   ],
   "{0} XP": [
-    "src/UI/ProgressOverlays.cs:468"
+    "src/UI/ProgressOverlays.cs:470"
   ],
   "{0} XP in total": [
     "src/UI/ProgressScreen.cs:108"
@@ -11515,7 +11590,7 @@
     "src/Warmup/LockInCheckIn.cs:172"
   ],
   "{0} · auto ({1})": [
-    "src/UI/SettingsScreen.cs:699"
+    "src/UI/SettingsScreen.cs:716"
   ],
   "{0} · drills": [
     "src/UI/AgentsScreen.cs:378"
@@ -11586,7 +11661,7 @@
     "src/UI/GunPicker.cs:225"
   ],
   "{0} × {1} (letterbox)": [
-    "src/UI/SettingsScreen.cs:623"
+    "src/UI/SettingsScreen.cs:640"
   ],
   "{0} — CROSSHAIR": [
     "src/UI/Hud.cs:853"
