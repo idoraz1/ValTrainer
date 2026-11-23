@@ -16,6 +16,10 @@ public sealed class RunRecord
     /// the coach's sens history compare runs in cm/360 when the DPI changed. Older versions ignore the field.</summary>
     [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
     public int Dpi;
+    /// <summary>Mouse polling rate (Hz) set in ValTrainer when the run was played (1.23; 0 = not set or an older run: the
+    /// sens history counts it as unknown). Older versions ignore the field.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
+    public int PollingHz;
     public int Tier = -1;       // difficulty tier played (-1 = old Easy/Normal/Hard build)
     public int Badge = -1;      // rank badge earned (-1 = below Rookie / not rated)
     public string Map = "";

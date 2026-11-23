@@ -45,6 +45,8 @@ public sealed class SkillProfile
     public SensAdvice? Sens;
     /// <summary>Which sens of the player's history they score best with (<see cref="Analysis.SensHistory"/>; null = not built, e.g. fake data).</summary>
     public SensHistory? SensHistory;
+    /// <summary>The same history compared by DPI, polling rate and full setup (<see cref="SensHistory.By"/>); By.Sens is <see cref="SensHistory"/>.</summary>
+    public Dictionary<SensHistory.By, SensHistory>? SensHistoryBy;
     public int RunsAnalyzed;
     public DateTime Updated = DateTime.Now;
     /// <summary>The calibration the estimate was made with (<see cref="Bench.Calibration"/>; 0 = a hand-made profile).</summary>
@@ -91,7 +93,7 @@ public static class Coach
     }
 
     /// <summary>Aggregate profile across recent runs (stats records + recent telemetry files).</summary>
-    public static SkillProfile BuildProfile(StatsStore stats, float currentSens, int dpi)
+    public static SkillProfile BuildProfile(StatsStore stats, float currentSens, int dpi, int pollingHz = 0)
     {
         var runs = new List<SensAdvisor.RunInfo>();
         var modes = new List<string>(); // runs[i]'s drill
@@ -141,7 +143,10 @@ public static class Coach
         p.XhairSources = Agg.Sources(withMode, "xhair", "xhair.nh");
         p.MoveSources = Agg.Sources(withMode, "move", "move.stops");
         p.Sens = SensAdvisor.Advise(runs, currentSens, dpi, a.RefTier, finder);
-        p.SensHistory = SensHistory.Analyze(all, currentSens, dpi);
+        p.SensHistory = SensHistory.Analyze(all, currentSens, dpi, pollingHz);
+        p.SensHistoryBy = new() { [SensHistory.By.Sens] = p.SensHistory };
+        foreach (var by in new[] { SensHistory.By.Dpi, SensHistory.By.Polling, SensHistory.By.Setup })
+            p.SensHistoryBy[by] = SensHistory.Analyze(all, currentSens, dpi, pollingHz, by);
         return p;
     }
 

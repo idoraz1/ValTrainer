@@ -13,7 +13,7 @@ static class SensHistoryCheck
 
     /// <summary>n runs per drill at a sens, scores ~ N(mean·(1+effect), sd) with a fixed seed.</summary>
     static IEnumerable<RunRecord> Runs(Random rng, float sens, float effect, int perDrill, string[] drills, int dayOffset,
-        int tier = 2, int dpi = 800, float accBoost = 0, float killBoost = 0)
+        int tier = 2, int dpi = 800, float accBoost = 0, float killBoost = 0, int hz = 0)
     {
         int i = 0;
         foreach (var d in drills)
@@ -23,7 +23,7 @@ static class SensHistoryCheck
             {
                 yield return new RunRecord
                 {
-                    Mode = d, When = T0.AddDays(dayOffset).AddMinutes(i++ * 5), Tier = tier, Sens = sens, Dpi = dpi,
+                    Mode = d, When = T0.AddDays(dayOffset).AddMinutes(i++ * 5), Tier = tier, Sens = sens, Dpi = dpi, PollingHz = hz,
                     Score = (int)(mean * (1 + effect) + sd * Gauss(rng)), Shots = 90, Hits = 60,
                     Accuracy = 0.7f + accBoost + 0.03f * Gauss(rng), AvgKillMs = 600 * (1 + killBoost) + 30 * Gauss(rng), HeadshotPct = -1,
                 };
@@ -106,6 +106,83 @@ static class SensHistoryCheck
             .Concat(Runs(rng, 0.35f, 0.01f, 8, new[] { "gridshot" }, 0)).Concat(Runs(rng, 0.45f, -0.01f, 8, new[] { "gridshot" }, 3)).ToList();
         h = SensHistory.Analyze(runs, 0.45f, 800);
         Ok(h.Result == SensHistory.Verdict.Best && h.Top?.Sens == 0.45f, $"three small-score drills better at 0.450 beat one big-score drill better at 0.350: {h.Result} {h.Top?.Sens}");
+
+        // 9. compare by DPI: 0.4 @ 800 and 0.2 @ 1600 are one sens (same cm/360) but two DPIs; 1600 clearly better
+        var B = SensHistory.By.Dpi;
+        rng = new Random(21);
+        runs = Runs(rng, 0.4f, 0, 6, four, 0, dpi: 800).Concat(Runs(rng, 0.2f, 0.06f, 6, four, 3, dpi: 1600)).ToList();
+        h = SensHistory.Analyze(runs, 0.2f, 1600, 0, B);
+        Ok(SensHistory.Analyze(runs, 0.2f, 1600).Result == SensHistory.Verdict.OneSens && h.Result == SensHistory.Verdict.Best
+           && h.Top is { Dpi: 1600, Current: true, Unknown: false } && h.Buckets.Count == 2,
+            $"by DPI: same cm/360 is one sens, but 1600 DPI beats 800 DPI by DPI: {h.Result}, top {h.Top?.Dpi} DPI");
+        // runs from before 1.22 (no DPI) are an unknown bucket: shown, never compared or best, even when they score higher
+        rng = new Random(22);
+        runs = Runs(rng, 0.4f, 0.3f, 6, four, 0, dpi: 0).Concat(Runs(rng, 0.4f, 0, 6, four, 3, dpi: 800)).ToList();
+        h = SensHistory.Analyze(runs, 0.4f, 800, 0, B);
+        Ok(h.Result == SensHistory.Verdict.OneSens && h.Buckets.Count == 2 && h.Buckets[^1] is { Unknown: true, Runs: 0, AllRuns: 24, Dpi: 0 },
+            $"by DPI: runs without a DPI are one unknown bucket, not compared: {h.Result}, unknown has {h.Buckets[^1].AllRuns} runs, {h.Buckets[^1].Runs} compared");
+        h = SensHistory.Analyze(runs.Where(r => r.Dpi == 0), 0.4f, 800, 0, B);
+        Ok(h.Result == SensHistory.Verdict.NoneKnown && h.Top == null, $"by DPI: only runs without a DPI: {h.Result}");
+
+        // 10. compare by polling rate: 1000 Hz vs 8000 Hz (8000 clearly better), with many better-scoring runs of unknown polling
+        B = SensHistory.By.Polling;
+        rng = new Random(23);
+        runs = Runs(rng, 0.4f, 0, 6, four, 0, hz: 1000).Concat(Runs(rng, 0.4f, 0.06f, 6, four, 3, hz: 8000))
+            .Concat(Runs(rng, 0.4f, 0.4f, 8, four, 6, hz: 0)).ToList();
+        h = SensHistory.Analyze(runs, 0.4f, 800, 1000, B);
+        var unk = h.Buckets.SingleOrDefault(b => b.Unknown);
+        Ok(h.Result == SensHistory.Verdict.Best && h.Top is { PollingHz: 8000, Unknown: false } && unk is { Runs: 0, AllRuns: 32, PollingHz: 0, Current: false }
+           && h.Buckets.Single(b => b.Current).PollingHz == 1000 && ReferenceEquals(h.Buckets[^1], unk),
+            $"by polling: 8000 Hz beats 1000 Hz; the higher-scoring unknown-polling runs are never best: {h.Result}, top {h.Top?.PollingHz} Hz, unknown {unk?.AllRuns} runs / {unk?.Runs} compared");
+        Ok(h.ComparedRuns == 48, $"by polling: unknown runs don't enter the fair groups ({h.ComparedRuns} of 48 known runs compared)");
+        // unknown vs one known rate: still nothing to compare (never "best" against unknown)
+        h = SensHistory.Analyze(runs.Where(r => r.PollingHz != 8000), 0.4f, 800, 1000, B);
+        Ok(h.Result == SensHistory.Verdict.OneSens && h.Top == null, $"by polling: one known rate + unknown runs is one rate: {h.Result}");
+        h = SensHistory.Analyze(runs.Where(r => r.PollingHz == 0), 0.4f, 800, 0, B);
+        Ok(h.Result == SensHistory.Verdict.NoneKnown && h.Buckets.Count == 1 && !h.Buckets[0].Current, $"by polling: no polling saved: {h.Result}");
+        // equal skill at two rates: rarely a "best"
+        falseBest = 0;
+        for (int seed = 1; seed <= 20; seed++)
+        {
+            var r = new Random(100 + seed);
+            var same = Runs(r, 0.4f, 0, 4, four, 0, hz: 1000).Concat(Runs(r, 0.4f, 0, 4, four, 3, hz: 4000)).Concat(Runs(r, 0.4f, 0.3f, 4, four, 5)).ToList();
+            if (SensHistory.Analyze(same, 0.4f, 800, 4000, B).Result == SensHistory.Verdict.Best) falseBest++;
+        }
+        Ok(falseBest <= 2, $"by polling: no real difference: {falseBest} of 20 seeded histories named a best");
+
+        // 11. full setup: sens + DPI + polling. Same sens and DPI at 1000 / 4000 Hz are two setups; 0.2 @ 1600 is a third
+        B = SensHistory.By.Setup;
+        rng = new Random(24);
+        runs = Runs(rng, 0.4f, 0, 5, four, 0, dpi: 800, hz: 1000).Concat(Runs(rng, 0.4f, 0, 5, four, 2, dpi: 800, hz: 4000))
+            .Concat(Runs(rng, 0.2f, 0.08f, 5, four, 4, dpi: 1600, hz: 1000)).Concat(Runs(rng, 0.402f, 0, 2, four, 6, dpi: 800, hz: 1000))
+            .Concat(Runs(rng, 0.4f, 0.4f, 5, four, 8, dpi: 800, hz: 0)).ToList();
+        h = SensHistory.Analyze(runs, 0.4f, 800, 4000, B);
+        var setups = h.Buckets.Where(b => !b.Unknown).ToList();
+        Ok(setups.Count == 3 && h.Buckets.Count(b => b.Unknown) == 1 && setups.Single(b => b.PollingHz == 1000 && b.Dpi == 800).AllRuns == 28,
+            $"full setup: 3 setups (0.400 and 0.402 at 800 DPI, 1000 Hz are one) + unknown: {string.Join(", ", h.Buckets.Select(b => FormattableString.Invariant($"{b.Sens:0.000}/{b.Dpi}/{b.PollingHz}{(b.Unknown ? "?" : "")} {b.AllRuns}")))}");
+        Ok(h.Result == SensHistory.Verdict.Best && h.Top is { Dpi: 1600, PollingHz: 1000, Unknown: false }
+           && h.Buckets.Single(b => b.Current) is { Dpi: 800, PollingHz: 4000 },
+            $"full setup: 0.200 · 1600 DPI · 1000 Hz is best, current is 800 DPI · 4000 Hz: {h.Result} top {h.Top?.Sens:0.000}/{h.Top?.Dpi}/{h.Top?.PollingHz}");
+        // sens mode ignores polling (the same runs are 1 sens in cm/360... plus the 0.2 @ 1600 one: all 0.4@800-equivalent)
+        Ok(SensHistory.Analyze(runs, 0.4f, 800, 4000).Result == SensHistory.Verdict.OneSens, "full setup data by sens: one sens in cm/360");
+
+        // 12. run records: PollingHz saved only when set; old records without it load as 0 (unknown)
+        var jo = new System.Text.Json.JsonSerializerOptions { IncludeFields = true };
+        string j0 = System.Text.Json.JsonSerializer.Serialize(new RunRecord { Mode = "flick", Sens = 0.4f, Dpi = 800 }, jo);
+        string j1 = System.Text.Json.JsonSerializer.Serialize(new RunRecord { Mode = "flick", Sens = 0.4f, Dpi = 800, PollingHz = 4000 }, jo);
+        var back = System.Text.Json.JsonSerializer.Deserialize<RunRecord>(j1, jo);
+        var old = System.Text.Json.JsonSerializer.Deserialize<RunRecord>("{\"Mode\":\"flick\",\"Score\":100,\"Sens\":0.4}", jo);
+        Ok(!j0.Contains("PollingHz") && j1.Contains("\"PollingHz\":4000") && back?.PollingHz == 4000 && old is { PollingHz: 0, Dpi: 0 },
+            "run records: polling rate saved only when set, old records load as unknown");
+
+        // 13. mouse setup input: typed DPI, DPI / polling presets step and wrap (typed values step to their neighbours)
+        Ok(MouseSetup.TryParseDpi(" 1600 ", out int dp) && dp == 1600 && !MouseSetup.TryParseDpi("abc", out _) && !MouseSetup.TryParseDpi("0", out _)
+           && !MouseSetup.TryParseDpi("99999", out _) && MouseSetup.StepDpi(800, 1) == 1000 && MouseSetup.StepDpi(1100, 1) == 1200
+           && MouseSetup.StepDpi(1100, -1) == 1000 && MouseSetup.StepDpi(3200, 1) == 400 && MouseSetup.StepDpi(400, -1) == 3200,
+            "DPI: typed values, presets step and wrap");
+        Ok(MouseSetup.StepPolling(0, 1) == 125 && MouseSetup.StepPolling(8000, 1) == 0 && MouseSetup.StepPolling(0, -1) == 8000
+           && MouseSetup.StepPolling(1000, 1) == 2000 && MouseSetup.StepPolling(300, -1) == 250,
+            "polling rate: presets step through 'not set' and wrap");
 
         // 8. statistics helpers
         double t10 = SensHistory.TCrit975(10), t30 = SensHistory.TCrit975(30), t5 = SensHistory.TCrit975(5);

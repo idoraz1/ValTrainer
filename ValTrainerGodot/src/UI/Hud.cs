@@ -28,6 +28,8 @@ public partial class Hud : Control
     readonly List<VButton> overlayButtons = new();
     VButton? resetSens;
     LineEdit? sensEdit;
+    /// <summary>The pause menu's text boxes (sensitivity, DPI) and the value each shows when it isn't being typed in.</summary>
+    readonly List<(LineEdit Edit, Func<string> Shown)> overlayEdits = new();
     /// <summary>The pause menu's crosshair row (mouse wheel = previous / next crosshair); empty when there is none.</summary>
     Rect2 xhWheel;
     float overlayAt;
@@ -132,13 +134,14 @@ public partial class Hud : Control
     public override void _Input(InputEvent e)
     {
         if (overlay == null) return;
-        bool typing = sensEdit != null && IsInstanceValid(sensEdit) && sensEdit.HasFocus();
-        // Esc while typing a sensitivity: stop typing (don't resume the drill).
+        var focused = overlayEdits.FirstOrDefault(x => IsInstanceValid(x.Edit) && x.Edit.HasFocus());
+        bool typing = focused.Edit != null;
+        // Esc while typing a sensitivity / DPI: stop typing (don't resume the drill).
         if (typing && e is InputEventKey { Pressed: true, Echo: false, Keycode: Key.Escape })
         {
             GetViewport().SetInputAsHandled();
-            sensEdit!.Text = Main.I.Sens.ToString("0.000", Inv);
-            sensEdit.ReleaseFocus();
+            focused.Edit!.Text = focused.Shown();
+            focused.Edit.ReleaseFocus();
             return;
         }
         // The mouse wheel over the pause menu's crosshair row cycles the crosshairs (up = previous).
@@ -153,13 +156,14 @@ public partial class Hud : Control
         {
             GetViewport().SetInputAsHandled();
             if (mb.ButtonIndex != MouseButton.Left) return;
-            // The sensitivity box: clicks are swallowed above (no fire edge on resume), so focus it by hand.
-            if (sensEdit != null && IsInstanceValid(sensEdit) && sensEdit.IsVisibleInTree() && sensEdit.GetGlobalRect().HasPoint(mb.Position))
-            {
-                if (!sensEdit.HasFocus()) { sensEdit.GrabFocus(); sensEdit.SelectAll(); sensEdit.CaretColumn = sensEdit.Text.Length; }
-                return;
-            }
-            if (typing) sensEdit!.ReleaseFocus(); // clicking anywhere else applies what was typed
+            // The sensitivity / DPI boxes: clicks are swallowed above (no fire edge on resume), so focus them by hand.
+            foreach (var (ed, _) in overlayEdits)
+                if (IsInstanceValid(ed) && ed.IsVisibleInTree() && ed.GetGlobalRect().HasPoint(mb.Position))
+                {
+                    if (!ed.HasFocus()) { ed.GrabFocus(); ed.SelectAll(); ed.CaretColumn = ed.Text.Length; }
+                    return;
+                }
+            if (typing) focused.Edit!.ReleaseFocus(); // clicking anywhere else applies what was typed
             foreach (var b in overlayButtons)
                 if (b.IsVisibleInTree() && !b.Disabled && b.GetGlobalRect().HasPoint(mb.Position)) { b.Click(); break; }
         }
@@ -661,6 +665,7 @@ public partial class Hud : Control
         overlayButtons.Clear();
         resetSens = null;
         sensEdit = null;
+        overlayEdits.Clear();
         xhWheel = default;
         insightsPending = false;
         if (s.State is not (GameSession.St.Paused or GameSession.St.Results)) return;
@@ -699,7 +704,7 @@ public partial class Hud : Control
     {
         var m = s.Mode;
         var app = Main.I;
-        var panel = new Rect2(size.X / 2 - 290 * k, size.Y / 2 - 348 * k, 580 * k, 696 * k);
+        var panel = new Rect2(size.X / 2 - 290 * k, size.Y / 2 - 390 * k, 580 * k, 780 * k);
         float bx = panel.Position.X + 90 * k, bw = panel.Size.X - 180 * k, bh = 56 * k;
         float y = panel.Position.Y + 156 * k;
         OverlayButton(L.N("RESUME"), VButton.Look.Primary, new Rect2(bx, y, bw, bh), k, s.Resume);
@@ -750,12 +755,16 @@ public partial class Hud : Control
         sensEdit.FocusExited += ApplySens;
         sensEdit.Text = app.Sens.ToString("0.000", Inv);
         overlay!.AddChild(sensEdit);
-        // Dev self-check "--pause-type <value>" (with --pause-at): click the box, type, Enter, through the real input path.
-        if (Main.I.Dev && CmdLine.DevAfter("--pause-type") is { } typed)
-            GetTree().CreateTimer(1.0).Timeout += () =>
+        overlayEdits.Add((sensEdit, () => app.Sens.ToString("0.000", Inv)));
+        // Dev self-checks "--pause-type <value>" / "--pause-type-dpi <value>" (with --pause-at): click the box, type,
+        // Enter, through the real input path.
+        void DevType(string flag, Func<LineEdit?> box, double after)
+        {
+            if (!Main.I.Dev || CmdLine.DevAfter(flag) is not { } typed) return;
+            GetTree().CreateTimer(after).Timeout += () =>
             {
-                if (sensEdit == null || !IsInstanceValid(sensEdit)) return;
-                var at = sensEdit.GetGlobalRect().GetCenter();
+                if (box() is not { } ed || !IsInstanceValid(ed)) return;
+                var at = ed.GetGlobalRect().GetCenter();
                 Input.ParseInputEvent(new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = true, Position = at, GlobalPosition = at });
                 Input.ParseInputEvent(new InputEventMouseButton { ButtonIndex = MouseButton.Left, Pressed = false, Position = at, GlobalPosition = at });
                 foreach (char c in typed + "\n")
@@ -764,9 +773,56 @@ public partial class Hud : Control
                     Input.ParseInputEvent(new InputEventKey { Keycode = key, PhysicalKeycode = key, Unicode = c == '\n' ? 0 : c, Pressed = true });
                     Input.ParseInputEvent(new InputEventKey { Keycode = key, PhysicalKeycode = key, Pressed = false });
                 }
-                GetTree().CreateTimer(0.5).Timeout += () => Log.Info($"[pause-type] typed {typed}: sens now {Main.I.Sens.ToString("0.000", Inv)} (custom {Main.I.Settings.UseSensOverride}), state {s.State}");
+                GetTree().CreateTimer(0.5).Timeout += () => Log.Info($"[{flag.TrimStart('-')}] typed {typed}: sens now {Main.I.Sens.ToString("0.000", Inv)} (custom {Main.I.Settings.UseSensOverride}), DPI {Main.I.Settings.Dpi}, polling {Main.I.Settings.PollingHz}, state {s.State}");
             };
+        }
+        DevType("--pause-type", () => sensEdit, 1.0);
         y += 118 * k;
+
+        // Mouse setup (Discord suggestion): DPI (type a value or step through presets) and polling rate (presets or not
+        // set), side by side. Both are only what the player tells us: saved with the runs so the coach can compare setups.
+        float setupY = y + 30 * k;
+        float hw = (bw - 16 * k) / 2, px = bx + hw + 16 * k;
+        float sa = 36 * k, sy = setupY + (ab - sa) / 2; // smaller arrows: two selectors share the row
+        var dpiRect = new Rect2(bx + sa + 4 * k, setupY, hw - 2 * sa - 8 * k, ab);
+        var pollRect = new Rect2(px + sa + 4 * k, setupY, hw - 2 * sa - 8 * k, ab);
+        void SetDpi(int dpi)
+        {
+            if (dpi == app.Settings.Dpi) return;
+            app.Settings.Dpi = dpi;
+            app.Settings.Save();
+        }
+        void SetPolling(int hz)
+        {
+            app.Settings.PollingHz = hz;
+            app.Settings.Save();
+        }
+        OverlayButton("", VButton.Look.Arrow, new Rect2(bx, sy, sa, sa), k, () => SetDpi(MouseSetup.StepDpi(app.Settings.Dpi, -1))).Dir = -1;
+        OverlayButton("", VButton.Look.Arrow, new Rect2(bx + hw - sa, sy, sa, sa), k, () => SetDpi(MouseSetup.StepDpi(app.Settings.Dpi, 1))).Dir = 1;
+        OverlayButton("", VButton.Look.Arrow, new Rect2(px, sy, sa, sa), k, () => SetPolling(MouseSetup.StepPolling(app.Settings.PollingHz, -1))).Dir = -1;
+        OverlayButton("", VButton.Look.Arrow, new Rect2(px + hw - sa, sy, sa, sa), k, () => SetPolling(MouseSetup.StepPolling(app.Settings.PollingHz, 1))).Dir = 1;
+        // clicking the polling value steps up too (like a Settings selector)
+        OverlayButton("", VButton.Look.Ghost, pollRect, k, () => SetPolling(MouseSetup.StepPolling(app.Settings.PollingHz, 1))).Modulate = new Color(1, 1, 1, 0);
+        var dpiEdit = new LineEdit
+        {
+            Position = dpiRect.Position, Size = dpiRect.Size, CustomMinimumSize = dpiRect.Size, MaxLength = 5,
+            Alignment = HorizontalAlignment.Center, SelectAllOnFocus = true, TooltipText = L.T("Click and type your mouse DPI, then Enter"),
+        };
+        SettingsScreen.StyleEdit(dpiEdit, k, 24, UiTheme.Display);
+        dpiEdit.AddThemeStyleboxOverride("normal", new StyleBoxEmpty());
+        string DpiShown() => app.Settings.Dpi.ToString(Inv);
+        dpiEdit.TextSubmitted += _ => dpiEdit.ReleaseFocus();
+        dpiEdit.FocusExited += () =>
+        {
+            if (!IsInstanceValid(dpiEdit)) return;
+            if (MouseSetup.TryParseDpi(dpiEdit.Text, out int v)) SetDpi(v);
+            dpiEdit.Text = DpiShown();
+        };
+        dpiEdit.Text = DpiShown();
+        overlay!.AddChild(dpiEdit);
+        overlayEdits.Add((dpiEdit, DpiShown));
+        DevType("--pause-type-dpi", () => dpiEdit, 2.2);
+        y = setupY + ab + 8 * k;
 
         // Crosshair switcher (CrosshairList): ◀ name ▶, the mouse wheel over the row, or the Previous / Next crosshair binds.
         // The Crosshair Finder picks the crosshair itself, so the row only says so there.
@@ -824,6 +880,17 @@ public partial class Hud : Control
                 : L.F($"FROM VALORANT · {PlayerView.Cm360(sens, app.Settings.Dpi):0.0} CM/360 · CLICK TO TYPE");
             if (!app.Settings.UseSensOverride) Gfx.TextC(d, UiTheme.HudWide, note, cx, sensY + ab + 24 * k, ns, UiTheme.Faint);
             else Gfx.TextC(d, UiTheme.HudWide, note, cx, sensY + ab + 56 * k, ns, UiTheme.Faint);
+
+            // mouse setup: DPI | polling rate
+            Gfx.TextC(d, UiTheme.HudWide, "MOUSE DPI", bx + hw / 2, setupY - 12 * k, ls, UiTheme.Dim);
+            Gfx.TextC(d, UiTheme.HudWide, "POLLING RATE", px + hw / 2, setupY - 12 * k, ls, UiTheme.Dim);
+            d.DrawRect(dpiRect, new Color(0.03f, 0.06f, 0.09f, 0.9f));
+            d.DrawRect(pollRect, new Color(0.03f, 0.06f, 0.09f, 0.9f));
+            if (IsInstanceValid(dpiEdit) && !dpiEdit.HasFocus() && dpiEdit.Text != DpiShown()) dpiEdit.Text = DpiShown();
+            int hz = app.Settings.PollingHz, ps = UiTheme.Fs(hz > 0 ? 24 : 15, k);
+            string pollText = hz > 0 ? L.Raw(hz.ToString(Inv) + " HZ") : L.Upper(MouseSetup.PollingText(0));
+            Gfx.TextFit(d, UiTheme.Display, pollText, pollRect.GetCenter().X - Mathf.Min(Gfx.RawW(UiTheme.Display, pollText, ps), pollRect.Size.X - 8 * k) / 2,
+                Gfx.Mid(pollRect.GetCenter().Y, ps), ps, hz > 0 ? UiTheme.Text : UiTheme.Faint, pollRect.Size.X - 8 * k);
 
             // crosshair switcher
             Gfx.TextC(d, UiTheme.HudWide, "CROSSHAIR", cx, xhY - 12 * k, ls, UiTheme.Dim);

@@ -199,7 +199,7 @@ public static class CoachData
     static string Key()
     {
         var app = Main.I;
-        return string.Create(CultureInfo.InvariantCulture, $"{app.Stats.Runs.Count}|{app.Sens:0.0000}|{app.Settings.Dpi}|{FakeVariant}|{L.Lang}");
+        return string.Create(CultureInfo.InvariantCulture, $"{app.Stats.Runs.Count}|{app.Sens:0.0000}|{app.Settings.Dpi}|{app.Settings.PollingHz}|{FakeVariant}|{L.Lang}");
     }
 
     /// <summary>Starts the analysis (or keeps the cached / running one if nothing changed). Main thread only.</summary>
@@ -212,7 +212,7 @@ public static class CoachData
         // Snapshot so a run finishing meanwhile can't modify the list under the worker.
         var snapshot = new StatsStore { Runs = app.Stats.Runs.ToList() };
         float sens = app.Sens;
-        int dpi = app.Settings.Dpi;
+        int dpi = app.Settings.Dpi, hz = app.Settings.PollingHz;
         string? fake = FakeVariant;
         bool saves = app.SavesData; // dev runs never touch the player's recordings
         task = Task.Run(() =>
@@ -225,7 +225,7 @@ public static class CoachData
                     return CoachFake.Profile(fake, sens, dpi);
                 }
                 LastError = null;
-                var profile = Coach.BuildProfile(snapshot, sens, dpi) ?? new SkillProfile();
+                var profile = Coach.BuildProfile(snapshot, sens, dpi, hz) ?? new SkillProfile();
                 // Rewind recordings: keep recent runs + examples of problems the coach still sees; delete the rest.
                 if (saves)
                 {
