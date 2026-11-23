@@ -20,8 +20,9 @@ public static class Environments
 
     static int Quality(int requested) => EnvDev.Quality(requested);
 
-    /// <summary>The shooting range (player at the origin looking down -Z) plus any extra solids from the mode.</summary>
-    public static Built BuildRange(IEnumerable<Box> extra, int quality)
+    /// <summary>The shooting range (player at the origin looking down -Z) plus any extra solids from the mode, in the room
+    /// theme picked in Settings (<see cref="RoomThemes.Current"/>) unless <paramref name="theme"/> is given.</summary>
+    public static Built BuildRange(IEnumerable<Box> extra, int quality, Theme? theme = null)
     {
         quality = Quality(quality);
         SurfaceLib.Lite = quality == 0;
@@ -39,7 +40,8 @@ public static class Environments
         solid.AddRange(walls);
         solid.AddRange(extras);
 
-        var th = Themes.Range;
+        var th = theme ?? RoomThemes.Current.Look;
+        Target.RoomBody = th.TargetBody;
         var wb = new WorldBuilder(th, root, solid, 1234);
         wb.Floor(floor);
         foreach (var w in walls) wb.Wall(w, decorate: true);
@@ -55,6 +57,7 @@ public static class Environments
     {
         quality = Quality(quality);
         SurfaceLib.Lite = quality == 0;
+        Target.RoomBody = null; // maps keep the standard target look
         var root = new Node3D { Name = map.Key };
         var solid = new List<Box>();
         foreach (var b in map.Boxes) solid.Add(b.Bounds);

@@ -765,6 +765,9 @@
   "AIM · MOVEMENT · UTILITY DRILLS — PLAYED WITH YOUR OWN VALORANT SETTINGS": [
     "src/UI/MenuScreen.cs:286"
   ],
+  "Aim, Aim+ and movement rooms · {0} of {1} unlocked · click to see all": [
+    "src/UI/SettingsScreen.cs:505"
+  ],
   "Aiming down sights (Vandal, Phantom, Headhunter): your own ADS crosshair, {0}.": [
     "src/UI/CrosshairView.cs:408"
   ],
@@ -1803,6 +1806,9 @@
     "src/Progress/ProgressApi.cs:283",
     "src/Progress/Requirements.cs:135"
   ],
+  "Concrete": [
+    "src/World/RoomThemes.cs:193"
+  ],
   "CONCUSSED": [
     "src/Modes/DefenseModes.cs:683"
   ],
@@ -2197,11 +2203,17 @@
   "Damascus Steel": [
     "src/Game/Skins/SkinCatalog.cs:65"
   ],
+  "Dark": [
+    "src/World/RoomThemes.cs:190"
+  ],
   "Dark body + highlight outline, like VALORANT enemies": [
     "src/UI/SettingsScreen.cs:221"
   ],
   "Dark frosted ice with green and violet northern lights flowing through it": [
     "src/Game/Skins/SkinCatalog.cs:79"
+  ],
+  "Dark grey walls, a night sky, low glare": [
+    "src/World/RoomThemes.cs:190"
   ],
   "Dark polymer with light furniture": [
     "src/Game/Skins/SkinCatalog.cs:66"
@@ -2251,6 +2263,9 @@
   ],
   "Deep": [
     "src/Modes/MovementPlusModes.cs:299"
+  ],
+  "Deep blue walls under a night sky": [
+    "src/World/RoomThemes.cs:192"
   ],
   "DEF": [
     "src/Modes/TacticalModes.cs:34",
@@ -2338,6 +2353,9 @@
   ],
   "Describe your idea in at least {0} characters": [
     "src/UI/BugReport.cs:370"
+  ],
+  "Desert": [
+    "src/World/RoomThemes.cs:195"
   ],
   "Desert Camo": [
     "src/Game/Skins/SkinCatalog.cs:63"
@@ -3174,6 +3192,9 @@
   "FLAT": [
     "src/Warmup/LockInCheckIn.cs:198"
   ],
+  "Flat pale walls, black cover: targets pop": [
+    "src/World/RoomThemes.cs:191"
+  ],
   "FLICK": [
     "src/UI/CoachUi.cs:126",
     "src/UI/RewindDraw.cs:365",
@@ -3304,6 +3325,9 @@
   "Free": [
     "src/Progress/ProgressApi.cs:384",
     "src/Progress/Requirements.cs:127"
+  ],
+  "FREE": [
+    "src/UI/ThemePicker.cs:192"
   ],
   "FREE PLAY": [
     "src/UI/DrillPreview.cs:264",
@@ -3481,6 +3505,9 @@
   "Green Yellow": [
     "src/Valorant/CrosshairCode.cs:79"
   ],
+  "Grey concrete under a soft overcast sky": [
+    "src/World/RoomThemes.cs:193"
+  ],
   "GRID": [
     "src/Warmup/WarmupPlan.cs:161"
   ],
@@ -3640,6 +3667,9 @@
   ],
   "high confidence": [
     "src/UI/CoachUi.cs:102"
+  ],
+  "High Contrast": [
+    "src/World/RoomThemes.cs:191"
   ],
   "HIGHER": [
     "src/UI/ProfileScreen.cs:760",
@@ -4434,6 +4464,9 @@
   "LEVEL UP": [
     "src/UI/ProgressOverlays.cs:247"
   ],
+  "Level up by training to unlock more themes · cosmetic only, applies on the next drill": [
+    "src/UI/ThemePicker.cs:87"
+  ],
   "LEVEL {0}": [
     "src/UI/ProgressOverlays.cs:248",
     "src/UI/ProgressOverlays.cs:456",
@@ -4936,6 +4969,9 @@
   "Mid (4–6)": [
     "src/Warmup/LockInMatchLog.cs:120"
   ],
+  "Midnight": [
+    "src/World/RoomThemes.cs:192"
+  ],
   "Minimap": [
     "src/UI/SettingsScreen.cs:502"
   ],
@@ -5058,6 +5094,9 @@
   "Nature initiator who scouts with a tiger and flashes with guiding birds.": [
     "src/Agents/AgentRoster.cs:130"
   ],
+  "Near-black room with a glowing grid": [
+    "src/World/RoomThemes.cs:196"
+  ],
   "NEARSIGHTED": [
     "src/Modes/Agents/InitiatorDrill.cs:712"
   ],
@@ -5073,6 +5112,9 @@
   ],
   "needs more drills in common": [
     "src/UI/ProfileSensHistory.cs:223"
+  ],
+  "Neon Grid": [
+    "src/World/RoomThemes.cs:196"
   ],
   "Nerves are your body getting ready. Use them.": [
     "src/Warmup/LockInWidgets.cs:21"
@@ -5096,6 +5138,9 @@
   ],
   "NEW PERSONAL BEST": [
     "src/UI/Hud.cs:874"
+  ],
+  "New room theme: {0} (Settings)": [
+    "src/UI/ProgressOverlays.cs:251"
   ],
   "NEW SKINS": [
     "src/UI/ProgressOverlays.cs:259"
@@ -6607,6 +6652,9 @@
   "Reach level {0}": [
     "src/Progress/Requirements.cs:128"
   ],
+  "Reach level {0} to unlock": [
+    "src/UI/ThemePicker.cs:197"
+  ],
   "Reach {0} in {1} benchmark drill|Reach {0} in {1} benchmark drills": [
     "src/Progress/Requirements.cs:143"
   ],
@@ -6982,6 +7030,12 @@
   "Rookie": [
     "src/Core/Difficulty.cs:35"
   ],
+  "ROOM THEME": [
+    "src/UI/ThemePicker.cs:51"
+  ],
+  "Room theme": [
+    "src/UI/SettingsScreen.cs:497"
+  ],
   "Rose Gold": [
     "src/Game/Skins/SkinLooks.cs:109"
   ],
@@ -7099,6 +7153,9 @@
   ],
   "Sand and tan blot camo": [
     "src/Game/Skins/SkinCatalog.cs:63"
+  ],
+  "Sandstone blocks and a hot pale sky": [
+    "src/World/RoomThemes.cs:195"
   ],
   "SAVE CURRENT": [
     "src/UI/SettingsCrosshair.cs:76",
@@ -8308,6 +8365,9 @@
     "src/UI/MenuScreen.cs:339",
     "src/UI/SettingsScreen.cs:801"
   ],
+  "Sunset": [
+    "src/World/RoomThemes.cs:194"
+  ],
   "SUPPORT": [
     "src/UI/SettingsScreen.cs:764"
   ],
@@ -8476,6 +8536,9 @@
   ],
   "The charge faded before you launched it": [
     "src/Modes/Agents/HushKit.cs:267"
+  ],
+  "The classic bright range": [
+    "src/World/RoomThemes.cs:189"
   ],
   "The click is chained to the flick: you fire the moment your hand stops, not when the crosshair is actually on the head.": [
     "src/Analysis/Assess.cs:360"
@@ -8961,6 +9024,9 @@
   "training only · first phase only · back to your sens before the calibration": [
     "src/Warmup/WarmupScreen.cs:132"
   ],
+  "TRAINING ROOMS · AIM, AIM+ AND MOVEMENT DRILLS · MAPS KEEP THEIR OWN LOOK": [
+    "src/UI/ThemePicker.cs:51"
+  ],
   "Trains": [
     "src/UI/DrillPreview.cs:207"
   ],
@@ -9113,6 +9179,9 @@
     "src/UI/SkinLevelTrack.cs:295",
     "src/UI/SkinLevelTrack.cs:443",
     "src/UI/SkinPicker.cs:715"
+  ],
+  "Unlocks at level {0} · Default until then": [
+    "src/UI/SettingsScreen.cs:506"
   ],
   "UNRANKED": [
     "src/UI/ProfileScreen.cs:190"
@@ -9544,6 +9613,9 @@
   ],
   "Warm up with the Reaction Test, then Gridshot.": [
     "src/Analysis/Assess.cs:467"
+  ],
+  "Warm walls and a low orange sun": [
+    "src/World/RoomThemes.cs:194"
   ],
   "was {0:0} · {1:0.0} cm  ({2} DPI)": [
     "src/Modes/SensFinderDraw.cs:131",

@@ -26,6 +26,9 @@ public sealed class AppSettings
     public int Quality = 1;            // graphics preset: 0 Low (≈300 FPS), 1 Medium (≈150), 2 High (≈85), 3 Ultra (≈60) on a GTX 1050-class GPU
     public float ViewmodelFov = 70f;
     public string MapKey = "random";   // map for map-based drills
+    /// <summary>Training room environment theme (Settings → Graphics; World.RoomThemes key: default, dark, midnight…). A locked
+    /// theme is kept and shows the default until it unlocks.</summary>
+    public string RoomTheme = "default";
     public float Volume = 0.5f;
     public bool Outlines = true;      // enemy outline + fresnel (Valorant: "Hide outlines and fresnel" off)
     public string TargetStyle = "valorant"; // aim-drill targets: "valorant" = dark body + enemy-colour outline/fresnel, "classic" = solid enemy-colour sphere

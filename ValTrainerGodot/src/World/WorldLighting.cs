@@ -22,7 +22,7 @@ public static class WorldLighting
             ProcessMode = Sky.ProcessModeEnum.Quality,
         };
         float yaw = Mathf.DegToRad(yawOverride ?? th.SkyYaw);
-        var horizon = th.Style == DecorStyle.Bind ? new Color(0.78f, 0.74f, 0.68f) : new Color(0.66f, 0.72f, 0.8f);
+        var horizon = th.FogColor ?? (th.Style == DecorStyle.Bind ? new Color(0.78f, 0.74f, 0.68f) : new Color(0.66f, 0.72f, 0.8f));
         var env = new Godot.Environment
         {
             BackgroundMode = Godot.Environment.BGMode.Sky,
@@ -60,6 +60,12 @@ public static class WorldLighting
             AdjustmentSaturation = th.Saturation,
         };
 
+        if (th.AmbientColor is { } amb)
+        {
+            env.AmbientLightSource = Godot.Environment.AmbientSource.Color;
+            env.AmbientLightColor = amb;
+        }
+
         // The sun sits where the panorama's sun is, after the sky rotation.
         var sunDir = (new Basis(Vector3.Up, yaw).Inverse() * Hdris.Sun(th.Hdri)).Normalized();
         var sun = new DirectionalLight3D
@@ -78,7 +84,7 @@ public static class WorldLighting
         };
         sun.Basis = Basis.LookingAt(-sunDir, Mathf.Abs(sunDir.Y) > 0.99f ? Vector3.Forward : Vector3.Up);
 
-        ApplyQuality(env, sun, q, bounds);
+        ApplyQuality(env, sun, q, bounds, th);
         if (EnvDev.Has("noshadow")) sun.ShadowEnabled = false;
         if (EnvDev.Has("noglow")) env.GlowEnabled = false;
         if (EnvDev.Has("nofog")) env.FogEnabled = false;
@@ -115,7 +121,7 @@ public static class WorldLighting
 
     static ShaderMaterial SkyMaterial(Theme th)
     {
-        string key = $"{th.Hdri}|{th.SkyTint}|{th.SkySaturation}|{th.SkyEnergy}|{th.Ground}";
+        string key = $"{th.Hdri}|{th.SkyTint}|{th.SkySaturation}|{th.SkyEnergy}|{th.Ground}|{th.SunDisc}";
         if (skyCache.TryGetValue(key, out var m)) return m;
         m = new ShaderMaterial { Shader = SurfaceLib.SkyShader };
         m.SetShaderParameter("panorama", GD.Load<Texture2D>($"res://assets/hdri/{th.Hdri}.hdr"));
@@ -125,13 +131,13 @@ public static class WorldLighting
         m.SetShaderParameter("tint", th.SkyTint);
         m.SetShaderParameter("ground_color", th.Ground);
         m.SetShaderParameter("ground_energy", 1.0f);
-        m.SetShaderParameter("sun_energy", 30f);
-        m.SetShaderParameter("sun_glow", 1.2f);
+        m.SetShaderParameter("sun_energy", 30f * th.SunDisc);
+        m.SetShaderParameter("sun_glow", 1.2f * th.SunDisc);
         skyCache[key] = m;
         return m;
     }
 
-    static void ApplyQuality(Godot.Environment env, DirectionalLight3D sun, int q, Aabb bounds)
+    static void ApplyQuality(Godot.Environment env, DirectionalLight3D sun, int q, Aabb bounds, Theme th)
     {
         // ---- shadows ----
         RenderingServer.DirectionalShadowAtlasSetSize(q >= 2 ? 4096 : 2048, true);
@@ -196,7 +202,7 @@ public static class WorldLighting
         if (q >= 3)
         {
             env.VolumetricFogDensity = 0.0035f;
-            env.VolumetricFogAlbedo = new Color(0.92f, 0.95f, 1f);
+            env.VolumetricFogAlbedo = th.FogColor is { } fc ? fc.Lerp(Colors.White, 0.5f) : new Color(0.92f, 0.95f, 1f);
             env.VolumetricFogAnisotropy = 0.55f;
             env.VolumetricFogLength = 64f;
             env.VolumetricFogSkyAffect = 0.15f;

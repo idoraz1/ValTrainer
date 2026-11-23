@@ -5,6 +5,7 @@ using ValTrainer.Core;
 using ValTrainer.Game;
 using ValTrainer.Game.Weapon;
 using ValTrainer.Valorant;
+using ValTrainer.World;
 
 namespace ValTrainer.UI;
 
@@ -492,6 +493,22 @@ public partial class SettingsScreen : ScreenBase
                 St.Renderer = RendererGuard.Choices[Wrap((i < 0 ? 0 : i) + d, 0, RendererGuard.Choices.Length - 1)];
             },
             note: () => L.F($"Now: {RendererName(RendererGuard.Current)} · applies when you restart ValTrainer")));
+        // training room look (suggested on Discord): the arrows step through the unlocked themes, the value opens the picker
+        v.AddChild(Selector("Room theme", () => L.T(RoomThemes.Chosen.Name),
+            d =>
+            {
+                var open = RoomThemes.All.Where(RoomThemes.IsUnlocked).ToList();
+                int i = open.IndexOf(RoomThemes.Chosen);
+                St.RoomTheme = open[Wrap((i < 0 ? 0 : i) + d, 0, open.Count - 1)].Key;
+            },
+            note: () => RoomThemes.IsUnlocked(RoomThemes.Chosen)
+                ? L.F($"Aim, Aim+ and movement rooms · {RoomThemes.All.Count(RoomThemes.IsUnlocked)} of {RoomThemes.All.Count} unlocked · click to see all")
+                : L.F($"Unlocks at level {RoomThemes.Chosen.Level} · Default until then"),
+            swatch: () => RoomThemes.Chosen.Look.Wall.Tint,
+            onField: () => ThemePicker.Open(this, K, RefreshAll)));
+        // Dev-only: "--settings-themes" opens the room theme picker (screenshots).
+        if (CmdLine.Dev && CmdLine.Has("--settings-themes"))
+            GetTree().CreateTimer(0.4).Timeout += () => { if (IsInstanceValid(this)) ThemePicker.Open(this, K, RefreshAll); };
 
         v.AddChild(Spacer(0, 6 * k));
         v.AddChild(new SectionLabel { Text = "GAMEPLAY", K = k });

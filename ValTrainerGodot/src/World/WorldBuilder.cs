@@ -380,9 +380,11 @@ sealed class WorldBuilder
 
     public void RangeDressing(float halfWidth, float front, float back)
     {
-        var orange = RangeOrange;
-        var yellow = SurfaceLib.Flat(new Color(0.98f, 0.78f, 0.16f), 0.6f);
-        var white = SurfaceLib.Flat(new Color(0.85f, 0.86f, 0.88f), 0.7f);
+        // the room theme's paint (Themes.Range = the classic orange / yellow / white); glowing on NEON GRID
+        StandardMaterial3D Paint(Color c, float rough) => th.MarkingGlow > 0 ? SurfaceLib.Glow(c, th.MarkingGlow) : SurfaceLib.Flat(c, rough);
+        var orange = th.Marking == RangeOrange.AlbedoColor && th.MarkingGlow <= 0 ? RangeOrange : Paint(th.Marking, 0.6f);
+        var yellow = Paint(th.Tick, 0.6f);
+        var white = Paint(th.Lane, 0.7f);
         // Distance lines every 10 m (the player stands at z = 0), short ticks every 5 m.
         for (int d = 10; d < -front; d += 10)
             batch.FloorQuad(orange, -halfWidth + 0.6f, -d - 0.1f, halfWidth - 0.6f, -d + 0.1f, 0.004f);
@@ -393,7 +395,7 @@ sealed class WorldBuilder
             batch.FloorQuad(white, x - 0.06f, front + 1, x + 0.06f, back - 1, 0.003f);
         // Spawn pad.
         const float P = 1.6f, W = 0.08f;
-        batch.FloorQuad(SurfaceLib.Flat(new Color(0.16f, 0.17f, 0.2f), 0.8f), -P, -P, P, P, 0.002f);
+        batch.FloorQuad(SurfaceLib.Flat(th.Pad, 0.8f), -P, -P, P, P, 0.002f);
         batch.FloorQuad(orange, -P, -P, P, -P + W, 0.004f);
         batch.FloorQuad(orange, -P, P - W, P, P, 0.004f);
         batch.FloorQuad(orange, -P, -P + W, -P + W, P - W, 0.004f);
@@ -403,7 +405,7 @@ sealed class WorldBuilder
             foreach (var x in new[] { -6.5f, 6.5f })
                 root.AddChild(new Label3D
                 {
-                    Text = $"{d}M", FontSize = 120, PixelSize = 0.008f, Modulate = new Color(0.98f, 0.55f, 0.15f),
+                    Text = $"{d}M", FontSize = 120, PixelSize = 0.008f, Modulate = th.Marking == RangeOrange.AlbedoColor ? new Color(0.98f, 0.55f, 0.15f) : th.Marking.Lerp(Colors.White, 0.12f),
                     OutlineSize = 0, Shaded = false, AlphaCut = Label3D.AlphaCutMode.Discard,
                     Position = new Vector3(x, 0.01f, -d + 0.75f), RotationDegrees = new Vector3(-90, 0, 0),
                     CastShadow = GeometryInstance3D.ShadowCastingSetting.Off,
@@ -422,7 +424,7 @@ sealed class WorldBuilder
             Add(seam, new Box(new Vector3(-halfWidth, baseTop, z - 0.07f), new Vector3(-halfWidth + 0.02f, top, z + 0.07f)));
             Add(seam, new Box(new Vector3(halfWidth - 0.02f, baseTop, z - 0.07f), new Vector3(halfWidth, top, z + 0.07f)));
         }
-        var flood = SurfaceLib.Glow(new Color(0.9f, 0.95f, 1f), 1.4f);
+        var flood = th.FloodGlow > 0 ? SurfaceLib.Glow(th.Flood, th.FloodGlow) : SurfaceLib.Flat(th.Flood, 0.5f);
         for (float x = -halfWidth + 12; x < halfWidth - 4; x += 16)
         {
             Add(DarkPanel, new Box(new Vector3(x - 1.2f, 11.6f, front), new Vector3(x + 1.2f, 12.4f, front + 0.1f)));
@@ -430,6 +432,37 @@ sealed class WorldBuilder
         }
         // Big orange stripe high on the far wall (reads as the range's back board).
         Add(orange, new Box(new Vector3(-halfWidth, 7.0f, front), new Vector3(halfWidth, 7.35f, front + 0.03f)));
+        if (th.Grid is { } grid) GridLines(grid, halfWidth, front, back, baseTop, top);
+    }
+
+    /// <summary>NEON GRID: thin glowing lines every 4 m on the floor and on the four inner wall faces above the wainscot
+    /// (relief ≤ 1.2 cm, no collision). Cyan, far from every enemy highlight hue.</summary>
+    void GridLines(Color c, float halfWidth, float front, float back, float y0, float y1)
+    {
+        var glow = SurfaceLib.Glow(c, th.GridGlow);
+        const float S = 4f, W = 0.04f, D = 0.012f;
+        for (float x = -halfWidth + S; x < halfWidth - 0.5f; x += S)
+            batch.FloorQuad(glow, x - W, front + 0.2f, x + W, back - 0.2f, 0.003f);
+        for (float z = back - S; z > front + 0.5f; z -= S)
+            batch.FloorQuad(glow, -halfWidth + 0.2f, z - W, halfWidth - 0.2f, z + W, 0.003f);
+        // walls: verticals every 4 m, horizontals every 4 m above the wainscot
+        for (float x = -halfWidth + S; x < halfWidth - 0.5f; x += S)
+        {
+            Add(glow, new Box(new Vector3(x - W, y0, front), new Vector3(x + W, y1, front + D)));
+            Add(glow, new Box(new Vector3(x - W, y0, back - D), new Vector3(x + W, y1, back)));
+        }
+        for (float z = front + S; z < back - 0.5f; z += S)
+        {
+            Add(glow, new Box(new Vector3(-halfWidth, y0, z - W), new Vector3(-halfWidth + D, y1, z + W)));
+            Add(glow, new Box(new Vector3(halfWidth - D, y0, z - W), new Vector3(halfWidth, y1, z + W)));
+        }
+        for (float y = y0 + 0.02f; y < y1; y += S)
+        {
+            Add(glow, new Box(new Vector3(-halfWidth, y - W, front), new Vector3(halfWidth, y + W, front + D)));
+            Add(glow, new Box(new Vector3(-halfWidth, y - W, back - D), new Vector3(halfWidth, y + W, back)));
+            Add(glow, new Box(new Vector3(-halfWidth, y - W, front), new Vector3(-halfWidth + D, y + W, back)));
+            Add(glow, new Box(new Vector3(halfWidth - D, y - W, front), new Vector3(halfWidth, y + W, back)));
+        }
     }
 
     // ------------------------------------------------------------------ outside the play space

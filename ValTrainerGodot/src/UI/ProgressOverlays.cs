@@ -247,7 +247,9 @@ public partial class UnlockToast : Control
             Gfx.Text(this, UiTheme.HudWide, "LEVEL UP", x, 34 * k, cs, col);
             Gfx.TextRaw(this, UiTheme.Display, L.F($"LEVEL {level}"), x, 66 * k, ns, UiTheme.Text);
             var next = Progress.NextUnlocks(1);
-            if (next.Count > 0)
+            if (World.RoomThemes.UnlockedBetween(level - 1, level).FirstOrDefault() is { } theme)
+                Gfx.TextFit(this, UiTheme.Body, L.F($"New room theme: {L.T(theme.Name)} (Settings)"), x, 90 * k, ss, UiTheme.Good, r.Size.X - x - 14 * k);
+            else if (next.Count > 0)
                 Gfx.TextFit(this, UiTheme.Body, L.F($"Next: {ProgressText.ItemName(next[0].ItemId)}"), x, 90 * k, ss, UiTheme.Dim, r.Size.X - x - 14 * k);
         }
         else if (Group)

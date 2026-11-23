@@ -8,6 +8,9 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Added
+- Room themes for the training rooms (the aim, Aim+ and movement drills): pick a look in Settings → Graphics → Room theme. DARK (dark grey walls, a night sky and a dim moon instead of the bright sun, so nothing burns your eyes) and DEFAULT (today's bright range) are free. Six more unlock as you level up by training: HIGH CONTRAST (level 3), MIDNIGHT (5), CONCRETE (8), SUNSET (11), DESERT (15) and NEON GRID (20). Click the setting to see every theme with a preview and the level it needs. Targets stay easy to see in every theme: in the dark rooms they get a light body with your enemy-colour outline. The maps keep their own look. Cosmetic only (suggested on Discord).
+
 ## [1.22.0] - 2026-11-22
 
 ### Added
