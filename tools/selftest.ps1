@@ -21,7 +21,7 @@ param(
   # Drills for the smoke test (keys from src\Modes). Reaction Test and Sens Finder need real input and are left out.
   [string[]]$Modes = @("peek_mix", "flick", "gridshot", "spider", "tracking", "strafebots", "peek", "operator", "spray_vandal",
                        "spray_phantom", "spray_transfer", "counterstrafe", "peekduel", "siteclear", "flashmap", "deathmatch",
-                       "microshot", "microshot_dense", "switch", "popup", "longtaps", "sheriff", "strafeduel", "jumppeek", "jigglepeek", "postplant", "retake",
+                       "microshot", "microshot_dense", "switch", "popup", "longtaps", "sheriff", "strafeduel", "jumppeek", "jigglepeek", "strafejump", "postplant", "retake",
                        "anchor", "sound", "flashpeek:phoenix", "recon:sova", "smokeexec:omen", "mobility:jett", "chamber:headhunter",
                        "flashpeek:hush", "mobility:hush"),
   # Smoke runs with a picked gun ("mode@Gun", dev --gun): each class of gun (shotgun, sidearm, sniper, SMG, machine gun)
@@ -220,6 +220,32 @@ foreach ($x in $cmpRuns) {
          elseif ($x.Want -eq "clear" -and ($verdict -ne "clear" -or $winner -ne $x.Winner)) { "expected a clear win for $($x.Winner), got verdict=$verdict winner=$winner t=$t" } `
          elseif ($x.Want -eq "notclear" -and $verdict -eq "clear") { "expected no clear winner, got $winner t=$t" } else { "" }
   Report "sens finder compare: $($x.Name) ($($x.Pair): $verdict $winner, t=$t)" ($why -eq "") $why $r
+}
+
+# ---- 3g. Strafe Jump: the drill's autopilot crosses the gap against a seeded defender. Full-speed crossings must survive a
+#          Rookie (Iron-Bronze) defender; walking across must mostly die to a Pro (Radiant); letting go of the key in the air
+#          must be graded as braked on landing, never clean. ----
+$sjRuns = @(
+  @{ Name = "fast at Rookie survives"; Tier = "0"; Style = "fast"; Seed = "1"; Want = "survive" },
+  @{ Name = "walking at Pro dies"; Tier = "4"; Style = "slow"; Seed = "1"; Want = "die" },
+  @{ Name = "key released in the air at Veteran"; Tier = "2"; Style = "release"; Seed = "1"; Want = "landbrake" }
+)
+foreach ($x in $sjRuns) {
+  $r = Invoke-Godot ("strafejump-" + $x.Style + "-" + $x.Tier) (@("--headless", "--fixed-fps", "120", "--quit-after", "5600", "--path", $Project, "--") + $sandbox +
+                     @("--mode", "strafejump", "--tier", $x.Tier, "--movescript", "auto", "--sjstyle", $x.Style, "--sjseed", $x.Seed, "--duration", "40"))
+  $line = ($r.Text -split "`r?`n" | Where-Object { $_ -match '\[strafejump\] RESULT' } | Select-Object -Last 1)
+  $ex = Get-Exceptions $r.Text
+  $n = if ($line -match 'crossings=(\d+)') { [int]$Matches[1] } else { 0 }
+  $clean = if ($line -match 'clean=(\d+)') { [int]$Matches[1] } else { 0 }
+  $surv = if ($line -match 'survived=(\d+)') { [int]$Matches[1] } else { 0 }
+  $died = if ($line -match 'died=(\d+)') { [int]$Matches[1] } else { 0 }
+  $brakes = if ($line -match 'landBrakes=(\d+)') { [int]$Matches[1] } else { 0 }
+  $why = if ($r.TimedOut) { "timed out after $TimeoutSec s" } elseif ($ex.Count -gt 0) { "exception: $($ex[0].Trim())" } `
+         elseif (-not $line) { "no RESULT line" } elseif ($n -lt 6) { "only $n crossings" } `
+         elseif ($x.Want -eq "survive" -and ($surv -lt 0.85 * $n -or $clean -lt 0.8 * $n)) { "expected >= 85% survived and >= 80% clean, got $surv / $clean of $n" } `
+         elseif ($x.Want -eq "die" -and $died -lt 0.6 * $n) { "expected >= 60% deaths, got $died of $n" } `
+         elseif ($x.Want -eq "landbrake" -and ($clean -gt 0 -or $brakes -lt 1)) { "expected braked landings and no clean crossing, got $brakes braked, $clean clean of $n" } else { "" }
+  Report "strafe jump: $($x.Name) ($n crossings: $surv survived, $died died, $clean clean, $brakes braked)" ($why -eq "") $why $r
 }
 
 # ---- 4. Smoke test: each drill runs 5 s with the simulated player, then its telemetry must load in the coach ----

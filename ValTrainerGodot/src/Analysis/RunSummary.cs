@@ -13,7 +13,7 @@ static class RunSummary
         "flick", "spider", "gridshot", "tracking", "strafebots", "peek", "counterstrafe", "peekduel", "siteclear", "flashmap", "deathmatch",
         "reaction", "spray_vandal", "spray_phantom", "microshot", "microshot_dense", "popup", "longtaps", "sheriff", "jumppeek", "jigglepeek", "peek_mix",
         "flashpeek", "recon", "smokeexec", "mobility", "chamber", "postplant", "retake", "anchor", "sound",
-        "switch", "operator", "spray_transfer", "strafeduel",
+        "switch", "operator", "spray_transfer", "strafeduel", "strafejump",
     };
 
     /// <summary>Summary for a run without enough data for any finding: what this mode needs, or that it doesn't feed the coach.</summary>
@@ -33,6 +33,7 @@ static class RunSummary
             "operator" => L.N("let a few agents cross the gap while you hold it"),
             "peek" => L.N("let a few bots peek you"),
             "counterstrafe" => L.N("stop and shoot a few times"),
+            "strafejump" => L.N("cross the gap a few times and stop in cover"),
             "peekduel" or "siteclear" or "deathmatch" or "strafeduel" => L.N("get a few duels in"),
             "flashmap" => L.N("face a few flashes"),
             "reaction" => L.N("finish the trials"),

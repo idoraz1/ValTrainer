@@ -8,6 +8,9 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Added
+- Strafe Jump, a new movement drill: cross an open gap that an enemy rifler is holding, from cover to cover, again and again. Get to full speed while you're still in cover, run (or jump at the edge) across at full speed and keep holding the key through the landing. Walk, crouch, stop or let go of the key in the air and you're slow in his sightline. Each crossing is graded on how long he saw you, the speed you kept and your landing, with a tip for what went wrong. The defender reacts and aims by the difficulty you pick: a slow crossing that a Rookie (Iron–Bronze) misses gets you killed by a Pro (Radiant). The results show which crossings you survived, jumping or running. Honest note: VALORANT has no Counter-Strike-style bunny hop, so jumping or strafing in the air never makes you faster than running; the drill teaches keeping your speed, not gaining it. With a minimap, and recorded for the coach and 3D Rewind like the other movement drills (suggested on Discord).
+
 ## [1.22.0] - 2026-11-22
 
 ### Added

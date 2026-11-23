@@ -21,7 +21,7 @@ static class RunAnalysis
     };
     static readonly HashSet<string> MovementModes = new()
     {
-        "counterstrafe", "strafeduel", "peekduel","siteclear", "flashmap", "deathmatch", "jumppeek", "jigglepeek",
+        "counterstrafe", "strafeduel", "peekduel","siteclear", "flashmap", "deathmatch", "jumppeek", "jigglepeek", "strafejump",
         "flashpeek", "recon", "smokeexec", "mobility", "chamber", "postplant", "retake", "anchor", "sound",
     };
 
