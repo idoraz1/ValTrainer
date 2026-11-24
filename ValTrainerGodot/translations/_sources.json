@@ -169,7 +169,7 @@
   "90 cm wide · a desk mat": [
     "src/Modes/SensFinderSetup.cs:283"
   ],
-  "; average stop {0:0} ms to accurate speed (best ≈ 105)": [
+  "; average stop {0:0} ms to accurate speed (best ≈ 70)": [
     "src/Analysis/Assess.cs:620"
   ],
   "; you also ran {0:0.00}° ahead of it on average": [
@@ -10544,7 +10544,7 @@
   "Your stars are placed from a top-down view of the map.": [
     "src/Agents/AgentRoster.cs:160"
   ],
-  "Your stops took {0:0} ms on average to reach accurate speed (best ≈ 105)": [
+  "Your stops took {0:0} ms on average to reach accurate speed (best ≈ 70)": [
     "src/Analysis/Assess.cs:621"
   ],
   "your stops took {0:0} ms to reach accurate speed": [

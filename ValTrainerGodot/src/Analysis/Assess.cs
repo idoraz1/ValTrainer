@@ -617,8 +617,8 @@ static class Assess
                 L.T("Clumsy stops"),
                 fewCounter
                     ? (cs < 0.5f ? L.T("None of your stops were counter-strafed") : L.F($"Only {cs:0}% of stops were counter-strafed"))
-                      + (float.IsNaN(stopMs) ? "" : L.F($"; average stop {stopMs:0} ms to accurate speed (best ≈ 105)"))
-                    : L.F($"Your stops took {stopMs:0} ms on average to reach accurate speed (best ≈ 105)") + (float.IsNaN(cs) ? "" : L.F($", with {cs:0}% counter-strafed")),
+                      + (float.IsNaN(stopMs) ? "" : L.F($"; average stop {stopMs:0} ms to accurate speed (best ≈ 70)"))
+                    : L.F($"Your stops took {stopMs:0} ms on average to reach accurate speed (best ≈ 70)") + (float.IsNaN(cs) ? "" : L.F($", with {cs:0}% counter-strafed")),
                 L.T("Releasing the keys and waiting to slow down wastes time every time you peek."),
                 new[]
                 {

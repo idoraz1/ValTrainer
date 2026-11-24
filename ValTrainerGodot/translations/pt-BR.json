@@ -72,7 +72,7 @@
   "5 stars, 2 × {0} · 4.75 m · 14 s · anywhere on the map": "5 estrelas, 2 × {0} · 4.75 m · 14 s · em qualquer lugar do mapa",
   "5: completely": "5: totalmente",
   "90 cm wide · a desk mat": "90 cm de largura · um deskpad",
-  "; average stop {0:0} ms to accurate speed (best ≈ 105)": "; parada média de {0:0} ms até a velocidade precisa (ideal ≈ 105)",
+  "; average stop {0:0} ms to accurate speed (best ≈ 70)": "; parada média de {0:0} ms até a velocidade precisa (ideal ≈ 70)",
   "; you also ran {0:0.00}° ahead of it on average": "; você também ficou {0:0.00}° à frente dele em média",
   "; you started pulling {0:0} ms in": "; você começou a puxar aos {0:0} ms",
   "; {0:0}% within 0.1 s of starting to stop": "; {0:0}% em até 0.1 s depois de começar a parar",
@@ -3026,7 +3026,7 @@
   "Your speed was {0} — {1:0} points/min ({2} level on {3})": "Sua velocidade foi {0} — {1:0} pontos/min (nível {2} em {3})",
   "Your spot: {0}": "Sua posição: {0}",
   "Your stars are placed from a top-down view of the map.": "Suas estrelas são posicionadas numa visão de cima do mapa.",
-  "Your stops took {0:0} ms on average to reach accurate speed (best ≈ 105)": "Suas paradas levaram {0:0} ms em média para chegar à velocidade precisa (ideal ≈ 105)",
+  "Your stops took {0:0} ms on average to reach accurate speed (best ≈ 70)": "Suas paradas levaram {0:0} ms em média para chegar à velocidade precisa (ideal ≈ 70)",
   "Your typical badge": "Sua insígnia habitual",
   "Your weakest skill": "Sua habilidade mais fraca",
   "Your {0} run is at {1}, so there's nothing to compare yet.|All your {0} runs are at {1}, so there's nothing to compare yet.": {
