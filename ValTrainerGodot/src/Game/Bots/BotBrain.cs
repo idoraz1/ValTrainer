@@ -102,16 +102,26 @@ public sealed class BotBrain
         yield return v.Eye + Vector3.Down * 0.3f - right * 0.3f;
     }
 
-    /// <summary>The bot's own head, chest and shoulders: what the player can spot of it (the player's layout, facing its yaw).</summary>
-    IEnumerable<Vector3> BodyPoints()
+    /// <summary>A bot's head, chest and shoulders: what the player can spot of it (the player's layout, facing its yaw).</summary>
+    static IEnumerable<Vector3> BodyPoints(BotCharacter body)
     {
-        var head = Body.Head;
-        float y = Mathf.DegToRad(Body.FacingYaw);
+        var head = body.Head;
+        float y = Mathf.DegToRad(body.FacingYaw);
         var right = new Vector3(Mathf.Cos(y), 0, Mathf.Sin(y));
         yield return head;
         yield return head + Vector3.Down * 0.45f;
         yield return head + Vector3.Down * 0.3f + right * 0.3f;
         yield return head + Vector3.Down * 0.3f - right * 0.3f;
+    }
+
+    /// <summary>The player could see some of this bot: a clear line from the player's eye to its head, chest or a shoulder.
+    /// The fairness gate of every bot that reacts to you (<see cref="CanSee"/>, the Operator and Strafe Jump holders): a bot
+    /// that shows you nothing can't start reacting to the part of you it sees.</summary>
+    public static bool PlayerCanSee(IBotWorld g, BotCharacter body)
+    {
+        foreach (var q in BodyPoints(body))
+            if (g.LineOfSight(g.View.Eye, q)) return true;
+        return false;
     }
 
     bool headVisible;
@@ -137,7 +147,7 @@ public sealed class BotBrain
         foreach (var p in Exposure(g.View).Skip(1).Take(ShoulderSight ? 3 : 1)) // chest, then shoulders
             if (g.LineOfSight(eye, p)) { seesBody = true; break; }
         if (!seesBody) return false;
-        foreach (var q in BodyPoints().Skip(1)) // its head is the line checked above: its chest, then shoulders
+        foreach (var q in BodyPoints(Body).Skip(1)) // its head is the line checked above: its chest, then shoulders
             if (g.LineOfSight(g.View.Eye, q)) return true;
         return false;
     }
