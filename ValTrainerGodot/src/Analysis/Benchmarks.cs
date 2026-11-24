@@ -91,9 +91,9 @@ static class Bench
     public static readonly float[] CounterPct = { 10, 30, 55, 75, 90 };
     /// <summary>
     /// Stop time as RunAnalysis measures it: key release → accurate speed. A plain release takes ≈ 112–120 ms in
-    /// VALORANT's movement model and a clean counter-strafe ≈ 100 ms, so the whole range is narrow.
+    /// VALORANT's movement model and a clean counter-strafe ≈ 70 ms (1.23.1, measured), so the whole range is narrow.
     /// </summary>
-    public static readonly float[] StopMs = { 128, 116, 108, 102, 98 };
+    public static readonly float[] StopMs = { 125, 110, 95, 82, 74 };
     public static readonly float[] FlashTurnMs = { 650, 520, 420, 340, 280 };
     /// <summary>† not in the spec table: Fitts movement time (onset → hit) at ID 4.7 bits.</summary>
     public static readonly float[] MtRefMs = { 720, 600, 500, 420, 360 };

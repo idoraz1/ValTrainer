@@ -119,7 +119,7 @@ public sealed class StrafePlanner
         else
         {
             float along = V * seg.Dir;
-            if (along < 0) along = Mathf.Min(0, along + brake * CounterBonus);   // counter-strafe through zero
+            if (along < 0) along = Mathf.Min(0, along + brake + Accel * dt);   // counter-strafe through zero (1.23.1: brake + accel, like Mover)
             else if (along > cap) along = Mathf.Max(cap, along - brake);         // crouching from a run
             else along = Mathf.Min(cap, along + Accel * dt);
             V = along * seg.Dir;

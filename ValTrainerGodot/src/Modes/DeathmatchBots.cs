@@ -329,7 +329,7 @@ public sealed partial class DeathmatchMode
         static float Flat(Vector3 a, Vector3 b) => new Vector2(a.X - b.X, a.Z - b.Z).Length();
 
         /// <summary>The player's horizontal acceleration: 18 m/s² toward the wanted velocity, two-phase braking (38 / 24
-        /// m/s²) of whatever doesn't point that way, a 6% quicker counter-strafe through zero.</summary>
+        /// m/s²) of whatever doesn't point that way, and a counter-strafe that brakes and accelerates through zero (1.23.1).</summary>
         void Accelerate(Vector3 want, float speed, float dt)
         {
             float brake = (vel.Length() > Mover.RunSpeed * 0.25f ? BrakeHigh : BrakeLow) * dt;
@@ -337,7 +337,7 @@ public sealed partial class DeathmatchMode
             var dir = want.Normalized();
             float along = vel.Dot(dir);
             var side = (vel - dir * along).MoveToward(Vector3.Zero, brake * CounterBonus);
-            if (along < 0) along = Mathf.Min(0, along + brake * CounterBonus);
+            if (along < 0) along = Mathf.Min(0, along + brake + Accel * dt); // 1.23.1: like Mover
             else if (along > speed) along = Mathf.Max(speed, along - brake);
             else along = Mathf.Min(speed, along + Accel * dt);
             vel = dir * along + side;

@@ -40,7 +40,7 @@ public sealed partial class Mover
     /// support folder's research\jump-measure.md). Until 1.16 it was 40 (full speed in 0.135 s), which made running
     /// feel light. Braking (below) is Riot's own measurement and stays.</summary>
     public const float GroundAccel = 18f;
-    const float Accel = GroundAccel, BrakeHigh = 38f, BrakeLow = 24f, CounterBonus = 1.06f;
+    const float Accel = GroundAccel, BrakeHigh = 38f, BrakeLow = 24f;
 
     public const float StandEye = PlayerView.EyeHeight;
     public const float CrouchEye = 1.15f;
@@ -151,7 +151,10 @@ public sealed partial class Mover
             var lateral = Vel - wish * along;
             float lat = lateral.Length();
             if (lat > 0) lateral *= Mathf.Max(0, lat - brake) / lat;
-            if (along < 0) { reversing = true; along = Mathf.Min(0, along + brake * CounterBonus); }
+            // Counter-strafe (1.23.1): the opposite key brakes AND accelerates, so you stop in ≈0.10 s instead of ≈0.15 s.
+            // Measured from the user's own VALORANT clips (0.107 s, n=9, researchccel-measure-2.md; a 2021 community frame
+            // count agrees, ≈0.12 s). Riot's 2020 table claimed only +6% (the old CounterBonus 1.06), which felt sluggish.
+            if (along < 0) { reversing = true; along = Mathf.Min(0, along + brake + Accel * dt); }
             else if (along > max) along = Mathf.Max(max, along - brake);
             else along = Mathf.Min(max, along + Accel * dt);
             Vel = wish * along + lateral;

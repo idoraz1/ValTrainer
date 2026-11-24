@@ -72,7 +72,7 @@
   "5 stars, 2 × {0} · 4.75 m · 14 s · anywhere on the map": "5 étoiles, 2 × {0} · 4,75 m · 14 s · n'importe où sur la carte",
   "5: completely": "5 : complètement",
   "90 cm wide · a desk mat": "90 cm de large · un tapis de bureau",
-  "; average stop {0:0} ms to accurate speed (best ≈ 105)": " ; arrêt moyen en {0:0} ms jusqu'à la vitesse précise (meilleur ≈ 105)",
+  "; average stop {0:0} ms to accurate speed (best ≈ 70)": " ; arrêt moyen en {0:0} ms jusqu'à la vitesse précise (meilleur ≈ 70)",
   "; you also ran {0:0.00}° ahead of it on average": " ; tu étais aussi en avance de {0:0.00}° en moyenne",
   "; you started pulling {0:0} ms in": " ; tu as commencé à tirer vers le bas après {0:0} ms",
   "; {0:0}% within 0.1 s of starting to stop": " ; {0:0}% dans les 0,1 s après le début de l'arrêt",
@@ -3026,7 +3026,7 @@
   "Your speed was {0} — {1:0} points/min ({2} level on {3})": "Ta vitesse était {0} : {1:0} points/min (niveau {2} sur {3})",
   "Your spot: {0}": "Ton spot : {0}",
   "Your stars are placed from a top-down view of the map.": "Tes étoiles se placent depuis une vue de dessus de la carte.",
-  "Your stops took {0:0} ms on average to reach accurate speed (best ≈ 105)": "Tes arrêts ont pris {0:0} ms en moyenne pour atteindre la vitesse précise (meilleur ≈ 105)",
+  "Your stops took {0:0} ms on average to reach accurate speed (best ≈ 70)": "Tes arrêts ont pris {0:0} ms en moyenne pour atteindre la vitesse précise (meilleur ≈ 70)",
   "Your typical badge": "Ton badge habituel",
   "Your weakest skill": "Ta compétence la plus faible",
   "Your {0} run is at {1}, so there's nothing to compare yet.|All your {0} runs are at {1}, so there's nothing to compare yet.": {

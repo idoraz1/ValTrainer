@@ -299,11 +299,11 @@ public static class MovementCheck
     // ------------------------------------------------------------------ ground model regression (v1.3)
 
     /// <summary>The v1.3 ground model, verbatim except the acceleration (1.16: <see cref="Mover.GroundAccel"/>, measured from
-    /// VALORANT), as the reference for frame-by-frame comparison.</summary>
+    /// VALORANT) and the counter-strafe (1.23.1: brake + acceleration), as the reference for frame-by-frame comparison.</summary>
     sealed class RefMover
     {
         const float RunSpeed = 5.4f, WalkSpeed = RunSpeed * 0.55f, CrouchSpeed = RunSpeed * 0.45f, AdsMultiplier = 0.76f, AccurateSpeed = RunSpeed * 0.275f;
-        const float Accel = Mover.GroundAccel, BrakeHigh = 38f, BrakeLow = 24f, CounterBonus = 1.06f;
+        const float Accel = Mover.GroundAccel, BrakeHigh = 38f, BrakeLow = 24f;
         public Vector3 Vel;
         public bool Crouching, Walking, Ads;
         public float EyeHeight = Mover.StandEye;
@@ -347,7 +347,7 @@ public static class MovementCheck
                 var lateral = Vel - wish * along;
                 float lat = lateral.Length();
                 if (lat > 0) lateral *= Mathf.Max(0, lat - brake) / lat;
-                if (along < 0) { reversing = true; along = Mathf.Min(0, along + brake * CounterBonus); }
+                if (along < 0) { reversing = true; along = Mathf.Min(0, along + brake + Accel * dt); } // 1.23.1: counter-strafe brakes + accelerates, like Mover
                 else if (along > max) along = Mathf.Max(max, along - brake);
                 else along = Mathf.Min(max, along + Accel * dt);
                 Vel = wish * along + lateral;

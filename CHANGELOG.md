@@ -8,6 +8,9 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Changed
+- Counter-strafing now stops you as fast as in VALORANT (suggested on Discord): tapping the opposite key stops you in about 0.10 s instead of 0.15 s, so you can shoot accurately about 25 ms sooner after a counter-strafe. Measured from real VALORANT footage; just letting go of the keys and getting up to speed were already a match and didn't change. Bots strafe by the same rules. The coach's stop-time targets moved down to match.
+
 ## [1.23.0] - 2026-11-24
 
 ### Added
