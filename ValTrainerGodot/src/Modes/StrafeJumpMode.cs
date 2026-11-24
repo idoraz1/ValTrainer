@@ -121,10 +121,12 @@ public sealed class GapHolderBrain
         switch (State)
         {
             case St.Holding:
-                if (!SeesPlayer) break;
+                // Fair: he only reacts once you could see some of him too (BotBrain.PlayerCanSee).
+                if (!SeesPlayer || !BotBrain.PlayerCanSee(g, Body)) break;
                 target = Pick(vis);
                 bool alert = now < alertUntil;
-                float react = Mathf.Max(120f, Gauss(human.ReactMs, human.ReactSd)) * (alert ? 0.7f : 1f) / 1000f;
+                // The tier's human floor (Pro 150 ms) holds for re-peeks too: the old 120 ms x 0.7 reached 84 ms.
+                float react = Mathf.Max(human.ReactFloorMs, Gauss(human.ReactMs, human.ReactSd) * (alert ? 0.7f : 1f)) / 1000f;
                 var p = PlayerHitbox.PartAt(target, g.View.Eye, g.View.Yaw);
                 float dist = Mathf.Max(1f, (p - Eye).Length());
                 float amp = Mathf.RadToDeg(Mathf.Acos(Mathf.Clamp((HeldPoint - Eye).Normalized().Dot((p - Eye).Normalized()), -1, 1)));

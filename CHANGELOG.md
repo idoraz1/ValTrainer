@@ -11,6 +11,9 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 ### Changed
 - Counter-strafing now stops you as fast as in VALORANT (suggested on Discord): tapping the opposite key stops you in about 0.10 s instead of 0.15 s, so you can shoot accurately about 25 ms sooner after a counter-strafe. Measured from real VALORANT footage; just letting go of the keys and getting up to speed were already a match and didn't change. Bots strafe by the same rules. The coach's stop-time targets moved down to match.
 
+### Fixed
+- Bots could shoot you the moment you swung, before you could see them. A bot standing back from a corner could see your shoulder while none of it was on your screen yet, and it started reacting right then, so by the time it appeared it had already reacted. Bots now only start reacting once you could see some of them too, in every drill with bots. Bots also no longer snap straight onto your head when they pre-aim your spot or you re-peek them: their crosshair is always a little off, so they need a small adjustment like a human, and no bot reacts faster than a human can (150 ms at Pro, more at the lower difficulties; a re-peek used to get as fast as 70 ms). Against a Pro (Radiant) bot, the time from it appearing on your screen to its first shot now always takes more than 150 ms and usually 210 to 310 ms (it could be as little as 20 to 70 ms before). Bots that already see you standing in the open kill you as fast as before (reported on Discord).
+
 ## [1.23.0] - 2026-11-24
 
 ### Added

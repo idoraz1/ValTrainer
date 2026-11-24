@@ -178,7 +178,9 @@ public sealed class OpBotBrain
         bool core = Has(vis, PlayerHitbox.Part.Head) || Has(vis, PlayerHitbox.Part.Chest);
         bool shoulder = Has(vis, PlayerHitbox.Part.ShoulderL) || Has(vis, PlayerHitbox.Part.ShoulderR);
         if (!SeesPlayer) ignoreThisExposure = false;
-        bool engageable = core || (shoulder && ShoulderSight && !ignoreThisExposure);
+        // Fair: he only reacts once you could see some of him too (BotBrain.PlayerCanSee), never to a shoulder of yours
+        // that he sees while none of him is visible to you.
+        bool engageable = (core || (shoulder && ShoulderSight && !ignoreThisExposure)) && BotBrain.PlayerCanSee(g, Body);
 
         switch (State)
         {
@@ -233,7 +235,8 @@ public sealed class OpBotBrain
         bool alert = now < alertUntil;
         target = Pick(vis);
         if (firstSeenAt < 0) firstSeenAt = now;
-        float react = Mathf.Max(120f, Gauss(human.ReactMs, human.ReactSd)) * (alert ? 0.6f : 1f) / 1000f;
+        // The tier's human floor (Pro 150 ms) holds for re-peeks too: the old 120 ms x 0.6 reached 72 ms.
+        float react = Mathf.Max(human.ReactFloorMs, Gauss(human.ReactMs, human.ReactSd) * (alert ? 0.6f : 1f)) / 1000f;
         var p = PlayerHitbox.PartAt(target, g.View.Eye, g.View.Yaw);
         float dist = Mathf.Max(1f, (p - Eye).Length());
         float amp = Mathf.RadToDeg(Mathf.Acos(Mathf.Clamp(HeldDir.Dot((p - Eye).Normalized()), -1, 1)));

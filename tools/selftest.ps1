@@ -174,6 +174,17 @@ $fail = @($r.Text -split "`r?`n" | Where-Object { $_ -match '\[dm-spawncheck\] F
 $why = if ($r.Code -ne 0) { "exit code $($r.Code) ($res) " + ($fail -join "; ") } elseif ($res -notmatch 'RESULT: PASS') { "no PASS result" } else { "" }
 Report "deathmatch spawn check" ($why -eq "") $why $r
 
+# ---- 3c1. Bot reactions: per tier, swings against a real BotBrain in a test world; the time from the bot first on your screen
+#           to its first shot. No shot before the bot is visible; Pro median of first sightings >= 170 ms and never under
+#           140 ms; Rookie's time-to-kill well over twice Pro's. ----
+$r = Invoke-Godot "botreact-check" (@("--headless", "--path", $Project, "--") + $sandbox + @("--botreact-check"))
+$res = ($r.Text -split "`r?`n" | Where-Object { $_ -match '\[botreact\] RESULT:' } | Select-Object -Last 1)
+$fail = @($r.Text -split "`r?`n" | Where-Object { $_ -match '\[botreact\] FAIL ' })
+$pro = @($r.Text -split "`r?`n" | Where-Object { $_ -match '\[botreact\] PASS Pro first-sight median' } | ForEach-Object { if ($_ -match 'median (\d+) ms') { $Matches[1] } })
+$why = if ($r.Code -ne 0) { "exit code $($r.Code) ($res) " + ($fail -join "; ") } elseif ($res -notmatch 'RESULT: PASS') { "no PASS result" } else { "" }
+$detail = if ($pro.Count -gt 0) { " (Pro median $($pro[0]) ms)" } else { "" }
+Report "bot reaction check$detail" ($why -eq "") $why $r
+
 # ---- 3c2. Movement: the physics battery, then bodies driven around every map (random keys, jumps, frame spikes, ability
 #            impulses) must never end a frame inside a wall or under the floor ----
 $r = Invoke-Godot "movecheck" (@("--headless", "--path", $Project, "--") + $sandbox + @("--mode", "counterstrafe", "--movecheck", "--escapecheck", "all"))
@@ -224,15 +235,17 @@ foreach ($x in $cmpRuns) {
 
 # ---- 3g. Strafe Jump: the drill's autopilot crosses the gap against a seeded defender. Full-speed crossings must survive a
 #          Rookie (Iron-Bronze) defender; walking across must mostly die to a Pro (Radiant); letting go of the key in the air
-#          must be graded as braked on landing, never clean. ----
+#          must be graded as braked on landing, never clean. The walking run plays 120 s (~35 crossings): a walker dies to a
+#          Pro about 80% of the time, and 11 crossings missed the 60% bound by chance 3-11% of runs (frame timing makes runs
+#          of the same seed differ); with 35 it's under 2%. ----
 $sjRuns = @(
-  @{ Name = "fast at Rookie survives"; Tier = "0"; Style = "fast"; Seed = "1"; Want = "survive" },
-  @{ Name = "walking at Pro dies"; Tier = "4"; Style = "slow"; Seed = "1"; Want = "die" },
-  @{ Name = "key released in the air at Veteran"; Tier = "2"; Style = "release"; Seed = "1"; Want = "landbrake" }
+  @{ Name = "fast at Rookie survives"; Tier = "0"; Style = "fast"; Seed = "1"; Want = "survive"; Secs = 40 },
+  @{ Name = "walking at Pro dies"; Tier = "4"; Style = "slow"; Seed = "1"; Want = "die"; Secs = 120 },
+  @{ Name = "key released in the air at Veteran"; Tier = "2"; Style = "release"; Seed = "1"; Want = "landbrake"; Secs = 40 }
 )
 foreach ($x in $sjRuns) {
-  $r = Invoke-Godot ("strafejump-" + $x.Style + "-" + $x.Tier) (@("--headless", "--fixed-fps", "120", "--quit-after", "5600", "--path", $Project, "--") + $sandbox +
-                     @("--mode", "strafejump", "--tier", $x.Tier, "--movescript", "auto", "--sjstyle", $x.Style, "--sjseed", $x.Seed, "--duration", "40"))
+  $r = Invoke-Godot ("strafejump-" + $x.Style + "-" + $x.Tier) (@("--headless", "--fixed-fps", "120", "--quit-after", [string](120 * ($x.Secs + 7)), "--path", $Project, "--") + $sandbox +
+                     @("--mode", "strafejump", "--tier", $x.Tier, "--movescript", "auto", "--sjstyle", $x.Style, "--sjseed", $x.Seed, "--duration", [string]$x.Secs))
   $line = ($r.Text -split "`r?`n" | Where-Object { $_ -match '\[strafejump\] RESULT' } | Select-Object -Last 1)
   $ex = Get-Exceptions $r.Text
   $n = if ($line -match 'crossings=(\d+)') { [int]$Matches[1] } else { 0 }
