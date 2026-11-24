@@ -174,6 +174,17 @@ $fail = @($r.Text -split "`r?`n" | Where-Object { $_ -match '\[dm-spawncheck\] F
 $why = if ($r.Code -ne 0) { "exit code $($r.Code) ($res) " + ($fail -join "; ") } elseif ($res -notmatch 'RESULT: PASS') { "no PASS result" } else { "" }
 Report "deathmatch spawn check" ($why -eq "") $why $r
 
+# ---- 3c1. Bot reactions: per tier, swings against a real BotBrain in a test world; the time from the bot first on your screen
+#           to its first shot. No shot before the bot is visible; Pro median of first sightings >= 170 ms and never under
+#           140 ms; Rookie's time-to-kill well over twice Pro's. ----
+$r = Invoke-Godot "botreact-check" (@("--headless", "--path", $Project, "--") + $sandbox + @("--botreact-check"))
+$res = ($r.Text -split "`r?`n" | Where-Object { $_ -match '\[botreact\] RESULT:' } | Select-Object -Last 1)
+$fail = @($r.Text -split "`r?`n" | Where-Object { $_ -match '\[botreact\] FAIL ' })
+$pro = @($r.Text -split "`r?`n" | Where-Object { $_ -match '\[botreact\] PASS Pro first-sight median' } | ForEach-Object { if ($_ -match 'median (\d+) ms') { $Matches[1] } })
+$why = if ($r.Code -ne 0) { "exit code $($r.Code) ($res) " + ($fail -join "; ") } elseif ($res -notmatch 'RESULT: PASS') { "no PASS result" } else { "" }
+$detail = if ($pro.Count -gt 0) { " (Pro median $($pro[0]) ms)" } else { "" }
+Report "bot reaction check$detail" ($why -eq "") $why $r
+
 # ---- 3c2. Movement: the physics battery, then bodies driven around every map (random keys, jumps, frame spikes, ability
 #            impulses) must never end a frame inside a wall or under the floor ----
 $r = Invoke-Godot "movecheck" (@("--headless", "--path", $Project, "--") + $sandbox + @("--mode", "counterstrafe", "--movecheck", "--escapecheck", "all"))

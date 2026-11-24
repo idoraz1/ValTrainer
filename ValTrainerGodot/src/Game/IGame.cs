@@ -32,15 +32,33 @@ public sealed class PlayerState
     }
 }
 
-/// <summary>Everything a training mode can ask the game for. Implemented by <see cref="GameSession"/>.</summary>
-public interface IGame
+/// <summary>The part of the game a <see cref="BotBrain"/> needs to duel the player: the player's view and health, the clock,
+/// line of sight, damage and sound. <see cref="IGame"/> extends it; the bot reaction check (<c>--botreact-check</c>,
+/// Game/Bots/BotReactCheck.cs) drives a brain with a small test world of its own.</summary>
+public interface IBotWorld
 {
+    PlayerView View { get; }
+    PlayerState Player { get; }
+    /// <summary>Seconds since the round started running.</summary>
+    float Now { get; }
+    /// <summary>Clear view between two points: no map box in the way and no live smoke / gas or water wall
+    /// (<see cref="IGame.Smokes"/>), so bots can't see through smokes either way.</summary>
+    bool LineOfSight(Vector3 a, Vector3 b);
+    /// <summary>Deal damage to the player from a world position (bots shooting back).</summary>
+    void DamagePlayer(float dmg, Vector3 from);
+    void SoundAt(string name, Vector3 pos, float maxRange = 40f, float floor = 0.45f, float vol = 1f);
+    /// <summary>The player is fully blinded by a flash right now.</summary>
+    bool PlayerFullyBlind { get; }
+}
+
+/// <summary>Everything a training mode can ask the game for. Implemented by <see cref="GameSession"/>.</summary>
+public interface IGame : IBotWorld
+{
+    bool IBotWorld.PlayerFullyBlind => Blind.FullyBlind;
     /// <summary>A drill preview: the simulated player plays it muted inside the preview popup (no input, nothing saved).
     /// Drills with scripted helpers (agent abilities, defense setup, jump / jiggle peeks) let them play too.</summary>
     bool Demo => false;
-    PlayerView View { get; }
     Mover Mover { get; }
-    PlayerState Player { get; }
     /// <summary>Tier this run plays at (the session's <c>TierOverride</c> or the chosen tier, 0..4).</summary>
     int Tier { get; }
     /// <summary>Routine: adapt difficulty to keep the hit rate near <see cref="ValTrainer.Modes.Staircase.TargetHitRate"/>
@@ -52,8 +70,6 @@ public interface IGame
     float RunLength { get; }
     Color Enemy { get; }
     Random Rng { get; }
-    /// <summary>Seconds since the round started running.</summary>
-    float Now { get; }
     /// <summary>Parent node for anything the mode spawns.</summary>
     Node3D World { get; }
     /// <summary>Collision / line-of-sight boxes of the current environment.</summary>
@@ -67,18 +83,12 @@ public interface IGame
     void Despawn(Node node);
 
     void Sound(string name, float vol = 1f, float pitch = 1f);
-    void SoundAt(string name, Vector3 pos, float maxRange = 40f, float floor = 0.45f, float vol = 1f);
 
-    /// <summary>Deal damage to the player from a world position (bots shooting back).</summary>
-    void DamagePlayer(float dmg, Vector3 from);
     void Banner(string text, Color color);
     /// <summary>Teleport the player for a new life / round: full HP, a full magazine, no recoil.</summary>
     void Respawn(Vector3 feet, float yaw);
     /// <summary>A full magazine now (a new duel / rep while alive); no reload in progress, recoil untouched.</summary>
     void RefillGun();
-    /// <summary>Clear view between two points: no map box in the way and no live smoke / gas or water wall
-    /// (<see cref="Smokes"/>), so bots can't see through smokes either way.</summary>
-    bool LineOfSight(Vector3 a, Vector3 b);
     /// <summary>Controller vision blockers in the world (smokes, walls). <see cref="LineOfSight"/> treats them as opaque;
     /// bullets pass through. Cleared when the drill restarts.</summary>
     IReadOnlyList<SmokeVolume> Smokes { get; }

@@ -149,6 +149,13 @@ public partial class Main : Node
             GetTree().Quit(DeathmatchSpawnCheck.Run());
             return;
         }
+        if (Game.Bots.BotReactCheck.Requested)
+        {
+            // Dev self-test (works with --headless): bot reaction times per tier, from the bot on your screen to its first
+            // shot, in a test world. Exit code = failures.
+            Callable.From(() => AddChild(new Game.Bots.BotReactCheck())).CallDeferred();
+            return;
+        }
         if (Dev && args.Contains("--preview-check"))
         {
             // Dev self-test (works with --headless --fixed-fps 60): every drill's preview demo plays and saves nothing.

@@ -5,9 +5,12 @@ namespace ValTrainer.Game.Bots;
 
 /// <summary>
 /// How a bot duels (replaces the old "instant perfect kill"). Calibrated per rank tier:
-/// 1. Sees you when any exposed point (head, chest, shoulders) has line of sight and you're within its field of view.
-/// 2. Reacts after a human-like delay (normal distribution; faster if it already saw you this fight).
-/// 3. Moves its crosshair onto your head (Fitts' law — bigger misplacement = longer settle).
+/// 1. Sees you when any exposed point (head, chest, shoulders) has line of sight and you're within its field of view, and
+/// only once you could see it too: a bot that exposes nothing can't react to your shoulder (<see cref="CanSee"/>).
+/// 2. Reacts after a human-like delay (normal distribution; faster if it already saw you this fight), never faster than the
+/// tier's floor (<see cref="BotSkill.ReactFloorMs"/>).
+/// 3. Moves its crosshair onto your head (Fitts' law — bigger misplacement = longer settle; even a pre-aimed crosshair is a
+/// little off, so it always needs a micro-adjust).
 /// 4. Fires its rifle (the Vandal at 9.75 rps unless the drill hands it another, <see cref="Weapon"/>) in bursts; each
 /// shot hits with a chance that decays during the spray.
 /// Damage goes to your 50 shield + 100 HP, so duels are won by whoever hits first and best.
@@ -99,9 +102,29 @@ public sealed class BotBrain
         yield return v.Eye + Vector3.Down * 0.3f - right * 0.3f;
     }
 
+    /// <summary>The bot's own head, chest and shoulders: what the player can spot of it (the player's layout, facing its yaw).</summary>
+    IEnumerable<Vector3> BodyPoints()
+    {
+        var head = Body.Head;
+        float y = Mathf.DegToRad(Body.FacingYaw);
+        var right = new Vector3(Mathf.Cos(y), 0, Mathf.Sin(y));
+        yield return head;
+        yield return head + Vector3.Down * 0.45f;
+        yield return head + Vector3.Down * 0.3f + right * 0.3f;
+        yield return head + Vector3.Down * 0.3f - right * 0.3f;
+    }
+
     bool headVisible;
 
-    bool CanSee(IGame g)
+    /// <summary>
+    /// The bot sees you, and fairly: line of sight from its head to an exposed point of yours (head, chest, shoulders) inside
+    /// its field of view, AND a clear line from your eye to some point of it. Head to head is the same line both ways; for your
+    /// chest or a shoulder the bot also has to show you its chest or a shoulder. Without that, a bot standing back from a
+    /// corner saw your leading shoulder before any of it was visible to you and had often reacted by the time you saw it
+    /// (reported on Discord). It doesn't ask for the bot to be on your screen: a bot you turned your back on still shoots you,
+    /// as in the game; what it can't do is react to you from where you couldn't have seen it.
+    /// </summary>
+    bool CanSee(IBotWorld g)
     {
         var eye = Body.Head;
         var toPlayer = (g.View.Eye - eye).Normalized();
@@ -110,12 +133,16 @@ public sealed class BotBrain
         if (g.Now < NearsightUntil && eye.DistanceTo(g.View.Eye) > NearsightRange) return false; // nearsighted: only close range
         headVisible = g.LineOfSight(eye, g.View.Eye);
         if (headVisible) return true;
+        bool seesBody = false;
         foreach (var p in Exposure(g.View).Skip(1).Take(ShoulderSight ? 3 : 1)) // chest, then shoulders
-            if (g.LineOfSight(eye, p)) return true;
+            if (g.LineOfSight(eye, p)) { seesBody = true; break; }
+        if (!seesBody) return false;
+        foreach (var q in BodyPoints().Skip(1)) // its head is the line checked above: its chest, then shoulders
+            if (g.LineOfSight(g.View.Eye, q)) return true;
         return false;
     }
 
-    public void Update(IGame g, float dt)
+    public void Update(IBotWorld g, float dt)
     {
         if (!Enabled || Body.Dead || g.Player.Dead)
         {
@@ -150,34 +177,38 @@ public sealed class BotBrain
         Body.AimTarget = g.View.Eye; // aim the rifle up/down at the player
 
         // Easy tiers wait out your blind, then still need a full reaction before the first shot.
-        if (HoldFireWhileBlind && g.Blind.FullyBlind) { fireAt = Mathf.Max(fireAt ?? now, now + Skill.ReactMs / 1000f); return; }
+        if (HoldFireWhileBlind && g.PlayerFullyBlind) { fireAt = Mathf.Max(fireAt ?? now, now + Skill.ReactMs / 1000f); return; }
         if (HoldFire) { fireAt = Mathf.Max(fireAt ?? now, now); return; }
         if (fireAt < now - weapon.Interval * 2) fireAt = now; // never dump a backlog of shots after a hitch
         int guard = 0;
         while (fireAt != null && now >= fireAt && guard++ < 4) FireShot(g);
     }
 
-    void OnLosGained(IGame g, float now)
+    void OnLosGained(IBotWorld g, float now)
     {
         if (FirstSeenAt < 0) FirstSeenAt = now;
         bool alert = now < alertUntil;
-        float react = Mathf.Max(120f, Gauss(Skill.ReactMs, Skill.ReactSd)) * (alert ? 0.6f : 1f) / 1000f;
+        // The floor holds for re-peeks too (an alert bot used to reach 72 ms: 0.6 x the old 120 ms floor).
+        float react = Mathf.Max(Skill.ReactFloorMs, Gauss(Skill.ReactMs, Skill.ReactSd) * (alert ? 0.6f : 1f)) / 1000f;
         if (now < DazedUntil) react *= 1.8f; // still seeing spots after a flash
 
         var toHead = (g.View.Eye - Body.Head);
         float dist = Mathf.Max(1f, toHead.Length());
         float placement = Mathf.RadToDeg(Mathf.Acos(Mathf.Clamp(HeldDir.Dot(toHead.Normalized()), -1, 1)));
-        float err = alert || PreAimed ? 0.5f * Mathf.Abs(Gauss(0, Skill.XhairErrDeg))
+        // Pre-aimed / alert: the crosshair is on your spot, but never exactly on your head: at least 0.4 x the tier's error
+        // (Pro 0.32°, Rookie 3.6°) plus a random part, so even a Radiant needs a micro-adjust at range.
+        float err = alert || PreAimed ? Skill.XhairErrDeg * (0.4f + 0.5f * Mathf.Abs(Gauss(0, 1)))
                                       : Mathf.Sqrt(placement * placement + Mathf.Pow(Gauss(0, Skill.XhairErrDeg), 2));
         if (now < DazedUntil) err = 2f * err + 1.5f; // dazed: worse crosshair placement
         float w = Mathf.RadToDeg(2f * Mathf.Atan(0.14f / dist)); // angular size of a head
-        float settle = err <= w / 2 ? 0 : Skill.MsPerBit * Mathf.Log(err / w + 1f) / Mathf.Log(2f) / 1000f;
+        // Fitts' law (Shannon form): any misplacement costs some time; a big head up close costs only a few ms.
+        float settle = Skill.MsPerBit * Mathf.Log(err / w + 1f) / Mathf.Log(2f) / 1000f;
 
         fireAt = now + react + settle;
         shot = 0;
     }
 
-    void FireShot(IGame g)
+    void FireShot(IBotWorld g)
     {
         float interval = weapon.Interval;
         bool moving = Body.Velocity.Length() > 1.5f;

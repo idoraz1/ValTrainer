@@ -12,7 +12,8 @@ public sealed record BotSkill(
     float PHit1, float PHead1,         // first-shot hit / headshot chance
     float Decay,                       // hit chance multiplier per extra bullet in a spray
     int Burst, float GapMs,            // bullets per burst, pause between bursts
-    bool RunAndGun);                   // shoots while moving (low tiers) instead of stopping first
+    bool RunAndGun,                    // shoots while moving (low tiers) instead of stopping first
+    float ReactFloorMs = 120f);        // fastest possible reaction, re-peeks included (Pro 150 ms: a human floor)
 
 /// <summary>A difficulty tier calibrated to Valorant ranks (see README for sources). <see cref="Name"/> and
 /// <see cref="Ranks"/> stay English (logic, logs, telemetry); show <see cref="DisplayName"/> / <see cref="DisplayRanks"/>.</summary>
@@ -31,12 +32,13 @@ public static class Difficulty
         // Recalibrated after playtest feedback ("Rookie still too hard"): our bots have advantages no human has
         // (perfect awareness, no peeker's advantage for you), so low tiers are deliberately softer than a raw
         // human model. Simulated median time-to-kill vs a player standing in view: Rookie 4.4 s, Regular 2.4 s,
-        // Veteran 1.4 s, Elite 0.84 s, Pro 0.53 s (scratchpad botsim.py mirrors BotBrain).
-        new(0, L.N("Rookie"),  L.N("Iron – Bronze"),        new(480, 90, 9.0f, 300, .26f, .05f, .85f, 3, 420, true)),
-        new(1, L.N("Regular"), L.N("Silver – Gold"),        new(370, 65, 6.0f, 230, .38f, .10f, .88f, 4, 320, true)),
-        new(2, L.N("Veteran"), L.N("Platinum – Diamond"),   new(290, 45, 3.5f, 160, .55f, .18f, .92f, 4, 220, false)),
-        new(3, L.N("Elite"),   L.N("Ascendant – Immortal"), new(225, 30, 1.8f, 110, .72f, .28f, .95f, 4, 170, false)),
-        new(4, L.N("Pro"),     L.N("Radiant"),              new(180, 22, 0.8f,  80, .86f, .42f, .96f, 4, 140, false)),
+        // Veteran 1.4 s, Elite 0.84 s, Pro 0.53 s (scratchpad botsim.py mirrors BotBrain). The dev check --botreact-check
+        // (Game/Bots/BotReactCheck.cs) runs the real BotBrain: 4.4 / 2.5 / 1.4 / 0.91 / 0.57 s, plus reaction times on swings.
+        new(0, L.N("Rookie"),  L.N("Iron – Bronze"),        new(480, 90, 9.0f, 300, .26f, .05f, .85f, 3, 420, true, 250)),
+        new(1, L.N("Regular"), L.N("Silver – Gold"),        new(370, 65, 6.0f, 230, .38f, .10f, .88f, 4, 320, true, 200)),
+        new(2, L.N("Veteran"), L.N("Platinum – Diamond"),   new(290, 45, 3.5f, 160, .55f, .18f, .92f, 4, 220, false, 170)),
+        new(3, L.N("Elite"),   L.N("Ascendant – Immortal"), new(225, 30, 1.8f, 110, .72f, .28f, .95f, 4, 170, false, 155)),
+        new(4, L.N("Pro"),     L.N("Radiant"),              new(180, 22, 0.8f,  80, .86f, .42f, .96f, 4, 140, false, 150)),
     };
 
     public static Tier Get(int id) => Tiers[Math.Clamp(id, 0, Tiers.Length - 1)];
@@ -53,7 +55,7 @@ public static class Difficulty
         var l = Get(tier - 1).Bot;
         return b with
         {
-            ReactMs = l.ReactMs, ReactSd = l.ReactSd, XhairErrDeg = l.XhairErrDeg, MsPerBit = l.MsPerBit,
+            ReactMs = l.ReactMs, ReactSd = l.ReactSd, ReactFloorMs = l.ReactFloorMs, XhairErrDeg = l.XhairErrDeg, MsPerBit = l.MsPerBit,
             PHit1 = l.PHit1, PHead1 = l.PHead1, Decay = l.Decay,
         };
     }
