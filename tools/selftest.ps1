@@ -235,15 +235,17 @@ foreach ($x in $cmpRuns) {
 
 # ---- 3g. Strafe Jump: the drill's autopilot crosses the gap against a seeded defender. Full-speed crossings must survive a
 #          Rookie (Iron-Bronze) defender; walking across must mostly die to a Pro (Radiant); letting go of the key in the air
-#          must be graded as braked on landing, never clean. ----
+#          must be graded as braked on landing, never clean. The walking run plays 120 s (~35 crossings): a walker dies to a
+#          Pro about 80% of the time, and 11 crossings missed the 60% bound by chance 3-11% of runs (frame timing makes runs
+#          of the same seed differ); with 35 it's under 2%. ----
 $sjRuns = @(
-  @{ Name = "fast at Rookie survives"; Tier = "0"; Style = "fast"; Seed = "1"; Want = "survive" },
-  @{ Name = "walking at Pro dies"; Tier = "4"; Style = "slow"; Seed = "1"; Want = "die" },
-  @{ Name = "key released in the air at Veteran"; Tier = "2"; Style = "release"; Seed = "1"; Want = "landbrake" }
+  @{ Name = "fast at Rookie survives"; Tier = "0"; Style = "fast"; Seed = "1"; Want = "survive"; Secs = 40 },
+  @{ Name = "walking at Pro dies"; Tier = "4"; Style = "slow"; Seed = "1"; Want = "die"; Secs = 120 },
+  @{ Name = "key released in the air at Veteran"; Tier = "2"; Style = "release"; Seed = "1"; Want = "landbrake"; Secs = 40 }
 )
 foreach ($x in $sjRuns) {
-  $r = Invoke-Godot ("strafejump-" + $x.Style + "-" + $x.Tier) (@("--headless", "--fixed-fps", "120", "--quit-after", "5600", "--path", $Project, "--") + $sandbox +
-                     @("--mode", "strafejump", "--tier", $x.Tier, "--movescript", "auto", "--sjstyle", $x.Style, "--sjseed", $x.Seed, "--duration", "40"))
+  $r = Invoke-Godot ("strafejump-" + $x.Style + "-" + $x.Tier) (@("--headless", "--fixed-fps", "120", "--quit-after", [string](120 * ($x.Secs + 7)), "--path", $Project, "--") + $sandbox +
+                     @("--mode", "strafejump", "--tier", $x.Tier, "--movescript", "auto", "--sjstyle", $x.Style, "--sjseed", $x.Seed, "--duration", [string]$x.Secs))
   $line = ($r.Text -split "`r?`n" | Where-Object { $_ -match '\[strafejump\] RESULT' } | Select-Object -Last 1)
   $ex = Get-Exceptions $r.Text
   $n = if ($line -match 'crossings=(\d+)') { [int]$Matches[1] } else { 0 }
