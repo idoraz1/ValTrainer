@@ -1,0 +1,44 @@
+{
+ "act": {
+  "end": "2027-01-06",
+  "episode": "V26",
+  "id": "d816f42648eaf052117f9697a155b319",
+  "name": "ACT VI",
+  "start": "2026-10-14",
+  "title": "V26 // ACT VI"
+ },
+ "branch": "release-13.10",
+ "build": "13.10.00.5893614",
+ "changelist": 5893614,
+ "counts": {
+  "accolades": 0,
+  "agents": 30,
+  "buddies": 913,
+  "bundles": 324,
+  "callouts": 300,
+  "cards": 1036,
+  "chromas": 2977,
+  "contracts": 88,
+  "flex": 21,
+  "levels": 2728,
+  "maps": 27,
+  "missions": 983,
+  "modes": 17,
+  "premierSeasons": 21,
+  "seasons": 53,
+  "skins": 1438,
+  "sprays": 940,
+  "teams": 53,
+  "themes": 464,
+  "titles": 449,
+  "weapons": 21
+ },
+ "engine": "5.3.2",
+ "episode": {
+  "end": "2027-01-06",
+  "name": "V26",
+  "start": "2026-06-24"
+ },
+ "extracted": "2026-11-10",
+ "version": "13.10"
+}

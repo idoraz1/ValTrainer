@@ -140,7 +140,10 @@ public static class WeaponCheck
         Equip(w);
         if (w.Scope) Scope(w);
         Deadzone(w);
+        MoveError(w);
         RecoilMuls(w);
+        AimedRecoil(w);
+        Sourced(w);
         if (Plain(w)) Regression(w);
     }
 
@@ -158,6 +161,19 @@ public static class WeaponCheck
         }
         if (w.HeatCap < 1) p.Add("HeatCap < 1");
         if (w.FirstShotAds > w.FirstShotHip + 1e-4f) p.Add("aimed first shot worse than hip");
+        // 1.24: the files' aimed error rule (×mul + add) must give the aimed first-shot error the armory shows (Warden:
+        // 0.15 × 1.15 − 0.13 = 0.0425 vs the stat's 0.04, hence the tolerance).
+        if (!w.Scope && w.AdsSpread.Length == 0 && w.Zoom > 1f && !Near(w.FirstShotHip * w.AdsErrorMul + w.AdsErrorAdd, w.FirstShotAds, 0.005f))
+            p.Add($"aimed error ×{F(w.AdsErrorMul, "0.##")} {F(w.AdsErrorAdd, "+0.###;-0.###")} gives {F(w.FirstShotHip * w.AdsErrorMul + w.AdsErrorAdd)} ≠ FirstShotAds {F(w.FirstShotAds)}");
+        if (w.AdsPitchMul is <= 0f or > 1f || w.AdsYawMul is <= 0f or > 1f) p.Add("an aimed recoil multiplier out of range");
+        if (w.WalkErrKeys.Length > 0)
+        {
+            var k = w.WalkErrKeys;
+            bool sorted = k.Length % 2 == 0 && Enumerable.Range(0, k.Length / 2).All(i => k[2 * i] > (i == 0 ? 0f : k[2 * i - 2]) && k[2 * i] <= 1f);
+            if (!sorted) p.Add("WalkErrKeys must be (speed fraction, degrees) pairs with rising fractions ≤ 1");
+            else if (Mathf.Abs(k[0] - w.DeadzoneMul) > 0.03f) p.Add($"the walking curve starts at {F(k[0], "0.###")}, the deadzone is {F(w.DeadzoneMul, "0.###")}");
+            if (k.Length >= 2 && k[^1] > w.RunErr + 1e-4f) p.Add("walking error above the running error");
+        }
         if (w.Pellets < 1) p.Add("Pellets < 1");
         if (w.AltFire == AltFireKind.ZoomBurst)
         {
@@ -477,6 +493,93 @@ public static class WeaponCheck
             $"run {F(m.RunMax, "0.00")} m/s, accurate ≤ {F(m.AccurateMax, "0.00")} m/s ({F(w.DeadzoneMul * 100f, "0.#")}%), aimed ×{F(m.AdsSpeedMul, "0.00")}");
     }
 
+    /// <summary>1.24: movement error on the ground against the files' walking curve (valorant.gs): nothing in the deadzone,
+    /// the first key just past it, <see cref="WeaponDef.WalkErr"/> at walk speed, <see cref="WeaponDef.RunErr"/> running,
+    /// <see cref="WeaponDef.CrouchWalkErr"/> crouched.</summary>
+    static void MoveError(WeaponDef w)
+    {
+        float At(float frac, bool crouch = false)
+        {
+            var m = new Mover();
+            m.Hold(w);
+            m.Crouching = crouch;
+            m.Vel = new Vector3(w.RunSpeed * frac, 0, 0);
+            return m.MovementErrorDeg(w);
+        }
+        float dz = At(w.DeadzoneMul * 0.98f), walk = At(Mover.WalkMul), run = At(1f), crouch = At(Mover.CrouchMul, true);
+        float edge = w.WalkErrKeys.Length >= 2 ? At(w.WalkErrKeys[0] + 0.001f) : float.NaN;
+        bool edgeOk = w.WalkErrKeys.Length < 2 || Near(edge, w.WalkErrKeys[1], 0.05f + 0.02f * w.WalkErrKeys[1]);
+        Check("movement error: deadzone / walking / running / crouched", dz == 0f && Near(walk, w.WalkErr, 2e-3f) && Near(run, w.RunErr) && Near(crouch, w.CrouchWalkErr) && edgeOk,
+            $"{F(dz, "0.0")}° in the deadzone{(w.WalkErrKeys.Length >= 2 ? $", {F(edge, "0.00")}° past it (curve {F(w.WalkErrKeys[1], "0.0")}°)" : "")}, walk {F(walk, "0.00")}° (expected {F(w.WalkErr, "0.00")}), "
+            + $"run {F(run, "0.0")}° (expected {F(w.RunErr, "0.0")}), crouch-walk {F(crouch, "0.00")}° (expected {F(w.CrouchWalkErr, "0.00")})");
+    }
+
+    /// <summary>1.24: aimed down sights the recoil is the files' ×AdsPitchMul / ×AdsYawMul (Vandal ×0.7), after one shot (heat
+    /// 1 either way: an aimed spray's slower rate can count as a tap at 60 fps, which would change the heat, not the rule).</summary>
+    static void AimedRecoil(WeaponDef w)
+    {
+        if (w.Scope || w.Zoom <= 1f || w.AltFire == AltFireKind.ZoomBurst || w.Pitch.Length < 2 || w.Pitch[1] <= 0f) return;
+        (float P, float Y) One(bool aim)
+        {
+            var r = new Rig(w) { Bottomless = true, Aim = aim };
+            r.Step(held: true, pressed: true);
+            return (r.V.RecoilPitch, r.V.RecoilYaw);
+        }
+        var (hp, hy) = One(false);
+        var (ap, ay) = One(true);
+        bool yawOk = Mathf.Abs(hy) < 1e-6f || Near(ay / hy, w.AdsYawMul, 1e-3f);
+        Check("aimed recoil multiplier", hp > 0f && Near(ap / hp, w.AdsPitchMul, 1e-3f) && yawOk,
+            $"pitch ×{F(ap / hp, "0.00")} aimed (expected {F(w.AdsPitchMul, "0.00")})" + (Mathf.Abs(hy) < 1e-6f ? "" : $", yaw ×{F(ay / hy, "0.00")} (expected {F(w.AdsYawMul, "0.00")})"));
+    }
+
+    /// <summary>1.24: the sourced curves reach the game. Held fire must put the view at the table × <see cref="RecoilScale"/>
+    /// after every bullet (no recovery while the trigger is held), and the tables must still hold the game files' keys
+    /// (valorant.gs, build 13.10: a few anchor values per gun, copied by hand from the site's weapon pages, so a broken
+    /// import or a hand edit shows up). No older bounds were replaced: the pre-1.24 tables were estimates nothing pinned.</summary>
+    static void Sourced(WeaponDef w)
+    {
+        if (w.Auto && w.Pellets <= 1 && w.Pitch.Length > 2)
+        {
+            var r = new Rig(w) { Bottomless = true };
+            float worst = 0f;
+            int n = Math.Min(w.Pitch.Length - 1, w.HeatCap);
+            for (int i = 0; i < r.Frames(12f) && r.Volleys.Count < n; i++)
+            {
+                int before = r.Volleys.Count;
+                r.Step(held: true, pressed: i == 0);
+                if (r.Volleys.Count > before)
+                    worst = Mathf.Max(worst, Mathf.Abs(r.V.RecoilPitch - WeaponDef.Lerp(w.Pitch, r.G.Heat) * RecoilScale.Pitch));
+            }
+            bool exact = Near(r.G.Heat, n, 1e-3f);
+            Check("held spray follows the pitch table × RecoilScale", exact && worst < 1e-4f,
+                $"{r.Volleys.Count} bullets, heat {F(r.G.Heat, "0.00")} (expected {n}), view {F(r.V.RecoilPitch, "0.00")}° = table {F(w.Pitch[Math.Min(n, w.Pitch.Length - 1)], "0.00")}° × {F(RecoilScale.Pitch, "0.##")}, worst miss {F(worst, "0.0000")}°");
+        }
+        // (bullet index, pitch, yaw, spread) from the valorant.gs weapon pages, build 13.10.00.5893614; NaN = not checked.
+        const float X = float.NaN;
+        (float I, float P, float Y, float S)[] anchors = w.Kind switch
+        {
+            WeaponKind.Vandal => new[] { (1f, 0.4f, X, 0.3f), (2f, 0.9f, X, 0.35f), (3f, X, 0.15f, X), (5f, X, X, 1f), (7f, 7.6f, X, X) },
+            WeaponKind.Phantom => new[] { (1f, 0.3f, X, 0.28f), (2f, 0.7f, X, 0.36f), (4f, X, X, 0.9f), (7f, 6.4f, X, X), (13f, X, 1.8f, X) },
+            WeaponKind.Spectre => new[] { (1f, 0.15f, X, X), (2f, 0.5f, X, 0.85f), (6f, X, 0f, X), (7f, X, X, 1.4f), (9f, 5f, X, X), (11f, 5.4f, X, X), (13f, X, 1.25f, X) },
+            WeaponKind.Sheriff => new[] { (1f, 1f, 0f, 1.1f), (2f, 2f, 0f, 2.75f) },
+            WeaponKind.Bulldog => new[] { (2f, 0.8f, 0.1f, 0.5f), (7f, 5.5f, X, X), (9f, X, -1.5074f, X) },
+            WeaponKind.Guardian => new[] { (2f, 1f, -0.1f, 1.1f), (6f, 5f, X, X), (7f, X, -1.25f, X) },
+            WeaponKind.Odin => new[] { (2f, 1f, X, X), (35f, 13f, X, 1.1f), (44f, 15f, X, X) },
+            WeaponKind.Ares => new[] { (9f, 6f, X, X), (10f, X, 1.5f, X), (12f, X, X, 0.7f), (19f, 8f, X, X) },
+            WeaponKind.Outlaw => new[] { (1f, 3f, X, X) },
+            _ => Array.Empty<(float, float, float, float)>(),
+        };
+        if (anchors.Length == 0) return;
+        var bad = new List<string>();
+        foreach (var (i, pv, yv, sv) in anchors)
+        {
+            if (!float.IsNaN(pv) && !Near(WeaponDef.Lerp(w.Pitch, i), pv, 1e-3f)) bad.Add($"pitch[{i}] {F(WeaponDef.Lerp(w.Pitch, i))} ≠ {F(pv)}");
+            if (!float.IsNaN(yv) && !Near(WeaponDef.Lerp(w.Yaw, i), yv, 1e-3f)) bad.Add($"yaw[{i}] {F(WeaponDef.Lerp(w.Yaw, i))} ≠ {F(yv)}");
+            if (!float.IsNaN(sv) && !Near(WeaponDef.Lerp(w.Spread, i), sv, 1e-3f)) bad.Add($"spread[{i}] {F(WeaponDef.Lerp(w.Spread, i))} ≠ {F(sv)}");
+        }
+        Check("tables hold the game files' keys (valorant.gs 13.10)", bad.Count == 0, bad.Count > 0 ? string.Join("; ", bad) : $"{anchors.Length} anchor bullets match");
+    }
+
     /// <summary>Crouched-still and running recoil multipliers, after one shot (heat 1).</summary>
     static void RecoilMuls(WeaponDef w)
     {
@@ -574,7 +677,8 @@ public static class WeaponCheck
     }
 
     /// <summary>WeaponController as it was before 1.18 (Phase 0: data-driven multipliers, nothing else), verbatim except
-    /// the class name and the unused event. The reference for <see cref="Regression"/>.</summary>
+    /// the class name, the unused event and the 1.24 data rules (RecoilScale, aimed recoil and error multipliers). The
+    /// reference for <see cref="Regression"/>.</summary>
     sealed class RefController
     {
         public WeaponDef Def { get; private set; }
@@ -655,8 +759,10 @@ public static class WeaponCheck
             bool still = mover.Crouching && mover.Speed < 0.5f, running = movementMode && mover.Speed > mover.WalkMax;
             float crouchMul = still ? Def.CrouchRecoilMul : 1f;
             float runMul = running ? Def.RunPitchMul : 1f, runYawMul = running ? Def.RunYawMul : 1f;
-            view.RecoilPitch = WeaponDef.Lerp(Def.Pitch, heat) * crouchMul * runMul;
-            view.RecoilYaw = sideBlend * WeaponDef.Lerp(Def.Yaw, yawHeat) * crouchMul * runYawMul;
+            // 1.24: the recoil calibration and the files' aimed recoil multipliers apply here too (data, not a mechanic).
+            float adsPitch = Scoped ? Def.AdsPitchMul : 1f, adsYaw = Scoped ? Def.AdsYawMul : 1f;
+            view.RecoilPitch = WeaponDef.Lerp(Def.Pitch, heat) * RecoilScale.Pitch * crouchMul * runMul * adsPitch;
+            view.RecoilYaw = sideBlend * WeaponDef.Lerp(Def.Yaw, yawHeat) * RecoilScale.Yaw * crouchMul * runYawMul * adsYaw;
             SpreadNow = CurrentError(mover, movementMode);
             return shots;
         }
@@ -668,7 +774,8 @@ public static class WeaponCheck
             else
             {
                 err = WeaponDef.Lerp(Def.Spread, heat);
-                if (Scoped) err = Mathf.Max(0.05f, err - (Def.FirstShotHip - Def.FirstShotAds));
+                // 1.24: the files' aimed error (×mul + add; without them the old hip − (FirstShotHip − FirstShotAds)).
+                if (Scoped) err = Mathf.Max(0.05f, err * Def.AdsErrorMul + Def.AdsErrorAdd);
             }
             if (mover.Crouching) err *= Def.CrouchSpreadMul;
             if (movementMode) err += mover.MovementErrorDeg(Def);

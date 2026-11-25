@@ -508,7 +508,7 @@ public sealed class SimAim
     float Climb(float t)
     {
         if (t <= 0 || weapon == null) return 0;
-        float a = WeaponDef.Lerp(weapon.Pitch, BulletsAt(t)), b = WeaponDef.Lerp(weapon.Pitch, BulletsAt(Math.Max(0, t - 0.03f)));
+        float a = weapon.PitchAt(BulletsAt(t)), b = weapon.PitchAt(BulletsAt(Math.Max(0, t - 0.03f)));
         return (a - b) / 0.03f;
     }
 

@@ -1,5 +1,9 @@
 # Weapons research for 1.18: all 18 VALORANT guns
 
+> **1.24 update:** the per-bullet recoil / spread tables, recovery, tap efficiency, aimed / crouched / running multipliers
+> and movement error below are superseded by the game-file curves from [valorant.gs](https://valorant.gs): see
+> [recoil-1.24.md](recoil-1.24.md). The rest (rates, magazines, reloads, damage, bursts, scopes) still stands.
+
 Research date 2026-10-31. Game build checked: **VALORANT 13.09** (valorant-api `/v1/version`: `release-13.09`, built 2026-10-23).
 Scope: numbers for a `WeaponDef` entry for every gun, using the same semantics as `src/Core/Weapons.cs` (degrees, cumulative recoil tables, Riot "Gun Recovery Time" / "Tap Efficiency" meanings). This document is research only. No code was changed.
 

@@ -1,0 +1,4760 @@
+[
+ {
+  "baseContent": true,
+  "blueprint": {
+   "firingRate": 12,
+   "inaccuracyAnimationMultiplier": 0,
+   "magazineAmmo": 100,
+   "readyingTimes": [
+    1.25,
+    0.75,
+    0.25
+   ],
+   "reserveAmmo": 200,
+   "scaleOnGround": 1.5,
+   "stability": {
+    "curves": {
+     "ads": {
+      "error": 1.15,
+      "errorAdd": -0.13,
+      "pitch": 0.7,
+      "yaw": 0.7
+     },
+     "decay": [
+      [
+       2.25,
+       100
+      ],
+      [
+       4.5,
+       3
+      ]
+     ],
+     "error": [
+      [
+       0,
+       0.8
+      ],
+      [
+       35,
+       1.1
+      ],
+      [
+       75,
+       1.3
+      ]
+     ],
+     "landing": [
+      [
+       0,
+       0.7
+      ],
+      [
+       0.225,
+       0
+      ]
+     ],
+     "movement": [
+      {
+       "curve": "FlaggedStability_WalkingMovementError_MachineGuns",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.275,
+         3
+        ],
+        [
+         0.66,
+         6
+        ]
+       ],
+       "state": "walking"
+      },
+      {
+       "curve": "RunningMovementErrorCurveMachineGuns",
+       "keys": [
+        [
+         0.66,
+         6.5
+        ]
+       ],
+       "state": "running"
+      },
+      {
+       "curve": null,
+       "keys": [
+        [
+         0,
+         10
+        ]
+       ],
+       "state": "jumping"
+      },
+      {
+       "curve": "CrouchingMovementErrorCurveMachineGuns",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.3,
+         0.4
+        ]
+       ],
+       "state": "crouching"
+      },
+      {
+       "curve": "MovementErrorCurveOnAscendersMachineGuns",
+       "keys": [
+        [
+         0,
+         1.56
+        ],
+        [
+         0.275,
+         2.4
+        ],
+        [
+         0.66,
+         6
+        ]
+       ],
+       "state": "ascender"
+      }
+     ],
+     "pitch": [
+      [
+       0,
+       0
+      ],
+      [
+       1,
+       0.35
+      ],
+      [
+       2,
+       1
+      ],
+      [
+       11.8016,
+       8.1439
+      ],
+      [
+       27.3884,
+       11.5
+      ],
+      [
+       35,
+       13
+      ],
+      [
+       44,
+       15
+      ],
+      [
+       55,
+       15.75
+      ],
+      [
+       65.0216,
+       16.2
+      ],
+      [
+       75,
+       17
+      ]
+     ],
+     "recoilRates": {
+      "decay": 1,
+      "increase": 2
+     },
+     "states": {
+      "ascender": {
+       "pitch": 1.4,
+       "yaw": 1.4
+      },
+      "crouching": {
+       "error": 0.6,
+       "pitch": 0.6,
+       "yaw": 0.6
+      },
+      "jumping": {
+       "pitch": 1.4,
+       "yaw": 1.4
+      },
+      "ladder": {
+       "pitch": 1.4,
+       "yaw": 1.4
+      },
+      "running": {
+       "pitch": 1.4,
+       "yaw": 1.4
+      }
+     },
+     "tagging": [
+      [
+       0,
+       0
+      ],
+      [
+       0.25,
+       5.5
+      ]
+     ],
+     "yaw": [
+      [
+       0,
+       0
+      ],
+      [
+       1,
+       0
+      ],
+      [
+       9,
+       1.65
+      ],
+      [
+       16.4052,
+       1.8
+      ],
+      [
+       25.1951,
+       2.5
+      ],
+      [
+       32.0623,
+       2
+      ],
+      [
+       38.8962,
+       2.75
+      ],
+      [
+       47.5735,
+       2.6
+      ],
+      [
+       54.0259,
+       3.5
+      ],
+      [
+       63.3707,
+       3.15
+      ],
+      [
+       70.713,
+       3.75
+      ]
+     ]
+    },
+    "minTaggingSpeed": 0.15,
+    "recoveryTime": 0.65,
+    "tapEfficiency": 1
+   },
+   "zoom": [
+    {
+     "fov": 60,
+     "multiplier": 1.15
+    }
+   ]
+  },
+  "category": "Heavy",
+  "categoryLabel": "Heavy Weapons",
+  "cost": 3200,
+  "defaultSkin": "standard-odin",
+  "icon": "https://cdn.source.gs/valorant/img/odin-icon-ac4afb-444.webp",
+  "id": "63e6c2b64a8e869c3d4ce38355226584",
+  "killIcon": "https://cdn.source.gs/valorant/img/odin-kill-60be16.webp",
+  "killIconFull": "https://cdn.source.gs/valorant/img/odin-kill-60be16-384.webp",
+  "name": "Odin",
+  "path": "ShooterGame/Content/Equippables/Guns/HvyMachineGuns/HMG/HMGPrimaryAsset",
+  "shopCategory": "Heavy Weapons",
+  "shopColumn": 2,
+  "shopIcon": "https://cdn.source.gs/valorant/img/odin-icon-ac4afb-444.webp",
+  "shopRow": 2,
+  "skinCount": 40,
+  "slug": "odin",
+  "stats": {
+   "ads": {
+    "burst": 1,
+    "fireRate": 15.6,
+    "firstBulletAccuracy": 0.79,
+    "runSpeed": 0.76,
+    "zoom": 1.15
+   },
+   "airBurst": null,
+   "altFire": "ADS",
+   "altShotgun": null,
+   "damage": [
+    {
+     "body": 38,
+     "from": 0,
+     "head": 95,
+     "leg": 32.3,
+     "to": 30
+    },
+    {
+     "body": 31,
+     "from": 30,
+     "head": 77.5,
+     "leg": 26.35,
+     "to": 50
+    }
+   ],
+   "equipTime": 1.25,
+   "feature": "ROFIncrease",
+   "fireMode": null,
+   "fireRate": 12,
+   "firstBulletAccuracy": 0.8,
+   "magazine": 100,
+   "pellets": 1,
+   "reloadTime": 5,
+   "runSpeed": 0.76,
+   "wallPenetration": "High"
+  }
+ },
+ {
+  "baseContent": true,
+  "blueprint": {
+   "firingRate": 13,
+   "inaccuracyAnimationMultiplier": 0,
+   "magazineAmmo": 50,
+   "readyingTimes": [
+    1.25,
+    0.75,
+    0.25
+   ],
+   "reserveAmmo": 100,
+   "scaleOnGround": 1.5,
+   "stability": {
+    "curves": {
+     "ads": {
+      "error": 1.15,
+      "errorAdd": -0.25,
+      "yaw": 0.7
+     },
+     "decay": [
+      [
+       2.25,
+       100
+      ],
+      [
+       4.5,
+       3
+      ]
+     ],
+     "error": [
+      [
+       0,
+       1
+      ],
+      [
+       12,
+       0.7
+      ]
+     ],
+     "landing": [
+      [
+       0,
+       0.7
+      ],
+      [
+       0.225,
+       0
+      ]
+     ],
+     "movement": [
+      {
+       "curve": "FlaggedStability_WalkingMovementError_MachineGuns",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.275,
+         3
+        ],
+        [
+         0.66,
+         6
+        ]
+       ],
+       "state": "walking"
+      },
+      {
+       "curve": "RunningMovementErrorCurveMachineGuns",
+       "keys": [
+        [
+         0.66,
+         6.5
+        ]
+       ],
+       "state": "running"
+      },
+      {
+       "curve": null,
+       "keys": [
+        [
+         0,
+         10
+        ]
+       ],
+       "state": "jumping"
+      },
+      {
+       "curve": "CrouchingMovementErrorCurveMachineGuns",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.3,
+         0.4
+        ]
+       ],
+       "state": "crouching"
+      },
+      {
+       "curve": "MovementErrorCurveOnAscendersMachineGuns",
+       "keys": [
+        [
+         0,
+         1.56
+        ],
+        [
+         0.275,
+         2.4
+        ],
+        [
+         0.66,
+         6
+        ]
+       ],
+       "state": "ascender"
+      }
+     ],
+     "pitch": [
+      [
+       0,
+       0
+      ],
+      [
+       9,
+       6
+      ],
+      [
+       19,
+       8
+      ],
+      [
+       29,
+       10
+      ],
+      [
+       39,
+       12
+      ],
+      [
+       47,
+       13
+      ]
+     ],
+     "recoilRates": {
+      "decay": 1,
+      "increase": 2
+     },
+     "states": {
+      "ascender": {
+       "pitch": 1.4,
+       "yaw": 1.4
+      },
+      "crouching": {
+       "error": 0.6,
+       "pitch": 0.6,
+       "yaw": 0.6
+      },
+      "jumping": {
+       "pitch": 1.4,
+       "yaw": 1.4
+      },
+      "ladder": {
+       "pitch": 1.4,
+       "yaw": 1.4
+      },
+      "running": {
+       "pitch": 1.4,
+       "yaw": 1.4
+      }
+     },
+     "tagging": [
+      [
+       0,
+       0
+      ],
+      [
+       0.25,
+       5.5
+      ]
+     ],
+     "yaw": [
+      [
+       0.2,
+       0
+      ],
+      [
+       6,
+       0
+      ],
+      [
+       10,
+       1.5
+      ],
+      [
+       15,
+       1.85
+      ],
+      [
+       20,
+       1.95
+      ],
+      [
+       27.6994,
+       2.4
+      ],
+      [
+       44,
+       2.75
+      ]
+     ]
+    },
+    "minTaggingSpeed": 0.15,
+    "recoveryTime": 0.65,
+    "tapEfficiency": 1
+   },
+   "zoom": [
+    {
+     "fov": 60,
+     "multiplier": 1.15
+    }
+   ]
+  },
+  "category": "Heavy",
+  "categoryLabel": "Heavy Weapons",
+  "cost": 1600,
+  "defaultSkin": "standard-ares",
+  "icon": "https://cdn.source.gs/valorant/img/ares-icon-ae9a29-484.webp",
+  "id": "55d8a0f44274ca67fe2c06ab45efdf58",
+  "killIcon": "https://cdn.source.gs/valorant/img/ares-kill-48b0fd.webp",
+  "killIconFull": "https://cdn.source.gs/valorant/img/ares-kill-48b0fd-512.webp",
+  "name": "Ares",
+  "path": "ShooterGame/Content/Equippables/Guns/HvyMachineGuns/LMG/LMGPrimaryAsset",
+  "shopCategory": "Heavy Weapons",
+  "shopColumn": 1,
+  "shopIcon": "https://cdn.source.gs/valorant/img/ares-icon-ae9a29-484.webp",
+  "shopRow": 1,
+  "skinCount": 48,
+  "slug": "ares",
+  "stats": {
+   "ads": {
+    "burst": 1,
+    "fireRate": 13,
+    "firstBulletAccuracy": 0.9,
+    "runSpeed": 0.76,
+    "zoom": 1.15
+   },
+   "airBurst": null,
+   "altFire": "ADS",
+   "altShotgun": null,
+   "damage": [
+    {
+     "body": 30,
+     "from": 0,
+     "head": 75,
+     "leg": 25.5,
+     "to": 30
+    },
+    {
+     "body": 28,
+     "from": 30,
+     "head": 70,
+     "leg": 23.8,
+     "to": 50
+    }
+   ],
+   "equipTime": 1.25,
+   "feature": null,
+   "fireMode": null,
+   "fireRate": 13,
+   "firstBulletAccuracy": 1,
+   "magazine": 50,
+   "pellets": 1,
+   "reloadTime": 3.25,
+   "runSpeed": 0.76,
+   "wallPenetration": "High"
+  }
+ },
+ {
+  "baseContent": true,
+  "blueprint": {
+   "firingRate": 9.75,
+   "inaccuracyAnimationMultiplier": 3,
+   "magazineAmmo": 25,
+   "readyingTimes": [
+    0.6,
+    0.2
+   ],
+   "reserveAmmo": 50,
+   "scaleOnGround": 1.5,
+   "stability": {
+    "curves": {
+     "ads": {
+      "error": 1.15,
+      "errorAdd": -0.13,
+      "pitch": 0.7,
+      "yaw": 0.7
+     },
+     "decay": [
+      [
+       0,
+       1000
+      ],
+      [
+       0.1,
+       40
+      ],
+      [
+       1.5,
+       10
+      ]
+     ],
+     "error": [
+      [
+       0,
+       0.25
+      ],
+      [
+       1,
+       0.3
+      ],
+      [
+       2,
+       0.35
+      ],
+      [
+       5,
+       1
+      ]
+     ],
+     "landing": [
+      [
+       0,
+       0.7
+      ],
+      [
+       0.225,
+       0
+      ]
+     ],
+     "movement": [
+      {
+       "curve": "FlaggedStability_WalkingMovementError_Rifles",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.275,
+         3
+        ],
+        [
+         0.601,
+         5
+        ]
+       ],
+       "state": "walking"
+      },
+      {
+       "curve": "RunningMovementErrorCurveRifles",
+       "keys": [
+        [
+         0.601,
+         6
+        ]
+       ],
+       "state": "running"
+      },
+      {
+       "curve": "CrouchingMovementErrorCurveRifle",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.29,
+         0
+        ],
+        [
+         0.3,
+         0.8
+        ]
+       ],
+       "state": "crouching"
+      },
+      {
+       "curve": "MovementErrorCurveOnAscendersRifles",
+       "keys": [
+        [
+         0,
+         1.3
+        ],
+        [
+         0.275,
+         2
+        ],
+        [
+         0.6,
+         5
+        ]
+       ],
+       "state": "ascender"
+      }
+     ],
+     "pitch": [
+      [
+       0,
+       0
+      ],
+      [
+       1,
+       0.4
+      ],
+      [
+       2,
+       0.9
+      ],
+      [
+       7,
+       7.6
+      ],
+      [
+       8.7737,
+       7.4554
+      ],
+      [
+       10.4892,
+       8.0837
+      ],
+      [
+       12.8023,
+       7.5347
+      ],
+      [
+       14.8712,
+       8.163
+      ],
+      [
+       17.6084,
+       7.7727
+      ],
+      [
+       19.8198,
+       8.3622
+      ],
+      [
+       22.2024,
+       7.9314
+      ]
+     ],
+     "recoilRates": {
+      "decay": 1,
+      "increase": 12
+     },
+     "states": {
+      "crouching": {
+       "error": 0.85,
+       "pitch": 0.85,
+       "yaw": 0.85
+      },
+      "running": {
+       "pitch": 1.8
+      }
+     },
+     "tagging": [
+      [
+       0,
+       0
+      ],
+      [
+       0.75,
+       4.5
+      ]
+     ],
+     "yaw": [
+      [
+       0,
+       0
+      ],
+      [
+       3,
+       0.15
+      ],
+      [
+       12.3526,
+       2
+      ],
+      [
+       14.9531,
+       1.9382
+      ],
+      [
+       17.1676,
+       2.081
+      ],
+      [
+       19.3089,
+       1.9382
+      ],
+      [
+       21.8081,
+       2.1193
+      ],
+      [
+       24.0538,
+       1.9198
+      ]
+     ]
+    },
+    "minTaggingSpeed": 0.15,
+    "recoveryTime": 0.375,
+    "tapEfficiency": 6
+   },
+   "zoom": [
+    {
+     "fov": 55.2,
+     "multiplier": 1.25
+    }
+   ]
+  },
+  "category": "Rifle",
+  "categoryLabel": "Assault Rifles",
+  "cost": 2900,
+  "defaultSkin": "standard-vandal",
+  "icon": "https://cdn.source.gs/valorant/img/vandal-icon-0bc23f-420.webp",
+  "id": "9c82e19d457502001a813eacf00cf872",
+  "killIcon": "https://cdn.source.gs/valorant/img/vandal-kill-8a9259.webp",
+  "killIconFull": "https://cdn.source.gs/valorant/img/vandal-kill-8a9259-384.webp",
+  "name": "Vandal",
+  "path": "ShooterGame/Content/Equippables/Guns/Rifles/AK/AKPrimaryAsset",
+  "shopCategory": "Rifles",
+  "shopColumn": 3,
+  "shopIcon": "https://cdn.source.gs/valorant/img/vandal-icon-0bc23f-420.webp",
+  "shopRow": 2,
+  "skinCount": 108,
+  "slug": "vandal",
+  "stats": {
+   "ads": {
+    "burst": 1,
+    "fireRate": 8.775,
+    "firstBulletAccuracy": 0.1575,
+    "runSpeed": 0.76,
+    "zoom": 1.25
+   },
+   "airBurst": null,
+   "altFire": "ADS",
+   "altShotgun": null,
+   "damage": [
+    {
+     "body": 40,
+     "from": 0,
+     "head": 160,
+     "leg": 34,
+     "to": 50
+    }
+   ],
+   "equipTime": 1,
+   "feature": null,
+   "fireMode": null,
+   "fireRate": 9.75,
+   "firstBulletAccuracy": 0.25,
+   "magazine": 25,
+   "pellets": 1,
+   "reloadTime": 2.5,
+   "runSpeed": 0.8,
+   "wallPenetration": "Medium"
+  }
+ },
+ {
+  "baseContent": true,
+  "blueprint": {
+   "firingRate": 6.5,
+   "inaccuracyAnimationMultiplier": 3,
+   "magazineAmmo": 18,
+   "readyingTimes": [
+    0.6,
+    0.2
+   ],
+   "reserveAmmo": 36,
+   "scaleOnGround": 1.5,
+   "stability": {
+    "curves": {
+     "ads": {
+      "error": 1.15,
+      "errorAdd": -0.13,
+      "pitch": 0.7,
+      "yaw": 0.7
+     },
+     "decay": [
+      [
+       0,
+       1000
+      ],
+      [
+       0.1,
+       40
+      ],
+      [
+       1.5,
+       10
+      ]
+     ],
+     "error": [
+      [
+       0,
+       0.15
+      ],
+      [
+       1,
+       0.2
+      ],
+      [
+       2,
+       0.5
+      ],
+      [
+       5,
+       1
+      ]
+     ],
+     "landing": [
+      [
+       0,
+       0.7
+      ],
+      [
+       0.225,
+       0
+      ]
+     ],
+     "movement": [
+      {
+       "curve": "FlaggedStability_WalkingMovementError_Rifles",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.275,
+         3
+        ],
+        [
+         0.601,
+         5
+        ]
+       ],
+       "state": "walking"
+      },
+      {
+       "curve": "RunningMovementErrorCurveRifles",
+       "keys": [
+        [
+         0.601,
+         6
+        ]
+       ],
+       "state": "running"
+      },
+      {
+       "curve": "CrouchingMovementErrorCurveRifle",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.29,
+         0
+        ],
+        [
+         0.3,
+         0.8
+        ]
+       ],
+       "state": "crouching"
+      },
+      {
+       "curve": "MovementErrorCurveOnAscendersRifles",
+       "keys": [
+        [
+         0,
+         1.3
+        ],
+        [
+         0.275,
+         2
+        ],
+        [
+         0.6,
+         5
+        ]
+       ],
+       "state": "ascender"
+      }
+     ],
+     "pitch": [
+      [
+       0,
+       0
+      ],
+      [
+       1,
+       0.45
+      ],
+      [
+       2,
+       0.9
+      ],
+      [
+       3,
+       1.8
+      ],
+      [
+       4,
+       3.2
+      ],
+      [
+       6,
+       6
+      ],
+      [
+       7.5,
+       6.75
+      ],
+      [
+       8.7737,
+       7.4554
+      ],
+      [
+       10.4892,
+       8.0837
+      ],
+      [
+       12.8023,
+       7.5347
+      ],
+      [
+       14.8712,
+       8.163
+      ],
+      [
+       17.6084,
+       7.7727
+      ],
+      [
+       19.8198,
+       8.3622
+      ],
+      [
+       22.2024,
+       7.9314
+      ]
+     ],
+     "recoilRates": {
+      "decay": 1,
+      "increase": 12
+     },
+     "states": {
+      "crouching": {
+       "error": 0.85,
+       "pitch": 0.85,
+       "yaw": 0.85
+      }
+     },
+     "tagging": [
+      [
+       0,
+       0
+      ],
+      [
+       0.75,
+       4.5
+      ]
+     ],
+     "yaw": [
+      [
+       0,
+       0
+      ],
+      [
+       3,
+       0.15
+      ],
+      [
+       8.3575,
+       1.3374
+      ],
+      [
+       15.3107,
+       1.2756
+      ],
+      [
+       17.5251,
+       1.4184
+      ],
+      [
+       19.6664,
+       1.2756
+      ],
+      [
+       22.1656,
+       1.4566
+      ],
+      [
+       24.4113,
+       1.2572
+      ]
+     ]
+    },
+    "minTaggingSpeed": 0.15,
+    "recoveryTime": 0.4,
+    "tapEfficiency": 9
+   },
+   "zoom": [
+    {
+     "fov": 15,
+     "multiplier": 2
+    }
+   ]
+  },
+  "category": "Rifle",
+  "categoryLabel": "Rifles",
+  "cost": 2900,
+  "defaultSkin": "standard-warden",
+  "icon": "https://cdn.source.gs/valorant/img/warden-icon-9470f6-512.webp",
+  "id": "8db0a1bf4a50832a4566faaaa6d250ca",
+  "killIcon": "https://cdn.source.gs/valorant/img/warden-kill-5e74d1.webp",
+  "killIconFull": "https://cdn.source.gs/valorant/img/warden-kill-5e74d1-512.webp",
+  "name": "Warden",
+  "path": "ShooterGame/Content/Equippables/Guns/Rifles/BattleRifle/BattleRifle_PrimaryAsset",
+  "shopCategory": "Rifles",
+  "shopColumn": 2,
+  "shopIcon": "https://cdn.source.gs/valorant/img/warden-icon-9470f6-512.webp",
+  "shopRow": 2,
+  "skinCount": 4,
+  "slug": "warden",
+  "stats": {
+   "ads": {
+    "burst": 1,
+    "fireRate": 6.5,
+    "firstBulletAccuracy": 0.04,
+    "runSpeed": 0.76,
+    "zoom": 2
+   },
+   "airBurst": null,
+   "altFire": "ADS",
+   "altShotgun": null,
+   "damage": [
+    {
+     "body": 50,
+     "from": 0,
+     "head": 200,
+     "leg": 42,
+     "to": 50
+    }
+   ],
+   "equipTime": 1,
+   "feature": null,
+   "fireMode": null,
+   "fireRate": 6.5,
+   "firstBulletAccuracy": 0.15,
+   "magazine": 18,
+   "pellets": 1,
+   "reloadTime": 2.5,
+   "runSpeed": 0.8,
+   "wallPenetration": "Medium"
+  }
+ },
+ {
+  "baseContent": true,
+  "blueprint": {
+   "firingRate": 10,
+   "magazineAmmo": 24,
+   "readyingTimes": [
+    0.6,
+    0.2
+   ],
+   "reserveAmmo": 72,
+   "scaleOnGround": 1.5,
+   "stability": {
+    "curves": {
+     "error": [
+      [
+       0,
+       0.3
+      ],
+      [
+       1,
+       0.4
+      ],
+      [
+       2,
+       0.5
+      ],
+      [
+       6,
+       1.25
+      ]
+     ],
+     "landing": [
+      [
+       0,
+       0.7
+      ],
+      [
+       0.225,
+       0
+      ]
+     ],
+     "movement": [
+      {
+       "curve": "FlaggedStability_WalkingMovementError_Rifles",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.275,
+         3
+        ],
+        [
+         0.601,
+         5
+        ]
+       ],
+       "state": "walking"
+      },
+      {
+       "curve": "RunningMovementErrorCurveRifles",
+       "keys": [
+        [
+         0.601,
+         6
+        ]
+       ],
+       "state": "running"
+      },
+      {
+       "curve": null,
+       "keys": [
+        [
+         0,
+         13
+        ]
+       ],
+       "state": "jumping"
+      },
+      {
+       "curve": "CrouchingMovementErrorCurveRifle",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.29,
+         0
+        ],
+        [
+         0.3,
+         0.8
+        ]
+       ],
+       "state": "crouching"
+      },
+      {
+       "curve": "MovementErrorCurveOnAscendersRifles",
+       "keys": [
+        [
+         0,
+         1.3
+        ],
+        [
+         0.275,
+         2
+        ],
+        [
+         0.6,
+         5
+        ]
+       ],
+       "state": "ascender"
+      }
+     ],
+     "pitch": [
+      [
+       0,
+       0
+      ],
+      [
+       1,
+       0.35
+      ],
+      [
+       2,
+       0.8
+      ],
+      [
+       7,
+       5.5
+      ],
+      [
+       9.2272,
+       6.0802
+      ],
+      [
+       11.7846,
+       5.8177
+      ],
+      [
+       14.0134,
+       6.3896
+      ],
+      [
+       16.5092,
+       5.9639
+      ],
+      [
+       18.589,
+       6.5315
+      ],
+      [
+       20.8767,
+       6.1531
+      ],
+      [
+       22.5406,
+       6.7207
+      ]
+     ],
+     "recoilRates": {
+      "decay": 1,
+      "increase": 12
+     },
+     "states": {
+      "crouching": {
+       "error": 0.85,
+       "pitch": 0.85,
+       "yaw": 0.85
+      }
+     },
+     "tagging": [
+      [
+       0,
+       0
+      ],
+      [
+       0.75,
+       4.5
+      ]
+     ],
+     "yaw": [
+      [
+       0,
+       0
+      ],
+      [
+       2,
+       0.1
+      ],
+      [
+       5,
+       0.5
+      ],
+      [
+       9,
+       -1.5074
+      ],
+      [
+       11.9014,
+       -1.8214
+      ],
+      [
+       14.8479,
+       -1.647
+      ],
+      [
+       17.7944,
+       -1.8214
+      ],
+      [
+       19.8265,
+       -1.6295
+      ],
+      [
+       21.9465,
+       -1.8157
+      ],
+      [
+       24.1076,
+       -1.6804
+      ]
+     ]
+    },
+    "minTaggingSpeed": 0.15,
+    "recoveryTime": 0.35,
+    "tapEfficiency": 3
+   },
+   "zoom": [
+    {
+     "fov": 55.2,
+     "multiplier": 1.25
+    }
+   ]
+  },
+  "category": "Rifle",
+  "categoryLabel": "Assault Rifles",
+  "cost": 2050,
+  "defaultSkin": "standard-bulldog",
+  "icon": "https://cdn.source.gs/valorant/img/bulldog-icon-9f406f-400.webp",
+  "id": "ae3de1424d852547dd264e90bed35cf7",
+  "killIcon": "https://cdn.source.gs/valorant/img/bulldog-kill-6082be.webp",
+  "killIconFull": "https://cdn.source.gs/valorant/img/bulldog-kill-6082be-384.webp",
+  "name": "Bulldog",
+  "path": "ShooterGame/Content/Equippables/Guns/Rifles/Burst/BurstPrimaryAsset",
+  "shopCategory": "Rifles",
+  "shopColumn": 3,
+  "shopIcon": "https://cdn.source.gs/valorant/img/bulldog-icon-9f406f-400.webp",
+  "shopRow": 1,
+  "skinCount": 63,
+  "slug": "bulldog",
+  "stats": {
+   "ads": {
+    "burst": 3,
+    "fireRate": 6.3157,
+    "firstBulletAccuracy": 0.3,
+    "runSpeed": 0.76,
+    "zoom": 1.25
+   },
+   "airBurst": null,
+   "altFire": "ADS",
+   "altShotgun": null,
+   "damage": [
+    {
+     "body": 35,
+     "from": 0,
+     "head": 115.5,
+     "leg": 29.75,
+     "to": 50
+    }
+   ],
+   "equipTime": 1,
+   "feature": null,
+   "fireMode": null,
+   "fireRate": 10,
+   "firstBulletAccuracy": 0.3,
+   "magazine": 24,
+   "pellets": 1,
+   "reloadTime": 2.5,
+   "runSpeed": 0.8,
+   "wallPenetration": "Medium"
+  }
+ },
+ {
+  "baseContent": true,
+  "blueprint": {
+   "firingRate": 11,
+   "magazineAmmo": 30,
+   "readyingTimes": [
+    0.6,
+    0.2
+   ],
+   "reserveAmmo": 60,
+   "scaleOnGround": 1.5,
+   "stability": {
+    "curves": {
+     "ads": {
+      "error": 1.15,
+      "errorAdd": -0.12,
+      "pitch": 0.7,
+      "yaw": 0.7
+     },
+     "decay": [
+      [
+       0,
+       1000
+      ],
+      [
+       0.1,
+       40
+      ],
+      [
+       1.5,
+       10
+      ]
+     ],
+     "error": [
+      [
+       0,
+       0.2
+      ],
+      [
+       1,
+       0.28
+      ],
+      [
+       2,
+       0.36
+      ],
+      [
+       4,
+       0.9
+      ]
+     ],
+     "landing": [
+      [
+       0,
+       0.7
+      ],
+      [
+       0.225,
+       0
+      ]
+     ],
+     "movement": [
+      {
+       "curve": "FlaggedStability_WalkingMovementError_Rifles",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.275,
+         3
+        ],
+        [
+         0.601,
+         5
+        ]
+       ],
+       "state": "walking"
+      },
+      {
+       "curve": "RunningMovementErrorCurveRifles",
+       "keys": [
+        [
+         0.601,
+         6
+        ]
+       ],
+       "state": "running"
+      },
+      {
+       "curve": null,
+       "keys": [
+        [
+         0,
+         13
+        ]
+       ],
+       "state": "jumping"
+      },
+      {
+       "curve": "CrouchingMovementErrorCurveRifle",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.29,
+         0
+        ],
+        [
+         0.3,
+         0.8
+        ]
+       ],
+       "state": "crouching"
+      },
+      {
+       "curve": "MovementErrorCurveOnAscendersRifles",
+       "keys": [
+        [
+         0,
+         1.3
+        ],
+        [
+         0.275,
+         2
+        ],
+        [
+         0.6,
+         5
+        ]
+       ],
+       "state": "ascender"
+      }
+     ],
+     "pitch": [
+      [
+       0,
+       0
+      ],
+      [
+       1,
+       0.3
+      ],
+      [
+       2,
+       0.7
+      ],
+      [
+       7,
+       6.4
+      ],
+      [
+       9.0841,
+       6.7665
+      ],
+      [
+       12.3012,
+       6.4738
+      ],
+      [
+       15.2776,
+       6.963
+      ],
+      [
+       18.2045,
+       6.673
+      ],
+      [
+       21.1313,
+       7.1241
+      ],
+      [
+       24.7514,
+       6.7052
+      ],
+      [
+       27.9093,
+       7.0918
+      ]
+     ],
+     "recoilRates": {
+      "decay": 1,
+      "increase": 12
+     },
+     "states": {
+      "crouching": {
+       "error": 0.85,
+       "pitch": 0.85,
+       "yaw": 0.85
+      },
+      "running": {
+       "pitch": 1.8
+      }
+     },
+     "tagging": [
+      [
+       0,
+       0
+      ],
+      [
+       0.75,
+       4.5
+      ]
+     ],
+     "yaw": [
+      [
+       0,
+       0
+      ],
+      [
+       3.1625,
+       0.092
+      ],
+      [
+       13,
+       1.8
+      ],
+      [
+       15.5608,
+       1.7373
+      ],
+      [
+       18.1881,
+       1.8353
+      ],
+      [
+       20.3371,
+       1.7031
+      ],
+      [
+       22.0066,
+       1.8054
+      ],
+      [
+       24.0246,
+       1.699
+      ],
+      [
+       26.2144,
+       1.825
+      ],
+      [
+       28.0928,
+       1.7142
+      ]
+     ]
+    },
+    "minTaggingSpeed": 0.15,
+    "recoveryTime": 0.35,
+    "tapEfficiency": 4
+   },
+   "zoom": [
+    {
+     "fov": 55.2,
+     "multiplier": 1.25
+    }
+   ]
+  },
+  "category": "Rifle",
+  "categoryLabel": "Assault Rifles",
+  "cost": 2900,
+  "defaultSkin": "standard-phantom",
+  "icon": "https://cdn.source.gs/valorant/img/phantom-icon-de0735-508.webp",
+  "id": "ee8e8d15496b07ace5f68fae5d4c7b1a",
+  "killIcon": "https://cdn.source.gs/valorant/img/phantom-kill-bae5e1.webp",
+  "killIconFull": "https://cdn.source.gs/valorant/img/phantom-kill-bae5e1-384.webp",
+  "name": "Phantom",
+  "path": "ShooterGame/Content/Equippables/Guns/Rifles/Carbine/CarbinePrimaryAsset",
+  "shopCategory": "Rifles",
+  "shopColumn": 1,
+  "shopIcon": "https://cdn.source.gs/valorant/img/phantom-icon-de0735-508.webp",
+  "shopRow": 2,
+  "skinCount": 108,
+  "slug": "phantom",
+  "stats": {
+   "ads": {
+    "burst": 1,
+    "fireRate": 9.9,
+    "firstBulletAccuracy": 0.11,
+    "runSpeed": 0.76,
+    "zoom": 1.25
+   },
+   "airBurst": null,
+   "altFire": "ADS",
+   "altShotgun": null,
+   "damage": [
+    {
+     "body": 39,
+     "from": 0,
+     "head": 156,
+     "leg": 33.15,
+     "to": 20
+    },
+    {
+     "body": 35,
+     "from": 20,
+     "head": 140,
+     "leg": 29.75,
+     "to": 50
+    }
+   ],
+   "equipTime": 1,
+   "feature": "Silenced",
+   "fireMode": null,
+   "fireRate": 11,
+   "firstBulletAccuracy": 0.2,
+   "magazine": 30,
+   "pellets": 1,
+   "reloadTime": 2.5,
+   "runSpeed": 0.8,
+   "wallPenetration": "Medium"
+  }
+ },
+ {
+  "baseContent": true,
+  "blueprint": {
+   "firingRate": 3.5,
+   "magazineAmmo": 5,
+   "readyingTimes": [
+    0.6,
+    0.2
+   ],
+   "reserveAmmo": 15,
+   "scaleOnGround": 1.75,
+   "stability": {
+    "curves": {
+     "decay": [
+      [
+       0,
+       10000
+      ],
+      [
+       1,
+       10
+      ]
+     ],
+     "error": [
+      [
+       0,
+       2.5
+      ],
+      [
+       1,
+       3
+      ],
+      [
+       2,
+       3.5
+      ],
+      [
+       3,
+       4
+      ]
+     ],
+     "landing": [
+      [
+       0,
+       0.7
+      ],
+      [
+       0.225,
+       0
+      ]
+     ],
+     "movement": [
+      {
+       "curve": "FlaggedStability_WalkingMovementError_Shotguns",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.275,
+         1
+        ],
+        [
+         0.61,
+         2
+        ]
+       ],
+       "state": "walking"
+      },
+      {
+       "curve": "RunningMovementErrorCurveShotguns",
+       "keys": [
+        [
+         0.67,
+         2
+        ]
+       ],
+       "state": "running"
+      },
+      {
+       "curve": "JumpMovementErrorCurveShotgun",
+       "keys": [
+        [
+         0,
+         4
+        ]
+       ],
+       "state": "jumping"
+      },
+      {
+       "curve": "CrouchingMovementErrorCurveShotguns",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.3,
+         0.5
+        ]
+       ],
+       "state": "crouching"
+      },
+      {
+       "curve": "MovementErrorCurveOnAscendersShotguns_v2",
+       "keys": [
+        [
+         0,
+         0.75
+        ],
+        [
+         0.275,
+         1.5
+        ],
+        [
+         0.61,
+         3
+        ]
+       ],
+       "state": "ascender"
+      }
+     ],
+     "pitch": [
+      [
+       0,
+       0
+      ],
+      [
+       3,
+       5
+      ],
+      [
+       4,
+       6
+      ],
+      [
+       6,
+       5
+      ],
+      [
+       7,
+       6.25
+      ]
+     ],
+     "states": {
+      "crouching": {
+       "error": 0.85
+      }
+     },
+     "yaw": [
+      [
+       0,
+       0
+      ],
+      [
+       2,
+       2.5
+      ]
+     ]
+    },
+    "recoveryTime": 0.4,
+    "tapEfficiency": 4
+   }
+  },
+  "category": "Shotgun",
+  "categoryLabel": "Shotguns",
+  "cost": 1850,
+  "defaultSkin": "standard-judge",
+  "icon": "https://cdn.source.gs/valorant/img/judge-icon-47e4e5-412.webp",
+  "id": "ec845bf44f79dddaa3da0db3774b2794",
+  "killIcon": "https://cdn.source.gs/valorant/img/judge-kill-db8db7.webp",
+  "killIconFull": "https://cdn.source.gs/valorant/img/judge-kill-db8db7-384.webp",
+  "name": "Judge",
+  "path": "ShooterGame/Content/Equippables/Guns/Shotguns/AutoShotgun/AutoShotgunPrimaryAsset",
+  "shopCategory": "Shotguns",
+  "shopColumn": null,
+  "shopIcon": "https://cdn.source.gs/valorant/img/judge-icon-47e4e5-412.webp",
+  "shopRow": 1,
+  "skinCount": 58,
+  "slug": "judge",
+  "stats": {
+   "ads": null,
+   "airBurst": null,
+   "altFire": null,
+   "altShotgun": null,
+   "damage": [
+    {
+     "body": 17,
+     "from": 0,
+     "head": 34,
+     "leg": 14.45,
+     "to": 10
+    },
+    {
+     "body": 10,
+     "from": 10,
+     "head": 20,
+     "leg": 8.5,
+     "to": 15
+    },
+    {
+     "body": 7,
+     "from": 15,
+     "head": 14,
+     "leg": 5.95,
+     "to": 50
+    }
+   ],
+   "equipTime": 1,
+   "feature": null,
+   "fireMode": null,
+   "fireRate": 3.5,
+   "firstBulletAccuracy": 2.5,
+   "magazine": 5,
+   "pellets": 12,
+   "reloadTime": 2.2,
+   "runSpeed": 0.75,
+   "wallPenetration": "Low"
+  }
+ },
+ {
+  "baseContent": true,
+  "blueprint": {
+   "firingRate": 1.1,
+   "magazineAmmo": 5,
+   "readyingTimes": [
+    0.6,
+    0.2
+   ],
+   "reserveAmmo": 10,
+   "scaleOnGround": 1.5,
+   "stability": {
+    "curves": {
+     "decay": [
+      [
+       0,
+       10000
+      ],
+      [
+       1,
+       10
+      ]
+     ],
+     "error": [
+      [
+       0,
+       3
+      ]
+     ],
+     "landing": [
+      [
+       0,
+       0.7
+      ],
+      [
+       0.225,
+       0
+      ]
+     ],
+     "movement": [
+      {
+       "curve": "FlaggedStability_WalkingMovementError_Shotguns",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.275,
+         1
+        ],
+        [
+         0.61,
+         2
+        ]
+       ],
+       "state": "walking"
+      },
+      {
+       "curve": "RunningMovementErrorCurveShotguns",
+       "keys": [
+        [
+         0.67,
+         2
+        ]
+       ],
+       "state": "running"
+      },
+      {
+       "curve": "JumpMovementErrorCurveShotgun",
+       "keys": [
+        [
+         0,
+         4
+        ]
+       ],
+       "state": "jumping"
+      },
+      {
+       "curve": "CrouchingMovementErrorCurveShotguns",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.3,
+         0.5
+        ]
+       ],
+       "state": "crouching"
+      },
+      {
+       "curve": "MovementErrorCurveOnAscendersShotguns_v2",
+       "keys": [
+        [
+         0,
+         0.75
+        ],
+        [
+         0.275,
+         1.5
+        ],
+        [
+         0.61,
+         3
+        ]
+       ],
+       "state": "ascender"
+      }
+     ],
+     "pitch": [
+      [
+       0,
+       0
+      ]
+     ],
+     "states": {
+      "crouching": {
+       "error": 0.85
+      }
+     }
+    }
+   }
+  },
+  "category": "Shotgun",
+  "categoryLabel": "Shotguns",
+  "cost": 850,
+  "defaultSkin": "standard-bucky",
+  "icon": "https://cdn.source.gs/valorant/img/bucky-icon-ffd98d-508.webp",
+  "id": "910be174449bc412ab22d0873436b21b",
+  "killIcon": "https://cdn.source.gs/valorant/img/bucky-kill-ea5176.webp",
+  "killIconFull": "https://cdn.source.gs/valorant/img/bucky-kill-ea5176-384.webp",
+  "name": "Bucky",
+  "path": "ShooterGame/Content/Equippables/Guns/Shotguns/PumpShotgun/PumpShotgunPrimaryAsset",
+  "shopCategory": "Shotguns",
+  "shopColumn": null,
+  "shopIcon": "https://cdn.source.gs/valorant/img/bucky-icon-ffd98d-508.webp",
+  "shopRow": null,
+  "skinCount": 45,
+  "slug": "bucky",
+  "stats": {
+   "ads": null,
+   "airBurst": {
+    "distance": 7.5,
+    "pellets": 5
+   },
+   "altFire": "AirBurst",
+   "altShotgun": null,
+   "damage": [
+    {
+     "body": 17,
+     "from": 0,
+     "head": 34,
+     "leg": 14,
+     "to": 8
+    },
+    {
+     "body": 13,
+     "from": 8,
+     "head": 26,
+     "leg": 11.05,
+     "to": 12
+    },
+    {
+     "body": 9,
+     "from": 12,
+     "head": 18,
+     "leg": 7.65,
+     "to": 50
+    }
+   ],
+   "equipTime": 1,
+   "feature": null,
+   "fireMode": "SemiAutomatic",
+   "fireRate": 1.1,
+   "firstBulletAccuracy": 3,
+   "magazine": 5,
+   "pellets": 15,
+   "reloadTime": 2.5,
+   "runSpeed": 0.75,
+   "wallPenetration": "Low"
+  }
+ },
+ {
+  "baseContent": true,
+  "blueprint": {
+   "magazineAmmo": 15,
+   "readyingTimes": [
+    0.45,
+    0.15
+   ],
+   "reserveAmmo": 45,
+   "scaleOnGround": 1.75,
+   "stability": {
+    "curves": {
+     "decay": [
+      [
+       0,
+       10000
+      ],
+      [
+       1,
+       10
+      ]
+     ],
+     "error": [
+      [
+       0,
+       0.65
+      ],
+      [
+       1,
+       0.85
+      ],
+      [
+       2,
+       1.05
+      ],
+      [
+       4,
+       1.7
+      ]
+     ],
+     "landing": [
+      [
+       0,
+       0.7
+      ],
+      [
+       0.225,
+       0
+      ]
+     ],
+     "movement": [
+      {
+       "curve": "FlaggedStability_WalkingMovementError_AutomaticPistol",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.275,
+         0.8
+        ],
+        [
+         0.62,
+         2
+        ]
+       ],
+       "state": "walking"
+      },
+      {
+       "curve": "FlaggedStability_RunningMovementError_AutomaticPistol",
+       "keys": [
+        [
+         0.62,
+         2
+        ]
+       ],
+       "state": "running"
+      },
+      {
+       "curve": "JumpMovementErrorCurvePistol",
+       "keys": [
+        [
+         0,
+         7
+        ]
+       ],
+       "state": "jumping"
+      },
+      {
+       "curve": "CrouchingMovementErrorCurvePistol",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.25,
+         0
+        ],
+        [
+         0.3,
+         0.5
+        ]
+       ],
+       "state": "crouching"
+      },
+      {
+       "curve": "MovementErrorCurve_OnAscender_AutomaticPistol",
+       "keys": [
+        [
+         0,
+         0.52
+        ],
+        [
+         0.275,
+         0.8
+        ],
+        [
+         0.62,
+         2
+        ]
+       ],
+       "state": "ascender"
+      }
+     ],
+     "pitch": [
+      [
+       0,
+       0
+      ],
+      [
+       1,
+       0.4
+      ],
+      [
+       2,
+       0.9
+      ],
+      [
+       4,
+       5.5
+      ]
+     ],
+     "recoilRates": {
+      "decay": 1,
+      "increase": 12
+     },
+     "states": {
+      "ascender": {
+       "pitch": 1.25,
+       "yaw": 1.25
+      },
+      "crouching": {
+       "error": 0.85,
+       "pitch": 0.85,
+       "yaw": 0.85
+      },
+      "jumping": {
+       "pitch": 1.25,
+       "yaw": 1.25
+      },
+      "ladder": {
+       "pitch": 1.25,
+       "yaw": 1.25
+      },
+      "running": {
+       "yaw": 1.25
+      }
+     },
+     "tagging": [
+      [
+       0,
+       0
+      ],
+      [
+       0.25,
+       0.8
+      ]
+     ],
+     "yaw": [
+      [
+       0,
+       0
+      ],
+      [
+       2,
+       0
+      ],
+      [
+       5,
+       1.25
+      ]
+     ]
+    },
+    "minTaggingSpeed": 0.15,
+    "recoveryTime": 0.45,
+    "tapEfficiency": 3
+   }
+  },
+  "category": "Sidearm",
+  "categoryLabel": "Sidearms",
+  "cost": 450,
+  "defaultSkin": "standard-frenzy",
+  "icon": "https://cdn.source.gs/valorant/img/frenzy-icon-c77de2-168.webp",
+  "id": "44d4e95c4157003781b217841bf2e8e3",
+  "killIcon": "https://cdn.source.gs/valorant/img/frenzy-kill-72b2fb.webp",
+  "name": "Frenzy",
+  "path": "ShooterGame/Content/Equippables/Guns/Sidearms/AutoPistol/AutoPistolPrimaryAsset",
+  "shopCategory": "Pistols",
+  "shopColumn": 1,
+  "shopIcon": "https://cdn.source.gs/valorant/img/frenzy-icon-c77de2-168.webp",
+  "shopRow": null,
+  "skinCount": 56,
+  "slug": "frenzy",
+  "stats": {
+   "ads": null,
+   "airBurst": null,
+   "altFire": null,
+   "altShotgun": null,
+   "damage": [
+    {
+     "body": 26,
+     "from": 0,
+     "head": 78,
+     "leg": 22.1,
+     "to": 20
+    },
+    {
+     "body": 21,
+     "from": 20,
+     "head": 63,
+     "leg": 17.85,
+     "to": 50
+    }
+   ],
+   "equipTime": 1,
+   "feature": null,
+   "fireMode": null,
+   "fireRate": 10,
+   "firstBulletAccuracy": 0.65,
+   "magazine": 15,
+   "pellets": 1,
+   "reloadTime": 1.5,
+   "runSpeed": 0.85,
+   "wallPenetration": "Low"
+  }
+ },
+ {
+  "baseContent": true,
+  "blueprint": {
+   "firingRate": 6.75,
+   "magazineAmmo": 12,
+   "readyingTimes": [
+    0.75,
+    0.45,
+    0.15
+   ],
+   "reserveAmmo": 36,
+   "scaleOnGround": 1.75,
+   "stability": {
+    "curves": {
+     "decay": [
+      [
+       0,
+       10000
+      ],
+      [
+       1,
+       10
+      ]
+     ],
+     "error": [
+      [
+       0,
+       0.4
+      ],
+      [
+       1,
+       0.8
+      ],
+      [
+       3,
+       1.8
+      ]
+     ],
+     "landing": [
+      [
+       0,
+       0.7
+      ],
+      [
+       0.225,
+       0
+      ]
+     ],
+     "movement": [
+      {
+       "curve": "FlaggedStability_WalkingMovementError_Pistol",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.275,
+         1.1
+        ],
+        [
+         0.62,
+         2.1
+        ]
+       ],
+       "state": "walking"
+      },
+      {
+       "curve": "FlaggedStability_RunningMovementError_Pistol",
+       "keys": [
+        [
+         0.601,
+         2.3
+        ]
+       ],
+       "state": "running"
+      },
+      {
+       "curve": "JumpMovementErrorCurvePistol",
+       "keys": [
+        [
+         0,
+         7
+        ]
+       ],
+       "state": "jumping"
+      },
+      {
+       "curve": "CrouchingMovementErrorCurvePistol",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.25,
+         0
+        ],
+        [
+         0.3,
+         0.5
+        ]
+       ],
+       "state": "crouching"
+      },
+      {
+       "curve": "MovementErrorCurveOnAscendersPistol",
+       "keys": [
+        [
+         0,
+         0.55
+        ],
+        [
+         0.275,
+         0.84
+        ],
+        [
+         0.62,
+         2.1
+        ]
+       ],
+       "state": "ascender"
+      }
+     ],
+     "pitch": [
+      [
+       0,
+       0
+      ],
+      [
+       3,
+       1
+      ]
+     ],
+     "tagging": [
+      [
+       0,
+       0
+      ],
+      [
+       0.25,
+       1.3
+      ]
+     ],
+     "yaw": [
+      [
+       0,
+       0
+      ]
+     ]
+    },
+    "minTaggingSpeed": 0.15,
+    "recoveryTime": 0.3,
+    "tapEfficiency": 4
+   }
+  },
+  "category": "Sidearm",
+  "categoryLabel": "Sidearms",
+  "cost": null,
+  "defaultSkin": "standard-classic",
+  "icon": "https://cdn.source.gs/valorant/img/classic-icon-9ed1e2-188.webp",
+  "id": "29a0cfab485bf5d5779ab59f85e204a8",
+  "killIcon": "https://cdn.source.gs/valorant/img/classic-kill-36914e.webp",
+  "name": "Classic",
+  "path": "ShooterGame/Content/Equippables/Guns/Sidearms/BasePistol/BasePistolPrimaryAsset",
+  "shopCategory": "Pistols",
+  "shopColumn": 2,
+  "shopIcon": "https://cdn.source.gs/valorant/img/classic-icon-9ed1e2-188.webp",
+  "shopRow": null,
+  "skinCount": 200,
+  "slug": "classic",
+  "stats": {
+   "ads": null,
+   "airBurst": null,
+   "altFire": "Shotgun",
+   "altShotgun": {
+    "burstRate": 2.22,
+    "pellets": 3
+   },
+   "damage": [
+    {
+     "body": 26,
+     "from": 0,
+     "head": 78,
+     "leg": 22.1,
+     "to": 30
+    },
+    {
+     "body": 22,
+     "from": 30,
+     "head": 66,
+     "leg": 18.7,
+     "to": 50
+    }
+   ],
+   "equipTime": 0.75,
+   "feature": null,
+   "fireMode": "SemiAutomatic",
+   "fireRate": 6.75,
+   "firstBulletAccuracy": 0.4,
+   "magazine": 12,
+   "pellets": 1,
+   "reloadTime": 1.75,
+   "runSpeed": 0.85,
+   "wallPenetration": "Low"
+  }
+ },
+ {
+  "baseContent": true,
+  "blueprint": {
+   "firingRate": 5.1,
+   "magazineAmmo": 8,
+   "readyingTimes": [
+    0.75,
+    0.45,
+    0.15
+   ],
+   "reserveAmmo": 24,
+   "scaleOnGround": 1.75,
+   "stability": {
+    "curves": {
+     "decay": [
+      [
+       0,
+       10000
+      ],
+      [
+       1,
+       10
+      ]
+     ],
+     "error": [
+      [
+       0,
+       0.275
+      ],
+      [
+       1,
+       0.55
+      ],
+      [
+       2,
+       0.9
+      ],
+      [
+       3,
+       2
+      ]
+     ],
+     "landing": [
+      [
+       0,
+       0.7
+      ],
+      [
+       0.225,
+       0
+      ]
+     ],
+     "movement": [
+      {
+       "curve": "Stability_WalkingMovementError_CompactPistol",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.275,
+         1.2
+        ],
+        [
+         0.62,
+         2.7
+        ]
+       ],
+       "state": "walking"
+      },
+      {
+       "curve": "Stability_RunningMovementError_CompactPistol",
+       "keys": [
+        [
+         0.601,
+         2.7
+        ]
+       ],
+       "state": "running"
+      },
+      {
+       "curve": "JumpMovementErrorCurvePistol",
+       "keys": [
+        [
+         0,
+         7
+        ]
+       ],
+       "state": "jumping"
+      },
+      {
+       "curve": "CrouchingMovementErrorCurvePistol",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.25,
+         0
+        ],
+        [
+         0.3,
+         0.5
+        ]
+       ],
+       "state": "crouching"
+      },
+      {
+       "curve": "MovementErrorCurveOnAscendersLugerPistol",
+       "keys": [
+        [
+         0,
+         0.6
+        ],
+        [
+         0.275,
+         0.92
+        ],
+        [
+         0.62,
+         2.3
+        ]
+       ],
+       "state": "ascender"
+      }
+     ],
+     "pitch": [
+      [
+       0,
+       0
+      ],
+      [
+       1,
+       0.55
+      ],
+      [
+       2,
+       1
+      ],
+      [
+       4,
+       3
+      ]
+     ],
+     "tagging": [
+      [
+       0,
+       0
+      ],
+      [
+       0.25,
+       1.6
+      ]
+     ],
+     "yaw": [
+      [
+       0,
+       0
+      ]
+     ]
+    },
+    "minTaggingSpeed": 0.15,
+    "recoveryTime": 0.4,
+    "tapEfficiency": 4
+   }
+  },
+  "category": "Sidearm",
+  "categoryLabel": "Sidearms",
+  "cost": 600,
+  "defaultSkin": "standard-bandit",
+  "icon": "https://cdn.source.gs/valorant/img/bandit-icon-4851e3-256.webp",
+  "id": "410b2e0b4ceb1321172720858f7f3477",
+  "killIcon": "https://cdn.source.gs/valorant/img/bandit-kill-635de0.webp",
+  "name": "Bandit",
+  "path": "ShooterGame/Content/Equippables/Guns/Sidearms/Compact/Compact_PrimaryAsset",
+  "shopCategory": "Pistols",
+  "shopColumn": 3,
+  "shopIcon": "https://cdn.source.gs/valorant/img/bandit-icon-4851e3-256.webp",
+  "shopRow": null,
+  "skinCount": 12,
+  "slug": "bandit",
+  "stats": {
+   "ads": null,
+   "airBurst": null,
+   "altFire": null,
+   "altShotgun": null,
+   "damage": [
+    {
+     "body": 39,
+     "from": 0,
+     "head": 152,
+     "leg": 33,
+     "to": 10
+    },
+    {
+     "body": 39,
+     "from": 10,
+     "head": 128,
+     "leg": 33,
+     "to": 30
+    },
+    {
+     "body": 34,
+     "from": 30,
+     "head": 112,
+     "leg": 28,
+     "to": 50
+    }
+   ],
+   "equipTime": 0.75,
+   "feature": null,
+   "fireMode": "SemiAutomatic",
+   "fireRate": 5.1,
+   "firstBulletAccuracy": 0.275,
+   "magazine": 8,
+   "pellets": null,
+   "reloadTime": 1.5,
+   "runSpeed": 0.85,
+   "wallPenetration": "Medium"
+  }
+ },
+ {
+  "baseContent": true,
+  "blueprint": {
+   "firingRate": 6.75,
+   "magazineAmmo": 13,
+   "readyingTimes": [
+    0.75,
+    0.45,
+    0.15
+   ],
+   "reserveAmmo": 39,
+   "scaleOnGround": 1.75,
+   "stability": {
+    "curves": {
+     "decay": [
+      [
+       0,
+       10000
+      ],
+      [
+       1,
+       10
+      ]
+     ],
+     "error": [
+      [
+       0,
+       0.3
+      ],
+      [
+       1,
+       0.65
+      ],
+      [
+       3,
+       1.65
+      ]
+     ],
+     "landing": [
+      [
+       0,
+       0.7
+      ],
+      [
+       0.225,
+       0
+      ]
+     ],
+     "movement": [
+      {
+       "curve": "FlaggedStability_WalkingMovementError_LugerPistol",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.275,
+         1.1
+        ],
+        [
+         0.62,
+         2.3
+        ]
+       ],
+       "state": "walking"
+      },
+      {
+       "curve": "FlaggedStability_RunningMovementError_LugerPistol",
+       "keys": [
+        [
+         0.601,
+         2.3
+        ]
+       ],
+       "state": "running"
+      },
+      {
+       "curve": "JumpMovementErrorCurvePistol",
+       "keys": [
+        [
+         0,
+         7
+        ]
+       ],
+       "state": "jumping"
+      },
+      {
+       "curve": "CrouchingMovementErrorCurvePistol",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.25,
+         0
+        ],
+        [
+         0.3,
+         0.5
+        ]
+       ],
+       "state": "crouching"
+      },
+      {
+       "curve": "MovementErrorCurveOnAscendersLugerPistol",
+       "keys": [
+        [
+         0,
+         0.6
+        ],
+        [
+         0.275,
+         0.92
+        ],
+        [
+         0.62,
+         2.3
+        ]
+       ],
+       "state": "ascender"
+      }
+     ],
+     "pitch": [
+      [
+       0,
+       0
+      ],
+      [
+       5,
+       2
+      ]
+     ],
+     "tagging": [
+      [
+       0,
+       0
+      ],
+      [
+       0.25,
+       1.6
+      ]
+     ],
+     "yaw": [
+      [
+       0,
+       0
+      ]
+     ]
+    },
+    "minTaggingSpeed": 0.15,
+    "recoveryTime": 0.3,
+    "tapEfficiency": 4
+   }
+  },
+  "category": "Sidearm",
+  "categoryLabel": "Sidearms",
+  "cost": 500,
+  "defaultSkin": "standard-ghost",
+  "icon": "https://cdn.source.gs/valorant/img/ghost-icon-fab110-300.webp",
+  "id": "1baa85b44c70128464bb6481dfc3bb4e",
+  "killIcon": "https://cdn.source.gs/valorant/img/ghost-kill-24e3e1.webp",
+  "name": "Ghost",
+  "path": "ShooterGame/Content/Equippables/Guns/Sidearms/Luger/LugerPrimaryAsset",
+  "shopCategory": "Pistols",
+  "shopColumn": 3,
+  "shopIcon": "https://cdn.source.gs/valorant/img/ghost-icon-fab110-300.webp",
+  "shopRow": null,
+  "skinCount": 68,
+  "slug": "ghost",
+  "stats": {
+   "ads": null,
+   "airBurst": null,
+   "altFire": null,
+   "altShotgun": null,
+   "damage": [
+    {
+     "body": 30,
+     "from": 0,
+     "head": 105,
+     "leg": 25.5,
+     "to": 30
+    },
+    {
+     "body": 25,
+     "from": 30,
+     "head": 87.5,
+     "leg": 21.25,
+     "to": 50
+    }
+   ],
+   "equipTime": 0.75,
+   "feature": "Silenced",
+   "fireMode": "SemiAutomatic",
+   "fireRate": 6.75,
+   "firstBulletAccuracy": 0.3,
+   "magazine": 13,
+   "pellets": 1,
+   "reloadTime": 1.5,
+   "runSpeed": 0.85,
+   "wallPenetration": "Medium"
+  }
+ },
+ {
+  "baseContent": true,
+  "blueprint": {
+   "firingRate": 4,
+   "magazineAmmo": 6,
+   "readyingTimes": [
+    0.6,
+    0.2
+   ],
+   "reserveAmmo": 24,
+   "scaleOnGround": 2,
+   "stability": {
+    "curves": {
+     "decay": [
+      [
+       0,
+       10000
+      ],
+      [
+       1,
+       10
+      ]
+     ],
+     "error": [
+      [
+       0,
+       0.25
+      ],
+      [
+       1,
+       1.1
+      ],
+      [
+       2,
+       2.75
+      ]
+     ],
+     "landing": [
+      [
+       0,
+       0.7
+      ],
+      [
+       0.225,
+       0
+      ]
+     ],
+     "movement": [
+      {
+       "curve": "FlaggedStability_WalkingMovementError_RevolverPistol",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.275,
+         1.2
+        ],
+        [
+         0.62,
+         3
+        ]
+       ],
+       "state": "walking"
+      },
+      {
+       "curve": "FlaggedStability_RunningMovementError_RevolverPistol",
+       "keys": [
+        [
+         0.601,
+         3
+        ]
+       ],
+       "state": "running"
+      },
+      {
+       "curve": "JumpMovementErrorCurvePistol",
+       "keys": [
+        [
+         0,
+         7
+        ]
+       ],
+       "state": "jumping"
+      },
+      {
+       "curve": "CrouchingMovementErrorCurvePistol",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.25,
+         0
+        ],
+        [
+         0.3,
+         0.5
+        ]
+       ],
+       "state": "crouching"
+      },
+      {
+       "curve": "MovementErrorCurve_OnAscender_RevolverPistol",
+       "keys": [
+        [
+         0,
+         0.78
+        ],
+        [
+         0.275,
+         1.2
+        ],
+        [
+         0.62,
+         3
+        ]
+       ],
+       "state": "ascender"
+      }
+     ],
+     "pitch": [
+      [
+       0,
+       0
+      ],
+      [
+       1,
+       1
+      ],
+      [
+       2,
+       2
+      ]
+     ],
+     "tagging": [
+      [
+       0,
+       0
+      ],
+      [
+       0.25,
+       1.8
+      ]
+     ],
+     "yaw": [
+      [
+       0,
+       0
+      ]
+     ]
+    },
+    "minTaggingSpeed": 0.15,
+    "recoveryTime": 0.5,
+    "tapEfficiency": 2
+   }
+  },
+  "category": "Sidearm",
+  "categoryLabel": "Sidearms",
+  "cost": 800,
+  "defaultSkin": "standard-sheriff",
+  "icon": "https://cdn.source.gs/valorant/img/sheriff-icon-1a1cfd-248.webp",
+  "id": "e336c6b8418d9340d77f7a9e4cfe0702",
+  "killIcon": "https://cdn.source.gs/valorant/img/sheriff-kill-b7603a.webp",
+  "name": "Sheriff",
+  "path": "ShooterGame/Content/Equippables/Guns/Sidearms/Revolver/RevolverPrimaryAsset",
+  "shopCategory": "Pistols",
+  "shopColumn": 4,
+  "shopIcon": "https://cdn.source.gs/valorant/img/sheriff-icon-1a1cfd-248.webp",
+  "shopRow": null,
+  "skinCount": 70,
+  "slug": "sheriff",
+  "stats": {
+   "ads": null,
+   "airBurst": null,
+   "altFire": null,
+   "altShotgun": null,
+   "damage": [
+    {
+     "body": 55,
+     "from": 0,
+     "head": 159.5,
+     "leg": 46.75,
+     "to": 30
+    },
+    {
+     "body": 50,
+     "from": 30,
+     "head": 145,
+     "leg": 42.5,
+     "to": 50
+    }
+   ],
+   "equipTime": 1,
+   "feature": null,
+   "fireMode": "SemiAutomatic",
+   "fireRate": 4,
+   "firstBulletAccuracy": 0.25,
+   "magazine": 6,
+   "pellets": 1,
+   "reloadTime": 2.25,
+   "runSpeed": 0.8,
+   "wallPenetration": "High"
+  }
+ },
+ {
+  "baseContent": true,
+  "blueprint": {
+   "firingRate": 3,
+   "magazineAmmo": 2,
+   "readyingTimes": [
+    0.75,
+    0.45,
+    0.15
+   ],
+   "reserveAmmo": 6,
+   "scaleOnGround": 1.5,
+   "stability": {
+    "curves": {
+     "decay": [
+      [
+       0,
+       10000
+      ],
+      [
+       1,
+       10
+      ]
+     ],
+     "error": [
+      [
+       0,
+       4
+      ],
+      [
+       0.1,
+       4.5
+      ]
+     ],
+     "landing": [
+      [
+       0,
+       0.7
+      ],
+      [
+       0.225,
+       0
+      ]
+     ],
+     "movement": [
+      {
+       "curve": "FlaggedStability_WalkingMovementError_Shotguns",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.275,
+         1
+        ],
+        [
+         0.61,
+         2
+        ]
+       ],
+       "state": "walking"
+      },
+      {
+       "curve": "RunningMovementErrorCurveShotguns",
+       "keys": [
+        [
+         0.67,
+         2
+        ]
+       ],
+       "state": "running"
+      },
+      {
+       "curve": "JumpMovementErrorCurveShotgun",
+       "keys": [
+        [
+         0,
+         4
+        ]
+       ],
+       "state": "jumping"
+      },
+      {
+       "curve": "CrouchingMovementErrorCurveShotguns",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.3,
+         0.5
+        ]
+       ],
+       "state": "crouching"
+      },
+      {
+       "curve": "MovementErrorCurveOnAscendersShotguns_v2",
+       "keys": [
+        [
+         0,
+         0.75
+        ],
+        [
+         0.275,
+         1.5
+        ],
+        [
+         0.61,
+         3
+        ]
+       ],
+       "state": "ascender"
+      }
+     ],
+     "states": {
+      "crouching": {
+       "error": 0.85
+      }
+     }
+    }
+   }
+  },
+  "category": "Sidearm",
+  "categoryLabel": "Sidearms",
+  "cost": 300,
+  "defaultSkin": "standard-shorty",
+  "icon": "https://cdn.source.gs/valorant/img/shorty-icon-a63c7d-308.webp",
+  "id": "42da8ccc40d5affcbeec15aa47b42eda",
+  "killIcon": "https://cdn.source.gs/valorant/img/shorty-kill-473dcf.webp",
+  "name": "Shorty",
+  "path": "ShooterGame/Content/Equippables/Guns/Sidearms/Slim/SlimPrimaryAsset",
+  "shopCategory": "Pistols",
+  "shopColumn": null,
+  "shopIcon": "https://cdn.source.gs/valorant/img/shorty-icon-a63c7d-308.webp",
+  "shopRow": null,
+  "skinCount": 41,
+  "slug": "shorty",
+  "stats": {
+   "ads": null,
+   "airBurst": null,
+   "altFire": null,
+   "altShotgun": null,
+   "damage": [
+    {
+     "body": 11,
+     "from": 0,
+     "head": 22,
+     "leg": 9.35,
+     "to": 7
+    },
+    {
+     "body": 6,
+     "from": 7,
+     "head": 12,
+     "leg": 5.1,
+     "to": 15
+    },
+    {
+     "body": 3,
+     "from": 15,
+     "head": 6,
+     "leg": 2.55,
+     "to": 50
+    }
+   ],
+   "equipTime": 0.75,
+   "feature": null,
+   "fireMode": "SemiAutomatic",
+   "fireRate": 3,
+   "firstBulletAccuracy": 4,
+   "magazine": 2,
+   "pellets": 15,
+   "reloadTime": 1.75,
+   "runSpeed": 0.8,
+   "wallPenetration": "Low"
+  }
+ },
+ {
+  "baseContent": true,
+  "blueprint": {
+   "firingRate": 0.6,
+   "readyingTimes": [
+    1.5,
+    0.9,
+    0.5
+   ],
+   "scaleOnGround": 1.5,
+   "stability": {
+    "curves": {
+     "error": [
+      [
+       0,
+       5
+      ],
+      [
+       0.35,
+       5.25
+      ]
+     ],
+     "landing": [
+      [
+       0,
+       0.7
+      ],
+      [
+       0.225,
+       0
+      ]
+     ],
+     "movement": [
+      {
+       "curve": "WalkingMovementErrorCurveBoltSniper",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.15,
+         10
+        ],
+        [
+         0.62,
+         15
+        ]
+       ],
+       "state": "walking"
+      },
+      {
+       "curve": "RunningMovementErrorCurveSniperRifles",
+       "keys": [
+        [
+         0.62,
+         15
+        ]
+       ],
+       "state": "running"
+      },
+      {
+       "curve": null,
+       "keys": [
+        [
+         0,
+         15
+        ]
+       ],
+       "state": "jumping"
+      },
+      {
+       "curve": "CrouchingMovementErrorCurveBoltSniper",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.15,
+         3.75
+        ],
+        [
+         0.3,
+         7.5
+        ]
+       ],
+       "state": "crouching"
+      },
+      {
+       "curve": "MovementErrorCurveOnAscendersSniperRifles",
+       "keys": [
+        [
+         0,
+         10
+        ],
+        [
+         0.3,
+         12
+        ],
+        [
+         0.62,
+         15
+        ]
+       ],
+       "state": "ascender"
+      }
+     ],
+     "pitch": [
+      [
+       0,
+       0
+      ]
+     ],
+     "states": {
+      "crouching": {
+       "error": 0.9
+      }
+     },
+     "yaw": [
+      [
+       0,
+       0
+      ]
+     ]
+    }
+   },
+   "zoom": [
+    {
+     "fov": 5,
+     "multiplier": 2.5
+    },
+    {
+     "fov": 5,
+     "multiplier": 5
+    }
+   ]
+  },
+  "category": "Sniper",
+  "categoryLabel": "Sniper Rifles",
+  "cost": 4700,
+  "defaultSkin": "standard-operator",
+  "icon": "https://cdn.source.gs/valorant/img/operator-icon-fe5726-504.webp",
+  "id": "a03b24d34319996d0f8c94bbfba1dfc7",
+  "killIcon": "https://cdn.source.gs/valorant/img/operator-kill-78df1e.webp",
+  "killIconFull": "https://cdn.source.gs/valorant/img/operator-kill-78df1e-512.webp",
+  "name": "Operator",
+  "path": "ShooterGame/Content/Equippables/Guns/SniperRifles/Boltsniper/BoltSniperPrimaryAsset",
+  "shopCategory": "Sniper Rifles",
+  "shopColumn": 4,
+  "shopIcon": "https://cdn.source.gs/valorant/img/operator-icon-fe5726-504.webp",
+  "shopRow": 3,
+  "skinCount": 67,
+  "slug": "operator",
+  "stats": {
+   "ads": {
+    "burst": 1,
+    "fireRate": 0.6,
+    "firstBulletAccuracy": null,
+    "runSpeed": 0.72,
+    "zoom": 2.5
+   },
+   "airBurst": null,
+   "altFire": "ADS",
+   "altShotgun": null,
+   "damage": [
+    {
+     "body": 150,
+     "from": 0,
+     "head": 255,
+     "leg": 120,
+     "to": 50
+    }
+   ],
+   "equipTime": 1.5,
+   "feature": "DualZoom",
+   "fireMode": "SemiAutomatic",
+   "fireRate": 0.6,
+   "firstBulletAccuracy": 5,
+   "magazine": 5,
+   "pellets": 1,
+   "reloadTime": 3.7,
+   "runSpeed": 0.76,
+   "wallPenetration": "High"
+  }
+ },
+ {
+  "baseContent": true,
+  "blueprint": {
+   "firingRate": 5.25,
+   "magazineAmmo": 12,
+   "readyingTimes": [
+    0.6,
+    0.2
+   ],
+   "reserveAmmo": 36,
+   "scaleOnGround": 1.5,
+   "stability": {
+    "curves": {
+     "ads": {
+      "errorAdd": -0.1
+     },
+     "error": [
+      [
+       0,
+       0.1
+      ],
+      [
+       1,
+       0.3
+      ],
+      [
+       2,
+       1.1
+      ],
+      [
+       3,
+       1.6
+      ]
+     ],
+     "landing": [
+      [
+       0,
+       0.7
+      ],
+      [
+       0.225,
+       0
+      ]
+     ],
+     "movement": [
+      {
+       "curve": "FlaggedStability_WalkingMovementError_Rifles",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.275,
+         3
+        ],
+        [
+         0.601,
+         5
+        ]
+       ],
+       "state": "walking"
+      },
+      {
+       "curve": "RunningMovementErrorCurveRifles",
+       "keys": [
+        [
+         0.601,
+         6
+        ]
+       ],
+       "state": "running"
+      },
+      {
+       "curve": null,
+       "keys": [
+        [
+         0,
+         13.5
+        ]
+       ],
+       "state": "jumping"
+      },
+      {
+       "curve": "CrouchingMovementErrorCurveRifle",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.29,
+         0
+        ],
+        [
+         0.3,
+         0.8
+        ]
+       ],
+       "state": "crouching"
+      },
+      {
+       "curve": "MovementErrorCurveOnAscendersRifles",
+       "keys": [
+        [
+         0,
+         1.3
+        ],
+        [
+         0.275,
+         2
+        ],
+        [
+         0.6,
+         5
+        ]
+       ],
+       "state": "ascender"
+      }
+     ],
+     "pitch": [
+      [
+       0,
+       0
+      ],
+      [
+       1,
+       0.25
+      ],
+      [
+       2,
+       1
+      ],
+      [
+       6,
+       5
+      ]
+     ],
+     "recoilRates": {
+      "decay": 1,
+      "increase": 12
+     },
+     "states": {
+      "crouching": {
+       "error": 0.85,
+       "pitch": 0.85,
+       "yaw": 0.85
+      }
+     },
+     "tagging": [
+      [
+       0,
+       0
+      ],
+      [
+       0.75,
+       4.5
+      ]
+     ],
+     "yaw": [
+      [
+       0,
+       0
+      ],
+      [
+       2,
+       -0.1
+      ],
+      [
+       7,
+       -1.25
+      ]
+     ]
+    },
+    "minTaggingSpeed": 0.15,
+    "recoveryTime": 0.295,
+    "tapEfficiency": 10
+   },
+   "zoom": [
+    {
+     "fov": 25,
+     "multiplier": 1.5
+    }
+   ]
+  },
+  "category": "Rifle",
+  "categoryLabel": "Assault Rifles",
+  "cost": 2250,
+  "defaultSkin": "standard-guardian",
+  "icon": "https://cdn.source.gs/valorant/img/guardian-icon-39093a-508.webp",
+  "id": "4ade7faa4cf1837695ef39884480959b",
+  "killIcon": "https://cdn.source.gs/valorant/img/guardian-kill-84da88.webp",
+  "killIconFull": "https://cdn.source.gs/valorant/img/guardian-kill-84da88-384.webp",
+  "name": "Guardian",
+  "path": "ShooterGame/Content/Equippables/Guns/SniperRifles/DMR/DMRPrimaryAsset",
+  "shopCategory": "Rifles",
+  "shopColumn": 4,
+  "shopIcon": "https://cdn.source.gs/valorant/img/guardian-icon-39093a-508.webp",
+  "shopRow": 2,
+  "skinCount": 68,
+  "slug": "guardian",
+  "stats": {
+   "ads": {
+    "burst": 1,
+    "fireRate": 5.25,
+    "firstBulletAccuracy": null,
+    "runSpeed": 0.76,
+    "zoom": 1.5
+   },
+   "airBurst": null,
+   "altFire": "ADS",
+   "altShotgun": null,
+   "damage": [
+    {
+     "body": 65,
+     "from": 0,
+     "head": 195,
+     "leg": 48.75,
+     "to": 50
+    }
+   ],
+   "equipTime": 1,
+   "feature": null,
+   "fireMode": "SemiAutomatic",
+   "fireRate": 5.25,
+   "firstBulletAccuracy": 0.1,
+   "magazine": 12,
+   "pellets": 1,
+   "reloadTime": 2.5,
+   "runSpeed": 0.8,
+   "wallPenetration": "High"
+  }
+ },
+ {
+  "baseContent": true,
+  "blueprint": {
+   "firingRate": 2.75,
+   "magazineAmmo": 2,
+   "readyingTimes": [
+    1.25,
+    0.6,
+    0.2
+   ],
+   "scaleOnGround": 1.5,
+   "stability": {
+    "curves": {
+     "error": [
+      [
+       0,
+       3.5
+      ]
+     ],
+     "landing": [
+      [
+       0,
+       0.7
+      ],
+      [
+       0.225,
+       0
+      ]
+     ],
+     "movement": [
+      {
+       "curve": "WalkingMovementErrorCurveSniperRifles",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.3,
+         10
+        ],
+        [
+         0.62,
+         15
+        ]
+       ],
+       "state": "walking"
+      },
+      {
+       "curve": "RunningMovementErrorCurveSniperRifles",
+       "keys": [
+        [
+         0.62,
+         15
+        ]
+       ],
+       "state": "running"
+      },
+      {
+       "curve": "JumpingMovementErrorCurve_SniperRifles",
+       "keys": [
+        [
+         0,
+         20
+        ]
+       ],
+       "state": "jumping"
+      },
+      {
+       "curve": "CrouchingMovementErrorCurveSniperRifles",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.3,
+         7.5
+        ]
+       ],
+       "state": "crouching"
+      },
+      {
+       "curve": "MovementErrorCurveOnAscendersSniperRifles",
+       "keys": [
+        [
+         0,
+         10
+        ],
+        [
+         0.3,
+         12
+        ],
+        [
+         0.62,
+         15
+        ]
+       ],
+       "state": "ascender"
+      }
+     ],
+     "pitch": [
+      [
+       0,
+       0
+      ],
+      [
+       1,
+       3
+      ]
+     ],
+     "states": {
+      "crouching": {
+       "error": 0.9
+      }
+     }
+    }
+   },
+   "zoom": [
+    {
+     "fov": 5,
+     "multiplier": 3.5
+    }
+   ]
+  },
+  "category": "Sniper",
+  "categoryLabel": "Sniper Rifles",
+  "cost": 2400,
+  "defaultSkin": "standard-outlaw",
+  "icon": "https://cdn.source.gs/valorant/img/outlaw-icon-432946-512.webp",
+  "id": "5f0aaf7a42893998d5ffeb9a5cf7ef5c",
+  "killIcon": "https://cdn.source.gs/valorant/img/outlaw-kill-585c89.webp",
+  "killIconFull": "https://cdn.source.gs/valorant/img/outlaw-kill-585c89-512.webp",
+  "name": "Outlaw",
+  "path": "ShooterGame/Content/Equippables/Guns/SniperRifles/Doublesniper/DS_Gun_PrimaryAsset",
+  "shopCategory": "Sniper Rifles",
+  "shopColumn": 4,
+  "shopIcon": "https://cdn.source.gs/valorant/img/outlaw-icon-432946-512.webp",
+  "shopRow": null,
+  "skinCount": 24,
+  "slug": "outlaw",
+  "stats": {
+   "ads": {
+    "burst": null,
+    "fireRate": 2.75,
+    "firstBulletAccuracy": null,
+    "runSpeed": 0.8,
+    "zoom": 3.5
+   },
+   "airBurst": null,
+   "altFire": "ADS",
+   "altShotgun": null,
+   "damage": [
+    {
+     "body": 140,
+     "from": 0,
+     "head": 238,
+     "leg": 119,
+     "to": 50
+    }
+   ],
+   "equipTime": 1.25,
+   "feature": null,
+   "fireMode": "SemiAutomatic",
+   "fireRate": 2.75,
+   "firstBulletAccuracy": 3.5,
+   "magazine": 2,
+   "pellets": null,
+   "reloadTime": 3.8,
+   "runSpeed": 0.8,
+   "wallPenetration": "High"
+  }
+ },
+ {
+  "baseContent": true,
+  "blueprint": {
+   "firingRate": 1.5,
+   "readyingTimes": [
+    1.25,
+    0.6,
+    0.2
+   ],
+   "reserveAmmo": 15,
+   "scaleOnGround": 1.5,
+   "stability": {
+    "curves": {
+     "error": [
+      [
+       0,
+       1
+      ],
+      [
+       0.05,
+       1.25
+      ]
+     ],
+     "landing": [
+      [
+       0,
+       0.7
+      ],
+      [
+       0.225,
+       0
+      ]
+     ],
+     "movement": [
+      {
+       "curve": "WalkingMovementErrorCurveSniperRifles",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.3,
+         10
+        ],
+        [
+         0.62,
+         15
+        ]
+       ],
+       "state": "walking"
+      },
+      {
+       "curve": "RunningMovementErrorCurveSniperRifles",
+       "keys": [
+        [
+         0.62,
+         15
+        ]
+       ],
+       "state": "running"
+      },
+      {
+       "curve": "JumpingMovementErrorCurve_SniperRifles",
+       "keys": [
+        [
+         0,
+         20
+        ]
+       ],
+       "state": "jumping"
+      },
+      {
+       "curve": "CrouchingMovementErrorCurveSniperRifles",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.3,
+         7.5
+        ]
+       ],
+       "state": "crouching"
+      },
+      {
+       "curve": "MovementErrorCurveOnAscendersSniperRifles",
+       "keys": [
+        [
+         0,
+         10
+        ],
+        [
+         0.3,
+         12
+        ],
+        [
+         0.62,
+         15
+        ]
+       ],
+       "state": "ascender"
+      }
+     ],
+     "pitch": [
+      [
+       0,
+       0
+      ]
+     ],
+     "states": {
+      "crouching": {
+       "error": 0.9
+      }
+     },
+     "yaw": [
+      [
+       0,
+       0
+      ]
+     ]
+    }
+   },
+   "zoom": [
+    {
+     "fov": 5,
+     "multiplier": 3.5
+    }
+   ]
+  },
+  "category": "Sniper",
+  "categoryLabel": "Sniper Rifles",
+  "cost": 950,
+  "defaultSkin": "standard-marshal",
+  "icon": "https://cdn.source.gs/valorant/img/marshal-icon-0aae34-508.webp",
+  "id": "c4883e504494202c3ec36b8a9284f00b",
+  "killIcon": "https://cdn.source.gs/valorant/img/marshal-kill-179b3a.webp",
+  "killIconFull": "https://cdn.source.gs/valorant/img/marshal-kill-179b3a-512.webp",
+  "name": "Marshal",
+  "path": "ShooterGame/Content/Equippables/Guns/SniperRifles/Leversniper/LeverSniperPrimaryAsset",
+  "shopCategory": "Sniper Rifles",
+  "shopColumn": 4,
+  "shopIcon": "https://cdn.source.gs/valorant/img/marshal-icon-0aae34-508.webp",
+  "shopRow": null,
+  "skinCount": 53,
+  "slug": "marshal",
+  "stats": {
+   "ads": {
+    "burst": 1,
+    "fireRate": 1.2,
+    "firstBulletAccuracy": null,
+    "runSpeed": 0.9,
+    "zoom": 3.5
+   },
+   "airBurst": null,
+   "altFire": "ADS",
+   "altShotgun": null,
+   "damage": [
+    {
+     "body": 101,
+     "from": 0,
+     "head": 202,
+     "leg": 85.85,
+     "to": 50
+    }
+   ],
+   "equipTime": 1.25,
+   "feature": null,
+   "fireMode": "SemiAutomatic",
+   "fireRate": 1.5,
+   "firstBulletAccuracy": 1,
+   "magazine": 5,
+   "pellets": 1,
+   "reloadTime": 2.5,
+   "runSpeed": 0.8,
+   "wallPenetration": "Medium"
+  }
+ },
+ {
+  "baseContent": true,
+  "blueprint": {
+   "firingRate": 13.333,
+   "magazineAmmo": 30,
+   "readyingTimes": [
+    0.75,
+    0.45,
+    0.15
+   ],
+   "reserveAmmo": 90,
+   "scaleOnGround": 1.5,
+   "stability": {
+    "curves": {
+     "ads": {
+      "errorAdd": -0.15
+     },
+     "decay": [
+      [
+       2.25,
+       100
+      ],
+      [
+       4.5,
+       3
+      ]
+     ],
+     "error": [
+      [
+       0,
+       0.4
+      ],
+      [
+       2,
+       0.85
+      ],
+      [
+       5,
+       1.05
+      ],
+      [
+       7,
+       1.4
+      ]
+     ],
+     "landing": [
+      [
+       0,
+       0.7
+      ],
+      [
+       0.225,
+       0
+      ]
+     ],
+     "movement": [
+      {
+       "curve": "FlaggedStability_WalkingMovementError_SMG",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.275,
+         1
+        ],
+        [
+         0.62,
+         2.5
+        ]
+       ],
+       "state": "walking"
+      },
+      {
+       "curve": "FlaggedStability_RunningMovementError_SMG",
+       "keys": [
+        [
+         0.601,
+         2.5
+        ]
+       ],
+       "state": "running"
+      },
+      {
+       "curve": null,
+       "keys": [
+        [
+         0,
+         10
+        ]
+       ],
+       "state": "jumping"
+      },
+      {
+       "curve": "CrouchingMovementErrorCurveSMG",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.3,
+         0.15
+        ]
+       ],
+       "state": "crouching"
+      },
+      {
+       "curve": "MovementErrorCurveOnAscendersSMG",
+       "keys": [
+        [
+         0,
+         0.65
+        ],
+        [
+         0.275,
+         1
+        ],
+        [
+         0.62,
+         2.5
+        ]
+       ],
+       "state": "ascender"
+      }
+     ],
+     "pitch": [
+      [
+       0,
+       0
+      ],
+      [
+       1,
+       0.15
+      ],
+      [
+       2,
+       0.5
+      ],
+      [
+       9,
+       5
+      ],
+      [
+       11,
+       5.4
+      ]
+     ],
+     "recoilRates": {
+      "decay": 1,
+      "increase": 12
+     },
+     "states": {
+      "crouching": {
+       "error": 0.85,
+       "pitch": 0.85,
+       "yaw": 0.85
+      },
+      "running": {
+       "pitch": 1.8
+      }
+     },
+     "tagging": [
+      [
+       0,
+       0
+      ],
+      [
+       0.25,
+       1.8
+      ]
+     ],
+     "yaw": [
+      [
+       0,
+       0
+      ],
+      [
+       6,
+       0
+      ],
+      [
+       13,
+       1.25
+      ]
+     ]
+    },
+    "minTaggingSpeed": 0.15,
+    "recoveryTime": 0.45,
+    "tapEfficiency": 3
+   },
+   "zoom": [
+    {
+     "fov": 60,
+     "multiplier": 1.15
+    }
+   ]
+  },
+  "category": "SMG",
+  "categoryLabel": "SMGs",
+  "cost": 1600,
+  "defaultSkin": "standard-spectre",
+  "icon": "https://cdn.source.gs/valorant/img/spectre-icon-91beb5-352.webp",
+  "id": "462080d1403529377c0927aa2a5c27a7",
+  "killIcon": "https://cdn.source.gs/valorant/img/spectre-kill-113a54.webp",
+  "name": "Spectre",
+  "path": "ShooterGame/Content/Equippables/Guns/SubMachineGuns/MP5/MP5PrimaryAsset",
+  "shopCategory": "SMGs",
+  "shopColumn": 2,
+  "shopIcon": "https://cdn.source.gs/valorant/img/spectre-icon-91beb5-352.webp",
+  "shopRow": 1,
+  "skinCount": 78,
+  "slug": "spectre",
+  "stats": {
+   "ads": {
+    "burst": 1,
+    "fireRate": 11.9997,
+    "firstBulletAccuracy": 0.25,
+    "runSpeed": 0.76,
+    "zoom": 1.15
+   },
+   "airBurst": null,
+   "altFire": "ADS",
+   "altShotgun": null,
+   "damage": [
+    {
+     "body": 26,
+     "from": 0,
+     "head": 78,
+     "leg": 22.1,
+     "to": 15
+    },
+    {
+     "body": 22,
+     "from": 15,
+     "head": 66,
+     "leg": 18.7,
+     "to": 30
+    },
+    {
+     "body": 20,
+     "from": 30,
+     "head": 60,
+     "leg": 17,
+     "to": 50
+    }
+   ],
+   "equipTime": 0.75,
+   "feature": "Silenced",
+   "fireMode": null,
+   "fireRate": 13.333,
+   "firstBulletAccuracy": 0.4,
+   "magazine": 30,
+   "pellets": 1,
+   "reloadTime": 2.25,
+   "runSpeed": 0.85,
+   "wallPenetration": "Low"
+  }
+ },
+ {
+  "baseContent": true,
+  "blueprint": {
+   "firingRate": 18,
+   "magazineAmmo": 20,
+   "readyingTimes": [
+    0.75,
+    0.45,
+    0.15
+   ],
+   "reserveAmmo": 60,
+   "scaleOnGround": 1.5,
+   "stability": {
+    "curves": {
+     "decay": [
+      [
+       2.25,
+       100
+      ],
+      [
+       4.5,
+       3
+      ]
+     ],
+     "error": [
+      [
+       0,
+       0.65
+      ],
+      [
+       6,
+       1.5
+      ]
+     ],
+     "landing": [
+      [
+       0,
+       0.7
+      ],
+      [
+       0.225,
+       0
+      ]
+     ],
+     "movement": [
+      {
+       "curve": "FlaggedStability_WalkingMovementError_SMG",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.275,
+         1
+        ],
+        [
+         0.62,
+         2.5
+        ]
+       ],
+       "state": "walking"
+      },
+      {
+       "curve": "FlaggedStability_RunningMovementError_SMG",
+       "keys": [
+        [
+         0.601,
+         2.5
+        ]
+       ],
+       "state": "running"
+      },
+      {
+       "curve": "CrouchingMovementErrorCurveSMG",
+       "keys": [
+        [
+         0,
+         0
+        ],
+        [
+         0.3,
+         0.15
+        ]
+       ],
+       "state": "crouching"
+      },
+      {
+       "curve": "MovementErrorCurveOnAscendersSMG",
+       "keys": [
+        [
+         0,
+         0.65
+        ],
+        [
+         0.275,
+         1
+        ],
+        [
+         0.62,
+         2.5
+        ]
+       ],
+       "state": "ascender"
+      }
+     ],
+     "pitch": [
+      [
+       0,
+       0
+      ],
+      [
+       6,
+       5
+      ],
+      [
+       11,
+       9
+      ]
+     ],
+     "recoilRates": {
+      "decay": 1,
+      "increase": 12
+     },
+     "states": {
+      "ascender": {
+       "pitch": 1.25,
+       "yaw": 1.25
+      },
+      "crouching": {
+       "error": 0.85,
+       "pitch": 0.85,
+       "yaw": 0.85
+      },
+      "jumping": {
+       "pitch": 1.25,
+       "yaw": 1.25
+      },
+      "ladder": {
+       "pitch": 1.25,
+       "yaw": 1.25
+      },
+      "running": {
+       "pitch": 1.25,
+       "yaw": 1.25
+      }
+     },
+     "tagging": [
+      [
+       0,
+       0
+      ],
+      [
+       0.25,
+       1.8
+      ]
+     ],
+     "yaw": [
+      [
+       0,
+       0
+      ],
+      [
+       10,
+       1.5
+      ]
+     ]
+    },
+    "minTaggingSpeed": 0.15,
+    "recoveryTime": 0.45,
+    "tapEfficiency": 1
+   },
+   "zoom": [
+    {
+     "fov": 60,
+     "multiplier": 1.15
+    }
+   ]
+  },
+  "category": "SMG",
+  "categoryLabel": "SMGs",
+  "cost": 1100,
+  "defaultSkin": "standard-stinger",
+  "icon": "https://cdn.source.gs/valorant/img/stinger-icon-22138c-328.webp",
+  "id": "f7e1b4544ad41063ec0a159e56b58941",
+  "killIcon": "https://cdn.source.gs/valorant/img/stinger-kill-181fa0.webp",
+  "name": "Stinger",
+  "path": "ShooterGame/Content/Equippables/Guns/SubMachineGuns/Vector/VectorPrimaryAsset",
+  "shopCategory": "SMGs",
+  "shopColumn": 1,
+  "shopIcon": "https://cdn.source.gs/valorant/img/stinger-icon-22138c-328.webp",
+  "shopRow": null,
+  "skinCount": 48,
+  "slug": "stinger",
+  "stats": {
+   "ads": {
+    "burst": 4,
+    "fireRate": 8.4706,
+    "firstBulletAccuracy": 0.35,
+    "runSpeed": 0.76,
+    "zoom": 1.15
+   },
+   "airBurst": null,
+   "altFire": "ADS",
+   "altShotgun": null,
+   "damage": [
+    {
+     "body": 27,
+     "from": 0,
+     "head": 67.5,
+     "leg": 22.95,
+     "to": 15
+    },
+    {
+     "body": 23,
+     "from": 15,
+     "head": 57,
+     "leg": 19,
+     "to": 50
+    }
+   ],
+   "equipTime": 0.75,
+   "feature": null,
+   "fireMode": null,
+   "fireRate": 16,
+   "firstBulletAccuracy": 0.65,
+   "magazine": 20,
+   "pellets": 1,
+   "reloadTime": 2.25,
+   "runSpeed": 0.85,
+   "wallPenetration": "Low"
+  }
+ },
+ {
+  "baseContent": true,
+  "blueprint": {
+   "readyingTimes": [
+    0.6,
+    0.3
+   ]
+  },
+  "category": "Melee",
+  "categoryLabel": "Melee",
+  "cost": null,
+  "defaultSkin": "melee",
+  "icon": "https://cdn.source.gs/valorant/img/melee-icon-c15cb7-304.webp",
+  "id": "2f59173c4bedb6c32191dea9b58be9c7",
+  "killIcon": "https://cdn.source.gs/valorant/img/melee-kill-d66dd9.webp",
+  "name": "Melee",
+  "path": "ShooterGame/Content/Equippables/Melee/Melee_PrimaryAsset",
+  "shopCategory": null,
+  "shopColumn": null,
+  "shopIcon": null,
+  "shopRow": null,
+  "skinCount": 179,
+  "slug": "melee",
+  "stats": null
+ }
+]

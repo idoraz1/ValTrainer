@@ -215,8 +215,9 @@ public sealed partial class Mover
     /// <summary>A stop that was being timed no longer counts (you jumped, dashed or got launched).</summary>
     void CancelStop() { stopping = stoppingCounter = false; stopT = 0; }
 
-    /// <summary>Movement error added to weapon spread (rifles: crouch-walk 0.8°, walk 3°, run 6°; airborne: the weapon's air
-    /// error; just landed: at least <see cref="MovementTuning.LandingErr"/>).</summary>
+    /// <summary>Movement error added to weapon spread (rifles, game files via valorant.gs: none up to the 27.5% deadzone,
+    /// then 3° rising to 5° at 60% of the run speed, 6° running, crouch-walk 0.8°; airborne: the weapon's air error; just
+    /// landed: at least <see cref="MovementTuning.LandingErr"/>).</summary>
     public float MovementErrorDeg(Core.WeaponDef w)
     {
         if (!Grounded) return w.AirErr;
@@ -229,8 +230,24 @@ public sealed partial class Mover
         float s = Speed;
         if (s <= AccurateMax) return 0f;
         if (Crouching) return w.CrouchWalkErr;
+        if (w.WalkErrKeys.Length >= 2) return WalkCurve(w.WalkErrKeys, s / RunMax, w.RunErr);
         if (s <= WalkMax) return w.WalkErr * (s - AccurateMax) / (WalkMax - AccurateMax);
         return w.WalkErr + (w.RunErr - w.WalkErr) * Mathf.Clamp((s - WalkMax) / (RunMax - WalkMax), 0, 1);
+    }
+
+    /// <summary>The game files' walking error curve (valorant.gs): (speed fraction, degrees) keys after (0, 0), linear
+    /// between them; above the last key the gun is running (<paramref name="run"/>).</summary>
+    static float WalkCurve(float[] keys, float f, float run)
+    {
+        if (f > keys[^2] + 1e-4f) return run;
+        float x0 = 0f, y0 = 0f;
+        for (int i = 0; i + 1 < keys.Length; i += 2)
+        {
+            float x1 = keys[i], y1 = keys[i + 1];
+            if (f <= x1) return x1 <= x0 ? y1 : y0 + (y1 - y0) * (f - x0) / (x1 - x0);
+            x0 = x1; y0 = y1;
+        }
+        return y0;
     }
 
     public void ResetStops()

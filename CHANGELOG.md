@@ -8,6 +8,9 @@ or patch change. Add every change under **Unreleased**; `tools\version.ps1` turn
 
 ## [Unreleased]
 
+### Changed
+- Recoil and spread now use the real per-gun curves (suggested on Discord). Every gun's spray pattern, bullet spread, recovery and tap efficiency now come from VALORANT's game files, as published by [valorant.gs](https://valorant.gs), instead of our estimates. The biggest change: sprays climb much harder and sooner. The Vandal now kicks up 7.6° by its 8th bullet and then bounces around 8°, drifting 2° to the side and wobbling left and right (before: 4.5°, reached later). The Phantom climbs to about 6.5–7°, the Spectre to 5.4°, and the Odin and Ares keep climbing over the whole magazine. Pistols and the Sheriff kick less but have no sideways recoil, and their spread grows faster when you spam (Sheriff: 0.25° → 1.1° → 2.75°). Aiming down sights now also cuts the Vandal, Phantom, Warden and Odin recoil by 30%, with the game's aimed spread. Shooting while walking is less accurate, like in VALORANT: 3° as soon as you leave the accurate speed, up to almost 5° at walking speed with a rifle. Running and crouching multipliers and jump inaccuracy follow the files too (Phantom and Bulldog 13° in the air). How we read the numbers and every gun's before and after are in docs/research/recoil-1.24.md. Chamber's guns aren't in the data and are unchanged.
+
 ## [1.23.0] - 2026-11-24
 
 ### Added
