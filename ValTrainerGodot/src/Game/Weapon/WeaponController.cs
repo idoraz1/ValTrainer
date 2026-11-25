@@ -18,7 +18,8 @@ namespace ValTrainer.Game.Weapon;
 public readonly record struct Shot(Vector3 Dir, bool Accurate, int Volley, int Pellet, float StartAt = 0f, float MaxRange = 0f);
 
 /// <summary>
-/// Gun logic modelled on Riot's documented recoil system:
+/// Gun logic modelled on Riot's documented recoil system (1.24: the per-gun curves come from the game files via
+/// valorant.gs, docs/research/recoil-1.24.md; RecoilScale calibrates the kick):
 /// - Full auto at the real fire rate (Vandal 9.75 rps; ADS ×0.9), semi-auto for Sheriff/Operator.
 /// - "Heat" = fractional bullet index into the per-bullet pitch/spread tables; it decays when you stop
 ///   (reset time ≈ RecoveryTime·√heat: 1 shot 0.375 s, full spray ≈1.3 s), and grows less for slow taps
@@ -93,7 +94,7 @@ public sealed class WeaponController
         side = def.FirstDriftSide >= 0 ? 1 : -1; // Phantom right, the rest left
         sideBlend = side;
         var m = def.AltMoveErr;
-        altMoveDef = m.Length >= 4 ? def with { CrouchWalkErr = m[0], WalkErr = m[1], RunErr = m[2], AirErr = m[3] } : def;
+        altMoveDef = m.Length >= 4 ? def with { CrouchWalkErr = m[0], WalkErr = m[1], RunErr = m[2], AirErr = m[3], WalkErrKeys = [] } : def;
     }
 
     bool BurstGun => Def.AltFire == AltFireKind.ZoomBurst && Def.BurstCount > 1 && Def.BurstRps > 0;
@@ -253,13 +254,14 @@ public sealed class WeaponController
         triggerWasDown = Def.Auto && triggerHeld && !Reloading;
         sideBlend = Mathf.MoveToward(sideBlend, side, dt * 2f / Def.YawSwitchTime);
 
-        // Camera follows the recoil (and drifts back as heat recovers).
+        // Camera follows the recoil (and drifts back as heat recovers). The tables are the game files' curves, calibrated
+        // by RecoilScale (WeaponDef.PitchAt / YawAt); aimed down sights the files scale them (Vandal ×0.7).
         bool still = mover.Crouching && mover.Speed < 0.5f, running = movementMode && mover.Speed > mover.WalkMax;
         float crouchMul = still ? Def.CrouchRecoilMul : 1f;
         float runMul = running ? Def.RunPitchMul : 1f, runYawMul = running ? Def.RunYawMul : 1f;
-        var pitch = Scoped && Def.AdsPitch.Length > 0 ? Def.AdsPitch : Def.Pitch; // Stinger: own aimed (burst) climb
-        view.RecoilPitch = WeaponDef.Lerp(pitch, heat) * crouchMul * runMul;
-        view.RecoilYaw = sideBlend * WeaponDef.Lerp(Def.Yaw, yawHeat) * crouchMul * runYawMul;
+        float adsPitch = Scoped ? Def.AdsPitchMul : 1f, adsYaw = Scoped ? Def.AdsYawMul : 1f;
+        view.RecoilPitch = Def.PitchAt(heat, aimedTable: Scoped) * crouchMul * runMul * adsPitch; // Stinger: own aimed (burst) climb
+        view.RecoilYaw = sideBlend * Def.YawAt(yawHeat) * crouchMul * runYawMul * adsYaw;
 
         SpreadNow = CurrentError(mover, movementMode);
         return shots;
@@ -302,7 +304,8 @@ public sealed class WeaponController
         else
         {
             err = WeaponDef.Lerp(Def.Spread, heat);
-            if (Scoped) err = Mathf.Max(0.05f, err - (Def.FirstShotHip - Def.FirstShotAds));
+            // Aimed: the files' ×mul + add (Vandal ×1.15 − 0.13); guns without them: hip − (FirstShotHip − FirstShotAds).
+            if (Scoped) err = Mathf.Max(0.05f, err * Def.AdsErrorMul + Def.AdsErrorAdd);
         }
         if (mover.Crouching) err *= crouch;
         if (movementMode) err += mover.MovementErrorDeg(Def);

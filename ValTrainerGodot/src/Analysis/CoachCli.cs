@@ -558,7 +558,10 @@ public static class CoachCli
         Ok(RunAnalysis.SprayRequired("spray_vandal", "Vandal") == 5.5f && RunAnalysis.SprayRequired("spray_phantom", null) == 4.6f
            && RunAnalysis.SprayRequired("spray_transfer", "Phantom") == 4.6f, "spray climb: the Vandal / Phantom constants stay");
         float spectre = RunAnalysis.SprayRequired("spray_transfer", "Spectre"), odin = RunAnalysis.SprayRequired("spray_transfer", "Odin");
-        Ok(spectre > 1.5f && spectre < 5.5f && odin > 5.5f && odin <= 9f, F($"spray climb per gun: Spectre {spectre:0.0}°/s < Vandal 5.5 < Odin {odin:0.0}°/s"));
+        // 1.24: the game files' curves (valorant.gs) put the Spectre's climb over bullets 3–12 at 4.3° in 0.68 s, a little
+        // faster than the Vandal's 5.5° in 0.92 s (the pre-1.24 estimates had it at about half the Vandal's), so it now needs
+        // ≈5.8°/s; the Odin stays at the 9°/s cap.
+        Ok(spectre > 5.5f && spectre < 6.3f && odin > 5.5f && odin <= 9f, F($"spray climb per gun: Vandal 5.5 < Spectre {spectre:0.0}°/s < Odin {odin:0.0}°/s"));
     }
 
     /// <summary>"--recordings-selftest": the Rewind recordings keep rules (RecordingStore) on a throwaway temp folder:

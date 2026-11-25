@@ -865,7 +865,7 @@ static class RunAnalysis
         w ??= mode == "spray_phantom" ? Weapons.Phantom : Weapons.Vandal;
         if (w.Kind == WeaponKind.Vandal) return 5.5f;
         if (w.Kind == WeaponKind.Phantom) return 4.6f;
-        static float Climb(WeaponDef g) => (WeaponDef.Lerp(g.Pitch, 12) - WeaponDef.Lerp(g.Pitch, 3)) * g.MaxRps / 9f;
+        static float Climb(WeaponDef g) => (g.PitchAt(12) - g.PitchAt(3)) * g.MaxRps / 9f;
         float c = Climb(w), v = Climb(Weapons.Vandal);
         return float.IsFinite(c) && v > 0 ? Math.Clamp(5.5f * c / v, 1.5f, 9f) : 5.5f;
     }
