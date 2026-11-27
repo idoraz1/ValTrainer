@@ -46,7 +46,7 @@ public sealed class WeaponController
     public bool Scoped;
     public float EquipLeft;
 
-    float heat, yawHeat, lastShot = -99f, nextShotAt;
+    float heat, yawHeat, kick, lastShot = -99f, nextShotAt;
     bool triggerWasDown;
     bool bottomless;
     int sprayShots;
@@ -109,7 +109,7 @@ public sealed class WeaponController
     /// <summary>New round / respawn: no leftover recoil.</summary>
     public void ResetRecoil()
     {
-        heat = yawHeat = 0;
+        heat = yawHeat = kick = 0;
         sprayShots = 0;
         triggerWasDown = false;
         burstLeft = 0;
@@ -207,6 +207,8 @@ public sealed class WeaponController
             yawHeat = Mathf.Max(0, yawHeat - dt * 2f * Mathf.Sqrt(Mathf.Max(yawHeat, 1e-3f)) / rec);
             if (heat <= 0f) sprayShots = 0;
         }
+        // Per-shot kick guns (Judge): the view settles between shots even with the trigger held.
+        if (Def.KickPerShot) kick = Mathf.Max(0, kick - dt * 2f * Mathf.Sqrt(Mathf.Max(kick, 1e-3f)) / Def.RecoveryTime);
 
         if (!Reloading && EquipLeft <= 0)
         {
@@ -260,8 +262,9 @@ public sealed class WeaponController
         float crouchMul = still ? Def.CrouchRecoilMul : 1f;
         float runMul = running ? Def.RunPitchMul : 1f, runYawMul = running ? Def.RunYawMul : 1f;
         float adsPitch = Scoped ? Def.AdsPitchMul : 1f, adsYaw = Scoped ? Def.AdsYawMul : 1f;
-        view.RecoilPitch = Def.PitchAt(heat, aimedTable: Scoped) * crouchMul * runMul * adsPitch; // Stinger: own aimed (burst) climb
-        view.RecoilYaw = sideBlend * Def.YawAt(yawHeat) * crouchMul * runYawMul * adsYaw;
+        float viewHeat = Def.KickPerShot ? kick : heat;
+        view.RecoilPitch = Def.PitchAt(viewHeat, aimedTable: Scoped) * crouchMul * runMul * adsPitch; // Stinger: own aimed (burst) climb
+        view.RecoilYaw = sideBlend * Def.YawAt(Def.KickPerShot ? kick : yawHeat) * crouchMul * runYawMul * adsYaw;
 
         SpreadNow = CurrentError(mover, movementMode);
         return shots;
@@ -380,6 +383,7 @@ public sealed class WeaponController
         bool spray = gap <= 1.2f * interval;
         float add = spray || heat <= 0f ? 1f : 1f / (1f + Def.TapEfficiency * (gap - interval) / Def.RecoveryTime);
         heat = Mathf.Min(heat + add, Def.HeatCap);
+        kick = Mathf.Min(kick + 1f, 2f);
         yawHeat = Mathf.Min(yawHeat + (spray ? 1f : 0.5f * add), Def.Yaw.Length - 1);
         if (sprayShots > Def.ProtectedBullets && rng.NextDouble() < 0.10) side = -side;
 

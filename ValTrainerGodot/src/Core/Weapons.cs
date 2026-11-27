@@ -201,6 +201,10 @@ public sealed record WeaponDef(
     /// <summary>Delay after a shot before recovery starts (s): Outlaw 0.364 = its shot interval, so patch 13.01's 0.15 s
     /// recovery can't erase the second-shot penalty before the second barrel is ready (EST, research §Outlaw).</summary>
     public float RecoveryDelay { get; init; }
+    /// <summary>The view kick is per shot and recovers between shots even while the trigger is held (Judge, measured
+    /// from Range footage 2026-11-25: each shot kicks ≈2.1° and settles in ≈0.4 s, no climb, no sideways). Spread still
+    /// grows with the spray. Pitch / Yaw then hold the kick of one shot, not a climbing curve.</summary>
+    public bool KickPerShot { get; init; }
     /// <summary>Reload with rounds left in the magazine (s): Outlaw 2.3 (empty: <see cref="Reload"/>).</summary>
     public float ReloadPartial { get; init; }
     /// <summary>Shell-by-shell reload (s per round): Bucky 0.5, Marshal 0.5 (Wiki). A trigger pull with a round loaded
@@ -414,19 +418,22 @@ public static class Weapons
         ReloadPerRound = 0.5f,
     };
 
-    /// <summary>Judge: full-auto shotgun, 12 pellets (damage per pellet), no 50 m pellet cap. Tables (cone 2.5° → 4°, 5° kick
-    /// by the 4th shot), recovery 0.4, tap efficiency 4, movement error: game files.</summary>
+    /// <summary>Judge: full-auto shotgun, 12 pellets (damage per pellet), no 50 m pellet cap. Cone 2.5° → 4°, recovery 0.4,
+    /// tap efficiency 4, movement error: game files (valorant.gs). Kick: MEASURED, not the files' curve (whose 5° climb by
+    /// the 4th shot the game doesn't show: the Judge has no recoil-rate block). Range footage 2026-11-25, 13 single shots:
+    /// up 2.08 ± 0.08°, sideways 0.03 ± 0.10°, back in ≈0.4 s; held at full rate every shot kicks ≈2.0–2.7° and comes
+    /// back (research spray-measure.md).</summary>
     public static readonly WeaponDef Judge = new(
         WeaponKind.Judge, "Judge", Auto: true, Rps: 3.5f, AdsRpsMul: 1f, Mag: 5, Reserve: 15, Reload: 2.2f, Equip: 1f,
         FirstShotHip: Gs.Judge.FirstShotHip, FirstShotAds: Gs.Judge.FirstShotHip, MaxSpread: Gs.Judge.MaxSpread,
         RecoveryTime: Gs.Judge.RecoveryTime, TapEfficiency: Gs.Judge.TapEfficiency, ProtectedBullets: 2, YawSwitchTime: 0.6f, Zoom: 1f,
-        Pitch: Gs.Judge.Pitch, Yaw: Gs.Judge.Yaw, Spread: Gs.Judge.Spread, HeatCap: Gs.Judge.HeatCap,
+        Pitch: new[] { 0f, 2.08f, 2.08f }, Yaw: new[] { 0f, 0f, 0f }, Spread: Gs.Judge.Spread, HeatCap: Gs.Judge.HeatCap,
         RunErr: Gs.Judge.RunErr, WalkErr: Gs.Judge.WalkErr, CrouchWalkErr: Gs.Judge.CrouchWalkErr, AirErr: Gs.Judge.AirErr, RunSpeed: 5.06f,
         DamageHead: new[] { 34f, 20f, 14f }, DamageBody: new[] { 17f, 10f, 7f }, DamageLegs: new[] { 14.45f, 8.5f, 5.95f }, DamageRangeEnd: new[] { 10f, 15f, 999f })
     {
         Class = WeaponClass.Shotgun, Cost = 1850, Penetration = Penetration.Low, RunPitchMul = 1.5f /* EST */,
         CrouchSpreadMul = Gs.Judge.CrouchSpreadMul, WalkErrKeys = Gs.Judge.WalkErrKeys,
-        Pellets = 12,
+        Pellets = 12, KickPerShot = true,
     };
 
     // ================= rifles =================

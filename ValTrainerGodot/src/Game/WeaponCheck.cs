@@ -538,6 +538,21 @@ public static class WeaponCheck
     /// import or a hand edit shows up). No older bounds were replaced: the pre-1.24 tables were estimates nothing pinned.</summary>
     static void Sourced(WeaponDef w)
     {
+        // Per-shot kick guns (Judge, measured from Range footage): a held spray kicks each shot by about one shot's kick and
+        // settles in between, with no climb and no sideways drift, while the pellet cone still widens shot by shot.
+        if (w.KickPerShot)
+        {
+            var r = new Rig(w) { Bottomless = true };
+            float maxP = 0f, maxY = 0f;
+            for (int i = 0; i < r.Frames(12f) && r.Volleys.Count < w.Mag; i++)
+            {
+                r.Step(held: true, pressed: i == 0);
+                maxP = Mathf.Max(maxP, r.V.RecoilPitch); maxY = Mathf.Max(maxY, Mathf.Abs(r.V.RecoilYaw));
+            }
+            float one = w.Pitch[1] * RecoilScale.Pitch;
+            Check("per-shot kick: a held spray doesn't climb", r.Volleys.Count >= w.Mag && maxP <= one * 1.35f && maxP >= one * 0.99f && maxY < 1e-4f && r.G.Heat >= w.Mag - 1.5f,
+                $"{r.Volleys.Count} shots: view peak {F(maxP, "0.00")}° (one shot {F(one, "0.00")}°, limit ×1.35), sideways {F(maxY, "0.000")}°, spread heat {F(r.G.Heat, "0.0")}");
+        }
         if (w.Auto && w.Pellets <= 1 && w.Pitch.Length > 2)
         {
             var r = new Rig(w) { Bottomless = true };
