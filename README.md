@@ -118,10 +118,10 @@ change VALORANT either: you set the new sensitivity yourself in VALORANT's setti
 
 | Category | Drills |
 |---|---|
-| Aim | Gridshot, Head Flicks, Spidershot, Strafe Tracking, Microshot (tiny corrections), Target Switch (three strafing agents), Pop-up Reflex (heads that vanish in a split second) |
-| VALORANT | Strafe Bots, Peek Practice, Operator, Long-range Taps (30–50 m Vandal taps with a recoil-reset ring) |
+| Aim | Gridshot, Head Flicks, Spidershot, Strafe Tracking, Microshot (tiny corrections), Microshot Dense (two small heads close together), Target Switch (three strafing agents), Pop-up Reflex (heads that vanish in a split second) |
+| VALORANT | Strafe Bots, Peek Practice, Operator, Sheriff One-Taps, Long-range Taps (30–50 m Vandal taps with a recoil-reset ring) |
 | Recoil | **Vandal Spray / Phantom Spray**: spray a standing agent and keep it on the body. A spray chart after every spray shows your bullets against the target and the raw pattern, with coaching ("pull down more", "counter the drift right"). Distance and the required spray length scale with the tier. **Spray Transfer**: kill every agent in one continuous spray. |
-| Movement | Counter-Strafe, Peek Duels (the bot shoots back), Jump Peek (spot an Operator mid-jump), Jiggle Peek (bait the Op, punish during his bolt) |
+| Movement | Counter-Strafe, Strafe Duels (a bot that strafes and stop-shoots like a player), Peek Duels (the bot shoots back), Mixed Peeks (hold an angle against baits and real peeks), Jump Peek (spot an Operator mid-jump, graded on every landing), Jiggle Peek (bait the Op, punish during his bolt), **Strafe Jump**: cross a gap a rifler is holding at full speed, graded on how long he saw you, the speed you kept and your landing |
 | Map | Site Clear, Deathmatch, Post-Plant (hold while defenders retake and defuse), Retake (clear and defuse before the spike blows), Site Anchor (hold a site alone against an execute) on Abyss, Ascent, Bind, Breeze, Corrode, Haven, Icebox, Lotus, Split, Summit and Sunset |
 | Utility | Flash Dodge (Phoenix, Breach, KAY/O, Skye, Yoru, Vyse, Gekko, using VALORANT's on-screen blind rule and per-agent timings and sounds), Sound Lock (pre-aim from footsteps) |
 | Agents | The **Agents** screen covers all 30 agents (Hush included): signature drills with the agent's own abilities (Flash & Peek, Recon & Clear, Smoke Execute, Mobility Entry, Site Anchor setups, Chamber Guns), drills for their role, and an agent Lock-In |
@@ -130,37 +130,52 @@ change VALORANT either: you set the new sensitivity yourself in VALORANT's setti
 
 ## Difficulty tiers (calibrated to ranks)
 
-| Tier | Ranks | Bot reaction | Bot's median time to kill you in the open |
-|---|---|---|---|
-| Rookie | Iron–Bronze | 480 ms | ≈4.4 s |
-| Regular | Silver–Gold | 370 ms | ≈2.4 s |
-| Veteran | Plat–Diamond | 290 ms | ≈1.4 s |
-| Elite | Ascendant–Immortal | 225 ms | ≈0.84 s |
-| Pro | Radiant | 180 ms | ≈0.53 s |
+| Tier | Ranks | Bot reaction (average) | Fastest possible reaction | Bot's median time to kill you in the open |
+|---|---|---|---|---|
+| Rookie | Iron–Bronze | 480 ms | 250 ms | ≈4.4 s |
+| Regular | Silver–Gold | 370 ms | 200 ms | ≈2.5 s |
+| Veteran | Plat–Diamond | 290 ms | 170 ms | ≈1.4 s |
+| Elite | Ascendant–Immortal | 225 ms | 155 ms | ≈0.91 s |
+| Pro | Radiant | 180 ms | 150 ms | ≈0.57 s |
 
 The low tiers were softened after playtesting: our bots have advantages no human has, such as perfect awareness and no
 peeker's advantage for you. In Flash Dodge, Rookie and Regular attackers walk or jog in, swing later, don't pre-aim your
 spot, and won't shoot while you're fully blind.
 
-- **How bots fight:** they react with a human-like delay, then move their crosshair onto you (Fitts' law). They fire the
-  Vandal with a per-shot hit chance against your 100 HP + 50 shield. They don't kill you instantly.
+- **How bots fight:** they only start reacting once you could see some of them too, never through a corner you can't
+  see past. They react with a human-like delay (never faster than the tier's floor above, re-peeks included), then move
+  their crosshair onto you (Fitts' law). Their crosshair is always a little off, so even a pre-aimed bot needs a small
+  correction. They fire with a per-shot hit chance against your 100 HP + 50 shield. They don't kill you instantly.
+- **What you feel:** when you swing a Pro (Radiant) bot, its first shot comes about 210–310 ms after it appears on your
+  screen, and never sooner than 150 ms.
 - **Aim drills:** target sizes, speeds and time limits scale with the tier, using aim-benchmark data.
 - **Results:** each result shows the rank tier you performed at. Personal bests are tracked per tier.
 
 ## Weapons
 
-- **Vandal:** full auto at 9.75 rounds/s, 25-round magazine. Its recoil follows Riot's documented system:
-  - a vertical climb that plateaus;
-  - side-locked horizontal drift with a 10% chance to switch sides;
-  - spread that grows per bullet;
-  - recovery of about 0.375 s after one tap and about 1.3 s after a full spray, with the camera drifting back.
-- **Phantom:** 11 rounds/s, 30-round magazine, damage falloff.
-- **Operator:** 2.5× scope, bolt action.
-- **Movement:** running adds 6° of inaccuracy and walking 3°. You are accurate below 27.5% of run speed, which is what
-  makes counter-strafing work.
-- **Stop timings:** braking matches Riot's measured Phantom stop times.
+Every gun in VALORANT (20 of them, from the Classic to the Odin), each with its own model, sounds and scope or
+aim-down-sights view. Pick one in a drill's preview (B). Fire rate, magazine, reload, damage by range and run speed are
+VALORANT's numbers.
 
-The per-bullet recoil numbers are reconstructed; Riot never published them.
+- **Recoil and spread come from the game files.** Every buyable gun's spray pattern, bullet spread, recovery, tap
+  efficiency and movement error are read from VALORANT's game files, as published by [valorant.gs](https://valorant.gs)
+  (thanks!). A few values the files don't show (such as the Shorty's recoil) are still our estimates. How we use the
+  numbers, gun by gun: [`recoil-1.24.md`](ValTrainerGodot/docs/research/recoil-1.24.md).
+- **Vandal:** full auto at 9.75 rounds/s, 25-round magazine.
+  - It kicks up 7.6° by the 8th bullet, then bounces around 7.5–8.4°;
+  - it drifts about 2° to one side and wobbles left and right (10% chance per bullet to switch sides);
+  - spread grows from 0.25° to 1° by the 6th bullet;
+  - aiming down sights cuts its recoil by 30%;
+  - recovery takes about 0.375 s after one tap and about 1.9 s after a full spray, with the camera drifting back.
+- **Phantom:** 11 rounds/s, 30-round magazine, damage falloff, climbs to about 6.5–7°.
+- **Operator:** 2.5× scope with a second 5× zoom, bolt action.
+- **Judge:** its kick was measured from VALORANT Range footage: about 2° per shot, settling before the next one.
+- **Movement:** shooting while walking costs 3° as soon as you go over 27.5% of run speed, up to about 4.7° at walking
+  speed with a rifle; running with a rifle costs 6°. Below 27.5% you are accurate, which is what makes counter-strafing work.
+- **Stop timings:** letting go of the keys stops you like in VALORANT; tapping the opposite key (counter-strafing) stops
+  you in about 0.10 s, measured from real VALORANT footage.
+
+Chamber's guns aren't in the game-file data, so their recoil is our estimate.
 
 ## Graphics
 
@@ -170,7 +185,10 @@ Real-time Godot Forward+ rendering:
   and red/gold, Split concrete and neon.
 - HDRI skies, sun shadows, AgX tonemapping, ambient occlusion and glow.
 - Animated enemy agents with VALORANT-style outlines and red fresnel; walls hide both.
-- A first-person viewmodel (gloved hands, recoil, sway, reload, bolt cycle) that never clips into walls.
+- A first-person viewmodel for every gun (gloved hands, recoil, sway, reload, bolt cycle, inspect) that never clips into
+  walls, with ValTrainer's own gun skins (cosmetic only).
+- Room themes for the aim and movement rooms (Settings → Graphics → Room theme): DARK and DEFAULT are free, six more
+  unlock as you level up. The maps keep their own look.
 - Muzzle flash, tracers, bullet-hole decals and per-agent flash effects.
 
 | Preset | FPS on a Quadro P2000 / GTX 1050 at 1080p |
@@ -199,10 +217,18 @@ recent runs are kept). The coach analyses them; the method is in
   - a recommended sensitivity, limited to ±18% per change and kept within 20–80 cm/360.
 - **Run review:** the results screen adds a short review of that run: a summary, the top problems with fixes, and what
   went well.
-- **Sens Finder:** a blind A/B test of about 16 minutes. You alternate between two unlabelled sensitivities using flicks,
-  micro-adjustments on tiny targets near your crosshair (M on the intro screen skips them) and strafe tracking, and it narrows down (bisects) to the one you score best with. It ends with a recommended VALORANT
-  sens, eDPI and cm/360, and a button to use it in ValTrainer. VALORANT itself is never changed; set it yourself in
-  VALORANT's settings.
+- **Your sens history** (in the coach's Sensitivity panel): if you change your sensitivity between sessions, it shows which
+  sens you actually score best with. Compare by sens, DPI, polling rate or the full setup. Each drill is only compared with
+  your own runs of the same drill, difficulty and gun, and it names a winner only when the difference is too big to be luck.
+- **Sens Finder:** a blind A/B test of about 16 minutes (a short test takes about half that). You alternate between two
+  unlabelled sensitivities using flicks, micro-adjustments on tiny targets near your crosshair (the MICRO TEST card turns
+  them off) and strafe tracking, and it narrows down (bisects) to the one you score best with. Tell it how you aim
+  (wrist, hybrid or arm) and your mousepad size, and it only tries sensitivities that suit you. It ends with a recommended
+  VALORANT sens, eDPI and cm/360, and a button to use it in ValTrainer.
+- **Compare 2 sens:** can't decide between two sensitivities? Enter both and play 8 short blind rounds (about 5 minutes).
+  It tells you which one you aimed better with and how sure that is, or that there was no clear difference.
+
+VALORANT itself is never changed; set a new sens yourself in VALORANT's settings.
 
 The ratings need data: play Head Flicks, Strafe Tracking, Peek Practice, Counter-Strafe and Vandal Spray a few times each.
 
@@ -265,6 +291,9 @@ Copyright (C) 2026 ValTrainer contributors.
 ValTrainer is free software: you can redistribute it and/or modify it under the terms of the
 **GNU General Public License, version 3 or (at your option) any later version** (SPDX: `GPL-3.0-or-later`). See
 [LICENSE](LICENSE). It is distributed in the hope that it will be useful, but without any warranty.
+
+Weapon recoil and spread data: [valorant.gs](https://valorant.gs), read from VALORANT's game files and used with credit
+under its terms.
 
 All 3D models, textures, skies and recorded sounds are CC0 (public domain); see
 [`ValTrainerGodot/CREDITS.md`](ValTrainerGodot/CREDITS.md). Synthesized sounds and procedural effects are original.
