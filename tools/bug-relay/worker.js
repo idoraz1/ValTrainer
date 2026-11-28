@@ -20,6 +20,11 @@
 // Moderator commands /close and /reopen (POST /interactions, see "moderator commands" below):
 //   DISCORD_PUBLIC_KEY           plain var, the Discord application's public key (checks Discord's signature)
 //   DISCORD_BOT_TOKEN            secret, the bug-tracker bot's token (reads, re-tags and closes the post)
+//
+// Supporter role /supporter email:<the email you donated with> (everyone, answer only they see):
+//   SUPPORTER_API                plain var, optional, the supporter server's ?discord endpoint (default below)
+//   SUPPORTER_ROLE_ID            plain var, optional, the role to give (default: the server's role named "Supporter")
+//   The bot needs Manage Roles, and its own role must sit above the Supporter role.
 
 const MAX_BODY = 32 * 1024;          // bytes
 const HOUR_MS = 3600 * 1000;
@@ -336,6 +341,15 @@ async function handleInteraction(request, env, ctx) {
   // Only the moderator sees these answers (ephemeral).
   const say = (content) => json(200, { type: 4, data: { content, flags: 64, allowed_mentions: { parse: [] } } });
   const name = i.data && i.data.name;
+  if (name === 'supporter') {
+    if (!i.guild_id || !i.member) return say('Use this in the ValTrainer server.');
+    if (!env.DISCORD_BOT_TOKEN) return say("The Supporter role can't be given yet: the bot's token isn't set.");
+    const sigHeaders = { 'x-signature-ed25519': request.headers.get('x-signature-ed25519') || '',
+      'x-signature-timestamp': request.headers.get('x-signature-timestamp') || '' };
+    const work = giveSupporter(i, env, buf, sigHeaders);
+    if (ctx && ctx.waitUntil) ctx.waitUntil(work); else await work;
+    return json(200, { type: 5, data: { flags: 64 } });   // "thinking...", only they see it
+  }
   if (name !== 'close' && name !== 'reopen') return say('Unknown command.');
   let perms = 0n;
   try { perms = BigInt((i.member && i.member.permissions) || '0'); } catch { /* not a number: no permissions */ }
@@ -409,6 +423,58 @@ async function applyStatus(i, env, key, note, lock = false) {
   } catch (e) {
     console.log(`interaction failed: ${e && e.message}`);
     await fail('Something went wrong, nothing was changed.');
+  }
+}
+
+// ---------- /supporter: the Supporter role for donors ----------
+// The supporter server (Supabase, tools/supporter/server) checks the email against real Ko-fi / Buy Me a Coffee payments
+// and links that payment to this Discord account (one account per payment). It trusts the request because the Worker
+// forwards Discord's own signed interaction unchanged, so no secret is shared. Then the bot gives the role.
+const SUPPORTER_API_DEFAULT = 'https://ktnsibbyxctiktqmjnxk.supabase.co/functions/v1/supporter-webhook?discord';
+const SUPPORTER_ERRORS = {
+  not_found: "I couldn't find a donation with that email. Use the email you paid with on Buy Me a Coffee or Ko-fi "
+    + '(it can take a minute after paying). Still stuck? Ask a moderator.',
+  linked_elsewhere: 'That donation is already linked to another Discord account. If that was a mistake, ask a moderator.',
+  rate_limited: 'Too many tries. Please wait an hour and try again.',
+  bad_email: "That doesn't look like an email address.",
+};
+
+async function giveSupporter(i, env, buf, sigHeaders) {
+  const hook = `${DISCORD_API}/webhooks/${i.application_id}/${i.token}/messages/@original`;
+  const answer = (content) => fetch(hook, { method: 'PATCH', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ content, allowed_mentions: { parse: [] } }) }).catch(() => {});
+  const bot = (method, path, extra = {}) => fetch(DISCORD_API + path, {
+    method,
+    headers: { authorization: `Bot ${env.DISCORD_BOT_TOKEN}`, 'user-agent': 'DiscordBot (https://github.com/idoraz1/ValTrainer, 1)', ...extra },
+  });
+  try {
+    const r = await fetch(String(env.SUPPORTER_API || SUPPORTER_API_DEFAULT), {
+      method: 'POST', headers: { 'content-type': 'application/json', ...sigHeaders }, body: buf });
+    let res = {};
+    try { res = await r.json(); } catch { /* not JSON */ }
+    if (!res.ok) {
+      if (!SUPPORTER_ERRORS[res.error]) console.log(`supporter check failed: HTTP ${r.status} ${res.error || ''}`);
+      return answer(SUPPORTER_ERRORS[res.error] || 'Something went wrong checking your donation. Please try again later.');
+    }
+    let roleId = /^\d+$/.test(String(env.SUPPORTER_ROLE_ID || '')) ? String(env.SUPPORTER_ROLE_ID) : '';
+    if (!roleId) {
+      const rr = await bot('GET', `/guilds/${i.guild_id}/roles`);
+      const roles = rr.ok ? await rr.json() : [];
+      const role = roles.find((x) => !x.managed && tagName(x.name) === 'supporter');
+      if (!role) { console.log('no Supporter role'); return answer('Your donation is confirmed, but this server has no Supporter role yet. A moderator will add it.'); }
+      roleId = role.id;
+    }
+    const user = i.member.user.id;
+    const pr = await bot('PUT', `/guilds/${i.guild_id}/members/${user}/roles/${roleId}`,
+      { 'x-audit-log-reason': encodeURIComponent('Donation confirmed (/supporter)') });
+    if (!pr.ok) {
+      console.log(`add role failed: HTTP ${pr.status}`);
+      return answer("Your donation is confirmed, but I couldn't give you the role (the bot needs Manage Roles above Supporter). A moderator will add it.");
+    }
+    return answer('\u2615 Thank you for supporting ValTrainer! You now have the **Supporter** role.');
+  } catch (e) {
+    console.log(`supporter failed: ${e && e.message}`);
+    return answer('Something went wrong checking your donation. Please try again later.');
   }
 }
 

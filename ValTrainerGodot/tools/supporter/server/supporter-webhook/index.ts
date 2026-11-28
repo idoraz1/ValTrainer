@@ -5,6 +5,9 @@
 //   POST .../supporter-webhook?src=bmc    Buy Me a Coffee: JSON body; header x-signature-sha256 = hex HMAC-SHA256 of the
 //                                         raw body with BMC_SECRET
 //
+//   POST .../supporter-webhook?discord    the Discord /supporter command, forwarded by the Cloudflare Worker with
+//                                         Discord's signature (see "Discord Supporter role" below)
+//
 //   POST .../supporter-webhook?claim      the game's GET MY CODE: JSON {"email": "..."} → {"ok": true, "name", "code"} for
 //                                         the newest real payment with that email, or {"ok": false, "error":
 //                                         "not_found" | "rate_limited" | "bad_email"}. At most CLAIMS_PER_HOUR tries per
@@ -140,9 +143,62 @@ async function sendEmail(to: string, name: string, code: string): Promise<string
   return r.ok ? null : `brevo ${r.status}: ${(await r.text()).slice(0, 300)}`;
 }
 
+// ---------- Discord Supporter role ----------
+// POST ?discord: the Cloudflare Worker (tools/bug-relay) forwards a /supporter interaction exactly as Discord sent it:
+// the raw body plus Discord's x-signature-ed25519 / x-signature-timestamp headers. Discord's Ed25519 signature (made
+// with the bot application's PUBLIC key below, so no shared secret) proves the Discord user id and the email they typed;
+// the timestamp must be fresh so an old interaction can't be replayed. Answers {"ok": true, "name"} when a real payment
+// has that email and isn't linked to another Discord account (it gets linked to this one), else {"ok": false, "error":
+// "not_found" | "linked_elsewhere" | "rate_limited" | "bad_email" | "bad_request"}. The Worker then gives the role.
+const DISCORD_PUBLIC_KEY = "2953e04adea9c234b0e1574b5efe3d124cfda67afe88145780226319ad4804be"; // public, not a secret
+
+const hexBytes = (h: string) => (/^(?:[0-9a-f]{2})+$/i.test(h) ? new Uint8Array(h.match(/../g)!.map((b) => parseInt(b, 16))) : null);
+
+async function verifyDiscord(sigHex: string, ts: string, body: Uint8Array): Promise<boolean> {
+  const sig = hexBytes(sigHex), key = hexBytes(DISCORD_PUBLIC_KEY);
+  if (!sig || sig.length !== 64 || !key || !/^\d{9,11}$/.test(ts)) return false;
+  if (Math.abs(Date.now() / 1000 - Number(ts)) > 300) return false; // replay guard: 5 minutes
+  const t = new TextEncoder().encode(ts);
+  const msg = new Uint8Array(t.length + body.length);
+  msg.set(t); msg.set(body, t.length);
+  try {
+    const k = await crypto.subtle.importKey("raw", key, { name: "Ed25519" }, false, ["verify"]);
+    return await crypto.subtle.verify({ name: "Ed25519" }, k, sig, msg);
+  } catch { return false; }
+}
+
+async function discordLink(req: Request): Promise<Response> {
+  const body = new Uint8Array(await req.arrayBuffer());
+  if (body.length > 32 * 1024) return json({ ok: false, error: "bad_request" }, 413);
+  const ok = await verifyDiscord(req.headers.get("x-signature-ed25519") ?? "", req.headers.get("x-signature-timestamp") ?? "", body);
+  if (!ok) return json({ ok: false, error: "bad_request" }, 401);
+  let i: Record<string, any>;
+  try { i = JSON.parse(new TextDecoder().decode(body)); } catch { return json({ ok: false, error: "bad_request" }, 400); }
+  const user = String(i?.member?.user?.id ?? i?.user?.id ?? "");
+  if (i?.type !== 2 || i?.data?.name !== "supporter" || !/^\d{5,25}$/.test(user)) return json({ ok: false, error: "bad_request" }, 400);
+  const email = normEmail((i.data.options ?? []).find((o: any) => o?.name === "email")?.value);
+  if (!email) return json({ ok: false, error: "bad_email" });
+  // rate limit per Discord account (same table as the in-game claim)
+  const key = `discord:${user}`;
+  const since = new Date(Date.now() - 3600_000).toISOString();
+  const { count } = await db.from("supporter_claims").select("id", { count: "exact", head: true }).eq("ip", key).gte("at", since);
+  if ((count ?? 0) >= CLAIMS_PER_HOUR) return json({ ok: false, error: "rate_limited" });
+  await db.from("supporter_claims").insert({ ip: key, found: false });
+  const { data: rows } = await db.from("supporter_codes").select("id, name, discord_id").eq("email", email).eq("test", false)
+    .order("created_at", { ascending: false });
+  if (!rows || rows.length === 0) return json({ ok: false, error: "not_found" });
+  const mine = rows.find((r) => r.discord_id === user);
+  if (mine) return json({ ok: true, name: mine.name });
+  const free = rows.find((r) => !r.discord_id);
+  if (!free) return json({ ok: false, error: "linked_elsewhere" });
+  await db.from("supporter_codes").update({ discord_id: user, discord_linked_at: new Date().toISOString() }).eq("id", free.id).is("discord_id", null);
+  return json({ ok: true, name: free.name });
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("ValTrainer supporter webhook", { status: 200 });
   if (new URL(req.url).searchParams.has("claim")) return await claim(req);
+  if (new URL(req.url).searchParams.has("discord")) return await discordLink(req);
   const src = new URL(req.url).searchParams.get("src");
   const parsed = src === "kofi" ? await parseKofi(req) : src === "bmc" ? await parseBmc(req) : new Response("unknown source", { status: 400 });
   if (parsed instanceof Response) return parsed;

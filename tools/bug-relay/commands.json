@@ -76,5 +76,22 @@
         "max_length": 500
       }
     ]
+  },
+  {
+    "name": "supporter",
+    "type": 1,
+    "description": "Donated on Buy Me a Coffee or Ko-fi? Get the Supporter role (only you see the answer)",
+    "contexts": [
+      0
+    ],
+    "options": [
+      {
+        "type": 3,
+        "name": "email",
+        "description": "The email you donated with (only used to find your donation)",
+        "required": true,
+        "max_length": 254
+      }
+    ]
   }
 ]

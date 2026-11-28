@@ -356,6 +356,47 @@ calls = [];
 ir = await isend(await ireq(cmd('close', [{ name: 'status', value: 'fixed' }])));
 const np = JSON.parse(calls.find((c) => c.init.method === 'PATCH' && c.url.endsWith('/channels/T1'))?.init.body || '{}');
 check('no lock: locked left alone', !('locked' in np), JSON.stringify(np));
+// ---- /supporter: the supporter server checks the donation, the bot gives the role ----
+const sup = (email, extra = {}) => ({ type: 2, application_id: 'APP', token: 'ITOKEN', guild_id: 'G1', channel_id: 'C1',
+  member: { permissions: NOBODY, user: { id: '42' } }, data: { name: 'supporter', options: [{ name: 'email', value: email }] }, ...extra });
+let supAnswer = { ok: true, name: 'Ido' }, roleStatus = 204;
+globalThis.fetch = async (url, init = {}) => {
+  url = String(url); calls.push({ url, init });
+  const m = init.method || 'GET';
+  if (url.includes('supabase.co')) return Response.json(supAnswer);
+  if (m === 'GET' && url.endsWith('/guilds/G1/roles')) return Response.json([{ id: 'R0', name: '@everyone' },
+    { id: 'RK', name: 'Ko-fi Bot', managed: true }, { id: 'RS', name: '\u{1F375} Supporter' }]);
+  if (m === 'PUT' && url.includes('/roles/')) return new Response(null, { status: roleStatus });
+  return new Response('{}', { status: 200 });
+};
+const supEdit = () => JSON.parse(calls.find((c) => c.init.method === 'PATCH' && c.url.endsWith('/messages/@original'))?.init.body || '{}');
+calls = [];
+ir = await isend(await ireq(sup('me@x.com')));
+check('supporter: deferred, only they see it', ir.j?.type === 5 && ir.j.data?.flags === 64, ir.txt);
+const fwd = calls.find((c) => c.url.includes('supabase.co'));
+check('supporter: Discord-signed body forwarded unchanged (no secret)', fwd && fwd.init.headers['x-signature-ed25519']?.length === 128
+  && new TextDecoder().decode(fwd.init.body).includes('me@x.com') && !JSON.stringify(fwd.init.headers).includes('BOT-SECRET'));
+const put = calls.find((c) => c.init.method === 'PUT');
+check('supporter: the non-managed "Supporter" role given to the caller', put && put.url.endsWith('/guilds/G1/members/42/roles/RS'), put?.url);
+check('supporter: thank-you answer', /Supporter\*\* role/.test(supEdit().content || ''), supEdit().content);
+calls = []; supAnswer = { ok: false, error: 'not_found' };
+ir = await isend(await ireq(sup('nobody@x.com')));
+check('supporter: unknown email -> no role, helpful answer', !calls.some((c) => c.init.method === 'PUT') && /couldn't find a donation/.test(supEdit().content || ''));
+calls = []; supAnswer = { ok: false, error: 'linked_elsewhere' };
+ir = await isend(await ireq(sup('me@x.com')));
+check('supporter: payment linked to someone else -> no role', !calls.some((c) => c.init.method === 'PUT') && /another Discord account/.test(supEdit().content || ''));
+calls = []; supAnswer = { ok: true, name: 'Ido' }; roleStatus = 403;
+ir = await isend(await ireq(sup('me@x.com')));
+check('supporter: role refused (403) -> says a moderator will add it', /Manage Roles/.test(supEdit().content || ''), supEdit().content);
+calls = []; roleStatus = 204;
+ir = await isend(await ireq(sup('me@x.com', { guild_id: undefined, member: undefined, user: { id: '42' } })));
+check('supporter: in a DM -> refused, nothing called', ir.j?.type === 4 && calls.length === 0, ir.txt);
+ir = await isend(await ireq(sup('me@x.com')), ie({ SUPPORTER_ROLE_ID: 'RX' }));
+check('supporter: SUPPORTER_ROLE_ID ignored unless numeric', calls.some((c) => c.init.method === 'PUT' && c.url.endsWith('/roles/RS')));
+calls = [];
+ir = await isend(await ireq(sup('me@x.com')), ie({ SUPPORTER_ROLE_ID: '777' }));
+check('supporter: SUPPORTER_ROLE_ID used when set', calls.some((c) => c.init.method === 'PUT' && c.url.endsWith('/roles/777')) && !calls.some((c) => c.url.endsWith('/roles')));
+
 check('worker.js is ASCII only (survives any copy / paste encoding)', ![...(await import('node:fs')).readFileSync(new URL('./worker.js', import.meta.url), 'utf8')].some((c) => c.charCodeAt(0) > 127));
 check('interactions: token never logged', !logs.some((l) => l.includes('BOT-SECRET') || l.includes('ITOKEN')));
 
